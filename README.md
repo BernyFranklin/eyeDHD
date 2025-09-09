@@ -13,6 +13,11 @@ This is the eye tracking tool to be used for the Psych Department in diagnosing 
   During the simulated lecture, there are distractors that happen at specific times, for example, people entering and exiting, loud phone notifications, and various loud noises you may hear in the classroom. These distractions have Hit Boxes located at the source of the distractor, these are not visible to the test subject.
 </p>
 <p>
+  <img src="./photos/headset.webp" width="300">
+  <img src="./photos/view1.jpg" width="300">
+  <img src="./photos/view2.jpg" width="300">
+</p>
+<p>
   The data extracted from the headset are the eye movements, pupil dialation, and these measurements can let us know when the test subject gazes at the distractor, for how long, etc.
 </p>
 <h3>Current Data</h3>
