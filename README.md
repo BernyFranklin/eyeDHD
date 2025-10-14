@@ -45,6 +45,7 @@ This is the eye tracking tool to be used for the Psych Department in diagnosing 
 </ul>
 <h3>Starting Application</h3>
 <ol>
+  <li>Make sure you have node.js set up on your device.</li>
   <li>Make sure you are in /EyeDHD-App by using <code>cd .\EyeDHD-App\</code> for windows and <code>cd ./EyeDHD-App/</code> for Mac</li>
   <li>Next use <code>npm run start:all</code> to start the application</li>
   <li>Don't break it :]</li>
