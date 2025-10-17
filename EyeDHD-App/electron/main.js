@@ -4,7 +4,6 @@ import path from 'path';
 
 import DataCleaner from './DataCleaner.js';
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -19,15 +18,19 @@ function createWindow() {
     });
 
     win.loadURL('http://localhost:5173');
-
-    win.on('closed', () => {
-        app.quit();
-    });
 }
 
 app.whenReady().then(createWindow);
 
-const cleaner = new DataCleaner(path.join(__dirname, '../../data/EyeData.csv'))
-const data = await cleaner.run()
 
-console.log(data)
+// Temporary data cleaning test
+
+const cleaner = new DataCleaner(path.join(__dirname, '../../data/EyeData.csv'));
+await cleaner.clean();
+
+let frame = await cleaner.getCleanedRow();
+while (frame !== null) {
+    console.log(frame);
+
+    frame = await cleaner.getCleanedRow()
+}
