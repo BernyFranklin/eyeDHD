@@ -8,7 +8,7 @@ import { parse, transform } from 'csv';
  */
 export default class DataCleaner {
     filename;
-    content = [];
+    csvRows = [];
     row = 0;
 
     constructor(filename) {
@@ -27,7 +27,7 @@ export default class DataCleaner {
             skipEmptyLines: true
         });
 
-        // Cleans csv objects returned by the parser
+        // Cleans each csv objects returned by the parser
         const transformer = transform((record) => {
             // Clean data here
             let cleaned = record
@@ -35,7 +35,7 @@ export default class DataCleaner {
             return cleaned;
         });
 
-        // Collect cleaned data into content
+        // Collect cleaned csv objects into content
         const content = [];
         const collector = new Writable({
             objectMode: true,
@@ -52,7 +52,8 @@ export default class DataCleaner {
             })
         );
 
-        this.content = content;
+        // Store final result in DataCleaner.csvRows
+        this.csvRows = content;
     }
 
     // Read one cleaned row one at a time
@@ -60,17 +61,18 @@ export default class DataCleaner {
     // Make this so it waits until new data is available
     async getCleanedRow() {
         return new Promise((resolve, reject) => {
-            if (this.content.length <= 0) {
-                return resolve(null);
+            if (this.csvRows.length <= 0) {
+                return reject("csvRows is empty, have you called clean()?");
             }
-            if (this.row >= this.content.length) {
+            if (this.row >= this.csvRows.length) {
+                console.log("End of rows")
                 return resolve(null);
             }
 
             const row = this.row;
             this.row++;
 
-            return resolve(this.content[row])
+            return resolve(this.csvRows[row])
         });
     }
 }
