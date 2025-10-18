@@ -2,8 +2,6 @@ import { app, BrowserWindow } from 'electron'
 import { fileURLToPath } from 'url'
 import path from 'path'
 
-import './ipcHandlers.js'
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 

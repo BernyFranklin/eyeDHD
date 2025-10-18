@@ -9,9 +9,6 @@ export default defineConfig({
         electron({
             main: {
                 entry: 'electron/main.js',
-            },
-            preload: {
-                input: 'electron/preload.js'
             }
         })
     ],
