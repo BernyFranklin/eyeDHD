@@ -12,8 +12,7 @@ function createWindow() {
         icon: path.join(__dirname, '../../assets/eyedhd-logo.png'),
         webPreferences: {
             nodeIntegration: false,
-            contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js')
+            contextIsolation: true
         }
     })
 
@@ -25,8 +24,6 @@ function createWindow() {
 }
 
 app.whenReady().then(createWindow)
-
-// Set up event handlers for front-end <-> back-end communication
 
 // Temporary data cleaning test
 
