@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import CsvFileImport from './components/CsvFileImport.jsx'
 import './App.css'
+import Navbar from './components/Navbar.jsx'
 
 function App() {
   const [csvData, setCsvData] = useState("");
@@ -12,6 +13,7 @@ function App() {
   
   return (
     <>
+      <Navbar />
       <CsvFileImport onFileLoad={handleFileLoad} />
       <textarea className="csv-textarea" value={csvData.slice(0, 500)} readOnly></textarea>
     </>
