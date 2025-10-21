@@ -6,14 +6,14 @@ function App() {
   const [csvData, setCsvData] = useState("");
 
   const handleFileLoad = (data) => {
-    console.log("CSV Data Loaded:", data);
+    console.log("CSV Data Loaded:", data.slice(0, 500));
     setCsvData(data);
   };
   
   return (
     <>
       <CsvFileImport onFileLoad={handleFileLoad} />
-      <textarea className="csv-textarea">{csvData.slice(0, 500)}</textarea>
+      <textarea className="csv-textarea" value={csvData.slice(0, 500)} readOnly></textarea>
     </>
   )
 }
