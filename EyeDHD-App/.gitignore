@@ -77,13 +77,17 @@ bower_components
 .vscode-test
 
 # Electron-specific
-# Electron directories
 dist_electron/
 release/
 
 # Hot Reload for Electron
 .tmp/
 .cache/
+node_modules
+dist
+dist-electron
+dist-ssr
+*.local
 
 # Editor directories and files
 .vscode/*
