@@ -1,0 +1,70 @@
+-> Notes <-
+- Eye Position measurements in *Meters*
+- Origin = (0,0,0) and (looking at the eye) is dead center.
+- (X,Y,Z)
+    X = To Right
+    Y = Up
+    Z = Away From Eye
+- The left eye center position is (-ipd/2, 0, 0) 
+- The right eye center position is (ipd/2, 0, 0)
+
+-> Status <-
+
+- GazeStatus = status in documentation. VALID means eye tracking is OK
+                                        INVALID means eye tracking NOT OK
+                                        BLANK assume eye tracking NOT OK
+- leftEyeStatus/rightEyeStatus = VALID means eye tracking is OK
+                  INVALID means eye travcking is NOT OK
+                  BLANK assume eye tracking NOT OK
+
+-> What is Invalid??? <-
+GazeStatus = INVALID or BLANK
+LeftEyeStatus = INVALID or BLANK
+RightEyeSTATUS = INVAID or BLANK
+
+
+
+** = To Keep
+
+Frame,**
+CaptureTime,**
+LogTime,
+HMDPositionX,
+HMDPositionY,
+HMDPositionz,
+HMDRotationX,**
+HMDRotationY,**
+HMDRotationZ,**
+HMDRotationHuh,
+GazeStatus, **
+CombinedGazeForwardX,
+CombinedGazeForwardY,
+CombinedGazeForwardZ,
+CombinedGazePositionX,
+CombinedGazePositionY,
+CombinedGazePositionZ,
+InterPupillaryDistanceInMM,
+LeftEyeStatus, **
+LeftEyeForwardX,**
+LeftEyeForwardY, **
+LeftEyeForwardZ, **
+LeftEyePositionX,
+LeftEyePositionY,
+LeftEyePositionZ,
+LeftPupilIrisDiameterRatio,
+LeftPupilDiameterInMM, **
+LeftIrisDiameterInMM,
+left Eye Openness,
+RightEyeStatus, **
+RightEyeForwardX, **
+RightEyeForwardY, **
+RightEyeForwardZ, **
+RightEyePositionX,
+RightEyePositionY,
+RightEyePositionZ,
+RightPupilIrisDiameterRatio,
+RightPupilDiameterInMM,**
+RightIrisDiameterInMM, 
+Right Eye Openness,
+FocusDistance,
+FocusStability
