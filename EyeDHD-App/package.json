@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
@@ -29,6 +30,7 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
     "vite": "^7.1.7",
-    "vite-plugin-electron": "^0.29.0"
+    "vite-plugin-electron": "^0.29.0",
+    "vitest": "^3.2.4"
   }
 }
