@@ -1,11 +1,16 @@
 #root {
-  max-width: 800px;
+  width: 100%;
   margin: 0 auto;
+  padding: 0;
   text-align: center;
   color: #000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+body {
+  margin: 0;
 }
 
 .error-info {
@@ -26,4 +31,32 @@
   box-sizing: border-box;
   color: #000;
   background-color: #fff;
+}
+
+.navbar {
+  background-color: #b1102b;
+  margin: 0;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar-logo-image {
+  height: 60px;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 15px;
+}
+
+.navbar-links a {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.navbar-links a:hover {
+  text-decoration: underline;
 }
