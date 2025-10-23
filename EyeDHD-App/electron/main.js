@@ -17,14 +17,10 @@ function createWindow() {
         minHeight:720,
         icon: path.join(__dirname, '../images/eyedhd-logo.ico'),
         title: 'EyeDHD',
-        //titleBarStyle: 'hidden',
-        //...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
         webPreferences: {
-            nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js')
-        }
-    })
+        },
+    });
 
     if (process.env.VITE_DEV_SERVER_URL) {
         win.loadURL(process.env.VITE_DEV_SERVER_URL)
