@@ -7,8 +7,12 @@ const __dirname = path.dirname(__filename);
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1920,
+    height: 1080,
+    minWidth: 1280,
+    minHeight:720,
+    icon: path.join(__dirname, '../images/eyedhd-logo.ico'),
+    title: 'EyeDHD',
     webPreferences: {
       contextIsolation: true,
     },

@@ -4,18 +4,17 @@ import './App.css'
 import Navbar from './components/Navbar.jsx'
 
 function App() {
-  const [csvData, setCsvData] = useState("");
-
-  const handleFileLoad = (data) => {
-    console.log("CSV Data Loaded:", data.slice(0, 500));
-    setCsvData(data);
-  };
-  
+  const [current, setCurrent] = useState(0);
+  const content = [
+    <p>Home Content</p>,
+    <CsvFileImport />,
+    <p>Generate Eye Animation Content</p>,
+    <p>Side-by-side Viewer Content</p>
+  ]
   return (
     <>
-      <Navbar />
-      <CsvFileImport onFileLoad={handleFileLoad} />
-      <textarea className="csv-textarea" value={csvData.slice(0, 500)} readOnly></textarea>
+      <Navbar setCurrent={setCurrent} />
+      {content[current]}
     </>
   )
 }
