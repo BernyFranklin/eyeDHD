@@ -11,9 +11,12 @@ const filesMap = new Map()
 
 function createWindow() {
     const win = new BrowserWindow({
-        width: 800,
-        height: 600,
-        icon: path.join(__dirname, '../../assets/eyedhd-logo.png'),
+        width: 1920,
+        height: 1080,
+        minWidth: 1280,
+        minHeight:720,
+        icon: path.join(__dirname, '../images/eyedhd-logo.ico'),
+        title: 'EyeDHD',
         //titleBarStyle: 'hidden',
         //...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
         webPreferences: {
@@ -87,7 +90,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-const cleaner = new DataCleaner(path.join(__dirname, '../../data/EyeData.csv'))
+const cleaner = new DataCleaner(path.join(__dirname, '../../data/part_aa.csv'))
 cleaner.start()
 
 await sleep(10)

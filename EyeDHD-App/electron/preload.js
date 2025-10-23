@@ -37,7 +37,14 @@ contextBridge.exposeInMainWorld('electron', {
         }
     },
     notify: {
-        /** Creates an OS notification displaying the message passed in */
+        /** 
+         * Creates an OS notification displaying the message passed in
+         *
+         * Example code:
+         * ```js
+         * electron.notify.send("This is a notification")
+         * ```
+         */
         send: (message) => {
             ipcRenderer.send('notify', message)
         }

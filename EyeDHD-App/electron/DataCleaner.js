@@ -4,12 +4,12 @@ import { parse, transform } from 'csv'
 
 /** DataCleaner reads raw csv data from a file and returns cleaned csv objects */
 export default class DataCleaner {
-    filename
+    path
     csvRows = []
     row = 0
 
-    constructor(filename) {
-        this.filename = filename
+    constructor(path) {
+        this.path = path
     }
 
     /**
@@ -18,7 +18,7 @@ export default class DataCleaner {
      */
     start() {
         // Create file stream
-        const stream = fs.createReadStream(this.filename, 'utf-8')
+        const stream = fs.createReadStream(this.path, 'utf-8')
 
         // Takes raw file data and converts it into an array of csv objects
         const parser = parse({
@@ -58,8 +58,7 @@ export default class DataCleaner {
      * been reached
      */
     async getCleanedRow() {
-        // TODO: Needs some way to tell when data is available and when the end of file
-        // has been reached
+        // TODO: Needs some way to tell when data is available
         return new Promise((resolve, reject) => {
             // No data available yet
             if (this.csvRows.length <= 0) {
