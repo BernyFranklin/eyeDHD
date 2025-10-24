@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "electron": "electron ./electron/main.js",
-    "start:all": "concurrently \"npm run dev\" \"npm run electron\"",
+    "start:all": "concurrently -k \"npm run dev\" \"npm run electron\"",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

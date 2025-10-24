@@ -23,7 +23,7 @@ body {
 }
 
 .csv-textarea {
-  width: 70%;
+  width: 50%;
   height: 150px;
   margin-top: 20px;
   font-family: monospace;
@@ -69,6 +69,11 @@ body {
   text-align: center;
   background-color: #fff;
   padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  width: 60%;
+  margin: 2rem auto;
+  align-items: center;
 }
 
 .csv-upload-label {
@@ -95,6 +100,7 @@ input[type="file"]::file-selector-button {
   border-radius: 4px;
   cursor: pointer;
   font-weight: 600;
+  font-size: 1rem;
   transition: ease background-color 0.3s;
 }
 
@@ -104,6 +110,9 @@ input[type="file"]::file-selector-button:hover {
 
 .preview-title {
   margin: 1.5rem 0 -1rem 0;
+}
+.preview-csv-file-container {
+  width: 100%;
 }
 
 .alert-window {
@@ -127,6 +136,54 @@ input[type="file"]::file-selector-button:hover {
   background-color: #f8d7da;
   color: #721c24;
   border-color: 1px solid #f5c6cb;
+}
+
+.btn {
+  display: block;
+  background-color: #13284c;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: ease background-color 0.3s;
+  margin-top: 1rem;
+  width: fit-content;
+}
+
+.btn:hover {
+  background-color: #27395c;
+}
+
+/* Overlay background */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* Spinner animation */
+.spinner {
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @keyframes fadeInOut {
