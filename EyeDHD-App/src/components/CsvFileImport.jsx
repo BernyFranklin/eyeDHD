@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import Papa from 'papaparse';
+import { saveAs } from 'file-saver';
 import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow from './AlertWindow';
 import FilePicker from './FilePicker';
@@ -24,17 +26,40 @@ export function CsvFileImport() {
         setError("");
         setFileName(file.name);
         
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            setCsvData(event.target.result);
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                console.log("Parsed CSV Data: ", results.data);
+                setCsvData(results.data);
+                setShowAlert(true);
+                setTimeout(() => {
+                    setShowAlert(false);
+                }, 4000);
+            }
+        })
+    };
+
+    const handleFileExport = () => {
+        if (!csvData) {
+            setError("No CSV data to export.");
             setShowAlert(true);
-              
             setTimeout(() => {
                 setShowAlert(false);
             }, 4000);
-        };
-        reader.readAsText(file);
-    };
+            setError("");
+            return;
+        }
+
+        const cleanedData = csvData.map((row) => ({
+            ...row,
+            status: "Cleaned"
+        }));
+
+        const csv = Papa.unparse(cleanedData);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        saveAs(blob, `cleaned_${fileName}`);
+    }
     
     return (
         <div className="csv-import-container">
@@ -47,6 +72,7 @@ export function CsvFileImport() {
                 accept=".csv" 
                 onChange={handleFileChangeCsv} 
             />
+            <button onClick={handleFileExport}>Export Cleaned CSV</button>
 
             {error && <AlertWindow message={error} classColor=" red" onClose={() => setShowAlert(false)} />}
             {fileName && <PreviewCsvFile fileName={fileName} csvData={csvData} />}
