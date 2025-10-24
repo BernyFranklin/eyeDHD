@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import CsvFileImport from './components/CsvFileImport.jsx'
+import CsvFileImport from './components/CsvFileImportBackend'
 import './App.css'
-import Navbar from './components/Navbar.jsx'
+import Navbar from './components/Navbar'
 
 function App() {
   const [current, setCurrent] = useState(0);
