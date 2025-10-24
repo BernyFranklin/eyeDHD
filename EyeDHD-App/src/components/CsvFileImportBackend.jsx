@@ -13,21 +13,26 @@ export function CsvFileImport() {
     const openFile = async () => {
         setError("");
 
+        // Request backend to open a file selector, wait for filename
         const file = await electron.csv.openFile(200)
             .catch(err => {
                 setError(err.message);
             });
         if (error) return;
 
+        // No file selected
         if (!file) return;
+
         setFileName(file);
 
+        // Send alert
         setAlertMessage(`File "${file}" uploaded successfully!`);
         setShowAlert(true);
         setTimeout(() => {
             setShowAlert(false);
         }, 4000);
 
+        // Request 200 rows from the backend
         const first200Rows = await electron.csv.getBuffer(file)
             .catch(err => {
                 setError(err.message);
@@ -44,6 +49,7 @@ export function CsvFileImport() {
             return;
         }
 
+        // Request 200 more rows from the backend
         const moreRows = await electron.csv.getBuffer(fileName)
             .catch(err => {
                 setError(err.message);
@@ -52,6 +58,7 @@ export function CsvFileImport() {
 
         setCsvData(moreRows);
 
+        // Send alert
         if (moreRows === null) {
             setAlertMessage(`End of "${fileName}" reached!`);
         } else {

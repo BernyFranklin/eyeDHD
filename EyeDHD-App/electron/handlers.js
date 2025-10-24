@@ -4,6 +4,11 @@ import path from 'path'
 import { filesMap } from './store.js'
 import DataCleaner from './stuff/DataCleaner.js'
 
+/**
+ * Handles the csv-open-file request. Opens a file selector and begins cleaning it if one is selected
+ *
+ * @returns filename if a file is selector, or null if none are selected
+ */
 ipcMain.handle('csv-open-file', async (_, bufferSize) => {
     return new Promise(async (resolve, reject) => {
         const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -32,6 +37,11 @@ ipcMain.handle('csv-open-file', async (_, bufferSize) => {
     })
 })
 
+/**
+ * Handles the csv-get-row request. Reads a row from filename's cleaner
+ *
+ * @returns a cleaned row, or null if the entire file has been read
+ */
 ipcMain.handle('csv-get-row', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
         const cleaner = filesMap.get(filename);
@@ -44,6 +54,11 @@ ipcMain.handle('csv-get-row', async (_, filename) => {
     })
 })
 
+/**
+ * Handles the csv-get-buffer request. Pulls the buffer from filename's cleaner
+ *
+ * @returns an array of rows, or null if the entire file has been read
+ */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
         const cleaner = filesMap.get(filename);
@@ -56,6 +71,9 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
     })
 })
 
+/**
+ * Handles the notify request. Creates an OS notification with the given message
+ */
 ipcMain.on('notify', (_, message) => {
     new Notification({ title: 'EyeDHD', body: message }).show()
 })
