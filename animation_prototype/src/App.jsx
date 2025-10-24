@@ -8,8 +8,11 @@ function RotatingModel({ buffer }) {
 
   useFrame(() => {
     if (buffer.length > 0) {
-      const [x, y, z] = buffer.shift();
-      ref.current.rotation.set(x, y, z);
+      const [flag, x, y, z] = buffer.shift();
+      // Only apply rotation if flag is 1 (valid)
+      if (flag === 1) {
+        ref.current.rotation.set(x, y, z);
+      }
     }
   });
 
@@ -26,16 +29,24 @@ export default function App() {
         const lines = text.split('\n').filter(Boolean);
         const parsed = lines
           .map(line => {
+            // Expected format: 1, (0, 0, 0)
+            const [flagPart, rotationPart] = line.split(',');
+            const flag = parseInt(flagPart.trim(), 10);
             const match = line.match(/\(([^)]+)\)/);
-            return match ? match[1].split(',').map(v => parseFloat(v.trim())) : null;
+            if (!match) return null;
+            const [x, y, z] = match[1]
+              .split(',')
+              .map(v => parseFloat(v.trim()));
+            return [flag, x, y, z];
           })
           .filter(Boolean);
+
         setRotationBuffer(parsed);
       });
   }, []);
 
   return (
-    <Canvas style={{width: '100vw', height: '100vh'}} camera={{ position: [0, 0, 5] }}>
+    <Canvas style={{ width: '100vw', height: '100vh' }} camera={{ position: [0, 0, 5] }}>
       <ambientLight intensity={1.0} />
       <directionalLight position={[5, 5, 5]} />
       <Suspense fallback={null}>
