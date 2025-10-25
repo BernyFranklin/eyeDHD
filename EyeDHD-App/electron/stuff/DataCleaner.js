@@ -4,7 +4,10 @@ import rl from 'readline';
 import { sleep } from '../utils.js';
 
 /**
+ * Reads and cleans a CSV file at the given path. Cleans data lazyily, 
+ * keeping a buffer of buf_len cleaned rows
  *
+ * The first line of the CSV file must be the column names
  */
 export default class DataCleaner {
     stream;
@@ -13,14 +16,14 @@ export default class DataCleaner {
     buf_len;
     buf = [];
     header = [];
-    reading = false;
-    done = false;
-    closed = false;
+    status = {
+        reading: false,
+        done: false,
+        closed: false
+    };
 
-    /**
-     *
-     */
     constructor({ path, buf_len = 200 }) {
+        // Open file as a stream and setup line-by-line reading
         this.stream = fs.createReadStream(path, { encoding: 'utf-8' });
         this.readline = rl.createInterface({
             input: this.stream,
@@ -29,8 +32,7 @@ export default class DataCleaner {
         this.iter = this.readline[Symbol.asyncIterator]();
         this.buf_len = buf_len;
 
-
-        // Read CSV columns
+        // Read column names
         this.iter.next().then(({ value, done }) => {
             if (done) {
                 this.close();
@@ -38,30 +40,30 @@ export default class DataCleaner {
             }
 
             this.header = value.split(',').map(name => name.trim());
-        }).catch(error => {
+        }).catch(err => {
             this.close();
-            throw error;
+            throw err;
         });
 
         // Load first batch of rows
-        this.loadRows(this.buf_len).then().catch(error => {
+        this.loadRows(this.buf_len).then().catch(err => {
             this.close();
-            throw error;
+            throw err;
         });
     }
 
     /**
-     *
+     * Closes the file stream and readline interface
      */
     close() {
-        if (this.closed) {
+        if (this.status.closed) {
             return;
         }
         this.readline.close();
         this.stream.close();
-        this.reading = false;
-        this.done = true;
-        this.closed = true;
+        this.status.reading = false;
+        this.status.done = true;
+        this.status.closed = true;
     }
 
     /**
@@ -69,12 +71,12 @@ export default class DataCleaner {
      */
     async loadRows(count) {
         try {
-            this.reading = true;
+            this.status.reading = true;
 
             while (this.buf.length < count) {
                 const { value, done } = await this.iter.next();
                 if (done) {
-                    this.done = true;
+                    this.status.done = true;
                     this.close();
                     break;
                 }
@@ -83,19 +85,19 @@ export default class DataCleaner {
                 this.buf.push(cleaned)
             }
 
-            this.reading = false;
-        } catch (error) {
+            this.status.reading = false;
+        } catch (err) {
             this.close();
-            throw error;
+            throw err;
         }
     }
 
     /**
      *
      */
-    cleanRow(dirty) {
+    cleanRow(raw) {
         const cleaned = {};
-        const values = dirty.split(',').map(value => value.trim());
+        const values = raw.split(',').map(value => value.trim());
 
         this.header.forEach((column, index) => {
             switch (column) {
@@ -115,7 +117,7 @@ export default class DataCleaner {
      */
     async getRow() {
         try {
-            if (this.done) {
+            if (this.status.done) {
                 return null;
             }
 
@@ -126,24 +128,25 @@ export default class DataCleaner {
             const row = this.buf.shift();
 
             if (this.buf.length <= 0) {
-                this.loadRows(this.buf_len).catch(error => {
+                this.loadRows(this.buf_len).catch(err => {
                     this.close();
-                    throw error;
+                    throw err;
                 });
             }
 
             return row;
-        } catch (error) {
-            throw error;
+        } catch (err) {
+            throw err;
         }
     }
 
     /**
-     *
+     * Returns the cleaners internal buffer and begins filling
+     * new data into it's buffer
      */
     async getBuffer() {
-        while (this.buf.length === 0 || this.reading) {
-            if (this.done) {
+        while (this.buf.length === 0 || this.status.reading) {
+            if (this.status.done) {
                 return null;
             }
             await sleep(10);
@@ -152,10 +155,10 @@ export default class DataCleaner {
         const out = this.buf;
         this.buf = [];
 
-        if (!this.done) {
-            this.loadRows(this.buf_len).catch(error => {
+        if (!this.status.done) {
+            this.loadRows(this.buf_len).catch(err => {
                 this.close();
-                throw error;
+                throw err;
             });
         }
 

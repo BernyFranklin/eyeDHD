@@ -11,62 +11,58 @@ export function CsvFileImport() {
     const [showAlert, setShowAlert] = useState(false);
 
     const openFile = async () => {
-        setError("");
-
         // Request backend to open a file selector, wait for filename
-        const file = await electron.csv.openFile(200)
-            .catch(err => {
-                setError(err.message);
-            });
+        const file = await electron.csv.openFile(200).catch(err => {
+            sendError(err.message);
+        });
         if (error) return;
-
-        // No file selected
         if (!file) return;
 
         setFileName(file);
-
-        // Send alert
-        setAlertMessage(`File "${file}" uploaded successfully!`);
-        setShowAlert(true);
-        setTimeout(() => {
-            setShowAlert(false);
-        }, 4000);
+        sendAlert(`File "${file}" uploaded successfully!`);
 
         // Request 200 rows from the backend
-        const first200Rows = await electron.csv.getBuffer(file)
-            .catch(err => {
-                setError(err.message);
-            });
+        const first200Rows = await electron.csv.getBuffer(file).catch(err => {
+            setError(err.message);
+        });
         if (error) return;
 
         setCsvData(first200Rows);
     };
 
     const loadMoreRows = async () => {
-        setError("");
         if (!fileName) {
-            setError("No file loaded");
+            sendError("No file loaded");
             return;
         }
 
         // Request 200 more rows from the backend
-        const moreRows = await electron.csv.getBuffer(fileName)
-            .catch(err => {
-                setError(err.message);
-            });
+        const moreRows = await electron.csv.getBuffer(fileName).catch(err => {
+            sendError(err.message);
+        });
         if (error) return;
 
         setCsvData(moreRows);
 
-        // Send alert
         if (moreRows === null) {
-            setAlertMessage(`End of "${fileName}" reached!`);
+            sendAlert(`End of "${fileName}" reached!`);
         } else {
-            setAlertMessage(`Loaded 200 rows from "${fileName}" successfully!`);
+            sendAlert(`Loaded 200 rows from "${fileName}" successfully!`);
         }
+    }
+
+    const sendAlert = (message) => {
+        setAlertMessage(message);
         setShowAlert(true);
         setTimeout(() => {
             setShowAlert(false);
+        }, 4000);
+    }
+
+    const sendError = (message) => {
+        setError(message);
+        setTimeout(() => {
+            setError("");
         }, 4000);
     }
 
