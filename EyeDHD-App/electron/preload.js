@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron');
 
 /**
  * Defines requests that the frontend can send to the backend
@@ -14,6 +14,12 @@ contextBridge.exposeInMainWorld('electron', {
          */
         openFile: async (bufferSize) => {
             return await ipcRenderer.invoke('csv-open-file', bufferSize);
+        },
+        /**
+         * Requests for a csv file to be closed
+         */
+        closeFile: async (filename) => {
+            return await ipcRenderer.invoke('csv-close-file', filename);
         },
         /**
          * Requests an individual row from the data cleaner

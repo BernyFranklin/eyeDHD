@@ -4,7 +4,7 @@ import rl from 'readline';
 import { sleep } from '../utils.js';
 
 /**
- * Reads and cleans a CSV file at the given path. Cleans data lazyily, 
+ * Reads and cleans a CSV file at the given path. Cleans data lazyily,
  * keeping a buffer of buf_len cleaned rows
  *
  * The first line of the CSV file must be the column names
@@ -67,7 +67,7 @@ export default class DataCleaner {
     }
 
     /**
-     *
+     * Loads buf_len cleaned rows into the internal buffer
      */
     async loadRows(count) {
         try {
@@ -93,7 +93,9 @@ export default class DataCleaner {
     }
 
     /**
+     * Cleans a row of CSV data, converting it from a string to JSON
      *
+     * @TODO: finish cleaning algorithm
      */
     cleanRow(raw) {
         const cleaned = {};
@@ -113,7 +115,9 @@ export default class DataCleaner {
     }
 
     /**
+     * Gets a row of cleaned data from the internal buffer
      *
+     * @returns a cleaned row, or null if the entire file has been read
      */
     async getRow() {
         try {
@@ -141,13 +145,20 @@ export default class DataCleaner {
     }
 
     /**
-     * Returns the cleaners internal buffer and begins filling
-     * new data into it's buffer
+     * Gets the cleaners internal buffer and begins filling new data into it's buffer
+     *
+     * @returns an array of rows, or null if the entire file has been read
      */
     async getBuffer() {
+        if (this.status.done) {
+            return null;
+        }
+
         while (this.buf.length === 0 || this.status.reading) {
             if (this.status.done) {
-                return null;
+                const out = this.buf;
+                this.buf = [];
+                return out;
             }
             await sleep(10);
         }

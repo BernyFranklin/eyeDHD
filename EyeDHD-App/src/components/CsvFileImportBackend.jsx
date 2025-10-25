@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import PreviewCsvFile from './PreviewCsvFileBackend';
 import AlertWindow from './AlertWindow';
 
-export function CsvFileImport() {
+export function CsvFileImport({ page }) {
     // Store data and handle the file load
     const [csvData, setCsvData] = useState([]);
     const [fileName, setFileName] = useState("");
@@ -65,6 +65,18 @@ export function CsvFileImport() {
             setError("");
         }, 4000);
     }
+
+    // Close the current file when the page changes or a new file is loaded
+    useEffect(() => {
+        return async () => {
+            const filename = fileName;
+            if (filename) {
+                await electron.csv.closeFile(filename).catch(err => {
+                    sendError(err.message);
+                });
+            }
+        }
+    }, [page, fileName])
 
     return (
         <div className="csv-import-container">
