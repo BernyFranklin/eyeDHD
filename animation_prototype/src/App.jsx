@@ -1,13 +1,47 @@
-import EyeScene from './components/EyeScene.jsx'
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Suspense, useRef, useEffect, useState } from 'react';
+import { OrbitControls, useGLTF } from '@react-three/drei';
 
-function App() {
-  return (
-    <>
-      <div className='animation'>
-        <EyeScene />
-      </div>
-    </>
-  )
+function RotatingModel({ buffer }) {
+  const { scene } = useGLTF('/eye_model.glb');
+  const ref = useRef();
+
+  useFrame(() => {
+    if (buffer.length > 0) {
+      const [x, y, z] = buffer.shift();
+      ref.current.rotation.set(x, y, z);
+    }
+  });
+
+  return <primitive ref={ref} object={scene} scale={1} />;
 }
 
-export default App
+export default function App() {
+  const [rotationBuffer, setRotationBuffer] = useState([]);
+
+  useEffect(() => {
+    fetch('/leye_file.txt')
+      .then(res => res.text())
+      .then(text => {
+        const lines = text.split('\n').filter(Boolean);
+        const parsed = lines
+          .map(line => {
+            const match = line.match(/\(([^)]+)\)/);
+            return match ? match[1].split(',').map(v => parseFloat(v.trim())) : null;
+          })
+          .filter(Boolean);
+        setRotationBuffer(parsed);
+      });
+  }, []);
+
+  return (
+    <Canvas style={{width: '100vw', height: '100vh'}} camera={{ position: [0, 0, 5] }}>
+      <ambientLight intensity={1.0} />
+      <directionalLight position={[5, 5, 5]} />
+      <Suspense fallback={null}>
+        <RotatingModel buffer={rotationBuffer} />
+      </Suspense>
+      <OrbitControls />
+    </Canvas>
+  );
+}
