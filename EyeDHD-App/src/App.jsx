@@ -7,7 +7,7 @@ function App() {
   const [current, setCurrent] = useState(0);
   const content = [
     <p>Home Content</p>,
-    <CsvFileImport page={current} />,
+    <CsvFileImport />,
     <p>Generate Eye Animation Content</p>,
     <p>Side-by-side Viewer Content</p>
   ]

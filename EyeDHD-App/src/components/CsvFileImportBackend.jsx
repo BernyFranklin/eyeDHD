@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import PreviewCsvFile from './PreviewCsvFileBackend';
 import AlertWindow from './AlertWindow';
 
-export function CsvFileImport({ page }) {
+export function CsvFileImport() {
     // Store data and handle the file load
     const [csvData, setCsvData] = useState([]);
     const [fileName, setFileName] = useState("");
@@ -67,7 +67,7 @@ export function CsvFileImport({ page }) {
         }, 4000);
     }
 
-    // Close the current file when the page changes or a new file is loaded
+    // Close the current file when a new file is loaded
     useEffect(() => {
         return async () => {
             const file = fileName;
@@ -77,7 +77,7 @@ export function CsvFileImport({ page }) {
                 });
             }
         }
-    }, [page, fileName])
+    }, [fileName])
 
     return (
         <div className="csv-import-container">
