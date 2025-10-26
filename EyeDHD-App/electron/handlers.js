@@ -23,10 +23,9 @@ ipcMain.handle('csv-open-file', async (_, bufferSize) => {
         const filepath = filePaths[0];
         const filename = path.basename(filepath);
 
-        // May need to be changed so a partially read file can be accessed to
-        // continue reading it's data
+        // If file is already opened and cleaning, just return filename
         if (filesMap.has(filename)) {
-            return reject(`File: ${filename} already opened`);
+            return resolve(filename);
         }
 
         const cleaner = new DataCleaner({

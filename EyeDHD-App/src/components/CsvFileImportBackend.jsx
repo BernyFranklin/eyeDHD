@@ -23,7 +23,7 @@ export function CsvFileImport({ page }) {
 
         // Request 200 rows from the backend
         const first200Rows = await electron.csv.getBuffer(file).catch(err => {
-            setError(err.message);
+            sendError(err.message);
         });
         if (error) return;
 
@@ -56,6 +56,7 @@ export function CsvFileImport({ page }) {
         setShowAlert(true);
         setTimeout(() => {
             setShowAlert(false);
+            setAlertMessage("");
         }, 4000);
     }
 
@@ -69,9 +70,9 @@ export function CsvFileImport({ page }) {
     // Close the current file when the page changes or a new file is loaded
     useEffect(() => {
         return async () => {
-            const filename = fileName;
-            if (filename) {
-                await electron.csv.closeFile(filename).catch(err => {
+            const file = fileName;
+            if (file) {
+                await electron.csv.closeFile(file).catch(err => {
                     sendError(err.message);
                 });
             }
