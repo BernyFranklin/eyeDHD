@@ -1,45 +1,56 @@
 import { useState } from 'react'
+import PreviewCsvFile from './PreviewCsvFile';
+import AlertWindow from './AlertWindow';
+import FilePicker from './FilePicker';
 
-export function CsvFileImport({ onFileLoad }) {
+export function CsvFileImport() {
+    // Store data and handle the file load
+    const [csvData, setCsvData] = useState("");
     const [fileName, setFileName] = useState(""); 
     const [error, setError] = useState("");
-    const handleFileChange = (e) => {
+    const [showAlert, setShowAlert] = useState(false);
+
+    const handleFileChangeCsv = (e) => {
         const file = e.target.files[0];
-
+        
         if (!file) return;
-
+        
         if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
             setError("Please select a valid CSV file.");
             setFileName("");
             return;
         }
-
+        
         setError("");
         setFileName(file.name);
-
+        
         const reader = new FileReader();
         reader.onload = (event) => {
-            const csvContent = event.target.result;
-            onFileLoad?.(csvContent);
+            setCsvData(event.target.result);
+            setShowAlert(true);
+              
+            setTimeout(() => {
+                setShowAlert(false);
+            }, 4000);
         };
         reader.readAsText(file);
     };
-
+    
     return (
         <div className="csv-import-container">
             <label htmlFor="csvUpload" className="csv-upload-label">
                 Select a CSV File
             </label>
-            <input
-                type="file"
-                id="csvUpload"
-                accept=".csv"
-                onChange={handleFileChange}
-                className="csv-upload-input"
+            <FilePicker 
+                type="file" 
+                id="csvUpload" 
+                accept=".csv" 
+                onChange={handleFileChangeCsv} 
             />
 
-            {fileName && <p className="file-info">{fileName} loaded</p>}
-            {error && <p className="error-info">{error}</p>}
+            {error && <AlertWindow message={error} classColor=" red" onClose={() => setShowAlert(false)} />}
+            {fileName && <PreviewCsvFile fileName={fileName} csvData={csvData} />}
+            {showAlert && <AlertWindow message={`File "${fileName}" uploaded successfully!`} classColor=" green" onClose={() => setShowAlert(false)} />}
         </div>
     );
 }
