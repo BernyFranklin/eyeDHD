@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^38.3.0",
+    "wait-on": "^9.0.1"
+  },
+  "dependencies": {
+    "csv-parse": "^6.1.0"
+  }
+}
