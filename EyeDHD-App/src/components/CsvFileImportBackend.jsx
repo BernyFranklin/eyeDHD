@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import PreviewCsvFile from './PreviewCsvFileBackend';
 import AlertWindow from './AlertWindow';
 
@@ -9,8 +9,6 @@ export function CsvFileImport() {
     const [error, setError] = useState("");
     const [alertMessage, setAlertMessage] = useState("");
     const [showAlert, setShowAlert] = useState(false);
-
-    const prevFileName = useRef(undefined);
 
     const openFile = async () => {
         // Request backend to open a file selector, wait for filename
@@ -69,23 +67,18 @@ export function CsvFileImport() {
         }, 4000);
     }
 
-    // Keep tract of old fileName when fileName changes
-    useEffect(() => {
-        prevFileName.current = fileName;
-    }, [fileName])
-
     // Close the previous file when a new file is opened
     useEffect(() => {
-        const file = prevFileName.current;
+		const previous = fileName;
 
-        return async () => {
-            if (file) {
-                await electron.csv.closeFile(file).catch(err => {
+        return () => {
+            if (previous) {
+                electron.csv.closeFile(previous).catch(err => {
                     sendError(err.message);
                 });
             }
         }
-    }, [prevFileName])
+    }, [fileName])
 
     return (
         <div className="csv-import-container">
