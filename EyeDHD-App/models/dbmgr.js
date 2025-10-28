@@ -1,3 +1,3 @@
-const sqlite = require('better-sqlite3-with-prebuilds');
+const sqlite = require('better-sqlite3');
 const db = new sqlite('../main.db');
-exports.db = db;    
+exports.db = db;

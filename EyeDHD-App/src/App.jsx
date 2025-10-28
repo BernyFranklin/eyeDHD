@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import CsvFileImport from './components/CsvFileImport'
+import CsvFileImport from './components/CsvFileImportBackend'
 import './App.css'
 import Navbar from './components/Navbar.jsx'
 import LoadingOverlay from './components/LoadingOverlay.jsx'
@@ -9,7 +9,8 @@ function App() {
   const [current, setCurrent] = useState(0);
   const content = [
     <p>Home Content</p>,
-    <CsvFileImport isLoading={isLoading} setIsLoading={setIsLoading} />,
+    //<CsvFileImport isLoading={isLoading} setIsLoading={setIsLoading} />,
+    <CsvFileImport />,
     <p>Generate Eye Animation Content</p>,
     <p>Side-by-side Viewer Content</p>
   ]

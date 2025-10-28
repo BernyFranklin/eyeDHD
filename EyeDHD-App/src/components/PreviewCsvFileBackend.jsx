@@ -5,7 +5,7 @@ export default function PreviewCsvFile({ fileName, csvData }) {
         if (csvData === null) return "File read fully.";
         if (csvData.length === 0) return "No data to display.";
 
-        return csvData.map(row => `Frame: ${row.Frame},` ?? ' ').join("\t");
+        return csvData.map(row => row).join("\n");
     }, [csvData]);
 
     return (
