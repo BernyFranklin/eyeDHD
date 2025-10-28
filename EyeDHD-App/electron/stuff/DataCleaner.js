@@ -102,13 +102,7 @@ export default class DataCleaner {
         const values = raw.split(',').map(value => value.trim());
 
         this.header.forEach((column, index) => {
-            switch (column) {
-                case 'Frame':
-                case 'LeftPupilDiameterInMM':
-                case 'RightPupilDiameterInMM': {
-                    cleaned[column] = Number(values[index]);
-                }
-            }
+            cleaned[column] = values[index];
         });
 
         return cleaned;
