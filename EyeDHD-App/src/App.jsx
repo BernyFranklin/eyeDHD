@@ -2,20 +2,22 @@ import { useState } from 'react'
 import CsvFileImport from './components/CsvFileImport.jsx'
 import './App.css'
 import Navbar from './components/Navbar.jsx'
+import LoadingOverlay from './components/LoadingOverlay.jsx'
 
 function App() {
-  const [csvData, setCsvData] = useState("");
-
-  const handleFileLoad = (data) => {
-    console.log("CSV Data Loaded:", data.slice(0, 500));
-    setCsvData(data);
-  };
-  
+  const [isLoading, setIsLoading] = useState(false);
+  const [current, setCurrent] = useState(0);
+  const content = [
+    <p>Home Content</p>,
+    <CsvFileImport isLoading={isLoading} setIsLoading={setIsLoading} />,
+    <p>Generate Eye Animation Content</p>,
+    <p>Side-by-side Viewer Content</p>
+  ]
   return (
     <>
-      <Navbar />
-      <CsvFileImport onFileLoad={handleFileLoad} />
-      <textarea className="csv-textarea" value={csvData.slice(0, 500)} readOnly></textarea>
+      <LoadingOverlay isLoading={isLoading} />
+      <Navbar setCurrent={setCurrent} />
+      {content[current]}
     </>
   )
 }

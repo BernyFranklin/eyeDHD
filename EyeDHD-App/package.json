@@ -6,6 +6,8 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
+    "electron": "electron ./electron/main.js",
+    "start:all": "concurrently -k \"npm run dev\" \"npm run electron\"",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
@@ -16,6 +18,8 @@
     "@ffmpeg/util": "^0.12.2",
     "csv": "^6.4.1",
     "express": "^5.1.0",
+    "file-saver": "^2.0.5",
+    "papaparse": "^5.5.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
   },

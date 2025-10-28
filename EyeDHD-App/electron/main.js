@@ -11,8 +11,12 @@ const filesMap = new Map()
 
 function createWindow() {
     const win = new BrowserWindow({
-        width: 800,
-        height: 600,
+        width: 1920,
+        height: 1080,
+    minWidth: 1280,
+    minHeight:720,
+    icon: path.join(__dirname, '../images/eyedhd-logo.ico'),
+    title: 'EyeDHD',
         icon: path.join(__dirname, '../../assets/eyedhd-logo.png'),
         //titleBarStyle: 'hidden',
         //...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
