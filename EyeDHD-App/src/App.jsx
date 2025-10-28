@@ -2,6 +2,7 @@ import { useState } from 'react'
 import CsvFileImport from './components/CsvFileImportBackend'
 import './App.css'
 import Navbar from './components/Navbar'
+import Animation from './components/AnimationWindow'
 
 function App() {
   const [current, setCurrent] = useState(0);
@@ -15,6 +16,7 @@ function App() {
     <>
       <Navbar setCurrent={setCurrent} />
       {content[current]}
+      <Animation />
     </>
   )
 }

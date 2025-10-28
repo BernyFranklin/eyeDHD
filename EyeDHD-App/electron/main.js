@@ -11,8 +11,8 @@ function createWindow() {
     const win = new BrowserWindow({
         width: 1920,
         height: 1080,
-        minWidth: 1280,
-        minHeight:720,
+        minWidth: 100,
+        minHeight:20,
         icon: path.join(__dirname, '../images/eyedhd-logo.ico'),
         title: 'EyeDHD',
         webPreferences: {
