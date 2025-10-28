@@ -30,6 +30,12 @@ export function CsvFileImport() {
         setCsvData(first200Rows);
     };
 
+
+    // Imports CSV data into database
+    const dbImport = async () => {
+        //
+    };
+
     const loadMoreRows = async () => {
         if (!fileName) {
             sendError("No file loaded");
@@ -87,6 +93,9 @@ export function CsvFileImport() {
             </button>
             <button id="loadMore" onClick={loadMoreRows}>
                 Load More Rows
+            </button>
+            <button id="dbCSVImport" onClick={dbImport}>
+                SQLite Import
             </button>
 
             {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
