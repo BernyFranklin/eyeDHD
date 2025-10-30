@@ -33,7 +33,12 @@ export function CsvFileImport() {
 
     // Imports CSV data into database
     const dbImport = async () => {
-        //
+        try {
+            const rows = await window.electron.db.selectAll();
+            console.log(rows);
+        } catch (err) {
+            sendError(err.message);
+        }
     };
 
     const sendAlert = (message) => {

@@ -1,8 +1,13 @@
+
+
 import { dialog, ipcMain, Notification } from 'electron';
+import { getDb } from '../models/dbmgr.js';
 import path from 'path';
 
 import { filesMap } from './store.js';
 import DataCleaner from './stuff/DataCleaner.js';
+
+const TABLE = 'test';
 
 /**
  * Handles the csv-open-file request. Opens a file selector and begins cleaning it if one is selected
@@ -100,3 +105,12 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
 ipcMain.on('notify', (_, message) => {
     new Notification({ title: 'EyeDHD', body: message }).show();
 });
+
+/**
+ * Handles the database requests
+ */
+ipcMain.handle('db-select-all',() => {
+    const db = getDb();
+    return db.prepare(`SELECT * FROM ${TABLE};`).all();
+});
+

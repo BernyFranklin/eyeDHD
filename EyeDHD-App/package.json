@@ -11,7 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "vitest"
+    "test": "vitest",
+    "postinstall": "electron-rebuild"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",

@@ -46,5 +46,8 @@ contextBridge.exposeInMainWorld('electron', {
         send: (message) => {
             ipcRenderer.send('notify', message);
         }
+    },
+    db: {
+        selectAll : () => ipcRenderer.invoke('db-select-all')
     }
 })
