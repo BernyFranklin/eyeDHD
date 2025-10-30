@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import PreviewCsvFile from './PreviewCsvFileBackend';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
+import LoadingOverlay from './LoadingOverlay';
 
 export function CsvFileImport() {
     // Store data and handle the file load
@@ -10,6 +11,7 @@ export function CsvFileImport() {
     const [error, setError] = useState("");
     const [alertMessage, setAlertMessage] = useState("");
     const [showAlert, setShowAlert] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const openFile = async () => {
         // Request backend to open a file selector, wait for filename
@@ -20,15 +22,18 @@ export function CsvFileImport() {
         if (!file) return;
 
         setFileName(file);
-        sendAlert(`File "${file}" uploaded successfully!`);
-
+        setIsLoading(true);
+        
         // Request 200 rows from the backend
         const rows = await electron.csv.getBuffer(file).catch(err => {
             sendError(err.message);
         });
-        if (error) return;
 
+        if (error) return;
         setCsvData(rows);
+        setIsLoading(false);
+
+        sendAlert(`File "${file}" uploaded successfully!`);
     };
 
 
@@ -43,7 +48,7 @@ export function CsvFileImport() {
         setTimeout(() => {
             setShowAlert(false);
             setAlertMessage("");
-        }, 4000);
+        }, 40000);
     }
 
     const sendError = (message) => {
@@ -68,6 +73,7 @@ export function CsvFileImport() {
 
     return (
         <div className="csv-import-container">
+            <LoadingOverlay isLoading={isLoading} />
             <Button onClick={openFile} className="btn" buttonText="Select a CSV File" />
             <Button onClick={dbImport} className="btn" buttonText="SQLite Import" />
 
