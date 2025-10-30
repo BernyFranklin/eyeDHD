@@ -30,9 +30,9 @@ export function CsvFileImport() {
         });
 
         if (error) return;
+
         setCsvData(rows);
         setIsLoading(false);
-
         sendAlert(`File "${file}" uploaded successfully!`);
     };
 
