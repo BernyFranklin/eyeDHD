@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PreviewCsvFile from './PreviewCsvFileBackend';
 import AlertWindow from './AlertWindow';
+import Button from './Button';
 
 export function CsvFileImport() {
     // Store data and handle the file load
@@ -67,12 +68,8 @@ export function CsvFileImport() {
 
     return (
         <div className="csv-import-container">
-            <button id="csvUpload" onClick={openFile}>
-                Select a CSV File
-            </button>
-            <button id="dbCSVImport" onClick={dbImport}>
-                SQLite Import
-            </button>
+            <Button onClick={openFile} className="btn" buttonText="Select a CSV File" />
+            <Button onClick={dbImport} className="btn" buttonText="SQLite Import" />
 
             {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
             {fileName && <PreviewCsvFile fileName={fileName} csvData={csvData} />}
