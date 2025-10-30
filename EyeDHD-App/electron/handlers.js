@@ -13,7 +13,6 @@ import { filesMap } from './store.js';
 import DataCleaner from './stuff/DataCleaner.js';
 
 const TABLE = 'EyeDataRaw';
-const CSV_FILE = path.join(app.getAppPath(), 'data', 'EyeData.csv'); // e.g. /project-root/data/test.csv
 
 /**
  * Handles the csv-open-file request. Opens a file selector and begins cleaning it if one is selected
@@ -115,15 +114,30 @@ ipcMain.on('notify', (_, message) => {
 /**
  * Handles the database requests
  */
-ipcMain.handle('db-select-all',() => {
+ipcMain.handle('db-select-all', async () => {
     const db = getDb();
-    return db.prepare(`SELECT * FROM ${TABLE} LIMIT 100;`).all();
+    const rows = await db.prepare(`SELECT * FROM ${TABLE} LIMIT 100;`).all();
+
+    return rows;
 });
 
 // handlers.js (only the import handler shown)
-ipcMain.handle('db-import-csv', () => {
+ipcMain.handle('db-import-csv', async () => {
   const db = getDb();
-  const csvText = fs.readFileSync(CSV_FILE, 'utf8');
+
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+  });
+
+  if (canceled) {
+      return resolve(null);
+  }
+
+  const filepath = filePaths[0];
+  const filename = path.basename(filepath);
+
+  const csvText = fs.readFileSync(filepath, 'utf8');
 
   // 1) Parse leniently
   const rowsRaw = parse(csvText, {
@@ -135,7 +149,7 @@ ipcMain.handle('db-import-csv', () => {
     trim: true
   });
 
-  if (!rowsRaw.length) return { inserted: 0, skippedEmpty: 0, skippedMalformed: 0 };
+  if (!rowsRaw.length) return null;
 
   // 2) Prepare header list from the file
   const columns = Object.keys(rowsRaw[0]);
@@ -183,6 +197,6 @@ ipcMain.handle('db-import-csv', () => {
   });
   insertMany(rows);
 
-  return { inserted, skippedEmpty, skippedMalformed };
+  return filename;
 });
 

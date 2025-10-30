@@ -12,19 +12,14 @@ export function CsvFileImport() {
 
     const openFile = async () => {
         // Request backend to open a file selector, wait for filename
-        const file = await electron.csv.openFile(Infinity).catch(err => {
-            sendError(err.message);
-        });
-        if (error) return;
-        if (!file) return;
+        const file = await electron.csv.openFile(Infinity).catch(handleError);
+        if (error || !file) return;
 
         setFileName(file);
         sendAlert(`File "${file}" uploaded successfully!`);
 
-        // Request 200 rows from the backend
-        const rows = await electron.csv.getBuffer(file).catch(err => {
-            sendError(err.message);
-        });
+        // Request all rows from the backend
+        const rows = await electron.csv.getBuffer(file).catch(handleError);
         if (error) return;
 
         setCsvData(rows);
@@ -35,10 +30,10 @@ export function CsvFileImport() {
     const dbImport = async () => {
         try {
             const result = await window.electron.db.importCsv(); // hard-coded CSV path
-            console.log('Imported rows:', result);
-
+            setFileName(result);
             const rows = await window.electron.db.selectAll();   // read back
-            console.log('SELECT * result:', rows);
+            console.log(rows);
+            setCsvData(rows);
         } catch (err) {
             sendError(err.message);
         }
@@ -60,15 +55,17 @@ export function CsvFileImport() {
         }, 4000);
     }
 
+    const handleError = (err) => {
+        sendError(err.message);
+    }
+
     // Close the previous file when a new file is opened
     useEffect(() => {
 		const previous = fileName;
 
         return () => {
             if (previous) {
-                electron.csv.closeFile(previous).catch(err => {
-                    sendError(err.message);
-                });
+                electron.csv.closeFile(previous).catch(handleError);
             }
         }
     }, [fileName])

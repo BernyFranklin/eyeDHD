@@ -13,7 +13,7 @@ export function getDb() {
   if (!_db) {
     const appRoot = app.getAppPath();
     const dbPath = path.join(appRoot,'main.db');
-    
+
     console.log(`Using database at ${dbPath}`);
     _db = new Database(dbPath); // synchronous open
   }
