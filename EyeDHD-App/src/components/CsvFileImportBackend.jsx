@@ -34,8 +34,11 @@ export function CsvFileImport() {
     // Imports CSV data into database
     const dbImport = async () => {
         try {
-            const rows = await window.electron.db.selectAll();
-            console.log(rows);
+            const result = await window.electron.db.importCsv(); // hard-coded CSV path
+            console.log('Imported rows:', result);
+
+            const rows = await window.electron.db.selectAll();   // read back
+            console.log('SELECT * result:', rows);
         } catch (err) {
             sendError(err.message);
         }

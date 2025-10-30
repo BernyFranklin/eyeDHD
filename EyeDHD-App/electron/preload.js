@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('electron', {
         }
     },
     db: {
-        selectAll : () => ipcRenderer.invoke('db-select-all')
+        selectAll : () => ipcRenderer.invoke('db-select-all'),
+        importCsv : () => ipcRenderer.invoke('db-import-csv'),
     }
 })

@@ -2,12 +2,18 @@
 
 import { dialog, ipcMain, Notification } from 'electron';
 import { getDb } from '../models/dbmgr.js';
+import { parse } from 'csv-parse/sync';
+import { app } from 'electron';
+
 import path from 'path';
+
+import fs from 'fs';
 
 import { filesMap } from './store.js';
 import DataCleaner from './stuff/DataCleaner.js';
 
-const TABLE = 'test';
+const TABLE = 'EyeDataRaw';
+const CSV_FILE = path.join(app.getAppPath(), 'data', 'EyeData.csv'); // e.g. /project-root/data/test.csv
 
 /**
  * Handles the csv-open-file request. Opens a file selector and begins cleaning it if one is selected
@@ -111,6 +117,72 @@ ipcMain.on('notify', (_, message) => {
  */
 ipcMain.handle('db-select-all',() => {
     const db = getDb();
-    return db.prepare(`SELECT * FROM ${TABLE};`).all();
+    return db.prepare(`SELECT * FROM ${TABLE} LIMIT 100;`).all();
+});
+
+// handlers.js (only the import handler shown)
+ipcMain.handle('db-import-csv', () => {
+  const db = getDb();
+  const csvText = fs.readFileSync(CSV_FILE, 'utf8');
+
+  // 1) Parse leniently
+  const rowsRaw = parse(csvText, {
+    bom: true,
+    columns: true,           // objects keyed by header
+    skip_empty_lines: true,  // ignore truly empty lines
+    relax_column_count: true,// tolerate shorter/longer rows
+    relax_quotes: true,
+    trim: true
+  });
+
+  if (!rowsRaw.length) return { inserted: 0, skippedEmpty: 0, skippedMalformed: 0 };
+
+  // 2) Prepare header list from the file
+  const columns = Object.keys(rowsRaw[0]);
+
+  // 3) Normalize rows
+  let skippedEmpty = 0;
+  const rows = [];
+  for (const rec of rowsRaw) {
+    // Fill missing keys with null
+    for (const c of columns) if (!(c in rec)) rec[c] = null;
+
+    // Convert "" to null for all fields
+    for (const c of columns) if (rec[c] === '') rec[c] = null;
+
+    // If ALL fields are null/empty -> skip the row
+    const allEmpty = columns.every(c => rec[c] == null);
+    if (allEmpty) { skippedEmpty++; continue; }
+
+    rows.push(rec);
+  }
+
+    if (!rows.length) return { inserted: 0, skippedEmpty, skippedMalformed: 0 };
+
+    // 4) Dynamic INSERT that matches headers (safe for spaces)
+    const cols = Object.keys(rows[0]);
+    console.log('[DB import] Table:', TABLE);
+    console.log('[DB import] Columns from CSV:', cols);
+    const colList = cols.map(c => `"${c.replace(/"/g, '""')}"`).join(', ');
+    const placeholders = cols.map(() => '?').join(', ');
+    const sql = `INSERT INTO "${TABLE}" (${colList}) VALUES (${placeholders})`;
+
+    const insert = db.prepare(sql);
+
+  // 5) Insert in a transaction
+  let inserted = 0, skippedMalformed = 0;
+  const insertMany = db.transaction((batch) => {
+    for (const r of batch) {
+      try {
+        insert.run(r);
+        inserted++;
+      } catch {
+        skippedMalformed++; // e.g., NOT NULL constraint, type constraint, etc.
+      }
+    }
+  });
+  insertMany(rows);
+
+  return { inserted, skippedEmpty, skippedMalformed };
 });
 
