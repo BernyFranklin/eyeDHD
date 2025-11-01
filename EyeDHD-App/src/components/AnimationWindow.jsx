@@ -1,63 +1,129 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Suspense, useRef, useEffect, useState } from 'react';
-import { Environment, OrbitControls, useGLTF, useTexture } from '@react-three/drei';
+import { Suspense, useRef, useEffect, useState, useMemo } from 'react';
+import { Environment, OrbitControls, useGLTF, useTexture, OrthographicCamera  } from '@react-three/drei';
 
-function RotatingModel({ buffer }) {
-    const { scene } = useGLTF('/eye_model.glb');
-    const texture = useTexture('/assets/eye_texture.jpg')
+import { GetPitch, GetYaw} from '../utils/animationUtil';
 
-    const ref = useRef();
+function isValidAngle (angle) {
+  console.log(`Validating angle: ${angle}`);
+  return(typeof angle === 'number' && !Number.isNaN(angle) && Number.isFinite(angle));
+  }
 
-    useFrame(() => {
-    if (buffer.length > 0) {
-        const [flag, x, y, z] = buffer.shift();
-        // Only apply rotation if flag is 1 (valid)
-        if (flag === 1) {
-        ref.current.rotation.set(x, y, z);
-        }
+function SanityCheck({row}) {
+  const positions = ['Left', 'Right'];
+  const axis = ['X', 'Y', 'Z'];
+  let isValid = true;
+
+  for(const pos of positions) {
+    for(const ax of axis) {
+      let key = `${pos}EyeForward${ax}`;
+      if(row[key] === undefined || row[key] === null || row[key].trim() === '') {
+        isValid = false;
+      }
     }
-    });
+  }
 
-    return <primitive ref={ref} object={scene} scale={1} />;
+  return isValid;
 }
 
-export default function AnimationWindow() {
-  const [rotationBuffer, setRotationBuffer] = useState([]);
+function RotatingModel({ csvData, currentIndex, eyePosition, position=[0,0,0], isPlaying }) {
+    const { scene } = useGLTF('/eye_model.glb');
+    const ref = useRef();
+    
+    // Clone the scene for this instance so each eye has its own geometry
+    const clonedScene = useMemo(() => {
+        const clone = scene.clone(true);
+        // Apply position to the clone
+        clone.position.set(position[0], position[1], position[2]);
+        return clone;
+    }, [scene, position]);
 
-  useEffect(() => {
-    fetch('/leye_file.txt')
-      .then(res => res.text())
-      .then(text => {
-        const lines = text.split('\n').filter(Boolean);
-        const parsed = lines
-          .map(line => {
-            // Expected format: 1, (0, 0, 0)
-            const [flagPart, rotationPart] = line.split(',');
-            const flag = parseInt(flagPart.trim(), 10);
-            const match = line.match(/\(([^)]+)\)/);
-            if (!match) return null;
-            const [x, y, z] = match[1]
-              .split(',')
-              .map(v => parseFloat(v.trim()));
-            return [flag, x, y, z];
-          })
-          .filter(Boolean);
+    useFrame(() => {
+      if (!csvData || csvData.length <= currentIndex)
+      {
+        return;
+      } 
 
-        setRotationBuffer(parsed);
-      });
-  }, []);
+      const row = csvData[currentIndex];
+      
+      // Get the forward vector components - note uppercase first letter
+      const forwardX = parseFloat(row[`${eyePosition}EyeForwardX`]?.replace(/[()]/g, '') || 0);
+      const forwardY = parseFloat(row[`${eyePosition}EyeForwardY`]?.replace(/[()]/g, '') || 0);
+      const forwardZ = parseFloat(row[`${eyePosition}EyeForwardZ`]?.replace(/[()]/g, '') || 0);
+      
+      // Convert to pitch and yaw using your utility functions
+      const pitch = GetPitch(forwardX, forwardY, forwardZ);
+      const yaw = GetYaw(forwardX, forwardY, forwardZ);
+      
+      if(row[`${eyePosition}EyeStatus`] === 'VALID' && isPlaying) {
+        if(SanityCheck(row) && isValidAngle(pitch) && isValidAngle(yaw)) {
+          ref.current.rotation.set(pitch, yaw, 0);
+        } else {
+          console.log(`${eyePosition} Eye - Pitch: ${pitch}, Yaw: ${yaw}`);
+        } 
+      }
+    });
 
-  return (
-    <div className='animation_window'>
-        <Canvas style={{ width: '100vw', height: '100vh' }} camera={{ position: [0, 0, 5] }}>
+    return <primitive ref={ref} object={clonedScene} scale={1} />;
+}
+
+export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    
+    useEffect(() => {
+        if (!isPlaying || !csvData) return;
+        if (currentIndex >= csvData.length - 20) {
+            loadMoreRows();
+        }
+      }, [currentIndex, csvData, isPlaying, loadMoreRows]);
+
+    useEffect(() => {
+      if (!isPlaying || !csvData) return;
+      
+      const frameSkip = 3; // Skip 3 frames to convert 200Hz to ~66.67Hz
+      
+      const interval = setInterval(() => {
+        setCurrentIndex(prevIndex => {
+          // Skip frames to maintain proper playback speed
+          const nextIndex = prevIndex + frameSkip;
+          
+          // Loop back to start if we reach the end
+          if (nextIndex >= csvData.length - 1) {
+              return 0;
+          }
+          
+          return nextIndex;
+        });
+      }, 1000/60); // Keep 60 FPS timer for smooth rendering
+      
+      return () => clearInterval(interval);
+  }, [csvData, isPlaying, loadMoreRows]);
+
+    return (
+      <Canvas style={{ width: '720px', height: '480px' }} >
+        <OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
         <ambientLight intensity={2} color="white" />
         <Environment preset='studio' />
-        {/*<directionalLight position={[5, 5, 5]} />*/}
         <Suspense fallback={null}>
-            <RotatingModel buffer={rotationBuffer} />
+            {/* Left Eye */}
+            <RotatingModel
+              csvData={csvData}
+              currentIndex={currentIndex}
+              eyePosition="Left"
+              position={[-2, 0, 0]} // Larger offset to left
+              isPlaying={isPlaying}
+            />
+
+            {/* Right Eye */}
+            <RotatingModel
+              csvData={csvData}
+              currentIndex={currentIndex}
+              eyePosition="Right"
+              position={[2, 0, 0]} // Larger offset to right
+              isPlaying={isPlaying}
+            />
         </Suspense>
-        { /* <OrbitControls /> */ }
-        </Canvas>
-    </div>
-  );
+        <OrbitControls enablePan={true} enableZoom={true} />
+      </Canvas>
+    );
 }

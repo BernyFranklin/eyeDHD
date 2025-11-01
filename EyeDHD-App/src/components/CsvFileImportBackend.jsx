@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PreviewCsvFile from './PreviewCsvFileBackend';
 import AlertWindow from './AlertWindow';
+import AnimationWindow from './AnimationWindow'
 
 export function CsvFileImport() {
     // Store data and handle the file load
@@ -9,6 +10,7 @@ export function CsvFileImport() {
     const [error, setError] = useState("");
     const [alertMessage, setAlertMessage] = useState("");
     const [showAlert, setShowAlert] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
 
     const openFile = async () => {
         // Request backend to open a file selector, wait for filename
@@ -100,9 +102,29 @@ export function CsvFileImport() {
 
             {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
             {fileName && <PreviewCsvFile fileName={fileName} csvData={csvData} />}
+            <AnimationContainer fileName={fileName} csvData={csvData} loadMoreRows={loadMoreRows} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
             {showAlert && <AlertWindow message={alertMessage} classColor=" green" onClose={() => setShowAlert(false)} />}
         </div>
     );
 }
 
 export default CsvFileImport;
+
+function AnimationContainer({ fileName, csvData, loadMoreRows, isPlaying, setIsPlaying }) {
+    if(!fileName) {
+        return (
+            <div className="animation-window-container">
+                <p>Load a file to view animation!</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="animation-window-container">
+            <AnimationWindow csvData={csvData} loadMoreRows={loadMoreRows} isPlaying={isPlaying} />
+            <div className="animation-controls">
+                <button id="playPauseButton" onClick={() => setIsPlaying(!isPlaying)}>{ isPlaying ? "Pause Animation" : "Play Animation" }</button>
+            </div>
+        </div>
+    )
+}
