@@ -71,23 +71,6 @@ ipcMain.handle('csv-close-file', async (_, filename) => {
 });
 
 /**
- * Handles the csv-get-row request. Reads a row from filename's cleaner
- *
- * @returns a cleaned row, or null if the entire file has been read
- */
-ipcMain.handle('csv-get-row', async (_, filename) => {
-    return new Promise(async (resolve, reject) => {
-        const cleaner = filesMap.get(filename);
-        if (!cleaner) {
-            return reject(`File: ${filename} has not been opened`);
-        }
-
-        const row = await cleaner.getRow();
-        return resolve(row);
-    });
-});
-
-/**
  * Handles the csv-get-buffer request. Pulls the buffer from filename's cleaner
  *
  * @returns an array of rows, or null if the entire file has been read
@@ -131,7 +114,7 @@ ipcMain.handle('db-import-csv', async () => {
   });
 
   if (canceled) {
-      return resolve(null);
+      return null;
   }
 
   const filepath = filePaths[0];
@@ -171,7 +154,7 @@ ipcMain.handle('db-import-csv', async () => {
     rows.push(rec);
   }
 
-    if (!rows.length) return { inserted: 0, skippedEmpty, skippedMalformed: 0 };
+    if (!rows.length) return null;
 
     // 4) Dynamic INSERT that matches headers (safe for spaces)
     const cols = Object.keys(rows[0]);
