@@ -98,6 +98,20 @@ export default class DataCleaner {
      * @TODO: finish cleaning algorithm
      */
     cleanRow(raw) {
+        // const trueVals = new Set(['true', 'yes', 'y', '1']);
+        // const falseVals = new Set (['false', 'no', 'n', '0']);
+        // const nullish = new Set (['', 'NA', 'N/A', null, 'NaN']);
+
+        // function parseCsvLine(line) {
+        //     const out = []
+        //     const s = String(line).replace(/\r$/, '');
+        //     let field = '';
+        //     let inQuotes = false;
+
+        //     for (let i = 0; i < s.length; i++) {
+                
+        //     }
+        // }
         const cleaned = {};
         const values = raw.split(',').map(value => value.trim());
 
