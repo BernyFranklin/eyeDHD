@@ -3,6 +3,7 @@ import PreviewCsvFile from './PreviewCsvFileBackend';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
+import AnimationWindow from './AnimationWindow'
 
 export function CsvFileImport() {
     // Store data and handle the file load
@@ -12,28 +13,22 @@ export function CsvFileImport() {
     const [alertMessage, setAlertMessage] = useState("");
     const [showAlert, setShowAlert] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
 
     const openFile = async () => {
         // Request backend to open a file selector, wait for filename
-        const file = await electron.csv.openFile(Infinity).catch(err => {
-            sendError(err.message);
-        });
-        if (error) return;
-        if (!file) return;
+        const file = await electron.csv.openFile(200).catch(handleError);
+        if (error || !file) return;
 
         setFileName(file);
         setIsLoading(true);
-        
-        // Request 200 rows from the backend
-        const rows = await electron.csv.getBuffer(file).catch(err => {
-            sendError(err.message);
-        });
 
+        // Request 200 rows from the backend
+        const rows = await electron.csv.getBuffer(file).catch(handleError);
         if (error) return;
 
         setCsvData(rows);
         setIsLoading(false);
-        sendAlert(`File "${file}" uploaded successfully!`);
     };
 
 
@@ -42,6 +37,23 @@ export function CsvFileImport() {
         //
     };
 
+    const loadMoreRows = async () => {
+        if (!fileName) {
+            sendError("No file loaded");
+            return;
+        }
+
+        // Request 200 more rows from the backend
+        const rows = await electron.csv.getBuffer(fileName).catch(handleError);
+        if (error) return;
+
+        setCsvData(rows);
+
+        if (rows === null) {
+            sendAlert(`End of "${fileName}" reached!`);
+        }
+    }
+
     const sendAlert = (message) => {
         setAlertMessage(message);
         setShowAlert(true);
@@ -49,6 +61,10 @@ export function CsvFileImport() {
             setShowAlert(false);
             setAlertMessage("");
         }, 40000);
+    }
+
+    const handleError = (err) => {
+        sendError(err.message);
     }
 
     const sendError = (message) => {
@@ -64,9 +80,7 @@ export function CsvFileImport() {
 
         return () => {
             if (previous) {
-                electron.csv.closeFile(previous).catch(err => {
-                    sendError(err.message);
-                });
+                electron.csv.closeFile(previous).catch(handleError);
             }
         }
     }, [fileName])
@@ -79,9 +93,29 @@ export function CsvFileImport() {
 
             {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
             {fileName && <PreviewCsvFile fileName={fileName} csvData={csvData} />}
+            <AnimationContainer fileName={fileName} csvData={csvData} loadMoreRows={loadMoreRows} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
             {showAlert && <AlertWindow message={alertMessage} classColor=" green" onClose={() => setShowAlert(false)} />}
         </div>
     );
 }
 
 export default CsvFileImport;
+
+function AnimationContainer({ fileName, csvData, loadMoreRows, isPlaying, setIsPlaying }) {
+    if(!fileName) {
+        return (
+            <div className="animation-window-container">
+                <p>Load a file to view animation!</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="animation-window-container">
+            <AnimationWindow csvData={csvData} loadMoreRows={loadMoreRows} isPlaying={isPlaying} />
+            <div className="animation-controls">
+                <button id="playPauseButton" onClick={() => setIsPlaying(!isPlaying)}>{ isPlaying ? "Pause Animation" : "Play Animation" }</button>
+            </div>
+        </div>
+    )
+}

@@ -24,6 +24,10 @@ export default function PreviewCsvFile({ fileName, csvData }) {
         return typeof csvData === "object"
             ? JSON.stringify(csvData, null, 2)
             : String(csvData);
+        // Code from Feature_Animation
+        //if (csvData === null) return "File read fully.";
+        //if (csvData.length === 0) return "No data to display.";
+        //return csvData.map(row => `X: ${row.LeftEyeForwardX.replace(/[()]/g, '')},` ?? ' ').join("\t");
     }, [csvData]);
 
     return (
