@@ -14,22 +14,17 @@ export function CsvFileImport() {
 
     const openFile = async () => {
         // Request backend to open a file selector, wait for filename
-        const file = await electron.csv.openFile(200).catch(err => {
-            sendError(err.message);
-        });
-        if (error) return;
-        if (!file) return;
+        const file = await electron.csv.openFile(200).catch(handleError);
+        if (error || !file) return;
 
         setFileName(file);
         sendAlert(`File "${file}" uploaded successfully!`);
 
         // Request 200 rows from the backend
-        const first200Rows = await electron.csv.getBuffer(file).catch(err => {
-            sendError(err.message);
-        });
+        const rows = await electron.csv.getBuffer(file).catch(handleError);
         if (error) return;
 
-        setCsvData(first200Rows);
+        setCsvData(rows);
     };
 
 
@@ -45,17 +40,13 @@ export function CsvFileImport() {
         }
 
         // Request 200 more rows from the backend
-        const moreRows = await electron.csv.getBuffer(fileName).catch(err => {
-            sendError(err.message);
-        });
+        const rows = await electron.csv.getBuffer(fileName).catch(handleError);
         if (error) return;
 
-        setCsvData(moreRows);
+        setCsvData(rows);
 
-        if (moreRows === null) {
+        if (rows === null) {
             sendAlert(`End of "${fileName}" reached!`);
-        } else {
-            sendAlert(`Loaded 200 rows from "${fileName}" successfully!`);
         }
     }
 
@@ -66,6 +57,10 @@ export function CsvFileImport() {
             setShowAlert(false);
             setAlertMessage("");
         }, 4000);
+    }
+
+    const handleError = (err) => {
+        sendError(err.message);
     }
 
     const sendError = (message) => {
@@ -81,9 +76,7 @@ export function CsvFileImport() {
 
         return () => {
             if (previous) {
-                electron.csv.closeFile(previous).catch(err => {
-                    sendError(err.message);
-                });
+                electron.csv.closeFile(previous).catch(handleError);
             }
         }
     }, [fileName])
@@ -92,9 +85,6 @@ export function CsvFileImport() {
         <div className="csv-import-container">
             <button id="csvUpload" onClick={openFile}>
                 Select a CSV File
-            </button>
-            <button id="loadMore" onClick={loadMoreRows}>
-                Load More Rows
             </button>
             <button id="dbCSVImport" onClick={dbImport}>
                 SQLite Import
