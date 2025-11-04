@@ -25,12 +25,12 @@ function SanityCheck(row) {
   return isValid;
 }
 
-function RotatingModel({ csvData, currentIndex, eyePosition, position=[0,0,0], isPlaying }) {
+function RotatingModel({ csvData, currentIndex, lastValid, eyePosition, position=[0,0,0], isPlaying }) {
     const { scene } = useGLTF('/eye_model.glb');
     const ref = useRef();
 
-    const targetRotation = useRef({ x: 0, y: 0, z: 0 });
-    const currentRotation = useRef({ x: 0, y: 0, z: 0 });
+    const targetRotation = useRef(lastValid.current);
+    const currentRotation = useRef(lastValid.current);
 
     // Clone the scene for this instance so each eye has its own geometry
     const clonedScene = useMemo(() => {
@@ -44,6 +44,7 @@ function RotatingModel({ csvData, currentIndex, eyePosition, position=[0,0,0], i
       if (!isPlaying || !csvData || currentIndex >= csvData.length) return;
 
       const row = csvData[currentIndex];
+      currentRotation.current = targetRotation.current;
 
       // Get the forward vector components - note uppercase first letter
       const forwardX = parseFloat(row[`${eyePosition}EyeForwardX`]?.replace(/[()]/g, '') || 0);
@@ -56,10 +57,11 @@ function RotatingModel({ csvData, currentIndex, eyePosition, position=[0,0,0], i
 
       if(row[`${eyePosition}EyeStatus`] === 'VALID' && isPlaying) {
         if(SanityCheck(row) && isValidAngle(pitch) && isValidAngle(yaw)) {
+          lastValid.current = {x:pitch, y:yaw, z:0};
           targetRotation.current = {x:pitch, y:yaw, z:0};
         }
       }
-    },[csvData, currentIndex, eyePosition, isPlaying]);
+    },[currentIndex, eyePosition, isPlaying]);
 
     useFrame(() => {
       const r = currentRotation.current;
@@ -80,22 +82,26 @@ function RotatingModel({ csvData, currentIndex, eyePosition, position=[0,0,0], i
 
 export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
     const [currentIndex, setCurrentIndex] = useState(0);
-
-
+    const lastValidLeft = useRef({x:0, y:0, z:0});
+    const lastValidRight = useRef({x:0, y:0, z:0});
 
     useEffect(() => {
         if (!isPlaying || !csvData) return;
-        if (currentIndex >= csvData.length - 1) {
-            loadMoreRows();
-            setCurrentIndex(0); // Reset to start after loading more data
+        const loadRows = async () => {
+			await loadMoreRows();
+			setCurrentIndex(0);
         }
-      }, [currentIndex, csvData, isPlaying, loadMoreRows]);
+
+        if (currentIndex >= csvData.length - 1) {
+			loadRows();
+        }
+      }, [currentIndex, isPlaying, loadMoreRows]);
 
     useEffect(() => {
       if (!isPlaying || !csvData) return;
 
       const sourceHz = 200; // Original data frequency in Hz
-      const targetFps = 60;  // Desired playback frequency in Hz
+      const targetFps = 200;  // Desired playback frequency in Hz
       const frameSkip = Math.round(sourceHz / targetFps); // For skipping frames if needed to convert to new playback speed
 
       const interval = setInterval(() => {
@@ -110,7 +116,7 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
       }, 1000/targetFps); // Read data at fps target
 
       return () => clearInterval(interval);
-  }, [csvData, isPlaying, loadMoreRows]);
+  }, [isPlaying, loadMoreRows]);
 
     return (
       <Canvas style={{ width: '720px', height: '480px' }} >
@@ -122,6 +128,7 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
             <RotatingModel
               csvData={csvData}
               currentIndex={currentIndex}
+              lastValid={lastValidLeft}
               eyePosition="Left"
               position={[-2, 0, 0]} // Shift left eye to the left
               isPlaying={isPlaying}
@@ -131,6 +138,7 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
             <RotatingModel
               csvData={csvData}
               currentIndex={currentIndex}
+              lastValid={lastValidRight}
               eyePosition="Right"
               position={[2, 0, 0]} // Shift right eye to the right
               isPlaying={isPlaying}
