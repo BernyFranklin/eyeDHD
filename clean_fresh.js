@@ -157,7 +157,7 @@ async function cleanCsv(inputPath) {
 
   parser.on("end", () => {
     stringifier.end();
-    console.log(`\n✅ Cleaning finished.`);
+    console.log(`Cleaning finished.`);
     console.log(`Rows processed: ${rowCount}`);
     console.log(
       `Numeric fixed (set to ${BAD_NUMERIC_REPLACEMENT}): ${numericFixed}`
