@@ -3,7 +3,6 @@ import CsvFileImport from './components/CsvFileImportBackend.jsx'
 import './App.css'
 import Navbar from './components/Navbar.jsx'
 import LoadingOverlay from './components/LoadingOverlay.jsx'
-import HomePage from './components/HomePage.jsx'
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
@@ -20,7 +19,6 @@ function App() {
       <LoadingOverlay isLoading={isLoading} />
       <Navbar setCurrent={setCurrent} />
       {content[current]}
-      <HomePage />
     </>
   )
 }
