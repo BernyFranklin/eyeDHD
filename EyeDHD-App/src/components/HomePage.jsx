@@ -9,15 +9,32 @@ const homePageStyles = {
     padding: '20px',
 };
 
-export default function HomePage() {
+export default function HomePage( { setCurrent }) {
+
+    const handleImportClick = () => {
+        setCurrent(1);
+    };
+    const handleGenerateEyeAnimationClick = () => {
+        setCurrent(2);
+    };
+    const handleSideBySideViewerClick = () => {
+        setCurrent(3);
+    };
+
     return (
         <div>
             <h1>Welcome to EyeDHD</h1>
             <p>Your go-to application for eye movement data analysis and visualization.</p>
             <div style={homePageStyles}>
-                <Card title="Import Raw CSV Data" img="../images/file-import-solid-full.svg" />
-                <Card title="Generate Eye Animation" img="../images/eye-solid-full.svg" />
-                <DoubleCard title="Side-by-side Viewer" img1="../images/file-video-solid-full.svg" img2="../images/eye-solid-full.svg" />
+                <a onClick={handleImportClick}>
+                    <Card title="Import Raw CSV Data" img="../images/file-import-solid-full.svg" />
+                </a>
+                <a onClick={handleGenerateEyeAnimationClick}>
+                    <Card title="Generate Eye Animation" img="../images/eye-solid-full.svg" />
+                </a>
+                <a onClick={handleSideBySideViewerClick}>
+                    <DoubleCard title="Side-by-side Viewer" img1="../images/file-video-solid-full.svg" img2="../images/eye-solid-full.svg" />
+                </a>
             </div>
         </div>
     );

@@ -3,12 +3,13 @@ import CsvFileImport from './components/CsvFileImportBackend.jsx'
 import './App.css'
 import Navbar from './components/Navbar.jsx'
 import LoadingOverlay from './components/LoadingOverlay.jsx'
+import HomePage from './components/HomePage.jsx'
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [current, setCurrent] = useState(0);
   const content = [
-    <p>Home Content</p>,
+    <HomePage setCurrent={setCurrent}/>,
     //<CsvFileImport isLoading={isLoading} setIsLoading={setIsLoading} />,
     <CsvFileImport />,
     <p>Generate Eye Animation Content</p>,
