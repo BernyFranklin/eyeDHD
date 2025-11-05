@@ -22,14 +22,6 @@ contextBridge.exposeInMainWorld('electron', {
             return await ipcRenderer.invoke('csv-close-file', filename);
         },
         /**
-         * Requests an individual row from the data cleaner
-         *
-         * @returns a cleaned row or null if the entire file has been read
-         */
-        getRow: async (filename) => {
-            return await ipcRenderer.invoke('csv-get-row', filename);
-        },
-        /**
          * Requests the buffer stored in the data cleaner, triggers the buffer
          * to be refilled as well
          *
@@ -46,5 +38,9 @@ contextBridge.exposeInMainWorld('electron', {
         send: (message) => {
             ipcRenderer.send('notify', message);
         }
+    },
+    db: {
+        selectAll : async () => await ipcRenderer.invoke('db-select-all'),
+        importCsv : async () => await ipcRenderer.invoke('db-import-csv'),
     }
 })
