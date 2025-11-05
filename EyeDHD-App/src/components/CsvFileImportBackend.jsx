@@ -114,7 +114,7 @@ function AnimationContainer({ fileName, csvData, loadMoreRows, isPlaying, setIsP
         <div className="animation-window-container">
             <AnimationWindow csvData={csvData} loadMoreRows={loadMoreRows} isPlaying={isPlaying} />
             <div className="animation-controls">
-                <button id="playPauseButton" onClick={() => setIsPlaying(!isPlaying)}>{ isPlaying ? "Pause Animation" : "Play Animation" }</button>
+                <Button onClick={() => setIsPlaying(!isPlaying)} className="btn" buttonText={isPlaying ? "Pause Animation" : "Play Animation"} />
             </div>
         </div>
     )

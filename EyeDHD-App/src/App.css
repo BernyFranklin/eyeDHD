@@ -181,6 +181,14 @@ input[type="file"]::file-selector-button:hover {
   animation: spin 1s linear infinite;
 }
 
+.animation-window-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1rem;
+
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
