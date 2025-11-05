@@ -1,5 +1,5 @@
 export function GetPitch(x, y, z) {
-    return Math.atan2(-z, Math.sqrt(x * x + z * z));
+    return Math.atan2(-y, Math.sqrt(x * x + z * z));
 }
 
 export function GetYaw(x, y, z) {

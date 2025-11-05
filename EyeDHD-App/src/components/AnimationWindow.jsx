@@ -16,7 +16,7 @@ function SanityCheck(row) {
   for(const pos of positions) {
     for(const ax of axis) {
       let key = `${pos}EyeForward${ax}`;
-      if(row[key] === undefined || row[key] === null || row[key].trim() === '') {
+      if(row[key] === undefined || row[key] === null) {
         isValid = false;
       }
     }
@@ -46,9 +46,9 @@ function RotatingModel({ csvData, currentIndex, eyePosition, position=[0,0,0], i
       const row = csvData[currentIndex];
 
       // Get the forward vector components - note uppercase first letter
-      const forwardX = parseFloat(row[`${eyePosition}EyeForwardX`]?.replace(/[()]/g, '') || 0);
-      const forwardY = parseFloat(row[`${eyePosition}EyeForwardY`]?.replace(/[()]/g, '') || 0);
-      const forwardZ = parseFloat(row[`${eyePosition}EyeForwardZ`]?.replace(/[()]/g, '') || 0);
+      const forwardX = parseFloat(row[`${eyePosition}EyeForwardX`] || 0);
+      const forwardY = parseFloat(row[`${eyePosition}EyeForwardY`] || 0);
+      const forwardZ = parseFloat(row[`${eyePosition}EyeForwardZ`] || 0);
 
       // Convert to pitch and yaw using your utility functions
       const pitch = GetPitch(forwardX, forwardY, forwardZ);
@@ -59,7 +59,7 @@ function RotatingModel({ csvData, currentIndex, eyePosition, position=[0,0,0], i
           targetRotation.current = {x:pitch, y:yaw, z:0};
         }
       }
-    },[csvData, currentIndex, eyePosition, isPlaying]);
+    },[currentIndex, eyePosition, isPlaying]);
 
     useFrame(() => {
       const r = currentRotation.current;
@@ -85,11 +85,12 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
 
     useEffect(() => {
         if (!isPlaying || !csvData) return;
+
         if (currentIndex >= csvData.length - 1) {
             loadMoreRows();
-            setCurrentIndex(0); // Reset to start after loading more data
+            setCurrentIndex(0);
         }
-      }, [currentIndex, csvData, isPlaying, loadMoreRows]);
+      }, [currentIndex, isPlaying, loadMoreRows]);
 
     useEffect(() => {
       if (!isPlaying || !csvData) return;
