@@ -26,13 +26,13 @@ export default function HomePage( { setCurrent }) {
             <h1>Welcome to EyeDHD</h1>
             <p>Your go-to application for eye movement data analysis and visualization.</p>
             <div style={homePageStyles}>
-                <a onClick={handleImportClick}>
+                <a className="card-link" onClick={handleImportClick}>
                     <Card title="Import Raw CSV Data" img="../images/file-import-solid-full.svg" />
                 </a>
-                <a onClick={handleGenerateEyeAnimationClick}>
+                <a className="card-link" onClick={handleGenerateEyeAnimationClick}>
                     <Card title="Generate Eye Animation" img="../images/eye-solid-full.svg" />
                 </a>
-                <a onClick={handleSideBySideViewerClick}>
+                <a className="card-link" onClick={handleSideBySideViewerClick}>
                     <DoubleCard title="Side-by-side Viewer" img1="../images/file-video-solid-full.svg" img2="../images/eye-solid-full.svg" />
                 </a>
             </div>

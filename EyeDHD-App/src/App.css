@@ -189,6 +189,18 @@ input[type="file"]::file-selector-button:hover {
 
 }
 
+.card-link:hover {
+  cursor: pointer;
+  transform: scale(1.05);
+  transition: transform 0.3s ease-in-out;
+}
+
+.home-link:hover {
+  cursor: pointer;
+  transform: translateX(-2px);
+  transition: transform 0.3s ease-in-out;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
