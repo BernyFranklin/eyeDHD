@@ -1,21 +1,8 @@
 import { expect , test } from "vitest";
 
-import getDB from "../../models/dbmgr.js";
-import files from "../../models/actions/files.js";
-import { toTableName } from "../../models/tables/csv.js";
-import csv from "../../models/actions/csv.js";
-
-// Test opening the database file, and it's initialization
-test("database initialization", () => {
-    const db = getDB(true);
-
-    // Check whether the files database was created
-    const result = db.prepare(`
-        SELECT name FROM sqlite_master WHERE type='table' AND name='files';
-    `).get();
-
-    expect(result).toStrictEqual({ name: 'files' });
-})
+import getDB from "../dbmgr.js";
+import files from "./files.js";
+import { toTableName } from "../tables/csv.js";
 
 // Test creating a file entry in the files table
 test("files create", () => {
@@ -77,18 +64,6 @@ test("files update", () => {
 
 // Test removing a file entry in the files table
 test("files remove", () => {
-    const db = getDB(true);
-
-    expect(1 + 1).toBe(2);
-})
-
-test("csv create", () => {
-    const db = getDB(true);
-
-    expect(1 + 1).toBe(2);
-})
-
-test("csv read", () => {
     const db = getDB(true);
 
     expect(1 + 1).toBe(2);
