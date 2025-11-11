@@ -21,23 +21,38 @@ function create(db, filename, filepath, buffer_size) {
 
 // Reads a file record by filename
 function read(db, filename) {
-    const file = db.prepare(`
-        SELECT * FROM files WHERE name = ?;
-    `).get(filename);
+    try {
+        const file = db.prepare(`
+            SELECT * FROM files WHERE name = ?;
+        `).get(filename);
 
-    if (!file) {
+        if (!file) {
+            return { ok: false, file: undefined };
+        }
+
+        return { ok: true, file };
+    } catch (err) {
+        console.error(`Failed to read file record for: ${filename}`, err);
         return { ok: false, file: undefined };
     }
-
-    return { ok: true, file };
 }
 
 // Updates a file record by filename
 function update(db, filename, ...rest) {
-    return { ok: true, file: undefined };
+    try {
+        return { ok: true };
+    } catch (err) {
+        console.error(`Failed to update file record for: ${filename}`, err);
+        return { ok: false };
+    }
 }
 
 // Removes a file record by filename
 function remove(db, filename) {
-	return { ok: true, file: undefined };
+	try {
+        return { ok: true };
+    } catch (err) {
+        console.error(`Failed to remove file record for: ${filename}`, err);
+        return { ok: false };
+    }
 }
