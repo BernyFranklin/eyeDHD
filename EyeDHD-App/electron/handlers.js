@@ -69,7 +69,6 @@ const msgHandler = (msg) => {
 
 const exitHandler = (code) => {
     if (code !== 0) {
-        worker = null;
         console.error(`Worker stopped with exit code ${code}`);
     }
 
