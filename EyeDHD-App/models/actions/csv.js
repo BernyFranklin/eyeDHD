@@ -1,5 +1,6 @@
 import path from 'path';
 
+import toTableName from '../tables/csv';
 import files from './files';
 
 export default { create, read };
@@ -22,7 +23,7 @@ function create(db, filename, rows) {
 function read(db, file) {path.parse(filename).name
     try {
         const rows = db.prepare(`
-            SELECT * FROM ${path.parse(file.name).name}_csv
+            SELECT * FROM ${toTableName(file.name)}
             OFFSET ${file.rows_read} ROWS
             FETCH NEXT ${file.buffer_size} ROWS ONLY;
         `).all();

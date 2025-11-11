@@ -2,10 +2,14 @@ import path from 'path';
 
 export default createCsvTable;
 
+export function toTableName(filename) {
+    return `${path.parse(filename).name}_csv`;
+}
+
 // Creates a new table for storing cleaned CSV data
 function createCsvTable(db, filename) {
 	db.exec(`
-		CREATE TABLE IF NOT EXISTS ${path.parse(filename).name}_csv (
+		CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
 			Frame INTEGER PRIMARY KEY NOT NULL,
 			CaptureTime INTEGER NOT NULL,
 			LogTime INTEGER NOT NULL,

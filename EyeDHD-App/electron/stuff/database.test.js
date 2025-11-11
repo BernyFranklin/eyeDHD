@@ -2,13 +2,14 @@ import { expect , test } from "vitest";
 
 import getDB from "../../models/dbmgr.js";
 import files from "../../models/actions/files.js";
+import { toTableName } from "../../models/tables/csv.js";
 import csv from "../../models/actions/csv.js";
 
 // Test opening the database file, and it's initialization
 test("database initialization", () => {
     const db = getDB(true);
 
-    // Test whether the files database was created
+    // Check whether the files database was created
     const result = db.prepare(`
         SELECT name FROM sqlite_master WHERE type='table' AND name='files';
     `).get();
@@ -35,6 +36,14 @@ test("files create", () => {
     if (!ok) {
         throw new Error("Failed to create file entry in database");
     }
+
+    // Check whether csv data table is created
+    const table = db.prepare(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='${toTableName(file.name)}';
+    `).get();
+
+    expect(table).toStrictEqual({ name: toTableName(file.name) });
 
     const result = db.prepare(`
         SELECT * FROM files WHERE name = ?;
