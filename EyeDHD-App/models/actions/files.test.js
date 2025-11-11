@@ -1,16 +1,14 @@
-import { expect , test } from "vitest";
+import { test } from "./action_test";
 
-import getDB from "../dbmgr.js";
-import files from "./files.js";
-import { toTableName } from "../tables/csv.js";
+import files from "./files";
 
 // Test creating a file entry in the files table
-test("files create", () => {
+test.concurrent("files create", async ({ db, expect }) => {
     const file = {
-        id: 1,
-        name: 'test.csv',
-        path: '../test.csv',
-        buffer_size: 200,
+        id: 4,
+        name: 'newData.csv',
+        path: '../newData.csv',
+        buffer_size: 2000,
         current: 0,
         started: 0,
         completed: 0,
@@ -18,24 +16,14 @@ test("files create", () => {
         rows_read: 0
     };
 
-    const db = getDB(true);
     const { ok } = files.create(db, file.name, file.path, file.buffer_size);
-    if (!ok) {
-        throw new Error("Failed to create file entry in database");
-    }
-
-    // Check whether csv data table is created
-    const table = db.prepare(`
-        SELECT name FROM sqlite_master
-        WHERE type='table' AND name='${toTableName(file.name)}';
-    `).get();
-
-    expect(table).toStrictEqual({ name: toTableName(file.name) });
+    expect(ok).toBe(true);
 
     const result = db.prepare(`
         SELECT * FROM files WHERE name = ?;
     `).get(file.name);
 
+    expect(result).toBeDefined();
     expect(result.id).toBe(file.id);
     expect(result.name).toBe(file.name);
     expect(result.path).toBe(file.path);
@@ -45,26 +33,33 @@ test("files create", () => {
     expect(result.completed).toBe(file.completed);
     expect(result.rows_cleaned).toBe(file.rows_cleaned);
     expect(result.rows_read).toBe(file.rows_read);
-})
+});
 
 // Test reading a file entry in the files table
-test("files read", () => {
-    const db = getDB(true);
+test.concurrent("files read", async ({ db, expect }) => {
+    const { ok, file } = files.read(db, 'test2.csv');
 
-    expect(1 + 1).toBe(2);
-})
+    expect(ok).toBe(true);
+    expect(file).toBeDefined();
+
+    expect(file.id).toBe(2);
+    expect(file.name).toBe('test2.csv');
+    expect(file.path).toBe('test2.csv');
+    expect(file.buffer_size).toBe(200);
+    expect(file.current).toBe(0);
+    expect(file.started).toBe(0);
+    expect(file.completed).toBe(0);
+    expect(file.rows_cleaned).toBe(0);
+    expect(file.rows_read).toBe(0);
+});
 
 
 // Test updating a file entry in the files table
-test("files update", () => {
-    const db = getDB(true);
-
+test.concurrent.todo("files update", async ({ db, expect }) => {
     expect(1 + 1).toBe(2);
-})
+});
 
 // Test removing a file entry in the files table
-test("files remove", () => {
-    const db = getDB(true);
-
+test.concurrent.todo("files remove", async ({ db, expect }) => {
     expect(1 + 1).toBe(2);
-})
+});

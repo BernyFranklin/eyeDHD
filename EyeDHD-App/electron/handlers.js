@@ -3,6 +3,7 @@ import { Worker } from 'worker_threads';
 import path from 'path';
 
 import getDB from '../models/dbmgr.js';
+import createCsvTable from '../models/tables/csv.js';
 import files from '../models/actions/files.js';
 import csv from '../models/actions/csv.js';
 import { sleep } from './utils';
@@ -41,6 +42,7 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 		if (!ok) {
 			return reject(`Failed to create document in db for file: ${filename}`);
 		}
+		createCsvTable(db, filename);
 
 		// Wait until worker has finished working
 		while (worker) {

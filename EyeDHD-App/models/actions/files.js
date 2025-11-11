@@ -10,8 +10,6 @@ function create(db, filename, filepath, buffer_size) {
             VALUES (?, ?, ?);
         `).run(filename, filepath, buffer_size);
 
-        createCsvTable(db, filename);
-
         return { ok: true };
     } catch (err) {
         console.error(`Failed to create file record for: ${filename}`, err);

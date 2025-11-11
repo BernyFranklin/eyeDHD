@@ -1,9 +1,8 @@
-import { expect , test } from "vitest";
+import { test } from "vitest";
 
-import getDB from "./dbmgr.js";
+import getDB from "../dbmgr";
 
-// Test opening the database file, and it's initialization
-test("database initialization", () => {
+test.concurrent("files table create", async ({ expect }) => {
     const db = getDB(true);
 
     // Check whether the files database was created
@@ -12,4 +11,4 @@ test("database initialization", () => {
     `).get();
 
     expect(result).toStrictEqual({ name: 'files' });
-})
+});

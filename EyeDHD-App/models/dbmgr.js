@@ -7,8 +7,6 @@ import createFilesTable from './tables/files';
 export default function getDB(testing = false) {
     // Creates a temporary in memory database for testing
     if (testing) {
-        console.log(`Using database in memory`);
-
         const db = new Database(':memory:', { verbose: console.log });
         createFilesTable(db);
 

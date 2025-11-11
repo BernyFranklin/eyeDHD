@@ -1,0 +1,21 @@
+import { test } from "vitest";
+
+import getDB from "../dbmgr";
+import createCsvTable, { toTableName } from "./csv";
+
+test.concurrent("csv table create", async ({ expect }) => {
+    const file = {
+        name: 'test.csv'
+    };
+
+    const db = getDB(true);
+    createCsvTable(db, file.name);
+
+    // Check whether csv data table is created
+    const table = db.prepare(`
+        SELECT name FROM sqlite_master
+        WHERE type='table' AND name='${toTableName(file.name)}';
+    `).get();
+
+    expect(table).toStrictEqual({ name: toTableName(file.name) });
+});
