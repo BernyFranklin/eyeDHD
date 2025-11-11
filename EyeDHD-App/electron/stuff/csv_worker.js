@@ -22,8 +22,13 @@ async function loadCsv(db, filename, filepath, bufferSize) {
             if (!ok) {
                 return { ok: false, err: `Failed to clean data for file: ${filename}` };
             }
+
+            // Update file metadata
+
             buffer = await cleaner.getBuffer();
         }
+
+        // Update file metadata
 
         return { ok: true, err: undefined };
     } catch (err) {
