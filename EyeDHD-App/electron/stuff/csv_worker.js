@@ -8,10 +8,10 @@ import DataCleaner from '../models/datacleaner.js';
 const db = getDB();
 
 // Loads CSV data into the database using a DataCleaner
-async function loadCsv(db, filename, filepath, bufferSize) {
+async function loadCsv(db, filename, filepath, buffer_size) {
     const cleaner = new DataCleaner({
         path: filepath,
-        buf_len: bufferSize
+        buf_len: buffer_size
     });
 
     try {

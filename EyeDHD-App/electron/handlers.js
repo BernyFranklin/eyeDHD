@@ -16,7 +16,7 @@ let worker = null;
  *
  * @returns filename if a file is selector, or null if none are selected
  */
-ipcMain.handle('csv-open-file', async (_, bufferSize) => {
+ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 	return new Promise(async (resolve, reject) => {
 		const { canceled, filePaths } = await dialog.showOpenDialog({
 			properties: ['openFile'],
@@ -33,11 +33,11 @@ ipcMain.handle('csv-open-file', async (_, bufferSize) => {
 		// If file is already opened and cleaning, just return filename
 		const { ok: exists } = files.read(db, filename);
 		if (exists) {
-		    // Update buffer_size if different
+		    // Update buffer_size if different, reset rows_read so 'csv-reset-file' is unneeded
 			return resolve(filename);
 		}
 
-		const { ok } = files.create(db, filename, filepath, bufferSize);
+		const { ok } = files.create(db, filename, filepath, buffer_size);
 		if (!ok) {
 			return reject(`Failed to create document in db for file: ${filename}`);
 		}
@@ -50,7 +50,7 @@ ipcMain.handle('csv-open-file', async (_, bufferSize) => {
 		// Read and clean csv file in a separate thread, so main thread can still respond
 		// to messages
 		worker = new Worker(path.join(__dirname, 'stuff', 'csv_worker.js'), {
-            workerData: { filename, filepath, bufferSize }
+            workerData: { filename, filepath, buffer_size }
         });
 		worker.on('message', msgHandler);
         worker.on('exit', exitHandler);
@@ -82,6 +82,7 @@ ipcMain.handle('csv-reset-file', async (_, filename) => {
 			return reject(`File: ${filename} is not opened`);
 		}
 
+		// Update rows_read to 0;
 		file.rows_read = 0;
 		// Update file
 		if (!ok) {

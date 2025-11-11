@@ -1,6 +1,8 @@
+import path from 'path';
+
 import files from './files';
 
-export default { create, open, save, remove };
+export default { create, read };
 
 // Creates new cleaned CSV rows in the database
 function create(db, filename, rows) {
@@ -12,15 +14,15 @@ function create(db, filename, rows) {
 
         return { ok: true };
     } catch (err) {
-
+        return { ok: false };
     }
 }
 
 // Reads cleaned CSV rows from the database
-function read(db, file) {
+function read(db, file) {path.parse(filename).name
     try {
         const rows = db.prepare(`
-            SELECT * FROM ${file.name}
+            SELECT * FROM ${path.parse(file.name).name}_csv
             OFFSET ${file.rows_read} ROWS
             FETCH NEXT ${file.buffer_size} ROWS ONLY;
         `).all();
