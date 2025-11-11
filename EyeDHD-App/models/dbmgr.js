@@ -2,20 +2,27 @@ import Database from 'better-sqlite3';
 import { app } from 'electron';
 import path from 'path';
 
-import createDocumentsTable from './tables/documents';
-
-let db;
+import createFilesTable from './tables/files';
 
 export default function getDB() {
-	if (!db) {
-		const appRoot = app.getAppPath();
-		const dbPath = path.join(appRoot, 'main.db');
+    const appRoot = app.getAppPath();
+    const dbPath = path.join(appRoot, 'main.db');
 
-		console.log(`Using database at ${dbPath}`);
-		db = new Database(dbPath);
+    console.log(`Using database at ${dbPath}`);
+    db = new Database(dbPath);
 
-		createDocumentsTable(db);
-	}
+    // Set for performance
+    db.pragma('journal_mode = WAL');
+    // Clean up wal file if it gets too big
+    setInterval(fs.stat.bind(null, path.join(appRoot, "main.db-wal"), (err, stat) => {
+        if (err) {
+            throw err;
+        } else if (stat.size > 1e6) {
+            db.pragma("wal_checkpoint(RESTART)");
+        }
+    }), 5000).unref();
+
+    createFilesTable(db);
 
 	return db;
 }

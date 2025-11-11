@@ -1,13 +1,15 @@
 import { dialog, ipcMain, Notification } from 'electron';
+import { Worker } from 'worker_threads';
 import path from 'path';
 
-import { filesMap } from './store.js';
 import getDB from '../models/dbmgr.js';
-import documents from '../models/actions/documents.js';
-import document from '../models/actions/document.js';
-import DataCleaner from './stuff/DataCleaner.js';
+import files from '../models/actions/files.js';
+import csv from '../models/actions/csv.js';
+import { sleep } from './utils';
 
 const db = getDB();
+
+let worker = null;
 
 /**
  * Handles the csv-open-file request. Opens a file selector and begins cleaning it if one is selected
@@ -29,39 +31,65 @@ ipcMain.handle('csv-open-file', async (_, bufferSize) => {
 		const filename = path.basename(filepath);
 
 		// If file is already opened and cleaning, just return filename
-		const { ok: exists, _ } = documents.read(db, filename);
+		const { ok: exists } = files.read(db, filename);
 		if (exists) {
+		    // Update buffer_size if different
 			return resolve(filename);
 		}
 
-		const { ok, document } = documents.create(db, filename, filepath, bufferSize);
-		if (!ok || document.filename !== filename) {
+		const { ok } = files.create(db, filename, filepath, bufferSize);
+		if (!ok) {
 			return reject(`Failed to create document in db for file: ${filename}`);
 		}
+
+		// Wait until worker has finished working
+		while (worker) {
+		    await sleep(100);
+		}
+
+		// Read and clean csv file in a separate thread, so main thread can still respond
+		// to messages
+		worker = new Worker(path.join(__dirname, 'stuff', 'csv_worker.js'), {
+            workerData: { filename, filepath, bufferSize }
+        });
+		worker.on('message', msgHandler);
+        worker.on('exit', exitHandler);
 
         return resolve(filename);
     });
 });
 
-/**
- * Handles the csv-close-file request. Closes the cleaner for filename
- */
-ipcMain.handle('csv-close-file', async (_, filename) => {
+const msgHandler = (msg) => {
+    if (!msg.ok) {
+        console.error(`Worker error for file: ${filename}`, msg.err);
+    }
+
+    worker = null;
+}
+
+const exitHandler = (code) => {
+    if (code !== 0) {
+        worker = null;
+        console.error(`Worker stopped with exit code ${code}`);
+    }
+
+    worker = null;
+}
+
+ipcMain.handle('csv-reset-file', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-        if (!filename) return resolve();
+		const { ok: exists, file } = files.read(db, filename);
+		if (!exists) {
+			return reject(`File: ${filename} is not opened`);
+		}
 
-        const cleaner = filesMap.get(filename);
-        if (!cleaner) {
-            return reject(`File: ${filename} has not been opened`);
-        }
+		file.rows_read = 0;
+		// Update file
+		if (!ok) {
+		    return reject(`Failed to read cleaned rows for file: ${filename}`);
+		}
 
-        cleaner.close();
-        const ok = filesMap.delete(filename);
-        if (!ok) {
-            return reject(`Failed to close file: ${filename}`);
-        }
-
-        resolve();
+        return resolve(rows);
     });
 });
 
@@ -72,13 +100,17 @@ ipcMain.handle('csv-close-file', async (_, filename) => {
  */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-        const cleaner = filesMap.get(filename);
-        if (!cleaner) {
-            return reject(`File: ${filename} has not been opened`);
-        }
+		const { ok: exists, file } = files.read(db, filename);
+		if (!exists) {
+			return reject(`File: ${filename} is not opened`);
+		}
 
-        const buf = await cleaner.getBuffer();
-        return resolve(buf);
+		const { ok, rows } = csv.read(db, file);
+		if (!ok) {
+		    return reject(`Failed to read cleaned rows for file: ${filename}`);
+		}
+
+        return resolve(rows);
     });
 });
 

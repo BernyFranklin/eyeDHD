@@ -1,6 +1,7 @@
-export default createDocumentTable;
+export default createCsvTable;
 
-function createDocumentTable(db, filename) {
+// Creates a new table for storing cleaned CSV data
+function createCsvTable(db, filename) {
 	db.exec(`
 		CREATE TABLE IF NOT EXISTS ${filename} (
 			Frame INTEGER PRIMARY KEY NOT NULL,
