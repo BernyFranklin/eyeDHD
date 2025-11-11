@@ -17,7 +17,9 @@ export default function getDB(testing = false) {
     const dbPath = path.join(appRoot, 'main.db');
 
     console.log(`Using database at ${dbPath}`);
+
     const db = new Database(dbPath);
+    createFilesTable(db);
 
     // Set for performance
     db.pragma('journal_mode = WAL');
@@ -29,8 +31,6 @@ export default function getDB(testing = false) {
             db.pragma("wal_checkpoint(RESTART)");
         }
     }), 5000).unref();
-
-    createFilesTable(db);
 
 	return db;
 }
