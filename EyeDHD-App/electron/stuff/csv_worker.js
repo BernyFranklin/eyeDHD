@@ -37,7 +37,6 @@ async function loadCsv(db, filename, filepath, buffer_size) {
 	} catch (err) {
 		return { ok: false, err: `Failed to clean data for file: ${filename}` };
 	}
-
 }
 
 const { ok, err } = await loadCsv(db, ...workerData);
