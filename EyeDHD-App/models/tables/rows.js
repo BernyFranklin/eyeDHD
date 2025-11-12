@@ -1,13 +1,13 @@
 import path from 'path';
 
-export default createCsvTable;
+export default createRowsTable;
 
 export function toTableName(filename) {
-	return `${path.parse(filename).name}_csv`;
+	return `${path.parse(filename).name}_rows`;
 }
 
 // Creates a new table for storing cleaned CSV data
-function createCsvTable(db, filename) {
+function createRowsTable(db, filename) {
 	db.prepare(`
 		CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
 			Frame INTEGER PRIMARY KEY NOT NULL,

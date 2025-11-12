@@ -1,8 +1,8 @@
 import { test } from "./action_test";
 
-import csv from "./csv";
-import files from "./files";
-import { toTableName } from "../tables/csv";
+import metadata from "./metadata";
+import rows from "./rows";
+import { toTableName } from "../tables/rows";
 
 test.concurrent.todo("csv create", async ({ db, expect }) => {
 	expect(1 + 1).toBe(2);

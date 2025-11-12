@@ -2,20 +2,22 @@ import { dialog, ipcMain, Notification } from 'electron';
 import { Worker } from 'worker_threads';
 import path from 'path';
 
-import getDB from '../models/dbmgr.js';
-import createCsvTable from '../models/tables/csv.js';
-import files from '../models/actions/files.js';
-import csv from '../models/actions/csv.js';
+import getDB from '../models/dbmgr';
+import createMetadataTable from '../models/tables/metadata';
+import createRowsTable from '../models/tables/rows';
+import metadata from '../models/actions/metadata';
+import rows from '../models/actions/rows';
 import { sleep } from './utils';
 
 const db = getDB();
+createMetadataTable(db);
 
 let worker = null;
 
 /**
  * Handles the csv-open-file request. Opens a file selector and begins cleaning it if one is selected
  *
- * @returns filename if a file is selector, or null if none are selected
+ * @returns filename if a file is selected, or null if none is selected
  */
 ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 	return new Promise(async (resolve, reject) => {
@@ -32,17 +34,17 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 		const filename = path.basename(filepath);
 
 		// If file is already opened and cleaning, just return filename
-		const { ok: exists } = files.read(db, filename);
+		const { ok: exists } = metadata.read(db, filename);
 		if (exists) {
 		    // Update buffer_size if different, reset rows_read so 'csv-reset-file' is unneeded
 			return resolve(filename);
 		}
 
-		const { ok } = files.create(db, filename, filepath, buffer_size);
+		const { ok } = metadata.create(db, filename, filepath, buffer_size);
 		if (!ok) {
-			return reject(`Failed to create document in db for file: ${filename}`);
+			return reject(`Failed to create metadata in db for file: ${filename}`);
 		}
-		createCsvTable(db, filename);
+		createRowsTable(db, filename);
 
 		// Wait until worker has finished working
 		while (worker) {
@@ -66,6 +68,8 @@ const msgHandler = (msg) => {
         console.error(`Worker error for file: ${filename}`, msg.err);
     }
 
+    // Update file metadata
+
     worker = null;
 }
 
@@ -79,7 +83,7 @@ const exitHandler = (code) => {
 
 ipcMain.handle('csv-reset-file', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-		const { ok: exists, file } = files.read(db, filename);
+		const { ok: exists, file } = metadata.read(db, filename);
 		if (!exists) {
 			return reject(`File: ${filename} is not opened`);
 		}
@@ -102,12 +106,12 @@ ipcMain.handle('csv-reset-file', async (_, filename) => {
  */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-		const { ok: exists, file } = files.read(db, filename);
+		const { ok: exists, file } = metadata.read(db, filename);
 		if (!exists) {
 			return reject(`File: ${filename} is not opened`);
 		}
 
-		const { ok, rows } = csv.read(db, file);
+		const { ok, rows } = rows.read(db, file);
 		if (!ok) {
 		    return reject(`Failed to read cleaned rows for file: ${filename}`);
 		}

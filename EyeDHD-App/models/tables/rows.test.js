@@ -1,7 +1,7 @@
 import { test } from "vitest";
 
 import getDB from "../dbmgr";
-import createCsvTable, { toTableName } from "./csv";
+import createRowsTable, { toTableName } from "./rows";
 
 test.concurrent("csv table create", async ({ expect }) => {
     const file = {
@@ -9,7 +9,7 @@ test.concurrent("csv table create", async ({ expect }) => {
     };
 
     const db = getDB(true);
-    createCsvTable(db, file.name);
+    createRowsTable(db, file.name);
 
     // Check whether csv data table is created
     const table = db.prepare(`

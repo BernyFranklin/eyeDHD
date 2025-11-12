@@ -1,11 +1,13 @@
 import { parentPort, workerData } from 'worker_threads';
 
-import getDB from '../models/dbmgr.js';
-import files from '../models/actions/files.js';
-import csv from '../models/actions/csv.js';
-import DataCleaner from '../models/datacleaner.js';
+import getDB from '../models/dbmgr';
+import createMetadataTable from '../models/tables/metadata';
+import metadata from '../models/actions/metadata';
+import rows from '../models/actions/rows';
+import DataCleaner from '../models/datacleaner';
 
 const db = getDB();
+createMetadataTable(db);
 
 // Loads CSV data into the database using a DataCleaner
 async function loadCsv(db, filename, filepath, buffer_size) {
@@ -18,7 +20,7 @@ async function loadCsv(db, filename, filepath, buffer_size) {
 		let buffer = await cleaner.getBuffer();
 
 		while (buffer) {
-			const { ok } = csv.create(db, filename, buffer);
+			const { ok } = rows.create(db, filename, buffer);
 			if (!ok) {
 				return { ok: false, err: `Failed to clean data for file: ${filename}` };
 			}

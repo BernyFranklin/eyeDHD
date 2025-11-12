@@ -1,7 +1,7 @@
 import fs from "fs";
 import rl from "readline";
 
-import { sleep } from "../utils.js";
+import { sleep } from "../utils";
 
 /**
  * Reads and cleans a CSV file at the given path. Cleans data lazyily,

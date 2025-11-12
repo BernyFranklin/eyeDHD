@@ -2,13 +2,12 @@ import Database from 'better-sqlite3';
 import { app } from 'electron';
 import path from 'path';
 
-import createFilesTable from './tables/files';
+import createMetadataTable from './tables/metadata';
 
 export default function getDB(testing = false) {
     // Creates a temporary in memory database for testing
     if (testing) {
         const db = new Database(':memory:', { verbose: console.log });
-        createFilesTable(db);
 
         return db;
     }
@@ -19,7 +18,6 @@ export default function getDB(testing = false) {
     console.log(`Using database at ${dbPath}`);
 
     const db = new Database(dbPath);
-    createFilesTable(db);
 
     // Set for performance
     db.pragma('journal_mode = WAL');

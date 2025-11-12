@@ -1,11 +1,17 @@
 import path from 'path';
 
-import toTableName from '../tables/csv';
-import files from './files';
+import toTableName from '../tables/rows';
+import files from './metadata';
 
 export default { create, read };
 
-// Creates new cleaned CSV rows in the database
+/**
+ * Adds new cleaned CSV rows in the database
+ * @param {*} db
+ * @param {*} filename
+ * @param {*} rows
+ * @returns object with ok boolean
+ */
 function create(db, filename, rows) {
 	try {
 		const insert = db.prepare(`
@@ -47,7 +53,12 @@ function create(db, filename, rows) {
 	}
 }
 
-// Reads cleaned CSV rows from the database
+/**
+ * Reads cleaned CSV rows from the database
+ * @param {*} db
+ * @param {*} file
+ * @returns object with ok boolean and rows array
+ */
 function read(db, file) {
 	try {
 		const rows = db.prepare(`
