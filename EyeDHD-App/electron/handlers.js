@@ -68,8 +68,6 @@ const msgHandler = (msg) => {
         console.error(`Worker error for file: ${filename}`, msg.err);
     }
 
-    // Update file metadata
-
     worker = null;
 }
 
@@ -85,14 +83,17 @@ ipcMain.handle('csv-reset-file', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
 		const { ok: exists, file } = metadata.read(db, filename);
 		if (!exists) {
-			return reject(`File: ${filename} is not opened`);
+			return reject(`File: ${filename} has not been opened`);
 		}
 
-		// Update rows_read to 0;
-		file.rows_read = 0;
-		// Update file
-		if (!ok) {
-		    return reject(`Failed to read cleaned rows for file: ${filename}`);
+		const { ok: updated } = metadata.update(db, {
+			...file,
+			requested: 0,
+			completed: 0
+		});
+
+		if (!updated) {
+		    return reject(`Failed to reset file progress for: ${filename}`);
 		}
 
         return resolve(rows);
@@ -103,12 +104,14 @@ ipcMain.handle('csv-reset-file', async (_, filename) => {
  * Handles the csv-get-buffer request. Pulls the buffer from filename's cleaner
  *
  * @returns an array of rows, or null if the entire file has been read
+ *
+ * @TODO update to use database, set completed to true when all rows have been read
  */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
 		const { ok: exists, file } = metadata.read(db, filename);
 		if (!exists) {
-			return reject(`File: ${filename} is not opened`);
+			return reject(`File: ${filename} has not been opened`);
 		}
 
 		const { ok, rows } = rows.read(db, file);
