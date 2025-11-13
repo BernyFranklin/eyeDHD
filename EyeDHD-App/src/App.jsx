@@ -18,7 +18,7 @@ function App() {
   return (
     <>
       <LoadingOverlay isLoading={isLoading} />
-      <Navbar setCurrent={setCurrent} />
+      <Navbar current={current} setCurrent={setCurrent} />
       {content[current]}
     </>
   )
