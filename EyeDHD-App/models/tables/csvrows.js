@@ -1,9 +1,9 @@
-import path from 'path';
-
 export default createRowsTable;
 
 export function toTableName(filename) {
-	return `${path.parse(filename).name}_rows`;
+	// Replace '.' with '_' in filename
+	const name = filename.replace(/\./g, '_');
+	return `${name}_rows`;
 }
 
 // Creates a new table for storing cleaned CSV data
@@ -11,47 +11,47 @@ function createRowsTable(db, filename) {
 	db.prepare(`
 		CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
 			Frame INTEGER PRIMARY KEY NOT NULL,
-			CaptureTime INTEGER NOT NULL,
-			LogTime INTEGER NOT NULL,
-			HMDPositionX REAL NOT NULL,
-			HMDPositionY REAL NOT NULL,
-			HMDPositionz REAL NOT NULL,
-			HMDRotationX REAL NOT NULL,
-			HMDRotationY REAL NOT NULL,
-			HMDRotationZ REAL NOT NULL,
-			HMDRotationHuh REAL NOT NULL,
-			GazeStatus TEXT NOT NULL,
-			CombinedGazeForwardX REAL NOT NULL,
-			CombinedGazeForwardY REAL NOT NULL,
-			CombinedGazeForwardZ REAL NOT NULL,
-			CombinedGazePositionX REAL NOT NULL,
-			CombinedGazePositionY REAL NOT NULL,
-			CombinedGazePositionZ REAL NOT NULL,
-			InterPupillaryDistanceInMM REAL NOT NULL,
-			LeftEyeStatus TEXT NOT NULL,
-			LeftEyeForwardX REAL NOT NULL,
-			LeftEyeForwardY REAL NOT NULL,
-			LeftEyeForwardZ REAL NOT NULL,
-			LeftEyePositionX REAL NOT NULL,
-			LeftEyePositionY REAL NOT NULL,
-			LeftEyePositionZ REAL NOT NULL,
-			LeftPupilIrisDiameterRatio REAL NOT NULL,
-			LeftPupilDiameterInMM REAL NOT NULL,
-			LeftIrisDiameterInMM REAL NOT NULL,
-			left Eye Openness REAL NOT NULL,
-			RightEyeStatus TEXT NOT NULL,
-			RightEyeForwardX REAL NOT NULL,
-			RightEyeForwardY REAL NOT NULL,
-			RightEyeForwardZ REAL NOT NULL,
-			RightEyePositionX REAL NOT NULL,
-			RightEyePositionY REAL NOT NULL,
-			RightEyePositionZ REAL NOT NULL,
-			RightPupilIrisDiameterRatio REAL NOT NULL,
-			RightPupilDiameterInMM REAL NOT NULL,
-			RightIrisDiameterInMM REAL NOT NULL,
-			Right Eye Openness REAL NOT NULL,
-			FocusDistance REAL NOT NULL,
-			FocusStability REAL NOT NULL
+			CaptureTime INTEGER DEFAULT 0,
+			LogTime INTEGER DEFAULT 0,
+			HMDPositionX REAL DEFAULT 0,
+			HMDPositionY REAL DEFAULT 0,
+			HMDPositionz REAL DEFAULT 0,
+			HMDRotationX REAL DEFAULT 0,
+			HMDRotationY REAL DEFAULT 0,
+			HMDRotationZ REAL DEFAULT 0,
+			HMDRotationHuh REAL DEFAULT 0,
+			GazeStatus TEXT DEFAULT 'INVALID',
+			CombinedGazeForwardX REAL DEFAULT 0,
+			CombinedGazeForwardY REAL DEFAULT 0,
+			CombinedGazeForwardZ REAL DEFAULT 0,
+			CombinedGazePositionX REAL DEFAULT 0,
+			CombinedGazePositionY REAL DEFAULT 0,
+			CombinedGazePositionZ REAL DEFAULT 0,
+			InterPupillaryDistanceInMM REAL DEFAULT 0,
+			LeftEyeStatus TEXT DEFAULT 'INVALID',
+			LeftEyeForwardX REAL DEFAULT 0,
+			LeftEyeForwardY REAL DEFAULT 0,
+			LeftEyeForwardZ REAL DEFAULT 0,
+			LeftEyePositionX REAL DEFAULT 0,
+			LeftEyePositionY REAL DEFAULT 0,
+			LeftEyePositionZ REAL DEFAULT 0,
+			LeftPupilIrisDiameterRatio REAL DEFAULT 0,
+			LeftPupilDiameterInMM REAL DEFAULT 0,
+			LeftIrisDiameterInMM REAL DEFAULT 0,
+			left Eye Openness REAL DEFAULT 0,
+			RightEyeStatus TEXT DEFAULT 'INVALID',
+			RightEyeForwardX REAL DEFAULT 0,
+			RightEyeForwardY REAL DEFAULT 0,
+			RightEyeForwardZ REAL DEFAULT 0,
+			RightEyePositionX REAL DEFAULT 0,
+			RightEyePositionY REAL DEFAULT 0,
+			RightEyePositionZ REAL DEFAULT 0,
+			RightPupilIrisDiameterRatio REAL DEFAULT 0,
+			RightPupilDiameterInMM REAL DEFAULT 0,
+			RightIrisDiameterInMM REAL DEFAULT 0,
+			Right Eye Openness REAL DEFAULT 0,
+			FocusDistance REAL DEFAULT 0,
+			FocusStability REAL DEFAULT 0
 		);
 	`).run();
 }

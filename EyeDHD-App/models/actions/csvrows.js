@@ -1,27 +1,29 @@
-import toTableName from '../tables/csvrows.js';
+import { toTableName } from '../tables/csvrows.js';
+import { sleep } from '../../electron/utils.js';
 
 export default { create, read };
 
 /**
  * Adds a batch of cleaned CSV rows into the database
  * @param {*} db
- * @param {*} filename
+ * @param {*} file
  * @param {*} rows
  * @returns object with ok boolean
  */
 function create(db, file, rows) {
 	try {
+		const table = toTableName(file.name);
 		const insert = db.prepare(`
-			INSERT INTO ${toTableName(file.name)} (
+			INSERT INTO ${table} (
 				Frame,
 				LeftEyeStatus,
 				LeftEyeForwardX,
 				LeftEyeForwardY,
 				LeftEyeForwardZ,
 				RightEyeStatus,
-				LeftEyeForwardX,
-				LeftEyeForwardY,
-				LeftEyeForwardZ
+				RightEyeForwardX,
+				RightEyeForwardY,
+				RightEyeForwardZ
 			)
 			VALUES (
 				@Frame,
@@ -46,7 +48,7 @@ function create(db, file, rows) {
 
 		return { ok: true };
 	} catch (err) {
-		console.error(`Failed to read cleaned rows for file: ${file.name}`, err);
+		console.error(`Failed to store cleaned rows for file: ${file.name}`, err);
 		return { ok: false };
 	}
 }
@@ -57,15 +59,19 @@ function create(db, file, rows) {
  * @param {*} file
  * @returns object with ok boolean and rows array
  */
-function read(db, file) {
+async function read(db, file) {
 	try {
-		const rows = db.prepare(`
-			SELECT * FROM ${toTableName(file.name)}
-			OFFSET ${file.requested} ROWS
-			FETCH NEXT ${file.buffer_size} ROWS ONLY;
-		`).all();
+		if (file.cleaned === 0) {
+			await sleep(100);
+		}
 
-		return { ok: false, rows };
+		const table = toTableName(file.name);
+		let rows = db.prepare(`
+			SELECT * FROM ${table}
+			LIMIT ? OFFSET ?;
+		`).all(file.buffer_size, file.requested);
+
+		return { ok: true, rows };
 	} catch (err) {
 		console.error(`Failed to read cleaned rows for file: ${file.name}`, err);
 		return { ok: false, rows: undefined };

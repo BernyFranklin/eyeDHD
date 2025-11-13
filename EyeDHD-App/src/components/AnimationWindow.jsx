@@ -81,8 +81,6 @@ function RotatingModel({ csvData, currentIndex, eyePosition, position=[0,0,0], i
 export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
     const [currentIndex, setCurrentIndex] = useState(0);
 
-
-
     useEffect(() => {
         if (!isPlaying || !csvData) return;
 

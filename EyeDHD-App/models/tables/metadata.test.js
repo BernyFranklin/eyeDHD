@@ -4,7 +4,7 @@ import getDB from "../dbmgr";
 import createMetadataTable from "./metadata";
 
 test.concurrent("files table create", async ({ expect }) => {
-	const db = getDB(true);
+	const db = getDB({ testing: true });
 	createMetadataTable(db);
 
 	// Check whether the files database was created

@@ -9,7 +9,7 @@ import csvrows from '../models/actions/csvrows.js';
 import DataCleaner from './stuff/DataCleaner.js';
 import { sleep } from './utils.js';
 
-const db = getDB();
+const db = getDB({ testing: true });
 createMetadataTable(db);
 
 /**
@@ -42,16 +42,17 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 		if (!ok) {
 			return reject(`Failed to create metadata in db for file: ${filename}`);
 		}
+
 		createRowsTable(db, file.name);
 
-		ipcMain.emit('csv-clean-file', file);
+		ipcMain.emit('csv-clean-file', undefined, file);
 
 		return resolve(filename);
 	});
 });
 
-ipcMain.on('csv-clean-file', async (file) => {
-	// Initialize cleaner to clean 10 times faster than buffer_size
+ipcMain.on('csv-clean-file', async (_, file) => {
+	// Initialize cleaner
 	const cleaner = new DataCleaner({
 		path: file.path,
 		buf_len: file.buffer_size * 10
@@ -82,7 +83,7 @@ ipcMain.on('csv-clean-file', async (file) => {
 			if (read) file = newFile;
 
 			// Yield before loading more so ui can request data
-			await sleep(0);
+			await sleep(100);
 			buffer = await cleaner.getBuffer();
 		}
 
@@ -136,7 +137,7 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
 			return reject(`File: ${filename} has not been opened`);
 		}
 
-		const { ok, rows } = csvrows.read(db, file);
+		const { ok, rows } = await csvrows.read(db, file);
 		if (!ok) {
 		    return reject(`Failed to read cleaned rows for file: ${filename}`);
 		}

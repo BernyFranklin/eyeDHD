@@ -3,9 +3,9 @@ import { app } from 'electron';
 import path from 'path';
 import fs from 'fs';
 
-export default function getDB(testing = false) {
+export default function getDB(options = { testing: false }) {
     // Creates a temporary in memory database for testing
-    if (testing) {
+    if (options.testing) {
         const db = new Database(':memory:', { verbose: console.log });
 
         return db;

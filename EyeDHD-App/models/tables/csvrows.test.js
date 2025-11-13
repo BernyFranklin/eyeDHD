@@ -8,7 +8,7 @@ test.concurrent("csv table create", async ({ expect }) => {
         name: 'test.csv'
     };
 
-    const db = getDB(true);
+    const db = getDB({ testing: true });
     createRowsTable(db, file.name);
 
     // Check whether csv data table is created

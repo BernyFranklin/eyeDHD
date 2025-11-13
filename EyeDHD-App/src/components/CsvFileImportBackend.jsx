@@ -31,12 +31,6 @@ export function CsvFileImport() {
         setIsLoading(false);
     };
 
-
-    // Imports CSV data into database
-    const dbImport = async () => {
-        //
-    };
-
     const loadMoreRows = async () => {
         if (!fileName) {
             sendError("No file loaded");
@@ -49,7 +43,8 @@ export function CsvFileImport() {
 
         setCsvData(rows);
 
-        if (rows === null) {
+        if (rows.length === 0) {
+        	setCsvData(null);
             sendAlert(`End of "${fileName}" reached!`);
         }
     }
@@ -89,7 +84,6 @@ export function CsvFileImport() {
         <div className="csv-import-container">
             <LoadingOverlay isLoading={isLoading} />
             <Button onClick={openFile} className="btn" buttonText="Select a CSV File" />
-            <Button onClick={dbImport} className="btn" buttonText="SQLite Import" />
 
             {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
             {fileName && <PreviewCsvFile fileName={fileName} csvData={csvData} />}
