@@ -12,8 +12,6 @@ import { sleep } from './utils.js';
 const db = getDB();
 createMetadataTable(db);
 
-let worker = null;
-
 /**
  * Handles the csv-open-file request. Opens a file selector and begins cleaning it if one is selected
  *
