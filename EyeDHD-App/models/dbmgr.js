@@ -1,8 +1,7 @@
 import Database from 'better-sqlite3';
 import { app } from 'electron';
 import path from 'path';
-
-import createMetadataTable from './tables/metadata';
+import fs from 'fs';
 
 export default function getDB(testing = false) {
     // Creates a temporary in memory database for testing

@@ -1,13 +1,13 @@
 import { dialog, ipcMain, Notification } from 'electron';
-import { Worker } from 'worker_threads';
 import path from 'path';
 
-import getDB from '../models/dbmgr';
-import createMetadataTable from '../models/tables/metadata';
-import createRowsTable from '../models/tables/rows';
-import metadata from '../models/actions/metadata';
-import rows from '../models/actions/rows';
-import { sleep } from './utils';
+import getDB from '../models/dbmgr.js';
+import createMetadataTable from '../models/tables/metadata.js';
+import createRowsTable from '../models/tables/csvrows.js';
+import metadata from '../models/actions/metadata.js';
+import csvrows from '../models/actions/csvrows.js';
+import DataCleaner from './stuff/DataCleaner.js';
+import { sleep } from './utils.js';
 
 const db = getDB();
 createMetadataTable(db);
@@ -40,44 +40,68 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 			return resolve(filename);
 		}
 
-		const { ok } = metadata.create(db, filename, filepath, buffer_size);
+		const { ok, file } = metadata.create(db, filename, filepath, buffer_size);
 		if (!ok) {
 			return reject(`Failed to create metadata in db for file: ${filename}`);
 		}
-		createRowsTable(db, filename);
+		createRowsTable(db, file.name);
 
-		// Wait until worker has finished working
-		while (worker) {
-		    await sleep(100);
-		}
+		ipcMain.emit('csv-clean-file', file);
 
-		// Read and clean csv file in a separate thread, so main thread can still respond
-		// to messages
-		worker = new Worker(path.join(__dirname, 'stuff', 'csv_worker.js'), {
-            workerData: { filename, filepath, buffer_size }
-        });
-		worker.on('message', msgHandler);
-        worker.on('exit', exitHandler);
-
-        return resolve(filename);
-    });
+		return resolve(filename);
+	});
 });
 
-const msgHandler = (msg) => {
-    if (!msg.ok) {
-        console.error(`Worker error for file: ${filename}`, msg.err);
-    }
+ipcMain.on('csv-clean-file', async (file) => {
+	// Initialize cleaner to clean 10 times faster than buffer_size
+	const cleaner = new DataCleaner({
+		path: file.path,
+		buf_len: file.buffer_size * 10
+	});
 
-    worker = null;
-}
+	try {
+		// Load first batch of rows then loop until file has been cleaned
+		let buffer = await cleaner.getBuffer();
 
-const exitHandler = (code) => {
-    if (code !== 0) {
-        console.error(`Worker stopped with exit code ${code}`);
-    }
+		while (buffer) {
+			// Store rows
+			let { ok: stored } = csvrows.create(db, file, buffer);
+			if (!stored) {
+				throw new Error(`Failed to store rows for file: ${file.name}`);
+			}
 
-    worker = null;
-}
+			// Update file metadata
+			const { ok: updated } = metadata.update(db, {
+				...file,
+				cleaned: file.cleaned + buffer.length
+			});
+			if (!updated) {
+				throw new Error(`Failed to update metadata for file: ${file.name}`);
+			}
+
+			// Fetch new file metadata
+			const { ok: read, file: newFile } = metadata.read(db, file.name);
+			if (read) file = newFile;
+
+			// Yield before loading more so ui can request data
+			await sleep(0);
+			buffer = await cleaner.getBuffer();
+		}
+
+		// Update file metadata to show cleaning has completed
+		const { ok: updated } = metadata.update(db, {
+			...file,
+			completed: 1
+		});
+		if (!updated) {
+			throw new Error(`Failed to update metadata for file: ${file.name}`);
+		}
+
+		cleaner.close();
+	} catch (err) {
+		console.error(`Failed to clean data for file: ${file.name}`, err);
+	}
+});
 
 ipcMain.handle('csv-reset-file', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
@@ -96,7 +120,7 @@ ipcMain.handle('csv-reset-file', async (_, filename) => {
 		    return reject(`Failed to reset file progress for: ${filename}`);
 		}
 
-        return resolve(rows);
+        return resolve();
     });
 });
 
@@ -114,9 +138,17 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
 			return reject(`File: ${filename} has not been opened`);
 		}
 
-		const { ok, rows } = rows.read(db, file);
+		const { ok, rows } = csvrows.read(db, file);
 		if (!ok) {
 		    return reject(`Failed to read cleaned rows for file: ${filename}`);
+		}
+
+		const { ok: updated } = metadata.update(db, {
+			...file,
+			requested: file.requested + rows.length
+		})
+		if (!updated) {
+		    return reject(`Failed to update requested count for file: ${filename}`);
 		}
 
         return resolve(rows);

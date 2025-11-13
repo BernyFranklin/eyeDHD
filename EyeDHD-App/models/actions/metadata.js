@@ -10,15 +10,23 @@ export default { create, read, update, remove };
  */
 function create(db, filename, filepath, buffer_size) {
 	try {
-		db.prepare(`
+		const result = db.prepare(`
 			INSERT INTO metadata (name, path, buffer_size)
 			VALUES (?, ?, ?);
 		`).run(filename, filepath, buffer_size);
 
-		return { ok: true };
+		const file = db.prepare(`
+			SELECT * FROM metadata WHERE id = ?;
+		`).get(result.lastInsertRowid);
+
+		if (!file) {
+			return { ok: false, file: undefined };
+		}
+
+		return { ok: true, file };
 	} catch (err) {
 		console.error(`Failed to create file entry for: ${filename}`, err);
-		return { ok: false };
+		return { ok: false, file: undefined };
 	}
 }
 
@@ -80,7 +88,7 @@ function update(db, file) {
 				cleaned = @cleaned,
 				requested = @requested,
 				updated_at = CURRENT_TIMESTAMP
-			WHERE name = @name;
+			WHERE id = @id;
 		`).run(file);
 
 		if (!result.changes) {
@@ -89,7 +97,7 @@ function update(db, file) {
 
 		return { ok: true };
 	} catch (err) {
-		console.error(`Failed to update file entry for: ${filename}`, err);
+		console.error(`Failed to update file entry for: ${file.name}`, err);
 		return { ok: false };
 	}
 }
@@ -100,23 +108,23 @@ function update(db, file) {
  * @param {*} filename
  * @returns object with ok boolean and removed file entry
  */
-function remove(db, filename) {
+function remove(db, file) {
 	try {
 		// Read the entry to be removed to return to caller
-		const { ok, file } = read(db, filename);
+		const { ok, file: original } = read(db, file.name);
 
 		const result = db.prepare(`
 			DELETE FROM metadata
-			WHERE name = ?
-		`).run(filename);
+			WHERE id = ?
+		`).run(original.id);
 
 		if (!result.changes || !ok) {
 			return { ok: false, file: undefined };
 		}
 
-		return { ok: true, file };
+		return { ok: true, file: original };
 	} catch (err) {
-		console.error(`Failed to remove file entry for: ${filename}`, err);
+		console.error(`Failed to remove file entry for: ${file.name}`, err);
 		return { ok: false, file: undefined };
 	}
 }

@@ -1,7 +1,7 @@
 import { test as vitest } from "vitest";
 
-import getDB from "../dbmgr";
-import createMetadataTable from "../tables/metadata";
+import getDB from "../dbmgr.js";
+import createMetadataTable from "../tables/metadata.js";
 
 // Adds a testing db with entries added to it for each test
 export const test = vitest.extend({

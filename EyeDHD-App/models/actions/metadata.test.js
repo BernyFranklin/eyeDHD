@@ -2,9 +2,19 @@ import { test } from "./action_test";
 
 import metadata from "./metadata";
 
+function compare(expect, result, expected) {
+	expect(result.id).toBe(expected.id);
+	expect(result.name).toBe(expected.name);
+	expect(result.path).toBe(expected.path);
+	expect(result.buffer_size).toBe(expected.buffer_size);
+	expect(result.completed).toBe(expected.completed);
+	expect(result.cleaned).toBe(expected.cleaned);
+	expect(result.requested).toBe(expected.requested);
+}
+
 // Test creating a file entry in the files table
 test.concurrent("files create", async ({ db, expect }) => {
-	const file = {
+	const expected = {
 		id: 4,
 		name: 'newData.csv',
 		path: '../newData.csv',
@@ -14,81 +24,82 @@ test.concurrent("files create", async ({ db, expect }) => {
 		requested: 0
 	};
 
-	const { ok } = metadata.create(db, file.name, file.path, file.buffer_size);
+	const { ok, file: result } = metadata.create(db,
+		expected.name,
+		expected.path,
+		expected.buffer_size
+	);
 	expect(ok).toBe(true);
-
-	const result = db.prepare(`
-		SELECT * FROM metadata WHERE name = ?;
-	`).get(file.name);
-
 	expect(result).toBeDefined();
-	expect(result.id).toBe(file.id);
-	expect(result.name).toBe(file.name);
-	expect(result.path).toBe(file.path);
-	expect(result.buffer_size).toBe(file.buffer_size);
-	expect(result.completed).toBe(file.completed);
-	expect(result.cleaned).toBe(file.cleaned);
-	expect(result.requested).toBe(file.requested);
+
+	compare(expect, result, expected);
 });
 
 // Test reading a file entry in the files table
 test.concurrent("files read", async ({ db, expect }) => {
-	const { ok, file } = metadata.read(db, 'test2.csv');
+	const expected = {
+		id: 2,
+		name: 'test2.csv',
+		path: 'test2.csv',
+		buffer_size: 200,
+		completed: 0,
+		cleaned: 0,
+		requested: 0
+	};
+
+	const { ok, file: result } = metadata.read(db, 'test2.csv');
 
 	expect(ok).toBe(true);
-	expect(file).toBeDefined();
+	expect(result).toBeDefined();
 
-	expect(file.id).toBe(2);
-	expect(file.name).toBe('test2.csv');
-	expect(file.path).toBe('test2.csv');
-	expect(file.buffer_size).toBe(200);
-	expect(file.completed).toBe(0);
-	expect(file.cleaned).toBe(0);
-	expect(file.requested).toBe(0);
+	compare(expect, result, expected);
 });
 
 
 // Test updating a file entry in the files table
 test.concurrent("files update", async ({ db, expect }) => {
-	const { file } = metadata.read(db, 'test2.csv');
+	const expected = {
+		id: 2,
+		name: 'test2.csv',
+		path: 'test2.csv',
+		buffer_size: 200,
+		completed: 1,
+		cleaned: 200,
+		requested: 0
+	};
 
-	metadata.update(db, {
-		...file,
-		cleaned: file.cleaned + 200,
+	const { file: original } = metadata.read(db, 'test2.csv');
+
+	const { ok: changed } = metadata.update(db, {
+		...original,
+		cleaned: original.cleaned + 200,
 		completed: 1
 	});
+	expect(changed).toBe(true);
 
 	const { ok, file: updated } = metadata.read(db, 'test2.csv');
 
 	expect(ok).toBe(true);
 	expect(updated).toBeDefined();
 
-	expect(updated.id).toBe(2);
-	expect(updated.name).toBe('test2.csv');
-	expect(updated.path).toBe('test2.csv');
-	expect(updated.buffer_size).toBe(200);
-	expect(updated.completed).toBe(1);
-	expect(updated.cleaned).toBe(200);
-	expect(updated.requested).toBe(0);
+	compare(expect, updated, expected);
 });
 
 // Test removing a file entry in the files table
 test.concurrent("files remove", async ({ db, expect }) => {
-	const { ok, file: removed } = metadata.remove(db, 'test2.csv');
-
+	const { ok, file: original } = metadata.read(db, 'test2.csv');
 	expect(ok).toBe(true);
+	expect(original).toBeDefined();
+
+	const { ok: deleted, file: removed } = metadata.remove(db, original);
+
+	expect(deleted).toBe(true);
 	expect(removed).toBeDefined();
 
-	expect(removed.id).toBe(2);
-	expect(removed.name).toBe('test2.csv');
-	expect(removed.path).toBe('test2.csv');
-	expect(removed.buffer_size).toBe(200);
-	expect(removed.completed).toBe(0);
-	expect(removed.cleaned).toBe(0);
-	expect(removed.requested).toBe(0);
+	compare(expect, removed, original);
 
-	const { ok: readOk, file } = metadata.read(db, 'test2.csv');
+	const { ok: read, file } = metadata.read(db, 'test2.csv');
 
-	expect(readOk).toBe(false);
+	expect(read).toBe(false);
 	expect(file).toBeUndefined();
 });

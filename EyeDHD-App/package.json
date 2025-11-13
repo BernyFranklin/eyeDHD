@@ -5,17 +5,19 @@
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
-    "dev": "vite",
-    "electron": "electron ./electron/main.js",
-    "start:all": "concurrently -k \"npm run dev\" \"npm run electron\"",
+  	"rebuild:electron": "npx electron-rebuild -f -w better-sqlite3",
+    "dev": "npm run rebuild:electron && vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "vitest"
+    "rebuild:test": "npm rebuild better-sqlite3",
+    "test": "npm run rebuild:test && vitest"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.4.0",
     "better-sqlite3": "^12.4.1",
     "csv": "^6.4.1",
     "express": "^5.1.0",
@@ -23,8 +25,6 @@
     "papaparse": "^5.5.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "@react-three/drei": "^10.7.6",
-    "@react-three/fiber": "^9.4.0",
     "three": "^0.180.0"
   },
   "devDependencies": {
@@ -32,6 +32,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "concurrently": "^9.2.1",
     "electron": "^38.2.2",
+    "electron-rebuild": "^3.2.9",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",

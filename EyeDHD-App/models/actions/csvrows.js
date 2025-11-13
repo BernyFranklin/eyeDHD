@@ -1,21 +1,18 @@
-import path from 'path';
-
-import toTableName from '../tables/rows';
-import files from './metadata';
+import toTableName from '../tables/csvrows.js';
 
 export default { create, read };
 
 /**
- * Adds new cleaned CSV rows in the database
+ * Adds a batch of cleaned CSV rows into the database
  * @param {*} db
  * @param {*} filename
  * @param {*} rows
  * @returns object with ok boolean
  */
-function create(db, filename, rows) {
+function create(db, file, rows) {
 	try {
 		const insert = db.prepare(`
-			INSERT INTO ${toTableName(filename)} (
+			INSERT INTO ${toTableName(file.name)} (
 				Frame,
 				LeftEyeStatus,
 				LeftEyeForwardX,
@@ -49,12 +46,13 @@ function create(db, filename, rows) {
 
 		return { ok: true };
 	} catch (err) {
+		console.error(`Failed to read cleaned rows for file: ${file.name}`, err);
 		return { ok: false };
 	}
 }
 
 /**
- * Reads cleaned CSV rows from the database
+ * Reads a batch of cleaned CSV rows from the database
  * @param {*} db
  * @param {*} file
  * @returns object with ok boolean and rows array
@@ -63,11 +61,9 @@ function read(db, file) {
 	try {
 		const rows = db.prepare(`
 			SELECT * FROM ${toTableName(file.name)}
-			OFFSET ${file.rows_read} ROWS
+			OFFSET ${file.requested} ROWS
 			FETCH NEXT ${file.buffer_size} ROWS ONLY;
 		`).all();
-
-		// Update file metadata
 
 		return { ok: false, rows };
 	} catch (err) {

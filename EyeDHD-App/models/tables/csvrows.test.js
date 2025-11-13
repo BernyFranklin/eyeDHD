@@ -1,7 +1,7 @@
 import { test } from "vitest";
 
 import getDB from "../dbmgr";
-import createRowsTable, { toTableName } from "./rows";
+import createRowsTable, { toTableName } from "./csvrows";
 
 test.concurrent("csv table create", async ({ expect }) => {
     const file = {
