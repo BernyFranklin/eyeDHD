@@ -1,5 +1,0 @@
-﻿Cycle 2 Notes
-Summary
-During this scrum cycle, we expanded on the core animation, database, and UI functionality that was started in the previous sprint. For the Animation Generation feature, the team implemented reliable playback controls. Users can now play, pause, and resume animations, with the system correctly preserving the current frame and resuming from the exact point where playback stopped. The animation also resets properly when a new CSV file is loaded, ensuring clean transitions between datasets. The user interface was refined to ensure smooth transitions between importing, cleaning, and animating data.
-Plans for the Next Cycle
-During the next scrum cycle, we will focus on finalizing video recording and export, choosing the tool that correctly syncs with animation frames. Additional improvements to error handling and database metadata management will help prepare the system for more advanced functionality.
