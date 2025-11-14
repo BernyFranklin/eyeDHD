@@ -1,15 +1,8 @@
 import AnimationWindow from "./AnimationWindow";
 import Button from "./Button";
 
-export default function AnimationContainer({ fileName, csvData, loadMoreRows, isPlaying, setIsPlaying }) {
-    if(!fileName) {
-        return (
-            <div className="animation-window-container">
-                <p>Load a file to view animation!</p>
-            </div>
-        );
-    }
-
+export default function AnimationContainer({ csvData, loadMoreRows, isPlaying, setIsPlaying }) {
+    
     return (
         <div className="animation-window-container">
             <AnimationWindow csvData={csvData} loadMoreRows={loadMoreRows} isPlaying={isPlaying} />
