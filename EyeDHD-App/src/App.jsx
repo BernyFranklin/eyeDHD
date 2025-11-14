@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import CsvFileImport from './components/CsvFileImportBackend.jsx'
+import CsvFileImport from './components/CsvFileImport.jsx'
 import './App.css'
 import Navbar from './components/Navbar.jsx'
 import LoadingOverlay from './components/LoadingOverlay.jsx'
