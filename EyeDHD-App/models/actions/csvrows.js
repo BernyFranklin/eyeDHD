@@ -1,5 +1,4 @@
 import { toTableName } from '../tables/csvrows.js';
-import { sleep } from '../../electron/utils.js';
 
 export default { create, read };
 
@@ -61,10 +60,6 @@ function create(db, file, rows) {
  */
 async function read(db, file) {
 	try {
-		if (file.cleaned === 0) {
-			await sleep(100);
-		}
-
 		const table = toTableName(file.name);
 		let rows = db.prepare(`
 			SELECT * FROM ${table}

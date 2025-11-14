@@ -1,4 +1,4 @@
-import { dialog, ipcMain, Notification } from 'electron';
+import { app, dialog, ipcMain, Notification } from 'electron';
 import path from 'path';
 
 import getDB from '../models/dbmgr.js';
@@ -7,9 +7,12 @@ import createRowsTable from '../models/tables/csvrows.js';
 import metadata from '../models/actions/metadata.js';
 import csvrows from '../models/actions/csvrows.js';
 import DataCleaner from './stuff/DataCleaner.js';
-import { sleep } from './utils.js';
 
-const db = getDB({ testing: true });
+const appRoot = app.getAppPath();
+const dbpath = path.join(appRoot, 'main.db');
+const db = getDB({
+	path: dbpath
+});
 createMetadataTable(db);
 
 /**
@@ -32,30 +35,32 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 		const filename = path.basename(filepath);
 
 		// If file is already opened and cleaning, just return filename
-		const { ok: exists } = metadata.read(db, filename);
+		const { ok: exists, file } = metadata.read(db, filename);
 		if (exists) {
-		    // Update buffer_size if different, reset rows_read so 'csv-reset-file' is unneeded
+			if (file.completed === 0) {
+				await cleanFile(file);
+			}
 			return resolve(filename);
 		}
 
-		const { ok, file } = metadata.create(db, filename, filepath, buffer_size);
+		const { ok, file: newFile } = metadata.create(db, filename, filepath, buffer_size);
 		if (!ok) {
 			return reject(`Failed to create metadata in db for file: ${filename}`);
 		}
 
-		createRowsTable(db, file.name);
+		createRowsTable(db, newFile.name);
 
-		ipcMain.emit('csv-clean-file', undefined, file);
+		await cleanFile(newFile);
 
 		return resolve(filename);
 	});
 });
 
-ipcMain.on('csv-clean-file', async (_, file) => {
+async function cleanFile(file) {
 	// Initialize cleaner
 	const cleaner = new DataCleaner({
 		path: file.path,
-		buf_len: file.buffer_size * 10
+		buf_len: file.buffer_size
 	});
 
 	try {
@@ -82,8 +87,6 @@ ipcMain.on('csv-clean-file', async (_, file) => {
 			const { ok: read, file: newFile } = metadata.read(db, file.name);
 			if (read) file = newFile;
 
-			// Yield before loading more so ui can request data
-			await sleep(100);
 			buffer = await cleaner.getBuffer();
 		}
 
@@ -98,9 +101,9 @@ ipcMain.on('csv-clean-file', async (_, file) => {
 
 		cleaner.close();
 	} catch (err) {
-		console.error(`Failed to clean data for file: ${file.name}`, err);
+		return reject(`Failed to clean data for file: ${newFile.name}`, err);
 	}
-});
+}
 
 ipcMain.handle('csv-reset-file', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
@@ -132,7 +135,7 @@ ipcMain.handle('csv-reset-file', async (_, filename) => {
  */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-		const { ok: exists, file } = metadata.read(db, filename);
+		let { ok: exists, file } = metadata.read(db, filename);
 		if (!exists) {
 			return reject(`File: ${filename} has not been opened`);
 		}

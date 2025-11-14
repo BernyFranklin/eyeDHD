@@ -84,9 +84,13 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
     useEffect(() => {
         if (!isPlaying || !csvData) return;
 
+        const loadRows = async () => {
+	        loadMoreRows();
+	        setCurrentIndex(0);
+        }
+
         if (currentIndex >= csvData.length - 1) {
-            loadMoreRows();
-            setCurrentIndex(0);
+        	loadRows();
         }
       }, [currentIndex, isPlaying, loadMoreRows]);
 

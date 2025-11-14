@@ -18,8 +18,8 @@ contextBridge.exposeInMainWorld('electron', {
         /**
          * Requests for a csv file to be closed
          */
-        closeFile: async (filename) => {
-            return await ipcRenderer.invoke('csv-close-file', filename);
+        resetFile: async (filename) => {
+            return await ipcRenderer.invoke('csv-reset-file', filename);
         },
         /**
          * Requests the buffer stored in the data cleaner, triggers the buffer

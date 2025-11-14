@@ -116,6 +116,7 @@ export default class DataCleaner {
 			}
 
 			this.status.reading = false;
+
 		} catch (err) {
 			this.close();
 			throw err;

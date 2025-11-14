@@ -16,12 +16,12 @@ export function CsvFileImport() {
     const [isPlaying, setIsPlaying] = useState(false);
 
     const openFile = async () => {
+    	setIsLoading(true);
         // Request backend to open a file selector, wait for filename
         const file = await electron.csv.openFile(200).catch(handleError);
         if (error || !file) return;
 
         setFileName(file);
-        setIsLoading(true);
 
         // Request 200 rows from the backend
         const rows = await electron.csv.getBuffer(file).catch(handleError);
@@ -75,7 +75,7 @@ export function CsvFileImport() {
 
         return () => {
             if (previous) {
-                electron.csv.closeFile(previous).catch(handleError);
+                electron.csv.resetFile(previous).catch(handleError);
             }
         }
     }, [fileName])

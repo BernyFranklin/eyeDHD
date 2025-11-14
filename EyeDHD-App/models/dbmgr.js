@@ -3,7 +3,7 @@ import { app } from 'electron';
 import path from 'path';
 import fs from 'fs';
 
-export default function getDB(options = { testing: false }) {
+export default function getDB(options = { testing: false, path: null }) {
     // Creates a temporary in memory database for testing
     if (options.testing) {
         const db = new Database(':memory:', { verbose: console.log });
@@ -11,17 +11,17 @@ export default function getDB(options = { testing: false }) {
         return db;
     }
 
-    const appRoot = app.getAppPath();
-    const dbPath = path.join(appRoot, 'main.db');
+    if (!options.path) {
+    	throw new Error('Database path not provided');
+    }
+    console.log(`Using database at ${options.path}`);
 
-    console.log(`Using database at ${dbPath}`);
-
-    const db = new Database(dbPath);
+    const db = new Database(options.path, { verbose: console.log });
 
     // Set for performance
     db.pragma('journal_mode = WAL');
     // Clean up wal file if it gets too big
-    setInterval(fs.stat.bind(null, path.join(appRoot, "main.db-wal"), (err, stat) => {
+    setInterval(fs.stat.bind(null, options.path + "-wal", (err, stat) => {
         if (err) {
             throw err;
         } else if (stat.size > 1e6) {
