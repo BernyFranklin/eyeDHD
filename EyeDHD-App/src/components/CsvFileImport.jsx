@@ -102,7 +102,6 @@ export function CsvFileImport() {
 
             {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
             {fileName && <PreviewCsvFile fileName={fileName} csvData={csvData} />}
-            <AnimationContainer fileName={fileName} csvData={csvData} loadMoreRows={loadMoreRows} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />
             {showAlert && <AlertWindow message={alertMessage} classColor=" green" onClose={() => setShowAlert(false)} />}
         </div>
     );
