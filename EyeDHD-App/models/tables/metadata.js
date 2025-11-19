@@ -11,6 +11,8 @@ function createMetadataTable(db) {
 			completed BOOLEAN DEFAULT 0,
 			cleaned INTEGER DEFAULT 0,
 			requested INTEGER DEFAULT 0,
+			first_frame INTEGER DEFAULT 0,
+			last_frame INTEGER DEFAULT 0,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);

@@ -29,6 +29,10 @@ contextBridge.exposeInMainWorld('electron', {
          */
         getBuffer: async (filename) => {
             return await ipcRenderer.invoke('csv-get-buffer', filename);
+        },
+        // Returns { first, last }
+        getFirstAndLast: async (filename) => {
+        	return await ipcRenderer.invoke('csv-get-first-and-last', filename);
         }
     },
     notify: {

@@ -41,12 +41,13 @@ export function CsvFileImport() {
         const rows = await electron.csv.getBuffer(fileName).catch(handleError);
         if (error) return;
 
-        setCsvData(rows);
-
         if (rows.length === 0) {
         	setCsvData(null);
+          	setIsPlaying(false);
             sendAlert(`End of "${fileName}" reached!`);
         }
+
+        setCsvData(rows);
     }
 
     const sendAlert = (message) => {
@@ -68,17 +69,6 @@ export function CsvFileImport() {
             setError("");
         }, 4000);
     }
-
-    // Close the previous file when a new file is opened
-    useEffect(() => {
-		const previous = fileName;
-
-        return () => {
-            if (previous) {
-                electron.csv.resetFile(previous).catch(handleError);
-            }
-        }
-    }, [fileName])
 
     return (
         <div className="csv-import-container">

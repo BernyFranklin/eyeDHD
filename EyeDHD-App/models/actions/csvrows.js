@@ -1,20 +1,15 @@
 import { toTableName } from '../tables/csvrows.js';
 
-export default { create, read };
+export default { create, read, firstAndLast };
 
-/**
- * Adds a batch of cleaned CSV rows into the database
- * @param {*} db
- * @param {*} file
- * @param {*} rows
- * @returns object with ok boolean
- */
 function create(db, file, rows) {
 	try {
 		const table = toTableName(file.name);
 		const insert = db.prepare(`
 			INSERT INTO ${table} (
 				Frame,
+				CaptureTime,
+				LogTime,
 				LeftEyeStatus,
 				LeftEyeForwardX,
 				LeftEyeForwardY,
@@ -26,6 +21,8 @@ function create(db, file, rows) {
 			)
 			VALUES (
 				@Frame,
+				@CaptureTime,
+				@LogTime,
 				@LeftEyeStatus,
 				@LeftEyeForwardX,
 				@LeftEyeForwardY,
@@ -45,20 +42,15 @@ function create(db, file, rows) {
 
 		insertMany(rows);
 
-		return { ok: true };
+		return true;
 	} catch (err) {
-		console.error(`Failed to store cleaned rows for file: ${file.name}`, err);
-		return { ok: false };
+		console.error(err);
+
+		return false;
 	}
 }
 
-/**
- * Reads a batch of cleaned CSV rows from the database
- * @param {*} db
- * @param {*} file
- * @returns object with ok boolean and rows array
- */
-async function read(db, file) {
+function read(db, file) {
 	try {
 		const table = toTableName(file.name);
 		let rows = db.prepare(`
@@ -66,9 +58,32 @@ async function read(db, file) {
 			LIMIT ? OFFSET ?;
 		`).all(file.buffer_size, file.requested);
 
-		return { ok: true, rows };
+		return rows;
 	} catch (err) {
-		console.error(`Failed to read cleaned rows for file: ${file.name}`, err);
-		return { ok: false, rows: undefined };
+		console.error(err);
+
+		return undefined;
+	}
+}
+
+function firstAndLast(db, file) {
+	try {
+		const table = toTableName(file.name);
+
+		const first = db.prepare(`
+			SELECT * FROM ${table}
+			WHERE frame = ?;
+		`).get(file.first_frame);
+
+		const last = db.prepare(`
+			SELECT * FROM ${table}
+			WHERE frame = ?;
+		`).get(file.last_frame);
+
+		return { first, last };
+	} catch (err) {
+		console.error(err);
+
+		return null;
 	}
 }

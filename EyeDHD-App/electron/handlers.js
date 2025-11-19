@@ -11,7 +11,8 @@ import DataCleaner from './stuff/DataCleaner.js';
 const appRoot = app.getAppPath();
 const dbpath = path.join(appRoot, 'main.db');
 const db = getDB({
-	path: dbpath
+	path: dbpath,
+	testing: true
 });
 createMetadataTable(db);
 
@@ -35,89 +36,98 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 		const filename = path.basename(filepath);
 
 		// If file is already opened and cleaning, just return filename
-		const { ok: exists, file } = metadata.read(db, filename);
-		if (exists) {
+		let file = metadata.read(db, filename);
+		if (file) {
 			if (file.completed === 0) {
 				await cleanFile(file);
 			}
+
+			const updated = metadata.update(db, { ...file,
+				requested: 0
+			});
+			if (!updated) {
+			    return reject(`Failed to reset file progress for: ${filename}`);
+			}
+
 			return resolve(filename);
 		}
 
-		const { ok, file: newFile } = metadata.create(db, filename, filepath, buffer_size);
-		if (!ok) {
+		file = metadata.create(db, filename, filepath, buffer_size);
+		if (!file) {
 			return reject(`Failed to create metadata in db for file: ${filename}`);
 		}
 
-		createRowsTable(db, newFile.name);
+		createRowsTable(db, file.name);
 
-		await cleanFile(newFile);
+		await cleanFile(file);
 
 		return resolve(filename);
 	});
 });
 
-async function cleanFile(file) {
-	// Initialize cleaner
-	const cleaner = new DataCleaner({
-		path: file.path,
-		buf_len: file.buffer_size
-	});
+function cleanFile(original) {
+	return new Promise(async (resolve, reject) => {
+		let file = original;
+		// Initialize cleaner
+		const cleaner = new DataCleaner({
+			path: file.path,
+			buf_len: file.buffer_size
+		});
 
-	try {
 		// Load first batch of rows then loop until file has been cleaned
 		let buffer = await cleaner.getBuffer();
 
+		file.first_frame = buffer[0].Frame;
+		const ok = metadata.update(db, file);
+		if (!ok) {
+			return reject(`Failed to update metadata for file: ${file.name}`);
+		}
+
 		while (buffer) {
 			// Store rows
-			let { ok: stored } = csvrows.create(db, file, buffer);
+			let stored = csvrows.create(db, file, buffer);
 			if (!stored) {
-				throw new Error(`Failed to store rows for file: ${file.name}`);
+				return reject(`Failed to store rows for file: ${file.name}`);
 			}
 
 			// Update file metadata
-			const { ok: updated } = metadata.update(db, {
-				...file,
-				cleaned: file.cleaned + buffer.length
+			const updated= metadata.update(db, { ...file,
+				last_frame: buffer[buffer.length - 1].Frame,
+				cleaned: file.cleaned += buffer.length
 			});
 			if (!updated) {
-				throw new Error(`Failed to update metadata for file: ${file.name}`);
+				return reject(`Failed to update metadata for file: ${file.name}`);
 			}
 
-			// Fetch new file metadata
-			const { ok: read, file: newFile } = metadata.read(db, file.name);
-			if (read) file = newFile;
-
 			buffer = await cleaner.getBuffer();
+
+			file = metadata.read(db, file.name);
 		}
 
 		// Update file metadata to show cleaning has completed
-		const { ok: updated } = metadata.update(db, {
-			...file,
+		const updated = metadata.update(db, { ...file,
 			completed: 1
 		});
 		if (!updated) {
-			throw new Error(`Failed to update metadata for file: ${file.name}`);
+			return reject(`Failed to update metadata for file: ${file.name}`);
 		}
 
 		cleaner.close();
-	} catch (err) {
-		return reject(`Failed to clean data for file: ${newFile.name}`, err);
-	}
+
+		return resolve();
+	});
 }
 
 ipcMain.handle('csv-reset-file', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-		const { ok: exists, file } = metadata.read(db, filename);
-		if (!exists) {
+		const file = metadata.read(db, filename);
+		if (!file) {
 			return reject(`File: ${filename} has not been opened`);
 		}
 
-		const { ok: updated } = metadata.update(db, {
-			...file,
-			requested: 0,
-			completed: 0
+		const updated = metadata.update(db, { ...file,
+			requested: 0
 		});
-
 		if (!updated) {
 		    return reject(`Failed to reset file progress for: ${filename}`);
 		}
@@ -135,26 +145,41 @@ ipcMain.handle('csv-reset-file', async (_, filename) => {
  */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-		let { ok: exists, file } = metadata.read(db, filename);
-		if (!exists) {
+		const file = metadata.read(db, filename);
+		if (!file) {
 			return reject(`File: ${filename} has not been opened`);
 		}
 
-		const { ok, rows } = await csvrows.read(db, file);
-		if (!ok) {
+		const rows = await csvrows.read(db, file);
+		if (rows === undefined) {
 		    return reject(`Failed to read cleaned rows for file: ${filename}`);
 		}
 
-		const { ok: updated } = metadata.update(db, {
-			...file,
+		const updated = metadata.update(db, { ...file,
 			requested: file.requested + rows.length
-		})
+		});
 		if (!updated) {
 		    return reject(`Failed to update requested count for file: ${filename}`);
 		}
 
         return resolve(rows);
     });
+});
+
+ipcMain.handle('csv-get-first-and-last', async (_, filename) => {
+	return new Promise(async (resolve, reject) => {
+		const file = metadata.read(db, filename);
+		if (!file) {
+			return reject(`File: ${filename} has not been opened`);
+		}
+
+		const result = csvrows.firstAndLast(db, file);
+		if (!result) {
+		    return reject(`Failed to read cleaned rows for file: ${filename}`);
+		}
+
+		return resolve(result);
+	});
 });
 
 /**

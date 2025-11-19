@@ -1,13 +1,5 @@
 export default { create, read, update, remove };
 
-/**
- * Creates a new file entry
- * @param {*} db
- * @param {*} filename
- * @param {*} filepath
- * @param {*} buffer_size
- * @returns object with ok boolean
- */
 function create(db, filename, filepath, buffer_size) {
 	try {
 		const result = db.prepare(`
@@ -20,22 +12,17 @@ function create(db, filename, filepath, buffer_size) {
 		`).get(result.lastInsertRowid);
 
 		if (!file) {
-			return { ok: false, file: undefined };
+			throw new Error(`Failed to create file entry for: ${filename}`);
 		}
 
-		return { ok: true, file };
+		return file;
 	} catch (err) {
-		console.error(`Failed to create file entry for: ${filename}`, err);
-		return { ok: false, file: undefined };
+		console.error(err);
+
+		return null;
 	}
 }
 
-/**
- * Reads a file entry by filename
- * @param {*} db
- * @param {*} filename
- * @returns object with ok boolean and file entry
- */
 function read(db, filename) {
 	try {
 		const file = db.prepare(`
@@ -43,42 +30,17 @@ function read(db, filename) {
 		`).get(filename);
 
 		if (!file) {
-			return { ok: false, file: undefined };
+			throw new Error(`File entry not found for: ${filename}`);
 		}
 
-		return { ok: true, file };
+		return file;
 	} catch (err) {
-		console.error(`Failed to read file entry for: ${filename}`, err);
-		return { ok: false, file: undefined };
+		console.error(err);
+
+		return null;
 	}
 }
 
-/**
- * Updates a file entry by filename
- *
- * Currently allows updating completed, cleaned, and requested.
- * Updated the updated_at timestamp automatically
- *
- * @param {*} db
- * @param {*} file
- * @returns object with ok boolean
- * Pass updates as:
- * ```js
- * const { file } = read(db, filename);
- * update(db, {
- *     ...file,
- *     cleaned: file.cleaned + 200
- * })
- * ```
- *
- * or update the file json directly and pass it in
- * ```js
- * let { file } = read(db, filename);
- * file.cleaned += 200;
- *
- * update(db, file)
- * ```
- */
 function update(db, file) {
 	try {
 		const result = db.prepare(`
@@ -87,44 +49,41 @@ function update(db, file) {
 				completed = @completed,
 				cleaned = @cleaned,
 				requested = @requested,
+				first_frame = @first_frame,
+				last_frame = @last_frame,
 				updated_at = CURRENT_TIMESTAMP
 			WHERE id = @id;
 		`).run(file);
 
 		if (!result.changes) {
-			return { ok: false };
+			throw new Error(`Failed to update file entry for: ${file.name}`);
 		}
 
-		return { ok: true };
+		return true;
 	} catch (err) {
-		console.error(`Failed to update file entry for: ${file.name}`, err);
-		return { ok: false };
+		console.error(err);
+
+		return false;
 	}
 }
 
-/**
- * Removes a file entry by filename
- * @param {*} db
- * @param {*} filename
- * @returns object with ok boolean and removed file entry
- */
 function remove(db, file) {
 	try {
-		// Read the entry to be removed to return to caller
-		const { ok, file: original } = read(db, file.name);
+		const original = read(db, file.name);
 
 		const result = db.prepare(`
 			DELETE FROM metadata
 			WHERE id = ?
 		`).run(original.id);
 
-		if (!result.changes || !ok) {
-			return { ok: false, file: undefined };
+		if (!result.changes) {
+			throw new Error(`Failed to delete file entry for: ${file.name}`);
 		}
 
-		return { ok: true, file: original };
+		return original;
 	} catch (err) {
-		console.error(`Failed to remove file entry for: ${file.name}`, err);
-		return { ok: false, file: undefined };
+		console.error(err);
+
+		return null;
 	}
 }
