@@ -14,7 +14,7 @@ export default function getDB(options = { testing: false, path: null }) {
     }
     console.log(`Using database at ${options.path}`);
 
-    const db = new Database(options.path, { verbose: console.log });
+    const db = new Database(options.path);
 
     // Set for performance
     db.pragma('journal_mode = WAL');

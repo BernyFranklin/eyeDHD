@@ -8,11 +8,15 @@ import metadata from '../models/actions/metadata.js';
 import csvrows from '../models/actions/csvrows.js';
 import DataCleaner from './stuff/DataCleaner.js';
 
+/*
+ * Database setup
+ * Set testing to true to use a temporary db instead of a file
+ */
 const appRoot = app.getAppPath();
 const dbpath = path.join(appRoot, 'main.db');
 const db = getDB({
 	path: dbpath,
-	testing: true
+	testing: false
 });
 createMetadataTable(db);
 
