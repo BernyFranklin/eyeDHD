@@ -17,9 +17,9 @@ function SanityCheck(row) {
     for(const ax of axis) {
       let key = `${pos}EyeForward${ax}`;
       const value = row[key];
-      
+
       // Handle both string and number values safely
-      if(value === undefined || value === null || 
+      if(value === undefined || value === null ||
          (typeof value === 'string' && value.trim() === '') ||
          (typeof value === 'number' && (isNaN(value) || !isFinite(value)))) {
         isValid = false;
@@ -51,7 +51,7 @@ function RotatingModel({ csvData, currentIndex, lastValid, eyePosition, position
       if (!isPlaying || !csvData || currentIndex >= csvData.length) return;
 
       const row = csvData[currentIndex];
-      
+
       // Add safety check for row
       if (!row) {
         console.log(`Row at index ${currentIndex} is undefined`);
@@ -65,10 +65,10 @@ function RotatingModel({ csvData, currentIndex, lastValid, eyePosition, position
       const forwardXKey = `${eyePosition}EyeForwardX`;
       const forwardYKey = `${eyePosition}EyeForwardY`;
       const forwardZKey = `${eyePosition}EyeForwardZ`;
-      
+
       console.log(`Looking for keys: ${forwardXKey}, ${forwardYKey}, ${forwardZKey}`);
       console.log(`Available keys in row:`, Object.keys(row));
-      
+
       // Handle both string and number values more robustly
       const getNumericValue = (value) => {
         if (typeof value === 'number') return value;
@@ -79,22 +79,22 @@ function RotatingModel({ csvData, currentIndex, lastValid, eyePosition, position
         }
         return 0;
       };
-      
+
       const forwardX = getNumericValue(row[forwardXKey]);
       const forwardY = getNumericValue(row[forwardYKey]);
       const forwardZ = getNumericValue(row[forwardZKey]);
-      
+
       console.log(`Parsed values - X: ${forwardX}, Y: ${forwardY}, Z: ${forwardZ}`);
 
       // Convert to pitch and yaw using your utility functions
       const pitch = GetPitch(forwardX, forwardY, forwardZ);
       const yaw = GetYaw(forwardX, forwardY, forwardZ);
-      
+
       console.log(`Calculated pitch: ${pitch}, yaw: ${yaw}`);
 
       const eyeStatusKey = `${eyePosition}EyeStatus`;
       const eyeStatus = row[eyeStatusKey];
-      
+
       console.log(`Eye status for ${eyePosition}: ${eyeStatus}`);
       console.log(`SanityCheck result:`, SanityCheck(row));
       console.log(`isValidAngle pitch:`, isValidAngle(pitch));

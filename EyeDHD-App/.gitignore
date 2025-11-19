@@ -3,6 +3,9 @@ node_modules
 .pnp
 .pnp.js
 
+*.db
+*-wal
+
 # Production builds
 dist
 dist-ssr

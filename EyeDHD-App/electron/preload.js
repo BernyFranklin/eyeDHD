@@ -12,14 +12,17 @@ contextBridge.exposeInMainWorld('electron', {
          *
          * @returns filename of file opened or null if cancelled
          */
-        openFile: async (bufferSize) => {
-            return await ipcRenderer.invoke('csv-open-file', bufferSize);
+        openFile: async (buffer_size) => {
+            return await ipcRenderer.invoke('csv-open-file', buffer_size);
         },
         /**
          * Requests for a csv file to be closed
          */
-        closeFile: async (filename) => {
-            return await ipcRenderer.invoke('csv-close-file', filename);
+        resetFile: async (filename) => {
+            return await ipcRenderer.invoke('csv-reset-file', filename);
+        },
+        getMetadata: async (filename) => {
+        	return await ipcRenderer.invoke('csv-get-metadata', filename);
         },
         /**
          * Requests the buffer stored in the data cleaner, triggers the buffer
@@ -65,6 +68,10 @@ contextBridge.exposeInMainWorld('electron', {
          */
         exportData: async (filename) => {
             return await ipcRenderer.invoke('csv-export-data', filename);
+        },
+        // Returns { first, last }
+        getFirstAndLast: async (filename) => {
+        	return await ipcRenderer.invoke('csv-get-first-and-last', filename);
         }
     },
     notify: {
@@ -74,9 +81,5 @@ contextBridge.exposeInMainWorld('electron', {
         send: (message) => {
             ipcRenderer.send('notify', message);
         }
-    },
-    db: {
-        selectAll : async () => await ipcRenderer.invoke('db-select-all'),
-        importCsv : async () => await ipcRenderer.invoke('db-import-csv'),
     }
 })

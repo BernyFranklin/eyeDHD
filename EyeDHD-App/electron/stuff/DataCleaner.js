@@ -20,8 +20,7 @@ export default class DataCleaner {
   status = {
     reading: false,
     done: false,
-    closed: false,
-    autoRefill: true, // Controls whether getBuffer() automatically refills
+    closed: false
   };
 
   // Statistics for monitoring data quality
@@ -76,15 +75,12 @@ export default class DataCleaner {
     validStatuses: ["VALID", "INVALID", "LOST", "TRACKING", "NOT_TRACKING"],
   };
 
-  constructor({ path, buf_len = 200, autoStart = true }) {
+  constructor({ path, buf_len = 200 }) {
     // Store the file path for later use
     this.filePath = path;
-    
+
     // Performance tracking
     this.performance.startTime = Date.now();
-
-    // Set auto-refill behavior based on autoStart
-    this.status.autoRefill = autoStart;
 
     // Get file size for progress tracking
     try {
@@ -129,16 +125,16 @@ export default class DataCleaner {
         if (!headerValidation.isValid) {
           console.warn("Header validation issues detected:", headerValidation);
         }
-        
+
+        this.performance.startTime = Date.now();
+
         // Only auto-load rows if autoStart is true
-        if (autoStart) {
-          this.loadRows(this.buf_len)
-            .then()
-            .catch((err) => {
-              this.close();
-              throw err;
-            });
-        }
+        this.loadRows(this.buf_len)
+        .then()
+        .catch((err) => {
+            this.close();
+            throw err;
+        });
       })
       .catch((err) => {
         this.close();
@@ -187,7 +183,7 @@ export default class DataCleaner {
         this.buf.push(cleaned);
         this.updateStats(cleaned);
       }
-      
+
       // Only set reading to false if we weren't already in a cleaning process
       if (!wasAlreadyReading) {
         this.status.reading = false;
@@ -491,43 +487,14 @@ export default class DataCleaner {
   }
 
   /**
-   * Gets a row of cleaned data from the internal buffer
-   *
-   * @returns a cleaned row, or null if the entire file has been read
-   */
-  async getRow() {
-    try {
-      if (this.status.done) {
-        return null;
-      }
-
-      while (this.buf.length <= 0) {
-        await sleep(10);
-      }
-
-      const row = this.buf.shift();
-
-      if (this.buf.length <= 0) {
-        this.loadRows(this.buf_len).catch((err) => {
-          this.close();
-          throw err;
-        });
-      }
-
-      return row;
-    } catch (err) {
-      throw err;
-    }
-  }
-
-  /**
    * Gets the cleaners internal buffer and begins filling new data into it's buffer
    *
    * @returns an array of rows, or null if the entire file has been read
    */
   async getBuffer() {
     if (this.status.done) {
-      return null;
+    	this.updatePerformanceMetrics();
+      	return null;
     }
 
     while (this.buf.length === 0 || this.status.reading) {
@@ -543,7 +510,7 @@ export default class DataCleaner {
     this.buf = [];
 
     // Only auto-refill if autoRefill is enabled and file is not done
-    if (!this.status.done && this.status.autoRefill) {
+    if (!this.status.done) {
       this.loadRows(this.buf_len).catch((err) => {
         this.close();
         throw err;
@@ -551,62 +518,6 @@ export default class DataCleaner {
     }
 
     return out;
-  }
-
-  /**
-   * Starts the data cleaning process by loading all remaining rows
-   * This method can be called to actively clean the entire file
-   *
-   * @returns Promise that resolves when cleaning is complete
-   */
-  async startCleaning() {
-    try {
-
-      
-      // Enable auto-refill for full cleaning
-      this.status.autoRefill = true;
-      
-      this.performance.startTime = Date.now();
-      
-      // If file is already done, just return success
-      if (this.status.done) {
-        //console.log('File already processed completely!');
-        this.updatePerformanceMetrics();
-        return { success: true, message: 'File was already cleaned' };
-      }
-      
-      // Set reading status to true for the entire cleaning process
-      this.status.reading = true;
-      
-      // Continue loading rows until file is complete
-      while (!this.status.done) {
-        //console.log('Loop iteration - status.done:', this.status.done, 'buffer length:', this.buf.length);
-        
-        // If buffer is not full and we're not done, load more rows
-        if (this.buf.length < this.buf_len && !this.status.done) {
-          //console.log('Loading more rows...');
-          await this.loadRows(this.buf_len);
-          //console.log('After loadRows - status.done:', this.status.done, 'buffer length:', this.buf.length);
-        } else if (!this.status.done) {
-          // If buffer is full but file isn't done, clear buffer to continue processing
-          //console.log('Buffer full, clearing to continue processing...');
-          this.buf = [];
-        }
-        
-        //await sleep(50); // Slow down processing to see progress (remove for production)
-      }
-      
-      // Set reading to false when completely done
-      this.status.reading = false;
-      
-
-      this.updatePerformanceMetrics();
-      return { success: true, message: 'Cleaning completed successfully' };
-    } catch (error) {
-      this.status.reading = false;
-      console.error('Error during cleaning process:', error);
-      throw error;
-    }
   }
 
   /**
@@ -884,7 +795,7 @@ export default class DataCleaner {
   getProgress() {
     let progressPercent = 0;
     const MAX_EXPECTED_ROWS = 300000;
-    
+
     if (this.status.done) {
       // Always 100% when file is completely processed
       progressPercent = 100;
@@ -898,7 +809,7 @@ export default class DataCleaner {
         progressPercent = Math.min(99, (this.stats.totalRows / MAX_EXPECTED_ROWS) * 100);
       }
     }
-    
+
     return {
       isComplete: this.status.done,
       isReading: this.status.reading,
@@ -939,17 +850,19 @@ export default class DataCleaner {
    */
   calculateQualityScore() {
     if (this.stats.totalRows === 0) return 0;
-    
+
     const validRatio = this.stats.validRows / this.stats.totalRows;
     const errorRatio = this.stats.errorRows / this.stats.totalRows;
     const nullRatio = this.stats.nullValues / (this.stats.totalRows * this.header.length);
-    
+
     // Score based on: 70% valid data, 20% low errors, 10% minimal nulls
     const score = (validRatio * 0.7) + ((1 - errorRatio) * 0.2) + ((1 - nullRatio) * 0.1);
     return Math.round(score * 100);
   }
 
   /**
+   * @TODO move this functionality to the database
+   *
    * Exports all cleaned data to a new CSV file
    *
    * @param {string} outputPath - The path where to save the cleaned CSV file
@@ -967,10 +880,10 @@ export default class DataCleaner {
       let csvContent = '';
       let isFirstLine = true;
       let exportedRows = 0;
-      
+
       // Add header row
       csvContent += this.header.map(col => `"${col.replace(/"/g, '""')}"`).join(',') + '\n';
-      
+
       // Read through the entire file and clean each row for export
       for await (const line of exportReadline) {
         if (isFirstLine) {
@@ -982,7 +895,7 @@ export default class DataCleaner {
           try {
             // Clean the row using the same logic as loadRows
             const cleaned = this.cleanRow(line);
-            
+
             // Only include valid rows (not error rows)
             if (cleaned && !cleaned._isError) {
               const csvRow = this.header.map(col => {
@@ -1012,7 +925,7 @@ export default class DataCleaner {
 
       // Write to file
       await fs.promises.writeFile(outputPath, csvContent, 'utf8');
-      
+
       return {
         success: true,
         message: `Successfully exported ${exportedRows} cleaned rows to ${outputPath}`,

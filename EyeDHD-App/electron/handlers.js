@@ -1,74 +1,173 @@
-
-
-import { dialog, ipcMain, Notification } from 'electron';
-import { getDb } from '../models/dbmgr.js';
-import { parse } from 'csv-parse/sync';
-import { app } from 'electron';
+import { app, dialog, ipcMain, Notification } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
 
 import { filesMap } from './store.js';
+import getDB from '../models/dbmgr.js';
+import createMetadataTable from '../models/tables/metadata.js';
+import createRowsTable from '../models/tables/csvrows.js';
+import metadata from '../models/actions/metadata.js';
+import csvrows from '../models/actions/csvrows.js';
 import DataCleaner from './stuff/DataCleaner.js';
 
-const TABLE = 'EyeDataRaw';
+/*
+ * Database setup
+ * Set testing to true to use a temporary db instead of a file
+ */
+const appRoot = app.getAppPath();
+const dbpath = path.join(appRoot, 'main.db');
+const db = getDB({
+	path: dbpath,
+	testing: true
+});
+createMetadataTable(db);
 
 /**
  * Handles the csv-open-file request. Opens a file selector and begins cleaning it if one is selected
  *
- * @returns filename if a file is selector, or null if none are selected
+ * @returns filename if a file is selected, or null if none is selected
  */
-ipcMain.handle('csv-open-file', async (_, bufferSize) => {
-    return new Promise(async (resolve, reject) => {
-        const { canceled, filePaths } = await dialog.showOpenDialog({
-            properties: ['openFile'],
-            filters: [{ name: 'CSV Files', extensions: ['csv'] }]
-        });
+ipcMain.handle('csv-open-file', async (_, buffer_size) => {
+	return new Promise(async (resolve, reject) => {
+		const { canceled, filePaths } = await dialog.showOpenDialog({
+			properties: ['openFile'],
+			filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+		});
 
-        if (canceled) {
-            return resolve(null);
-        }
+		if (canceled) {
+			return resolve(null);
+		}
 
-        const filepath = filePaths[0];
-        const filename = path.basename(filepath);
+		const filepath = filePaths[0];
+		const filename = path.basename(filepath);
 
-        // If file is already opened and cleaning, just return filename
-        if (filesMap.has(filename)) {
-            return resolve(filename);
-        }
+		// If file is already opened and cleaning, just return filename
+		let file = metadata.read(db, filename);
+		if (file) {
+			if (file.completed === 0) {
+				filesMap.delete(file.name);
+				const cleaner = new DataCleaner({
+					path: file.path,
+					buf_len: file.buffer_size
+				});
 
-        // Create cleaner but don't start automatic processing
-        // We'll only process when the user explicitly requests cleaning
-        const cleaner = new DataCleaner({
-            path: filepath,
-            buf_len: bufferSize,
-            autoStart: false // Don't auto-process the entire file
-        });
+				filesMap.set(file.name, cleaner);
+				//await cleanFile(file);
+			}
 
-        filesMap.set(filename, cleaner);
-        return resolve(filename);
-    });
+        	const updated = metadata.update(db, { ...file,
+				requested: 0
+			});
+			if (!updated) {
+			    return reject(`Failed to reset file progress for: ${filename}`);
+			}
+
+			return resolve(filename);
+		}
+
+		file = metadata.create(db, filename, filepath, buffer_size);
+		if (!file) {
+			return reject(`Failed to create metadata in db for file: ${filename}`);
+		}
+
+		createRowsTable(db, file.name);
+
+		const cleaner = new DataCleaner({
+			path: file.path,
+			buf_len: file.buffer_size
+		});
+
+		filesMap.set(file.name, cleaner);
+
+		//await cleanFile(file);
+
+		return resolve(filename);
+	});
 });
 
-/**
- * Handles the csv-close-file request. Closes the cleaner for filename
- */
-ipcMain.handle('csv-close-file', async (_, filename) => {
+function cleanFile(original) {
+	return new Promise(async (resolve, reject) => {
+		let file = original;
+
+		// fetch cleaner
+		const cleaner = filesMap.get(file.name);
+		if (!cleaner) {
+			return reject(`No cleaner found for file: ${file.name}`);
+		}
+
+		// Load first batch of rows then loop until file has been cleaned
+		let buffer = await cleaner.getBuffer();
+
+		file.first_frame = buffer[0].Frame;
+		const ok = metadata.update(db, file);
+		if (!ok) {
+			return reject(`Failed to update metadata for file: ${file.name}`);
+		}
+
+		while (buffer) {
+			// Store rows
+			let stored = csvrows.create(db, file, buffer);
+			if (!stored) {
+				return reject(`Failed to store rows for file: ${file.name}`);
+			}
+
+			// Update file metadata
+			const updated= metadata.update(db, { ...file,
+				last_frame: buffer[buffer.length - 1].Frame,
+				cleaned: file.cleaned += buffer.length
+			});
+			if (!updated) {
+				return reject(`Failed to update metadata for file: ${file.name}`);
+			}
+
+			buffer = await cleaner.getBuffer();
+
+			file = metadata.read(db, file.name);
+		}
+
+		// Update file metadata to show cleaning has completed
+		const updated = metadata.update(db, { ...file,
+			completed: 1
+		});
+		if (!updated) {
+			return reject(`Failed to update metadata for file: ${file.name}`);
+		}
+
+		cleaner.close();
+
+		return resolve();
+	});
+}
+
+ipcMain.handle('csv-get-metadata', async (_, filename) => {
+	return new Promise(async (resolve, reject) => {
+		const file = metadata.read(db, filename);
+		if (!file) {
+			return reject(`File: ${filename} has not been opened`);
+		}
+
+		return resolve(file);
+	});
+});
+
+ipcMain.handle('csv-reset-file', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-        if (!filename) return resolve();
+		const file = metadata.read(db, filename);
+		if (!file) {
+			return reject(`File: ${filename} has not been opened`);
+		}
 
-        const cleaner = filesMap.get(filename);
-        if (!cleaner) {
-            return reject(`File: ${filename} has not been opened`);
-        }
+		const updated = metadata.update(db, { ...file,
+			requested: 0
+		});
+		if (!updated) {
+		    return reject(`Failed to reset file progress for: ${filename}`);
+		}
 
-        cleaner.close();
-        const ok = filesMap.delete(filename);
-        if (!ok) {
-            return reject(`Failed to close file: ${filename}`);
-        }
+		filesMap.delete(file.name);
 
-        resolve();
+        return resolve();
     });
 });
 
@@ -76,27 +175,31 @@ ipcMain.handle('csv-close-file', async (_, filename) => {
  * Handles the csv-get-buffer request. Pulls the buffer from filename's cleaner
  *
  * @returns an array of rows, or null if the entire file has been read
+ *
+ * @TODO update to use database, set completed to true when all rows have been read
  */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-        const cleaner = filesMap.get(filename);
-        if (!cleaner) {
-            return reject(`File: ${filename} has not been opened`);
-        }
+		const file = metadata.read(db, filename);
+		if (!file) {
+			return reject(`File: ${filename} has not been opened`);
+		}
+		const rows = await csvrows.read(db, file);
+		if (rows === undefined) {
+		    return reject(`Failed to read cleaned rows for file: ${filename}`);
+		}
 
-        try {
-            // If no data has been loaded yet, load some for preview
-            if (cleaner.buf.length === 0 && !cleaner.status.done && !cleaner.status.reading) {
-                await cleaner.loadRows(Math.min(50, cleaner.buf_len)); // Load max 50 rows for preview
-            }
-            
-            const buf = await cleaner.getBuffer();
-            return resolve(buf);
-        } catch (error) {
-            return reject(`Failed to get buffer for file: ${filename}. Error: ${error.message}`);
-        }
+		const updated = metadata.update(db, { ...file,
+			requested: file.requested + rows.length
+		});
+		if (!updated) {
+		    return reject(`Failed to update requested count for file: ${filename}`);
+		}
+
+        return resolve(rows);
     });
 });
+
 
 /**
  * Handles the csv-clean-data request. Initiates the data cleaning process for a file
@@ -106,20 +209,15 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
  */
 ipcMain.handle('csv-clean-data', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
-        const cleaner = filesMap.get(filename);
-        if (!cleaner) {
-            return reject(`File: ${filename} has not been opened`);
-        }
-
         try {
-            // Start the cleaning process in the background (don't await)
-            cleaner.startCleaning()
-                .catch((error) => {
-                    console.error('Background cleaning error:', error);
-                });
-            
-            // Return immediately so frontend can monitor progress
-            resolve({ success: true, message: 'Data cleaning initiated' });
+	       	const file = metadata.read(db, filename);
+			if (!file) {
+				return reject(`File: ${filename} has not been opened`);
+			}
+
+			cleanFile(file);
+
+			resolve({ success: true, message: 'Data cleaning initiated' });
         } catch (error) {
             reject(`Failed to start cleaning for file: ${filename}. Error: ${error.message}`);
         }
@@ -140,16 +238,18 @@ ipcMain.handle('csv-get-stats', async (_, filename) => {
         }
 
         if (!cleaner.isActive()) {
-            return reject(`File: ${filename} is no longer active`);
+        	// File finished cleaning
+         	console.log(`File: ${filename} cleaning completed`);
+            //return reject(`File: ${filename} is no longer active`);
         }
 
         try {
             const stats = cleaner.getStats();
             const performance = cleaner.getPerformance();
-            resolve({ 
-                stats, 
+            resolve({
+                stats,
                 performance,
-                status: cleaner.status 
+                status: cleaner.status
             });
         } catch (error) {
             reject(`Failed to get stats for file: ${filename}. Error: ${error.message}`);
@@ -171,7 +271,9 @@ ipcMain.handle('csv-get-progress', async (_, filename) => {
         }
 
         if (!cleaner.isActive()) {
-            return reject(`File: ${filename} is no longer active`);
+        	// File finished cleaning
+         	console.log(`File: ${filename} cleaning completed`);
+            //return reject(`File: ${filename} is no longer active`);
         }
 
         try {
@@ -189,7 +291,7 @@ ipcMain.handle('csv-get-progress', async (_, filename) => {
 ipcMain.handle('csv-export-data', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
         const cleaner = filesMap.get(filename);
-        
+
         if (!cleaner) {
             return reject(`File: ${filename} has not been opened`);
         }
@@ -199,7 +301,7 @@ ipcMain.handle('csv-export-data', async (_, filename) => {
         }
 
         try {
-            // Show save dialog            
+            // Show save dialog
             const { canceled, filePath } = await dialog.showSaveDialog({
                 title: 'Export Cleaned CSV',
                 defaultPath: path.join(os.homedir(), `${path.parse(filename).name}_cleaned.csv`),
@@ -221,97 +323,25 @@ ipcMain.handle('csv-export-data', async (_, filename) => {
     });
 });
 
+ipcMain.handle('csv-get-first-and-last', async (_, filename) => {
+	return new Promise(async (resolve, reject) => {
+		const file = metadata.read(db, filename);
+		if (!file) {
+			return reject(`File: ${filename} has not been opened`);
+		}
+
+		const result = csvrows.firstAndLast(db, file);
+		if (!result) {
+		    return reject(`Failed to read cleaned rows for file: ${filename}`);
+		}
+
+		return resolve(result);
+	});
+});
+
 /**
  * Handles the notify request. Creates an OS notification with the given message
  */
 ipcMain.on('notify', (_, message) => {
     new Notification({ title: 'EyeDHD', body: message }).show();
 });
-
-/**
- * Handles the database requests
- */
-ipcMain.handle('db-select-all', async () => {
-    const db = getDb();
-    const rows = await db.prepare(`SELECT * FROM ${TABLE} LIMIT 100;`).all();
-
-    return rows;
-});
-
-// handlers.js (only the import handler shown)
-ipcMain.handle('db-import-csv', async () => {
-  const db = getDb();
-
-  const { canceled, filePaths } = await dialog.showOpenDialog({
-      properties: ['openFile'],
-      filters: [{ name: 'CSV Files', extensions: ['csv'] }]
-  });
-
-  if (canceled) {
-      return null;
-  }
-
-  const filepath = filePaths[0];
-  const filename = path.basename(filepath);
-
-  const csvText = fs.readFileSync(filepath, 'utf8');
-
-  // 1) Parse leniently
-  const rowsRaw = parse(csvText, {
-    bom: true,
-    columns: true,           // objects keyed by header
-    skip_empty_lines: true,  // ignore truly empty lines
-    relax_column_count: true,// tolerate shorter/longer rows
-    relax_quotes: true,
-    trim: true
-  });
-
-  if (!rowsRaw.length) return null;
-
-  // 2) Prepare header list from the file
-  const columns = Object.keys(rowsRaw[0]);
-
-  // 3) Normalize rows
-  let skippedEmpty = 0;
-  const rows = [];
-  for (const rec of rowsRaw) {
-    // Fill missing keys with null
-    for (const c of columns) if (!(c in rec)) rec[c] = null;
-
-    // Convert "" to null for all fields
-    for (const c of columns) if (rec[c] === '') rec[c] = null;
-
-    // If ALL fields are null/empty -> skip the row
-    const allEmpty = columns.every(c => rec[c] == null);
-    if (allEmpty) { skippedEmpty++; continue; }
-
-    rows.push(rec);
-  }
-
-    if (!rows.length) return null;
-
-    // 4) Dynamic INSERT that matches headers (safe for spaces)
-    const cols = Object.keys(rows[0]);
-    const colList = cols.map(c => `"${c.replace(/"/g, '""')}"`).join(', ');
-    const placeholders = cols.map(() => '?').join(', ');
-    const sql = `INSERT INTO "${TABLE}" (${colList}) VALUES (${placeholders})`;
-
-    const insert = db.prepare(sql);
-
-  // 5) Insert in a transaction
-  let inserted = 0, skippedMalformed = 0;
-  const insertMany = db.transaction((batch) => {
-    for (const r of batch) {
-      try {
-        insert.run(r);
-        inserted++;
-      } catch {
-        skippedMalformed++; // e.g., NOT NULL constraint, type constraint, etc.
-      }
-    }
-  });
-  insertMany(rows);
-
-  return filename;
-});
-

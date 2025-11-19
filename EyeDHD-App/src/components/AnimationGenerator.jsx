@@ -26,12 +26,12 @@ export default function AnimationGenerator() {
 
     // Handler for opening a file
     const openFile = async () => {
+    	setIsLoading(true);
         // Request backend to open a file selector, wait for filename
         const file = await electron.csv.openFile(200).catch(handleError);
         if (error || !file) return;
 
         setFileName(file);
-        setIsLoading(true);
 
         // Request 200 rows from the backend
         const rows = await electron.csv.getBuffer(file).catch(handleError);
@@ -51,12 +51,14 @@ export default function AnimationGenerator() {
         const rows = await electron.csv.getBuffer(fileName).catch(handleError);
         if (error) return;
 
-        setCsvData(rows);
-
-        if (rows === null) {
+        if (rows.length === 0) {
+        	setCsvData(null);
+          	setIsPlaying(false);
             sendAlert(`End of "${fileName}" reached!`);
         }
-    };
+
+        setCsvData(rows);
+    }
 
     const sendAlert = (message) => {
             setAlertMessage(message);
@@ -66,28 +68,17 @@ export default function AnimationGenerator() {
                 setAlertMessage("");
             }, 40000);
     };
-    
+
     const handleError = (err) => {
         sendError(err.message);
     };
-    
+
     const sendError = (message) => {
         setError(message);
         setTimeout(() => {
             setError("");
         }, 4000);
     };
-    
-    // Close the previous file when a new file is opened
-    useEffect(() => {
-        const previous = fileName;
-
-        return () => {
-            if (previous) {
-                electron.csv.closeFile(previous).catch(handleError);
-            }
-        }
-    }, [fileName]);
 
     return (
         <div className="animation-generator-container" style={containerStyles}>
