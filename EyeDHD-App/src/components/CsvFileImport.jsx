@@ -3,7 +3,6 @@ import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
-import { sleep } from '../../electron/utils';
 
 export function CsvFileImport() {
     // Store data and handle the file load
