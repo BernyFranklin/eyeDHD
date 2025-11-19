@@ -151,6 +151,35 @@ export function CsvFileImport() {
         
     };
 
+    // Export cleaned CSV data to a new file
+    const exportCleanedData = async () => {
+        if (!fileName) {
+            sendError("No file selected for export");
+            return;
+        }
+
+        // Check if cleaning is complete
+        if (!cleaningStats?.stats?.totalRows) {
+            sendError("No cleaned data available. Please clean the data first.");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const result = await window.electron.csv.exportData(fileName);
+            
+            if (result.success) {
+                sendAlert(`Successfully exported ${result.stats.totalExported} rows to ${result.stats.filePath.split('\\').pop()}`);
+            } else {
+                sendError(result.message || 'Export failed');
+            }
+        } catch (err) {
+            sendError(err.message || 'Failed to export data');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Imports CSV data into database
     const dbImport = async () => {
         try {
@@ -252,6 +281,12 @@ export function CsvFileImport() {
                             onClick={isCleaning ? () => {} : cleanData} 
                             className={`btn${isCleaning ? ' disabled' : ''}`} 
                             buttonText={isCleaning ? "Cleaning..." : "Clean Data"}
+                        />
+                        <Button 
+                            onClick={exportCleanedData} 
+                            className={`btn${!cleaningStats?.stats?.totalRows ? ' disabled' : ''}`} 
+                            buttonText="Export Clean Data"
+                            disabled={!cleaningStats?.stats?.totalRows}
                         />
                         <Button onClick={dbImport} className="btn" buttonText="Import to Database" />
                         <Button onClick={clearFile} className="btn" buttonText="Clear File" />

@@ -16,10 +16,17 @@ function SanityCheck(row) {
   for(const pos of positions) {
     for(const ax of axis) {
       let key = `${pos}EyeForward${ax}`;
-      if(row[key] === undefined || row[key] === null || row[key].trim() === '') {
+      const value = row[key];
+      
+      // Handle both string and number values safely
+      if(value === undefined || value === null || 
+         (typeof value === 'string' && value.trim() === '') ||
+         (typeof value === 'number' && (isNaN(value) || !isFinite(value)))) {
         isValid = false;
+        break;
       }
     }
+    if (!isValid) break;
   }
 
   return isValid;
@@ -44,22 +51,65 @@ function RotatingModel({ csvData, currentIndex, lastValid, eyePosition, position
       if (!isPlaying || !csvData || currentIndex >= csvData.length) return;
 
       const row = csvData[currentIndex];
+      
+      // Add safety check for row
+      if (!row) {
+        console.log(`Row at index ${currentIndex} is undefined`);
+        return;
+      }
+
       currentRotation.current = targetRotation.current;
 
       // Get the forward vector components - note uppercase first letter
-      const forwardX = parseFloat(row[`${eyePosition}EyeForwardX`]?.replace(/[()]/g, '') || 0);
-      const forwardY = parseFloat(row[`${eyePosition}EyeForwardY`]?.replace(/[()]/g, '') || 0);
-      const forwardZ = parseFloat(row[`${eyePosition}EyeForwardZ`]?.replace(/[()]/g, '') || 0);
+      // Add safety checks for each property access
+      const forwardXKey = `${eyePosition}EyeForwardX`;
+      const forwardYKey = `${eyePosition}EyeForwardY`;
+      const forwardZKey = `${eyePosition}EyeForwardZ`;
+      
+      console.log(`Looking for keys: ${forwardXKey}, ${forwardYKey}, ${forwardZKey}`);
+      console.log(`Available keys in row:`, Object.keys(row));
+      
+      // Handle both string and number values more robustly
+      const getNumericValue = (value) => {
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          // Remove parentheses and parse
+          const cleaned = value.replace(/[()]/g, '');
+          return parseFloat(cleaned) || 0;
+        }
+        return 0;
+      };
+      
+      const forwardX = getNumericValue(row[forwardXKey]);
+      const forwardY = getNumericValue(row[forwardYKey]);
+      const forwardZ = getNumericValue(row[forwardZKey]);
+      
+      console.log(`Parsed values - X: ${forwardX}, Y: ${forwardY}, Z: ${forwardZ}`);
 
       // Convert to pitch and yaw using your utility functions
       const pitch = GetPitch(forwardX, forwardY, forwardZ);
       const yaw = GetYaw(forwardX, forwardY, forwardZ);
+      
+      console.log(`Calculated pitch: ${pitch}, yaw: ${yaw}`);
 
-      if(row[`${eyePosition}EyeStatus`] === 'VALID' && isPlaying) {
+      const eyeStatusKey = `${eyePosition}EyeStatus`;
+      const eyeStatus = row[eyeStatusKey];
+      
+      console.log(`Eye status for ${eyePosition}: ${eyeStatus}`);
+      console.log(`SanityCheck result:`, SanityCheck(row));
+      console.log(`isValidAngle pitch:`, isValidAngle(pitch));
+      console.log(`isValidAngle yaw:`, isValidAngle(yaw));
+
+      if(eyeStatus === 'VALID' && isPlaying) {
         if(SanityCheck(row) && isValidAngle(pitch) && isValidAngle(yaw)) {
+          console.log(`Updating rotation - pitch: ${pitch}, yaw: ${yaw}`);
           lastValid.current = {x:pitch, y:yaw, z:0};
           targetRotation.current = {x:pitch, y:yaw, z:0};
+        } else {
+          console.log(`Failed validation checks`);
         }
+      } else {
+        console.log(`Eye status not VALID or not playing`);
       }
     },[currentIndex, eyePosition, isPlaying]);
 
@@ -109,7 +159,15 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
           // Skip frames to maintain proper playback speed
           const nextIndex = prevIndex + frameSkip;
 
-          console.log(`Advancing from index ${prevIndex} to ${nextIndex}`);
+          // Debug logging (can be removed later)
+          if (csvData && csvData.length > 0) {
+            console.log(`Advancing from index ${prevIndex} to ${nextIndex}, CSV data length: ${csvData.length}`);
+            if (nextIndex < csvData.length) {
+              console.log(`Current row keys:`, Object.keys(csvData[nextIndex]));
+            }
+          } else {
+            console.log(`No CSV data available`);
+          }
 
           return nextIndex;
         });

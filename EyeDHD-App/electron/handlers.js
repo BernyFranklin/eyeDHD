@@ -4,10 +4,9 @@ import { dialog, ipcMain, Notification } from 'electron';
 import { getDb } from '../models/dbmgr.js';
 import { parse } from 'csv-parse/sync';
 import { app } from 'electron';
-
 import path from 'path';
-
 import fs from 'fs';
+import os from 'os';
 
 import { filesMap } from './store.js';
 import DataCleaner from './stuff/DataCleaner.js';
@@ -180,6 +179,44 @@ ipcMain.handle('csv-get-progress', async (_, filename) => {
             resolve(progress);
         } catch (error) {
             reject(`Failed to get progress for file: ${filename}. Error: ${error.message}`);
+        }
+    });
+});
+
+/**
+ * Handles the csv-export-data request. Exports cleaned CSV data to a new file
+ */
+ipcMain.handle('csv-export-data', async (_, filename) => {
+    return new Promise(async (resolve, reject) => {
+        const cleaner = filesMap.get(filename);
+        
+        if (!cleaner) {
+            return reject(`File: ${filename} has not been opened`);
+        }
+
+        if (!cleaner.isActive()) {
+            return reject(`File: ${filename} is no longer active`);
+        }
+
+        try {
+            // Show save dialog            
+            const { canceled, filePath } = await dialog.showSaveDialog({
+                title: 'Export Cleaned CSV',
+                defaultPath: path.join(os.homedir(), `${path.parse(filename).name}_cleaned.csv`),
+                filters: [
+                    { name: 'CSV Files', extensions: ['csv'] }
+                ]
+            });
+
+            if (canceled || !filePath) {
+                return resolve({ success: false, message: 'Export canceled' });
+            }
+
+            // Export the cleaned data
+            const result = await cleaner.exportToCSV(filePath);
+            resolve(result);
+        } catch (error) {
+            reject(`Failed to export file: ${filename}. Error: ${error.message}`);
         }
     });
 });

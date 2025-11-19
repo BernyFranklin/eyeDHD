@@ -77,6 +77,9 @@ export default class DataCleaner {
   };
 
   constructor({ path, buf_len = 200, autoStart = true }) {
+    // Store the file path for later use
+    this.filePath = path;
+    
     // Performance tracking
     this.performance.startTime = Date.now();
 
@@ -117,7 +120,9 @@ export default class DataCleaner {
           throw new Error("File is empty");
         }
 
-        this.header = value.split(",").map((name) => name.trim());
+        // Parse header using the same CSV parsing logic to handle quoted headers
+        const headerValues = this.parseCsvLine(value);
+        this.header = headerValues.map((name) => name.trim());
 
         // Validate header structure
         const headerValidation = this.validateHeader();
@@ -942,5 +947,87 @@ export default class DataCleaner {
     // Score based on: 70% valid data, 20% low errors, 10% minimal nulls
     const score = (validRatio * 0.7) + ((1 - errorRatio) * 0.2) + ((1 - nullRatio) * 0.1);
     return Math.round(score * 100);
+  }
+
+  /**
+   * Exports all cleaned data to a new CSV file
+   *
+   * @param {string} outputPath - The path where to save the cleaned CSV file
+   * @returns {Promise<Object>} - Result object with success status and message
+   */
+  async exportToCSV(outputPath) {
+    try {
+      // Create a new stream to read through the entire file for export
+      const exportStream = fs.createReadStream(this.filePath);
+      const exportReadline = rl.createInterface({
+        input: exportStream,
+        crlfDelay: Infinity
+      });
+
+      let csvContent = '';
+      let isFirstLine = true;
+      let exportedRows = 0;
+      
+      // Add header row
+      csvContent += this.header.map(col => `"${col.replace(/"/g, '""')}"`).join(',') + '\n';
+      
+      // Read through the entire file and clean each row for export
+      for await (const line of exportReadline) {
+        if (isFirstLine) {
+          isFirstLine = false;
+          continue; // Skip header line
+        }
+
+        if (line.trim()) {
+          try {
+            // Clean the row using the same logic as loadRows
+            const cleaned = this.cleanRow(line);
+            
+            // Only include valid rows (not error rows)
+            if (cleaned && !cleaned._isError) {
+              const csvRow = this.header.map(col => {
+                const value = cleaned[col];
+                if (value === null || value === undefined) {
+                  return '';
+                }
+                // Escape quotes and wrap in quotes if contains comma, quote, or newline
+                const stringValue = String(value);
+                if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                  return `"${stringValue.replace(/"/g, '""')}"`;
+                }
+                return stringValue;
+              }).join(',');
+              csvContent += csvRow + '\n';
+              exportedRows++;
+            }
+          } catch (error) {
+            // Skip invalid rows during export
+            continue;
+          }
+        }
+      }
+
+      // Close the export stream
+      exportStream.close();
+
+      // Write to file
+      await fs.promises.writeFile(outputPath, csvContent, 'utf8');
+      
+      return {
+        success: true,
+        message: `Successfully exported ${exportedRows} cleaned rows to ${outputPath}`,
+        stats: {
+          totalExported: exportedRows,
+          filePath: outputPath,
+          fileSize: csvContent.length
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to export CSV: ${error.message}`,
+        error: error
+      };
+    }
   }
 }

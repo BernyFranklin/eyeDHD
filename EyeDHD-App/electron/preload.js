@@ -56,6 +56,15 @@ contextBridge.exposeInMainWorld('electron', {
          */
         getProgress: async (filename) => {
             return await ipcRenderer.invoke('csv-get-progress', filename);
+        },
+        /**
+         * Exports cleaned CSV data to a new file
+         *
+         * @param filename - The name of the file to export
+         * @returns Promise with export result
+         */
+        exportData: async (filename) => {
+            return await ipcRenderer.invoke('csv-export-data', filename);
         }
     },
     notify: {
