@@ -61,18 +61,27 @@ export function CsvFileImport() {
     };
 
     const openFile = async () => {
+    	setIsLoading(true);
+
         // Request backend to open a file selector, wait for filename
         const file = await electron.csv.openFile(200).catch(handleError);
         if (error || !file) return;
 
         setFileName(file);
-        setIsLoading(true);
 
-        // Request 200 rows from the backend
-        const rows = await electron.csv.getBuffer(file).catch(handleError);
-        if (error) return;
+       	const metadata = await window.electron.csv.getMetadata(file).catch(handleError);
+        if (metadata.completed) {
+	        setCleaningProgress({ ...cleaningProgress,
+		        isComplete: true
+	        });
 
-        setCsvData(rows);
+	        // Request the first buffer of rows from the database
+	        const rows = await electron.csv.getBuffer(file).catch(handleError);
+	        if (error) return;
+
+			setCsvData(rows);
+        }
+
         setIsLoading(false);
     };
 
@@ -83,20 +92,9 @@ export function CsvFileImport() {
             return;
         }
 
+        if (cleaningProgress?.isComplete) return;
+
         try {
-        	const metadata = await window.electron.csv.getMetadata(fileName);
-         	// All data is already in database so return
-         	if (metadata.completed) {
-	          setCleaningProgress({
-	              progressPercent: 0,
-	              isComplete: true,
-	              isReading: false,
-	              rowsProcessed: 0
-	          });
-          		return;
-          	}
-
-
             setIsCleaning(true);
             setCleaningProgress({
                 progressPercent: 0,
@@ -157,6 +155,11 @@ export function CsvFileImport() {
                 }
             }, 50); // Check every 50ms for more responsive updates
 
+            // Request the first buffer of rows from the database
+            const rows = await electron.csv.getBuffer(fileName).catch(handleError);
+            if (error) return;
+
+            setCsvData(rows);
         } catch (err) {
             setIsCleaning(false);
             sendError(err.message || 'Failed to start data cleaning');
@@ -224,6 +227,16 @@ export function CsvFileImport() {
         await electron.csv.resetFile(fileName).catch(handleError);
     };
 
+    useEffect(() => {
+		const previous = fileName;
+
+            return () => {
+                if (previous) {
+                    electron.csv.resetFile(previous).catch(handleError);
+                }
+            }
+        }, [fileName]);
+
     return (
         <div className="csv-import-container">
 
@@ -269,11 +282,13 @@ export function CsvFileImport() {
                     )}
 
                     <div style={styles.buttonContainer}>
-                        <Button
-                            onClick={isCleaning ? () => {} : cleanData}
-                            className={`btn${isCleaning ? ' disabled' : ''}`}
-                            buttonText={isCleaning ? "Cleaning..." : "Clean Data"}
-                        />
+                        {!cleaningProgress?.isComplete && (
+	                        <Button
+	                            onClick={isCleaning ? () => {} : cleanData}
+	                            className={`btn${isCleaning ? ' disabled' : ''}`}
+	                            buttonText={isCleaning ? "Cleaning..." : "Clean Data"}
+	                        />
+                        )}
                         <Button
                             onClick={exportCleanedData}
                             className={`btn${!cleaningStats?.stats?.totalRows ? ' disabled' : ''}`}

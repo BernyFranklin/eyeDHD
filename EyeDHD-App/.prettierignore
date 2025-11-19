@@ -1,0 +1,8 @@
+# Package Managers
+package-lock.json
+
+# Miscellaneous
+/static/
+/node_modules/
+/images/
+/dist-electron/

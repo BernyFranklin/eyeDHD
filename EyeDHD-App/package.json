@@ -5,10 +5,11 @@
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
-  	"rebuild:electron": "npx electron-rebuild -f -w better-sqlite3",
+    "rebuild:electron": "npx electron-rebuild -f -w better-sqlite3",
     "dev": "npm run rebuild:electron && vite",
     "build": "vite build",
     "preview": "vite preview",
+    "format": "prettier --write .",
     "lint": "eslint .",
     "rebuild:test": "npm rebuild better-sqlite3",
     "test": "npm run rebuild:test && vitest"
@@ -37,6 +38,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
+    "prettier": "^3.6.2",
     "vite": "^7.1.7",
     "vite-plugin-electron": "^0.29.0",
     "vitest": "^3.2.4"
