@@ -28,6 +28,8 @@ export default class DataCleaner {
     validRows: 0,
     errorRows: 0,
     nullValues: 0,
+    eyeTrackingErrors: 0,
+    coordinateClampings: 0,
     typeConversions: {
       numbers: 0,
       booleans: 0,
@@ -36,15 +38,53 @@ export default class DataCleaner {
     },
   };
 
+  // Performance and memory optimization
+  performance = {
+    startTime: null,
+    rowsPerSecond: 0,
+    memoryUsage: 0,
+    maxBufferSize: 0,
+  };
+
+  // Eye tracking validation thresholds
+  eyeTrackingConfig = {
+    coordinateRange: { min: -10, max: 10 },
+    requiredFields: [
+      "LeftEyeStatus",
+      "RightEyeStatus",
+      "LeftEyeForwardX",
+      "LeftEyeForwardY",
+      "LeftEyeForwardZ",
+      "RightEyeForwardX",
+      "RightEyeForwardY",
+      "RightEyeForwardZ",
+    ],
+    validStatuses: ["VALID", "INVALID", "LOST", "TRACKING", "NOT_TRACKING"],
+  };
+
   constructor({ path, buf_len = 200 }) {
-    // Open file as a stream and setup line-by-line reading
-    this.stream = fs.createReadStream(path, { encoding: "utf-8" });
+    // Performance tracking
+    this.performance.startTime = Date.now();
+
+    // Optimize buffer size based on available memory
+    const optimalBufferSize = this.calculateOptimalBufferSize(buf_len);
+    this.buf_len = optimalBufferSize;
+
+    // Open file as a stream with optimized buffer size
+    this.stream = fs.createReadStream(path, {
+      encoding: "utf-8",
+      highWaterMark: 64 * 1024, // 64KB buffer for better performance
+    });
+
     this.readline = rl.createInterface({
       input: this.stream,
       crlfDelay: Infinity,
     });
     this.iter = this.readline[Symbol.asyncIterator]();
-    this.buf_len = buf_len;
+
+    console.log(
+      `DataCleaner initialized with buffer size: ${this.buf_len}, path: ${path}`
+    );
 
     // Read column names
     this.iter
@@ -139,9 +179,14 @@ export default class DataCleaner {
         }
       });
 
-      return this.validateRow(cleaned);
+      const validatedRow = this.validateRow(cleaned);
+
+      // Additional eye tracking validation
+      this.validateEyeTrackingRow(validatedRow);
+
+      return validatedRow;
     } catch (error) {
-      console.warn(`Error cleaning row: ${error.message}`, raw);
+      console.warn(`ERROR cleaning row: ${error.message}`);
       // Return a minimal valid row structure to prevent crashes
       const errorRow = {};
       this.header.forEach((column) => {
@@ -472,6 +517,81 @@ export default class DataCleaner {
   }
 
   /**
+   * Calculates optimal buffer size based on available memory and data characteristics
+   */
+  calculateOptimalBufferSize(requestedSize) {
+    const availableMemory = process.memoryUsage().heapTotal;
+    const maxBufferMemory = availableMemory * 0.1; // Use max 10% of heap for buffer
+    const estimatedRowSize = 2048; // Estimated bytes per row for eye tracking data
+    const maxRowsFromMemory = Math.floor(maxBufferMemory / estimatedRowSize);
+
+    const optimalSize = Math.min(requestedSize, maxRowsFromMemory, 1000); // Cap at 1000 rows
+    return Math.max(optimalSize, 50); // Minimum 50 rows
+  }
+
+  /**
+   * Enhanced data validation specifically for eye tracking data
+   */
+  validateEyeTrackingRow(row) {
+    let isValid = true;
+    const issues = [];
+
+    // Check required eye tracking fields
+    this.eyeTrackingConfig.requiredFields.forEach((field) => {
+      if (row[field] === undefined || row[field] === null) {
+        isValid = false;
+        issues.push(`Missing ${field}`);
+      }
+    });
+
+    // Validate eye coordinates are within reasonable bounds
+    ["Left", "Right"].forEach((eye) => {
+      ["X", "Y", "Z"].forEach((coord) => {
+        const field = `${eye}EyeForward${coord}`;
+        if (row[field] !== null && typeof row[field] === "number") {
+          const { min, max } = this.eyeTrackingConfig.coordinateRange;
+          if (row[field] < min || row[field] > max) {
+            row[field] = Math.max(min, Math.min(max, row[field])); // Clamp value
+            this.stats.coordinateClampings++;
+            issues.push(`${field} clamped to range [${min}, ${max}]`);
+          }
+        }
+      });
+
+      // Validate eye status
+      const statusField = `${eye}EyeStatus`;
+      if (
+        row[statusField] &&
+        !this.eyeTrackingConfig.validStatuses.includes(row[statusField])
+      ) {
+        issues.push(`Invalid ${statusField}: ${row[statusField]}`);
+        isValid = false;
+      }
+    });
+
+    if (!isValid) {
+      this.stats.eyeTrackingErrors++;
+      row._validation_issues = issues;
+    }
+
+    return isValid;
+  }
+
+  /**
+   * Enhanced performance monitoring
+   */
+  updatePerformanceMetrics() {
+    const now = Date.now();
+    const elapsed = (now - this.performance.startTime) / 1000; // seconds
+    this.performance.rowsPerSecond = this.stats.totalRows / elapsed;
+    this.performance.memoryUsage = process.memoryUsage().heapUsed;
+    this.performance.maxBufferSize = Math.max(
+      this.performance.maxBufferSize,
+      this.buf.length
+    );
+  }
+
+  /**
    * Updates statistics based on the cleaned row
    */
   updateStats(row) {
@@ -493,12 +613,19 @@ export default class DataCleaner {
         this.stats.typeConversions.booleans++;
       }
     });
+
+    // Update performance metrics periodically
+    if (this.stats.totalRows % 100 === 0) {
+      this.updatePerformanceMetrics();
+    }
   }
 
   /**
    * Gets current cleaning statistics
    */
   getStats() {
+    this.updatePerformanceMetrics(); // Ensure latest metrics
+
     return {
       ...this.stats,
       errorRate:
@@ -511,6 +638,29 @@ export default class DataCleaner {
           ? ((this.stats.validRows / this.stats.totalRows) * 100).toFixed(2) +
             "%"
           : "0%",
+      eyeTrackingErrorRate:
+        this.stats.totalRows > 0
+          ? (
+              (this.stats.eyeTrackingErrors / this.stats.totalRows) *
+              100
+            ).toFixed(2) + "%"
+          : "0%",
+      coordinateClampingRate:
+        this.stats.totalRows > 0
+          ? (
+              (this.stats.coordinateClampings / this.stats.totalRows) *
+              100
+            ).toFixed(2) + "%"
+          : "0%",
+      performance: {
+        ...this.performance,
+        memoryUsageMB:
+          (this.performance.memoryUsage / 1024 / 1024).toFixed(2) + "MB",
+        rowsPerSecond: this.performance.rowsPerSecond.toFixed(2) + "/sec",
+        bufferEfficiency:
+          ((this.performance.maxBufferSize / this.buf_len) * 100).toFixed(2) +
+          "%",
+      },
     };
   }
 
@@ -519,15 +669,69 @@ export default class DataCleaner {
    */
   logStats() {
     const stats = this.getStats();
-    console.log("=== Data Cleaning Statistics ===");
+    console.log("=== Enhanced Data Cleaning Statistics ===");
     console.log(`Total Rows Processed: ${stats.totalRows}`);
     console.log(`Valid Rows: ${stats.validRows} (${stats.validRate})`);
     console.log(`Error Rows: ${stats.errorRows} (${stats.errorRate})`);
+    console.log(
+      `Eye Tracking Errors: ${stats.eyeTrackingErrors} (${stats.eyeTrackingErrorRate})`
+    );
+    console.log(
+      `Coordinate Clampings: ${stats.coordinateClampings} (${stats.coordinateClampingRate})`
+    );
     console.log(`Null Values: ${stats.nullValues}`);
     console.log("Type Conversions:");
     console.log(`  - Numbers: ${stats.typeConversions.numbers}`);
     console.log(`  - Booleans: ${stats.typeConversions.booleans}`);
-    console.log("================================");
+    console.log("Performance Metrics:");
+    console.log(`  - Processing Speed: ${stats.performance.rowsPerSecond}`);
+    console.log(`  - Memory Usage: ${stats.performance.memoryUsageMB}`);
+    console.log(`  - Buffer Efficiency: ${stats.performance.bufferEfficiency}`);
+    console.log(`  - Max Buffer Size Used: ${stats.performance.maxBufferSize}`);
+    console.log("========================================");
+  }
+
+  /**
+   * Gets overall health status of the data cleaning process
+   */
+  getHealthStatus() {
+    const stats = this.getStats();
+    const errorRate = parseFloat(stats.errorRate);
+    const eyeTrackingErrorRate = parseFloat(stats.eyeTrackingErrorRate);
+    const memoryUsage = this.performance.memoryUsage;
+    const maxMemory = process.memoryUsage().heapTotal * 0.8; // 80% threshold
+
+    let status = "HEALTHY";
+    const warnings = [];
+
+    if (errorRate > 10) {
+      status = "WARNING";
+      warnings.push(`High error rate: ${stats.errorRate}`);
+    }
+
+    if (eyeTrackingErrorRate > 5) {
+      status = "WARNING";
+      warnings.push(
+        `High eye tracking error rate: ${stats.eyeTrackingErrorRate}`
+      );
+    }
+
+    if (memoryUsage > maxMemory) {
+      status = "CRITICAL";
+      warnings.push(`High memory usage: ${stats.performance.memoryUsageMB}`);
+    }
+
+    if (this.performance.rowsPerSecond < 10) {
+      status = status === "CRITICAL" ? "CRITICAL" : "WARNING";
+      warnings.push(`Low processing speed: ${stats.performance.rowsPerSecond}`);
+    }
+
+    return {
+      status,
+      warnings,
+      timestamp: new Date().toISOString(),
+      summary: `${stats.totalRows} rows processed, ${stats.validRate} valid, ${stats.performance.rowsPerSecond} processing speed`,
+    };
   }
 
   /**
