@@ -3,8 +3,6 @@ import PreviewCsvFile from './PreviewCsvFileBackend';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
-import AnimationWindow from './AnimationWindow'
-import AnimationContainer from './AnimationContainer';
 
 export function CsvFileImport() {
     // Store data and handle the file load
@@ -14,8 +12,14 @@ export function CsvFileImport() {
     const [alertMessage, setAlertMessage] = useState("");
     const [showAlert, setShowAlert] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
-
+    const styles = {
+        buttonContainer: {
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: '20px',
+        },
+    };
     const openFile = async () => {
         // Request backend to open a file selector, wait for filename
         const file = await electron.csv.openFile(200).catch(handleError);
@@ -32,6 +36,10 @@ export function CsvFileImport() {
         setIsLoading(false);
     };
 
+    const clearFile = () => {
+        setFileName("");
+        setCsvData([]);
+    }
 
     // Imports CSV data into database
     const dbImport = async () => {
@@ -45,23 +53,6 @@ export function CsvFileImport() {
             sendError(err.message);
         }
     };
-
-    const loadMoreRows = async () => {
-        if (!fileName) {
-            sendError("No file loaded");
-            return;
-        }
-
-        // Request 200 more rows from the backend
-        const rows = await electron.csv.getBuffer(fileName).catch(handleError);
-        if (error) return;
-
-        setCsvData(rows);
-
-        if (rows === null) {
-            sendAlert(`End of "${fileName}" reached!`);
-        }
-    }
 
     const sendAlert = (message) => {
         setAlertMessage(message);
@@ -98,10 +89,17 @@ export function CsvFileImport() {
         <div className="csv-import-container">
             <LoadingOverlay isLoading={isLoading} />
             <Button onClick={openFile} className="btn" buttonText="Select a CSV File" />
-            <Button onClick={dbImport} className="btn" buttonText="SQLite Import" />
 
             {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
-            {fileName && <PreviewCsvFile fileName={fileName} csvData={csvData} />}
+            {fileName && 
+                <>
+                    <PreviewCsvFile fileName={fileName} csvData={csvData} />
+                    <div style={styles.buttonContainer}>
+                        <Button onClick={() => console.log("Clean Data Clicked")} className="btn" buttonText="Clean Data" />
+                        <Button onClick={dbImport} className="btn" buttonText="Import to Database" />
+                        <Button onClick={clearFile} className="btn" buttonText="Clear File" />
+                    </div>
+                </>}
             {showAlert && <AlertWindow message={alertMessage} classColor=" green" onClose={() => setShowAlert(false)} />}
         </div>
     );
