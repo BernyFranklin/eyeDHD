@@ -19,7 +19,7 @@ const appRoot = app.getAppPath();
 const dbpath = path.join(appRoot, 'main.db');
 const db = getDB({
 	path: dbpath,
-	testing: true
+	testing: false
 });
 createMetadataTable(db);
 

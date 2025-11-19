@@ -3,6 +3,7 @@ import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
+import { sleep } from '../../electron/utils';
 
 export function CsvFileImport() {
     // Store data and handle the file load
@@ -62,6 +63,8 @@ export function CsvFileImport() {
 
     const openFile = async () => {
     	setIsLoading(true);
+
+     	clearFile();
 
         // Request backend to open a file selector, wait for filename
         const file = await electron.csv.openFile(200).catch(handleError);
@@ -135,10 +138,11 @@ export function CsvFileImport() {
 
                         // Refresh the data view with cleaned data
                         try {
-                            const cleanedRows = await window.electron.csv.getBuffer(fileName);
-                            if (cleanedRows) {
-                                setCsvData(cleanedRows);
-                            }
+                            // Request the first buffer of rows from the database
+                            const rows = await electron.csv.getBuffer(fileName).catch(handleError);
+                            if (error) return;
+
+                            setCsvData(rows);
                         } catch (bufferError) {
                             // Buffer no longer available after completion
                         }
@@ -154,12 +158,6 @@ export function CsvFileImport() {
                     }
                 }
             }, 50); // Check every 50ms for more responsive updates
-
-            // Request the first buffer of rows from the database
-            const rows = await electron.csv.getBuffer(fileName).catch(handleError);
-            if (error) return;
-
-            setCsvData(rows);
         } catch (err) {
             setIsCleaning(false);
             sendError(err.message || 'Failed to start data cleaning');
@@ -224,18 +222,10 @@ export function CsvFileImport() {
         setShowCleaningResults(false);
         setIsCleaning(false);
 
-        await electron.csv.resetFile(fileName).catch(handleError);
+        if (fileName) {
+        	await electron.csv.resetFile(fileName).catch(handleError);
+        }
     };
-
-    useEffect(() => {
-		const previous = fileName;
-
-            return () => {
-                if (previous) {
-                    electron.csv.resetFile(previous).catch(handleError);
-                }
-            }
-        }, [fileName]);
 
     return (
         <div className="csv-import-container">
