@@ -55,9 +55,13 @@ export default class DataCleaner {
       "LeftEyeForwardX",
       "LeftEyeForwardY",
       "LeftEyeForwardZ",
+      "LeftPupilDiameterInMM",
+      "LeftIrisDiameterInMM",
       "RightEyeForwardX",
       "RightEyeForwardY",
       "RightEyeForwardZ",
+      "RightPupilDiameterInMM",
+      "RightIrisDiameterInMM",
     ],
     validStatuses: ["VALID", "INVALID", "LOST", "TRACKING", "NOT_TRACKING"],
   };
