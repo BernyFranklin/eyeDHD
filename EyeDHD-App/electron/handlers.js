@@ -46,14 +46,20 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 		let file = metadata.read(db, filename);
 		if (file) {
 			if (file.completed === 0) {
-				//filesMap.delete(file.name);
+				filesMap.delete(file.name);
 				const cleaner = new DataCleaner({
 					path: file.path,
 					buf_len: file.buffer_size
 				});
 
 				filesMap.set(file.name, cleaner);
-				//await cleanFile(file);
+			}
+
+			const updated = metadata.update(db, { ...file,
+				requested: 0
+			});
+			if (!updated) {
+			    return reject(`Failed to reset file progress for: ${filename}`);
 			}
 
 			return resolve(filename);
@@ -72,8 +78,6 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 		});
 
 		filesMap.set(file.name, cleaner);
-
-		//await cleanFile(file);
 
 		return resolve(filename);
 	});
