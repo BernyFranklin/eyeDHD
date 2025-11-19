@@ -29,6 +29,33 @@ contextBridge.exposeInMainWorld('electron', {
          */
         getBuffer: async (filename) => {
             return await ipcRenderer.invoke('csv-get-buffer', filename);
+        },
+        /**
+         * Initiates data cleaning process for the specified file
+         *
+         * @param filename - The name of the file to clean
+         * @returns Promise with success status and message
+         */
+        cleanData: async (filename) => {
+            return await ipcRenderer.invoke('csv-clean-data', filename);
+        },
+        /**
+         * Gets current cleaning statistics for the specified file
+         *
+         * @param filename - The name of the file to get stats for
+         * @returns Object containing stats, performance metrics, and status
+         */
+        getStats: async (filename) => {
+            return await ipcRenderer.invoke('csv-get-stats', filename);
+        },
+        /**
+         * Gets current cleaning progress for the specified file
+         *
+         * @param filename - The name of the file to get progress for
+         * @returns Object containing progress information
+         */
+        getProgress: async (filename) => {
+            return await ipcRenderer.invoke('csv-get-progress', filename);
         }
     },
     notify: {

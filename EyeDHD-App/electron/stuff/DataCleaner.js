@@ -9,6 +9,7 @@ import { sleep } from "../utils.js";
  *
  * The first line of the CSV file must be the column names
  */
+
 export default class DataCleaner {
   stream;
   readline;
@@ -20,6 +21,7 @@ export default class DataCleaner {
     reading: false,
     done: false,
     closed: false,
+    autoRefill: true, // Controls whether getBuffer() automatically refills
   };
 
   // Statistics for monitoring data quality
@@ -46,6 +48,14 @@ export default class DataCleaner {
     maxBufferSize: 0,
   };
 
+  // Progress tracking
+  progress = {
+    bytesRead: 0,
+    totalBytes: 0,
+    estimatedRows: 0,
+    currentRow: 0,
+  };
+
   // Eye tracking validation thresholds
   eyeTrackingConfig = {
     coordinateRange: { min: -10, max: 10 },
@@ -66,9 +76,21 @@ export default class DataCleaner {
     validStatuses: ["VALID", "INVALID", "LOST", "TRACKING", "NOT_TRACKING"],
   };
 
-  constructor({ path, buf_len = 200 }) {
+  constructor({ path, buf_len = 200, autoStart = true }) {
     // Performance tracking
     this.performance.startTime = Date.now();
+
+    // Set auto-refill behavior based on autoStart
+    this.status.autoRefill = autoStart;
+
+    // Get file size for progress tracking
+    try {
+      const fileStats = fs.statSync(path);
+      this.progress.totalBytes = fileStats.size;
+    } catch (err) {
+      console.warn('Could not get file size:', err);
+      this.progress.totalBytes = 0;
+    }
 
     // Optimize buffer size based on available memory
     const optimalBufferSize = this.calculateOptimalBufferSize(buf_len);
@@ -86,10 +108,6 @@ export default class DataCleaner {
     });
     this.iter = this.readline[Symbol.asyncIterator]();
 
-    console.log(
-      `DataCleaner initialized with buffer size: ${this.buf_len}, path: ${path}`
-    );
-
     // Read column names
     this.iter
       .next()
@@ -105,20 +123,18 @@ export default class DataCleaner {
         const headerValidation = this.validateHeader();
         if (!headerValidation.isValid) {
           console.warn("Header validation issues detected:", headerValidation);
-        } else {
-          console.log(
-            "Header validation passed - all required fields detected"
-          );
+        }
+        
+        // Only auto-load rows if autoStart is true
+        if (autoStart) {
+          this.loadRows(this.buf_len)
+            .then()
+            .catch((err) => {
+              this.close();
+              throw err;
+            });
         }
       })
-      .catch((err) => {
-        this.close();
-        throw err;
-      });
-
-    // Load first batch of rows
-    this.loadRows(this.buf_len)
-      .then()
       .catch((err) => {
         this.close();
         throw err;
@@ -144,22 +160,33 @@ export default class DataCleaner {
    */
   async loadRows(count) {
     try {
+      const wasAlreadyReading = this.status.reading;
       this.status.reading = true;
 
       while (this.buf.length < count) {
         const { value, done } = await this.iter.next();
         if (done) {
           this.status.done = true;
-          this.close();
+          // Only set reading to false if we weren't already in a cleaning process
+          if (!wasAlreadyReading) {
+            this.status.reading = false;
+          }
           break;
         }
+
+        // Track bytes read for progress calculation
+        this.progress.bytesRead += Buffer.byteLength(value, 'utf8');
+        this.progress.currentRow++;
 
         const cleaned = this.cleanRow(value);
         this.buf.push(cleaned);
         this.updateStats(cleaned);
       }
-
-      this.status.reading = false;
+      
+      // Only set reading to false if we weren't already in a cleaning process
+      if (!wasAlreadyReading) {
+        this.status.reading = false;
+      }
     } catch (err) {
       this.close();
       throw err;
@@ -510,7 +537,8 @@ export default class DataCleaner {
     const out = this.buf;
     this.buf = [];
 
-    if (!this.status.done) {
+    // Only auto-refill if autoRefill is enabled and file is not done
+    if (!this.status.done && this.status.autoRefill) {
       this.loadRows(this.buf_len).catch((err) => {
         this.close();
         throw err;
@@ -518,6 +546,62 @@ export default class DataCleaner {
     }
 
     return out;
+  }
+
+  /**
+   * Starts the data cleaning process by loading all remaining rows
+   * This method can be called to actively clean the entire file
+   *
+   * @returns Promise that resolves when cleaning is complete
+   */
+  async startCleaning() {
+    try {
+
+      
+      // Enable auto-refill for full cleaning
+      this.status.autoRefill = true;
+      
+      this.performance.startTime = Date.now();
+      
+      // If file is already done, just return success
+      if (this.status.done) {
+        //console.log('File already processed completely!');
+        this.updatePerformanceMetrics();
+        return { success: true, message: 'File was already cleaned' };
+      }
+      
+      // Set reading status to true for the entire cleaning process
+      this.status.reading = true;
+      
+      // Continue loading rows until file is complete
+      while (!this.status.done) {
+        //console.log('Loop iteration - status.done:', this.status.done, 'buffer length:', this.buf.length);
+        
+        // If buffer is not full and we're not done, load more rows
+        if (this.buf.length < this.buf_len && !this.status.done) {
+          //console.log('Loading more rows...');
+          await this.loadRows(this.buf_len);
+          //console.log('After loadRows - status.done:', this.status.done, 'buffer length:', this.buf.length);
+        } else if (!this.status.done) {
+          // If buffer is full but file isn't done, clear buffer to continue processing
+          //console.log('Buffer full, clearing to continue processing...');
+          this.buf = [];
+        }
+        
+        //await sleep(50); // Slow down processing to see progress (remove for production)
+      }
+      
+      // Set reading to false when completely done
+      this.status.reading = false;
+      
+
+      this.updatePerformanceMetrics();
+      return { success: true, message: 'Cleaning completed successfully' };
+    } catch (error) {
+      this.status.reading = false;
+      console.error('Error during cleaning process:', error);
+      throw error;
+    }
   }
 
   /**
@@ -672,27 +756,8 @@ export default class DataCleaner {
    * Logs current statistics to console
    */
   logStats() {
-    const stats = this.getStats();
-    console.log("=== Enhanced Data Cleaning Statistics ===");
-    console.log(`Total Rows Processed: ${stats.totalRows}`);
-    console.log(`Valid Rows: ${stats.validRows} (${stats.validRate})`);
-    console.log(`Error Rows: ${stats.errorRows} (${stats.errorRate})`);
-    console.log(
-      `Eye Tracking Errors: ${stats.eyeTrackingErrors} (${stats.eyeTrackingErrorRate})`
-    );
-    console.log(
-      `Coordinate Clampings: ${stats.coordinateClampings} (${stats.coordinateClampingRate})`
-    );
-    console.log(`Null Values: ${stats.nullValues}`);
-    console.log("Type Conversions:");
-    console.log(`  - Numbers: ${stats.typeConversions.numbers}`);
-    console.log(`  - Booleans: ${stats.typeConversions.booleans}`);
-    console.log("Performance Metrics:");
-    console.log(`  - Processing Speed: ${stats.performance.rowsPerSecond}`);
-    console.log(`  - Memory Usage: ${stats.performance.memoryUsageMB}`);
-    console.log(`  - Buffer Efficiency: ${stats.performance.bufferEfficiency}`);
-    console.log(`  - Max Buffer Size Used: ${stats.performance.maxBufferSize}`);
-    console.log("========================================");
+    // Statistics can be retrieved via getStats() if needed for logging
+    // Removed console.log statements for cleaner production code
   }
 
   /**
@@ -780,5 +845,102 @@ export default class DataCleaner {
       hasTimestamp,
       detectedFields: this.header,
     };
+  }
+
+  /**
+   * Gets current cleaning statistics
+   *
+   * @returns Object containing detailed statistics about the cleaning process
+   */
+  getStats() {
+    return {
+      ...this.stats,
+      qualityScore: this.calculateQualityScore(),
+      errorRate: this.stats.totalRows > 0 ? (this.stats.errorRows / this.stats.totalRows) * 100 : 0,
+      validationRate: this.stats.totalRows > 0 ? (this.stats.validRows / this.stats.totalRows) * 100 : 0
+    };
+  }
+
+  /**
+   * Gets current performance metrics
+   *
+   * @returns Object containing performance data
+   */
+  getPerformance() {
+    this.updatePerformanceMetrics();
+    return { ...this.performance };
+  }
+
+  /**
+   * Gets current cleaning progress
+   *
+   * @returns Object containing progress information
+   */
+  getProgress() {
+    let progressPercent = 0;
+    const MAX_EXPECTED_ROWS = 300000;
+    
+    if (this.status.done) {
+      // Always 100% when file is completely processed
+      progressPercent = 100;
+    } else if (this.stats.totalRows > 0) {
+      // Calculate progress based on rows processed vs expected maximum
+      if (this.stats.totalRows >= MAX_EXPECTED_ROWS) {
+        // If we exceed expected max, stay at 99% until file is actually done
+        progressPercent = 99;
+      } else {
+        // Normal progress calculation: (currentRows / maxExpected) * 100, but cap at 99%
+        progressPercent = Math.min(99, (this.stats.totalRows / MAX_EXPECTED_ROWS) * 100);
+      }
+    }
+    
+    return {
+      isComplete: this.status.done,
+      isReading: this.status.reading,
+      isClosed: this.status.closed,
+      progressPercent: Math.round(progressPercent * 10) / 10, // Round to 1 decimal
+      currentBufferSize: this.buf.length,
+      maxBufferSize: this.buf_len,
+      rowsProcessed: this.stats.totalRows,
+      validRows: this.stats.validRows,
+      bytesRead: this.progress.bytesRead,
+      totalBytes: this.progress.totalBytes,
+      currentRow: this.progress.currentRow,
+      maxExpectedRows: MAX_EXPECTED_ROWS,
+    };
+  }
+
+  /**
+   * Checks if the cleaner is still active and available
+   */
+  isActive() {
+    return !this.status.closed;
+  }
+
+  /**
+   * Updates performance metrics
+   */
+  updatePerformanceMetrics() {
+    if (this.performance.startTime) {
+      const elapsedTime = (Date.now() - this.performance.startTime) / 1000; // seconds
+      this.performance.rowsPerSecond = this.stats.totalRows / elapsedTime;
+      this.performance.memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024; // MB
+      this.performance.maxBufferSize = Math.max(this.performance.maxBufferSize, this.buf.length);
+    }
+  }
+
+  /**
+   * Calculates a data quality score based on various metrics
+   */
+  calculateQualityScore() {
+    if (this.stats.totalRows === 0) return 0;
+    
+    const validRatio = this.stats.validRows / this.stats.totalRows;
+    const errorRatio = this.stats.errorRows / this.stats.totalRows;
+    const nullRatio = this.stats.nullValues / (this.stats.totalRows * this.header.length);
+    
+    // Score based on: 70% valid data, 20% low errors, 10% minimal nulls
+    const score = (validRatio * 0.7) + ((1 - errorRatio) * 0.2) + ((1 - nullRatio) * 0.1);
+    return Math.round(score * 100);
   }
 }

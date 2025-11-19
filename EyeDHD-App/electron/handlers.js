@@ -38,9 +38,12 @@ ipcMain.handle('csv-open-file', async (_, bufferSize) => {
             return resolve(filename);
         }
 
+        // Create cleaner but don't start automatic processing
+        // We'll only process when the user explicitly requests cleaning
         const cleaner = new DataCleaner({
             path: filepath,
-            buf_len: bufferSize
+            buf_len: bufferSize,
+            autoStart: false // Don't auto-process the entire file
         });
 
         filesMap.set(filename, cleaner);
@@ -82,8 +85,102 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
             return reject(`File: ${filename} has not been opened`);
         }
 
-        const buf = await cleaner.getBuffer();
-        return resolve(buf);
+        try {
+            // If no data has been loaded yet, load some for preview
+            if (cleaner.buf.length === 0 && !cleaner.status.done && !cleaner.status.reading) {
+                await cleaner.loadRows(Math.min(50, cleaner.buf_len)); // Load max 50 rows for preview
+            }
+            
+            const buf = await cleaner.getBuffer();
+            return resolve(buf);
+        } catch (error) {
+            return reject(`Failed to get buffer for file: ${filename}. Error: ${error.message}`);
+        }
+    });
+});
+
+/**
+ * Handles the csv-clean-data request. Initiates the data cleaning process for a file
+ *
+ * @param filename - The name of the file to clean
+ * @returns Promise that resolves when cleaning is initiated (not completed)
+ */
+ipcMain.handle('csv-clean-data', async (_, filename) => {
+    return new Promise(async (resolve, reject) => {
+        const cleaner = filesMap.get(filename);
+        if (!cleaner) {
+            return reject(`File: ${filename} has not been opened`);
+        }
+
+        try {
+            // Start the cleaning process in the background (don't await)
+            cleaner.startCleaning()
+                .catch((error) => {
+                    console.error('Background cleaning error:', error);
+                });
+            
+            // Return immediately so frontend can monitor progress
+            resolve({ success: true, message: 'Data cleaning initiated' });
+        } catch (error) {
+            reject(`Failed to start cleaning for file: ${filename}. Error: ${error.message}`);
+        }
+    });
+});
+
+/**
+ * Handles the csv-get-stats request. Gets current cleaning statistics for a file
+ *
+ * @param filename - The name of the file to get stats for
+ * @returns Object containing cleaning statistics and performance metrics
+ */
+ipcMain.handle('csv-get-stats', async (_, filename) => {
+    return new Promise(async (resolve, reject) => {
+        const cleaner = filesMap.get(filename);
+        if (!cleaner) {
+            return reject(`File: ${filename} has not been opened`);
+        }
+
+        if (!cleaner.isActive()) {
+            return reject(`File: ${filename} is no longer active`);
+        }
+
+        try {
+            const stats = cleaner.getStats();
+            const performance = cleaner.getPerformance();
+            resolve({ 
+                stats, 
+                performance,
+                status: cleaner.status 
+            });
+        } catch (error) {
+            reject(`Failed to get stats for file: ${filename}. Error: ${error.message}`);
+        }
+    });
+});
+
+/**
+ * Handles the csv-get-progress request. Gets current cleaning progress for a file
+ *
+ * @param filename - The name of the file to get progress for
+ * @returns Object containing progress information
+ */
+ipcMain.handle('csv-get-progress', async (_, filename) => {
+    return new Promise(async (resolve, reject) => {
+        const cleaner = filesMap.get(filename);
+        if (!cleaner) {
+            return reject(`File: ${filename} has not been opened`);
+        }
+
+        if (!cleaner.isActive()) {
+            return reject(`File: ${filename} is no longer active`);
+        }
+
+        try {
+            const progress = cleaner.getProgress();
+            resolve(progress);
+        } catch (error) {
+            reject(`Failed to get progress for file: ${filename}. Error: ${error.message}`);
+        }
     });
 });
 
@@ -158,8 +255,6 @@ ipcMain.handle('db-import-csv', async () => {
 
     // 4) Dynamic INSERT that matches headers (safe for spaces)
     const cols = Object.keys(rows[0]);
-    console.log('[DB import] Table:', TABLE);
-    console.log('[DB import] Columns from CSV:', cols);
     const colList = cols.map(c => `"${c.replace(/"/g, '""')}"`).join(', ');
     const placeholders = cols.map(() => '?').join(', ');
     const sql = `INSERT INTO "${TABLE}" (${colList}) VALUES (${placeholders})`;
