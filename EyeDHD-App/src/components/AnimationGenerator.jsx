@@ -39,20 +39,21 @@ export default function AnimationGenerator() {
      	setIsLoading(false);
     }
 
-    const loadMoreRows = async () => {
-        if (!fileName) {
+    const loadMoreRows = async (name = null) => {
+    	const filename = name ? name : fileName;
+        if (!filename) {
             sendError("No file loaded");
             return;
         }
 
         // Request 200 more rows from the backend
-        const rows = await electron.csv.getBuffer(fileName).catch(handleError);
+        const rows = await electron.csv.getBuffer(filename).catch(handleError);
         if (error) return;
 
         if (rows.length === 0) {
         	setCsvData(null);
           	setIsPlaying(false);
-            sendAlert(`End of "${fileName}" reached!`);
+            sendAlert(`End of "${filename}" reached!`);
         }
 
         setCsvData(rows);
@@ -88,7 +89,13 @@ export default function AnimationGenerator() {
         if (selected_file === "none") return;
 
         setFileName(selected_file);
-        await loadMoreRows();
+        await loadMoreRows(selected_file);
+    }
+
+    const handleReset = async (e) => {
+    	e.preventDefault();
+
+     	setFileName("");
     }
 
     useEffect(() => {
@@ -101,7 +108,7 @@ export default function AnimationGenerator() {
             <LoadingOverlay isLoading={isLoading} />
             {/*Conditionally render an upload message*/}
             {!fileName && files &&
-            	<form method="post" onSubmit={handleSubmit}>
+            	<form method="post" onSubmit={handleSubmit} onReset={handleReset}>
 	             	<label htmlFor="file-select">
 						Please select a file:&nbsp;
 		            	<select name="fileSelect" defaultValue="none">
@@ -113,6 +120,7 @@ export default function AnimationGenerator() {
 						&nbsp;to generate an animation.
 			        </label>
 					<button type="submit">Generate</button>
+					<button type="reset">reset</button>
              	</form>
             }
             {/*Conditionally render an error message*/}
