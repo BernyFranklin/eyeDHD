@@ -157,11 +157,7 @@ ipcMain.handle('csv-get-file-list', async (_) => {
 		}
 
 		return resolve(files
-			.filter((file) => {
-				if (file.completed) {
-					return file.name;
-				}
-			})
+			.filter((file) => file.completed)
 			.map((file) => file.name)
 		);
 	});
