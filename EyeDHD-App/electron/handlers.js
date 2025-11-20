@@ -46,7 +46,7 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 		let file = metadata.read(db, filename);
 		if (file) {
 			if (file.completed === 0) {
-				filesMap.delete(file.name);
+				//filesMap.delete(file.name);
 				const cleaner = new DataCleaner({
 					path: file.path,
 					buf_len: file.buffer_size
@@ -181,7 +181,7 @@ ipcMain.handle('csv-reset-file', async (_, filename) => {
 		    return reject(`Failed to reset file progress for: ${filename}`);
 		}
 
-		filesMap.delete(file.name);
+		// filesMap.delete(file.name);
 
         return resolve();
     });
