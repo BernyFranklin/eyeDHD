@@ -148,6 +148,25 @@ ipcMain.handle('csv-get-metadata', async (_, filename) => {
 	});
 });
 
+ipcMain.handle('csv-get-file-list', async (_) => {
+	return new Promise(async (resolve, reject) => {
+		const files = metadata.readAll(db);
+
+		if (!files) {
+			return resolve(null);
+		}
+
+		return resolve(files
+			.filter((file) => {
+				if (file.completed) {
+					return file.name;
+				}
+			})
+			.map((file) => file.name)
+		);
+	});
+})
+
 ipcMain.handle('csv-reset-file', async (_, filename) => {
     return new Promise(async (resolve, reject) => {
 		const file = metadata.read(db, filename);

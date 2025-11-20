@@ -1,4 +1,4 @@
-export default { create, read, update, remove };
+export default { create, read, readAll, update, remove };
 
 function create(db, filename, filepath, buffer_size) {
 	try {
@@ -34,6 +34,20 @@ function read(db, filename) {
 		}
 
 		return file;
+	} catch (err) {
+		console.error(err);
+
+		return null;
+	}
+}
+
+function readAll(db) {
+	try {
+		const files = db.prepare(`
+			SELECT * FROM metadata;
+		`).all();
+
+		return files;
 	} catch (err) {
 		console.error(err);
 

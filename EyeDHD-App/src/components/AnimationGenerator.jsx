@@ -3,6 +3,7 @@ import LoadingOverlay from './LoadingOverlay';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import AnimationContainer from './AnimationContainer';
+import { useRef } from 'react';
 
 export default function AnimationGenerator() {
     const [csvData, setCsvData] = useState([]);
@@ -12,6 +13,8 @@ export default function AnimationGenerator() {
     const [showAlert, setShowAlert] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
+
+    const [files, setFiles] = useState(null);
 
     const containerStyles = {
         textAlign: " center",
@@ -24,22 +27,17 @@ export default function AnimationGenerator() {
         alignItems: "center"
     }
 
-    // Handler for opening a file
-    const openFile = async () => {
+    // gets the list of cleaned files
+    const getFilesList = async () => {
     	setIsLoading(true);
-        // Request backend to open a file selector, wait for filename
-        const file = await electron.csv.openFile(200).catch(handleError);
-        if (error || !file) return;
 
-        setFileName(file);
+     	const files = await electron.csv.getFileList().catch(handleError);
+      	if (error) return;
 
-        // Request 200 rows from the backend
-        const rows = await electron.csv.getBuffer(file).catch(handleError);
-        if (error) return;
+       	setFiles(files);
 
-        setCsvData(rows);
-        setIsLoading(false);
-    };
+     	setIsLoading(false);
+    }
 
     const loadMoreRows = async () => {
         if (!fileName) {
@@ -61,12 +59,12 @@ export default function AnimationGenerator() {
     }
 
     const sendAlert = (message) => {
-            setAlertMessage(message);
-            setShowAlert(true);
-            setTimeout(() => {
-                setShowAlert(false);
-                setAlertMessage("");
-            }, 40000);
+        setAlertMessage(message);
+        setShowAlert(true);
+        setTimeout(() => {
+            setShowAlert(false);
+            setAlertMessage("");
+        }, 40000);
     };
 
     const handleError = (err) => {
@@ -80,13 +78,43 @@ export default function AnimationGenerator() {
         }, 4000);
     };
 
+    const handleSubmit = async (e) => {
+    	e.preventDefault();
+
+     	const form = e.target;
+      	const data = new FormData(form);
+
+       	const selected_file = data.get("fileSelect");
+        if (selected_file === "none") return;
+
+        setFileName(selected_file);
+        await loadMoreRows();
+    }
+
+    useEffect(() => {
+    	getFilesList();
+    }, []);
+
     return (
         <div className="animation-generator-container" style={containerStyles}>
             {/*Used for when things take awhile to load*/}
             <LoadingOverlay isLoading={isLoading} />
             {/*Conditionally render an upload message*/}
-            {!fileName && <p>Please select a file to generate an animation.</p>}
-            <Button onClick={openFile} className="btn" buttonText="Select a Clean CSV File" />
+            {!fileName && files &&
+            	<form method="post" onSubmit={handleSubmit}>
+	             	<label htmlFor="file-select">
+						Please select a file:&nbsp;
+		            	<select name="fileSelect" defaultValue="none">
+							<option disabled value="none">none</option>
+		            		{files.map((file, index) => {
+		             			return <option key={index} value={file}>{file}</option>
+		             		})}
+			            </select>
+						&nbsp;to generate an animation.
+			        </label>
+					<button type="submit">Generate</button>
+             	</form>
+            }
             {/*Conditionally render an error message*/}
             {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
             {/*Conditionally render the AnimationContainer*/}
@@ -96,4 +124,21 @@ export default function AnimationGenerator() {
             {showAlert && <AlertWindow message={alertMessage} classColor=" green" onClose={() => setShowAlert(false)} />}
         </div>
     );
+
+    // return (
+    //     <div className="animation-generator-container" style={containerStyles}>
+    //         {/*Used for when things take awhile to load*/}
+    //         <LoadingOverlay isLoading={isLoading} />
+    //         {/*Conditionally render an upload message*/}
+    //         {!fileName && <p>Please select a file to generate an animation.</p>}
+    //         <Button onClick={openFile} className="btn" buttonText="Select a Clean CSV File" />
+    //         {/*Conditionally render an error message*/}
+    //         {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
+    //         {/*Conditionally render the AnimationContainer*/}
+    //         {fileName &&
+    //         <AnimationContainer csvData={csvData} loadMoreRows={loadMoreRows} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />}
+    //         {/*Conditionally render the alert message*/}
+    //         {showAlert && <AlertWindow message={alertMessage} classColor=" green" onClose={() => setShowAlert(false)} />}
+    //     </div>
+    // );
 }

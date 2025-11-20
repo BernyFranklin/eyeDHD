@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld('electron', {
         openFile: async (buffer_size) => {
             return await ipcRenderer.invoke('csv-open-file', buffer_size);
         },
+        // gets the list of cleaned files
+        getFileList: async () => {
+        	return await ipcRenderer.invoke('csv-get-file-list');
+		},
         /**
          * Requests for a csv file to be closed
          */
