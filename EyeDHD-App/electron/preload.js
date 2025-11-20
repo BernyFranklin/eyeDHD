@@ -15,19 +15,16 @@ contextBridge.exposeInMainWorld('electron', {
         openFile: async (buffer_size) => {
             return await ipcRenderer.invoke('csv-open-file', buffer_size);
         },
-        // gets the list of cleaned files
-        getFileList: async () => {
-        	return await ipcRenderer.invoke('csv-get-file-list');
-		},
-        /**
-         * Requests for a csv file to be closed
-         */
         resetFile: async (filename) => {
             return await ipcRenderer.invoke('csv-reset-file', filename);
         },
         getMetadata: async (filename) => {
         	return await ipcRenderer.invoke('csv-get-metadata', filename);
         },
+        // gets the list of cleaned files
+        getFileList: async () => {
+        	return await ipcRenderer.invoke('csv-get-file-list');
+		},
         /**
          * Requests the buffer stored in the data cleaner, triggers the buffer
          * to be refilled as well
@@ -36,6 +33,10 @@ contextBridge.exposeInMainWorld('electron', {
          */
         getBuffer: async (filename) => {
             return await ipcRenderer.invoke('csv-get-buffer', filename);
+        },
+        // Returns { first, last }
+        getFirstAndLast: async (filename) => {
+        	return await ipcRenderer.invoke('csv-get-first-and-last', filename);
         },
         /**
          * Initiates data cleaning process for the specified file
@@ -72,10 +73,6 @@ contextBridge.exposeInMainWorld('electron', {
          */
         exportData: async (filename) => {
             return await ipcRenderer.invoke('csv-export-data', filename);
-        },
-        // Returns { first, last }
-        getFirstAndLast: async (filename) => {
-        	return await ipcRenderer.invoke('csv-get-first-and-last', filename);
         }
     },
     notify: {
