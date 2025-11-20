@@ -312,8 +312,8 @@ ipcMain.handle('csv-export-data', async (_, filename) => {
             return reject(`File: ${filename} has not been opened`);
         }
 
-        if (!cleaner.isActive()) {
-            return reject(`File: ${filename} is no longer active`);
+        if (cleaner.isActive()) {
+            return reject(`File: ${filename} hasn't been cleaned yet. Clean the file first.`);
         }
 
         try {
