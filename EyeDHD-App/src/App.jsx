@@ -5,6 +5,7 @@ import CsvFileImport from './components/CsvFileImport.jsx'
 import AnimationGenerator from './components/AnimationGenerator.jsx'
 import LoadingOverlay from './components/LoadingOverlay.jsx'
 import Navbar from './components/Navbar.jsx'
+import SidebySide from './components/SidebySide'
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
@@ -14,7 +15,7 @@ function App() {
     //<CsvFileImport isLoading={isLoading} setIsLoading={setIsLoading} />,
     <CsvFileImport />,
     <AnimationGenerator />,
-    <p>Side-by-side Viewer Content</p>
+    <SidebySide />
   ]
   return (
     <>

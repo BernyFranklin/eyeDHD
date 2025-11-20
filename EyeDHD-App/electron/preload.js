@@ -82,5 +82,40 @@ contextBridge.exposeInMainWorld('electron', {
         send: (message) => {
             ipcRenderer.send('notify', message);
         }
+    },
+
+    video: {
+        /**
+         *open a native dialog to choose a video file and return full path
+         */
+        selectFile: async () => {
+        return await ipcRenderer.invoke("select-video-file");
+        },
+
+
+        /**
+         *sync vr + animation using main.js ffmpeg handler
+         */
+        SidebySide: async (vrFile, animFile) => {
+        return await ipcRenderer.invoke("video-sync-vr", {
+            vrFile,
+            animFile
+        });
+        },
+
+
+        /**
+         *convert OS path → safe video URL for <video src="">
+         * no Node 'path' module used so bundlers can't complain
+         */
+        toVideoURL: (filePath) => {
+        if (!filePath) return null;
+        const normalized = filePath.replace(/\\/g, "/");
+        // avoid double prefixing if it already starts with file:///
+        return normalized.startsWith("file:///")
+            ? normalized
+            : `file:///${normalized}`;
+        }
     }
-})
+});
+

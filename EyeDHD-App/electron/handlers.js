@@ -11,6 +11,11 @@ import metadata from '../models/actions/metadata.js';
 import csvrows from '../models/actions/csvrows.js';
 import DataCleaner from './stuff/DataCleaner.js';
 
+import { spawn } from 'child_process';
+import ffmpegPath from 'ffmpeg-static';
+
+const FFMPEG_PATH = ffmpegPath;
+
 /*
  * Database setup
  * Set testing to true to use a temporary db instead of a file
@@ -349,6 +354,47 @@ ipcMain.handle('csv-get-first-and-last', async (_, filename) => {
 
 		return resolve(result);
 	});
+});
+
+ipcMain.handle('select-video-file', async () => {
+    const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'Videos', extensions: ['mp4', 'mov', 'mkv', 'webm'] }]
+    });
+
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+});
+
+function SidebySide(vrFile, animFile, outputPath) {
+    return new Promise((resolve, reject) => {
+        const args = [
+            "-i", vrFile,
+            "-i", animFile,
+            "-filter_complex",
+            "[0:v]scale=1280:-2[vr];[1:v]scale=1280:-2[anim];[vr][anim]vstack=inputs=2[v]",
+            "-map", "[v]",
+            "-map", "0:a?",
+            "-c:v", "libx264",
+            "-c:a", "copy",
+            "-preset", "veryfast",
+            "-crf", "20",
+            outputPath
+        ];
+
+        const ff = spawn(FFMPEG_PATH, args);
+        ff.stderr.on("data", d => console.log("[ffmpeg sync]", d.toString()));
+
+        ff.on("close", code => {
+            if (code === 0) resolve(outputPath);
+            else reject(new Error("ffmpeg sync failed with code " + code));
+        });
+    });
+}
+
+ipcMain.handle("video-sync-vr", async (_, { vrFile, animFile }) => {
+    const out = path.join(path.dirname(vrFile), "synced_output.mp4");
+    return await SidebySide(vrFile, animFile, out);
 });
 
 /**
