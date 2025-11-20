@@ -6,7 +6,7 @@ import { filesMap } from './store.js';
 import getDB from '../models/dbmgr.js';
 import createMetadataTable from '../models/tables/metadata.js';
 import createRowsTable from '../models/tables/csvrows.js';
-import metadata from '../models/actions/metadata.js';
+import metadataActions from '../models/actions/metadata.js';
 import csvrows from '../models/actions/csvrows.js';
 import DataCleaner from './stuff/DataCleaner.js';
 
@@ -15,15 +15,14 @@ import DataCleaner from './stuff/DataCleaner.js';
  * Set testing to true to use a temporary db instead of a file
  */
 const appRoot = app.getAppPath();
-const dbpath = path.join(appRoot, 'main.db');
 const db = getDB({
-  path: dbpath,
+  path: path.join(appRoot, 'main.db'),
   testing: false
 });
 createMetadataTable(db);
 
 /**
- * Handles the csv-open-file request. Opens a file selector and begins cleaning it if one is selected
+ * Handles the csv-open-file request. Opens a file selector
  *
  * @returns filename if a file is selected, or null if none is selected
  */
@@ -42,33 +41,37 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
     const filename = path.basename(filepath);
 
     // If file is already opened and cleaning, just return filename
-    let file = metadata.read(db, filename);
-    if (file) {
-      if (!filesMap.get(file.name)) {
+    let metadata = metadataActions.read(db, filename);
+    if (metadata) {
+      if (!filesMap.get(metadata.name)) {
         filesMap.set(
-          file.name,
+          metadata.name,
           new DataCleaner({
-            path: file.path,
-            buf_len: file.buffer_size
+            db,
+            name: metadata.name,
+            path: metadata.path,
+            buf_len: metadata.buffer_size
           })
         );
       }
       return resolve(filename);
     }
 
-    file = metadata.create(db, filename, filepath, buffer_size);
-    if (!file) {
-      return reject(`Failed to create metadata in db for file: ${filename}`);
+    metadata = metadataActions.create(db, filename, filepath, buffer_size);
+    if (!metadata) {
+      return reject(`Failed to create metadata for file: ${filename}`);
     }
 
-    createRowsTable(db, file.name);
+    createRowsTable(db, metadata.name);
 
     const cleaner = new DataCleaner({
-      path: file.path,
-      buf_len: file.buffer_size
+      db,
+      name: metadata.name,
+      path: metadata.path,
+      buf_len: metadata.buffer_size
     });
 
-    filesMap.set(file.name, cleaner);
+    filesMap.set(metadata.name, cleaner);
 
     return resolve(filename);
   });
@@ -76,53 +79,60 @@ ipcMain.handle('csv-open-file', async (_, buffer_size) => {
 
 function cleanFile(original) {
   return new Promise(async (resolve, reject) => {
-    let file = original;
+    let metadata = original;
 
     // fetch cleaner
-    const cleaner = filesMap.get(file.name);
+    const cleaner = filesMap.get(metadata.name);
     if (!cleaner) {
-      return reject(`No cleaner found for file: ${file.name}`);
+      return reject(`No cleaner found for metadata: ${metadata.name}`);
     }
 
     // Load first batch of rows then loop until file has been cleaned
     let buffer = await cleaner.getBuffer();
 
-    // Only set the first frame number when cleaning is not in progress
-    if (!cleaner.isActive()) {
-      file.first_frame = buffer[0].Frame;
+    if (cleaner.status.done) {
+      return;
     }
 
-    const ok = metadata.update(db, file);
-    if (!ok) {
-      return reject(`Failed to update metadata for file: ${file.name}`);
+    // Only set the first frame number when cleaning is not in progress
+    if (!cleaner.status.start) {
+      const ok = metadataActions.update(db, {
+        ...metadata,
+        first_frame: buffer[0].Frame
+      });
+      if (!ok) {
+        return reject(`Failed to update metadata for file: ${metadata.name}`);
+      }
+
+      cleaner.start();
     }
 
     while (buffer) {
       // Store rows
-      let stored = csvrows.create(db, file, buffer);
+      let stored = csvrows.create(db, metadata, buffer);
       if (!stored) {
-        return reject(`Failed to store rows for file: ${file.name}`);
+        return reject(`Failed to store rows for file: ${metadata.name}`);
       }
 
       // Update file metadata
-      const updated = metadata.update(db, {
-        ...file,
+      const updated = metadataActions.update(db, {
+        ...metadata,
         last_frame: buffer[buffer.length - 1].Frame,
-        cleaned: (file.cleaned += buffer.length)
+        cleaned: (metadata.cleaned += buffer.length)
       });
       if (!updated) {
-        return reject(`Failed to update metadata for file: ${file.name}`);
+        return reject(`Failed to update metadata for file: ${metadata.name}`);
       }
 
       buffer = await cleaner.getBuffer();
 
-      file = metadata.read(db, file.name);
+      metadata = metadataActions.read(db, metadata.name);
     }
 
     // Update file metadata to show cleaning has completed
-    const updated = metadata.update(db, { ...file, completed: 1 });
+    const updated = metadataActions.update(db, { ...metadata, completed: 1 });
     if (!updated) {
-      return reject(`Failed to update metadata for file: ${file.name}`);
+      return reject(`Failed to update metadata for file: ${metadata.name}`);
     }
 
     cleaner.close();
@@ -133,39 +143,41 @@ function cleanFile(original) {
 
 ipcMain.handle('csv-get-metadata', async (_, filename) => {
   return new Promise(async (resolve, reject) => {
-    const file = metadata.read(db, filename);
-    if (!file) {
+    const metadata = metadataActions.read(db, filename);
+    if (!metadata) {
       return reject(`File: ${filename} has not been opened`);
     }
 
-    return resolve(file);
+    return resolve(metadata);
   });
 });
 
 ipcMain.handle('csv-get-file-list', async (_) => {
-  return new Promise(async (resolve, reject) => {
-    const files = metadata.readAll(db);
+  return new Promise(async (resolve) => {
+    const files = metadataActions.readAll(db);
 
     if (!files) {
       return resolve(null);
     }
 
     return resolve(
-      files.filter((file) => file.completed).map((file) => file.name)
+      files
+        .filter((metadata) => metadata.completed)
+        .map((metadata) => metadata.name)
     );
   });
 });
 
 ipcMain.handle('csv-reset-reading-progress', async (_, filename) => {
   return new Promise(async (resolve, reject) => {
-    const file = metadata.read(db, filename);
-    if (!file) {
+    const metadata = metadataActions.read(db, filename);
+    if (!metadata) {
       return reject(`File: ${filename} has not been opened`);
     }
 
-    const updated = metadata.update(db, { ...file, requested: 0 });
+    const updated = metadataActions.update(db, { ...metadata, requested: 0 });
     if (!updated) {
-      return reject(`Failed to reset file progress for: ${filename}`);
+      return reject(`Failed to reset reading progress for: ${filename}`);
     }
 
     return resolve();
@@ -174,31 +186,33 @@ ipcMain.handle('csv-reset-reading-progress', async (_, filename) => {
 
 ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
   return new Promise(async (resolve, reject) => {
-    const file = metadata.read(db, filename);
-    if (!file) {
+    const metadata = metadataActions.read(db, filename);
+    if (!metadata) {
       return reject(`File: ${filename} has not been opened`);
     }
 
-    const updated = metadata.update(db, {
-      ...file,
+    const updated = metadataActions.update(db, {
+      ...metadata,
       requested: 0,
       cleaned: 0,
       completed: 0
     });
     if (!updated) {
-      return reject(`Failed to reset file progress for: ${filename}`);
+      return reject(`Failed to reset cleaning progress for: ${filename}`);
     }
 
-    const cleaner = filesMap.get(file.name);
+    const cleaner = filesMap.get(metadata.name);
     if (!cleaner) return resolve();
 
     cleaner.close();
-    filesMap.delete(file.name);
+    filesMap.delete(metadata.name);
     filesMap.set(
-      file.name,
+      metadata.name,
       new DataCleaner({
-        path: file.path,
-        buf_len: file.buffer_size
+        db,
+        name: metadata.name,
+        path: metadata.path,
+        buf_len: metadata.buffer_size
       })
     );
 
@@ -210,23 +224,21 @@ ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
  * Handles the csv-get-buffer request. Pulls the buffer from filename's cleaner
  *
  * @returns an array of rows, or null if the entire file has been read
- *
- * @TODO update to use database, set completed to true when all rows have been read
  */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
   return new Promise(async (resolve, reject) => {
-    const file = metadata.read(db, filename);
-    if (!file) {
+    const metadata = metadataActions.read(db, filename);
+    if (!metadata) {
       return reject(`File: ${filename} has not been opened`);
     }
-    const rows = await csvrows.read(db, file);
+    const rows = await csvrows.read(db, metadata);
     if (rows === undefined) {
       return reject(`Failed to read cleaned rows for file: ${filename}`);
     }
 
-    const updated = metadata.update(db, {
-      ...file,
-      requested: file.requested + rows.length
+    const updated = metadataActions.update(db, {
+      ...metadata,
+      requested: metadata.requested + rows.length
     });
     if (!updated) {
       return reject(`Failed to update requested count for file: ${filename}`);
@@ -245,12 +257,12 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
 ipcMain.handle('csv-clean-data', async (_, filename) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const file = metadata.read(db, filename);
-      if (!file) {
+      const metadata = metadataActions.read(db, filename);
+      if (!metadata) {
         return reject(`File: ${filename} has not been opened`);
       }
 
-      cleanFile(file);
+      cleanFile(metadata);
 
       resolve({ success: true, message: 'Data cleaning initiated' });
     } catch (error) {
@@ -369,12 +381,12 @@ ipcMain.handle('csv-export-data', async (_, filename) => {
 
 ipcMain.handle('csv-get-first-and-last', async (_, filename) => {
   return new Promise(async (resolve, reject) => {
-    const file = metadata.read(db, filename);
-    if (!file) {
+    const metadata = metadataActions.read(db, filename);
+    if (!metadata) {
       return reject(`File: ${filename} has not been opened`);
     }
 
-    const result = csvrows.firstAndLast(db, file);
+    const result = csvrows.firstAndLast(db, metadata);
     if (!result) {
       return reject(`Failed to read cleaned rows for file: ${filename}`);
     }

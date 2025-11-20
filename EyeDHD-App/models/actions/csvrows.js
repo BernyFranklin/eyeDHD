@@ -41,6 +41,9 @@ function create(db, file, rows) {
         } catch (err) {
           // If error is that the Frame primary key already exists continue
           if (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
+            console.warn(
+              `Frame ${row.Frame} already exists in table ${table}, skipping insert.`
+            );
             continue;
           } else {
             throw err;

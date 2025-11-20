@@ -63,7 +63,12 @@ export function CsvFileImport() {
   const openFile = async () => {
     setIsLoading(true);
 
-    clearFile();
+    setFileName('');
+    setCsvData([]);
+    setCleaningProgress(null);
+    setCleaningStats(null);
+    setShowCleaningResults(false);
+    setIsCleaning(false);
 
     // Request backend to open a file selector, wait for filename
     const file = await electron.csv.openFile(200).catch(handleError);
@@ -74,12 +79,15 @@ export function CsvFileImport() {
     const metadata = await window.electron.csv
       .getMetadata(file)
       .catch(handleError);
+
     if (metadata.completed) {
       setCleaningProgress({ ...cleaningProgress, isComplete: true });
       // Request the first buffer of rows from the database
       const rows = await electron.csv.getBuffer(file).catch(handleError);
       if (error) return;
 
+      setCleaningStats({ ...cleaningStats, stats: { totalRows: metadata.cleaned }});
+    
       setCsvData(rows);
     }
 
