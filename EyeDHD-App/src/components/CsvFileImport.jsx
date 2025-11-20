@@ -87,7 +87,7 @@ export function CsvFileImport() {
       if (error) return;
 
       setCleaningStats({ ...cleaningStats, stats: { totalRows: metadata.cleaned }});
-    
+
       setCsvData(rows);
     }
 
@@ -228,9 +228,13 @@ export function CsvFileImport() {
   };
 
   const clearFile = async () => {
-    setFileName('');
     setCsvData([]);
-    setCleaningProgress(null);
+    setCleaningProgress({
+      progressPercent: 0,
+      isComplete: false,
+      isReading: false,
+      rowsProcessed: 0
+    });
     setCleaningStats(null);
     setShowCleaningResults(false);
     setIsCleaning(false);

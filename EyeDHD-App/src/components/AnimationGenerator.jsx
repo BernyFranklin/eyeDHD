@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow from './AlertWindow';
-import Button from './Button';
 import AnimationContainer from './AnimationContainer';
-import { useRef } from 'react';
 
 export default function AnimationGenerator() {
   const [csvData, setCsvData] = useState([]);
@@ -81,6 +79,7 @@ export default function AnimationGenerator() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFileName('');
 
     const form = e.target;
     const data = new FormData(form);
@@ -97,6 +96,8 @@ export default function AnimationGenerator() {
   const handleReset = async (e) => {
     e.preventDefault();
 
+    await electron.csv.resetReadingProgress(fileName).catch(handleError);
+
     setFileName('');
   };
 
@@ -109,7 +110,7 @@ export default function AnimationGenerator() {
       {/*Used for when things take awhile to load*/}
       <LoadingOverlay isLoading={isLoading} />
       {/*Conditionally render an upload message*/}
-      {!fileName && files && (
+      {files && (
         <form method="post" onSubmit={handleSubmit} onReset={handleReset}>
           <label htmlFor="file-select">
             Please select a file:&nbsp;
@@ -161,21 +162,4 @@ export default function AnimationGenerator() {
       )}
     </div>
   );
-
-  // return (
-  //     <div className="animation-generator-container" style={containerStyles}>
-  //         {/*Used for when things take awhile to load*/}
-  //         <LoadingOverlay isLoading={isLoading} />
-  //         {/*Conditionally render an upload message*/}
-  //         {!fileName && <p>Please select a file to generate an animation.</p>}
-  //         <Button onClick={openFile} className="btn" buttonText="Select a Clean CSV File" />
-  //         {/*Conditionally render an error message*/}
-  //         {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
-  //         {/*Conditionally render the AnimationContainer*/}
-  //         {fileName &&
-  //         <AnimationContainer csvData={csvData} loadMoreRows={loadMoreRows} isPlaying={isPlaying} setIsPlaying={setIsPlaying} />}
-  //         {/*Conditionally render the alert message*/}
-  //         {showAlert && <AlertWindow message={alertMessage} classColor=" green" onClose={() => setShowAlert(false)} />}
-  //     </div>
-  // );
 }
