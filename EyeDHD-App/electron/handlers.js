@@ -231,7 +231,7 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
     if (!metadata) {
       return reject(`File: ${filename} has not been opened`);
     }
-    const rows = await csvrows.read(db, metadata);
+    const rows = csvrows.read(db, metadata);
     if (rows === undefined) {
       return reject(`Failed to read cleaned rows for file: ${filename}`);
     }
@@ -284,12 +284,6 @@ ipcMain.handle('csv-get-stats', async (_, filename) => {
     const cleaner = filesMap.get(filename);
     if (!cleaner) {
       return reject(`File: ${filename} has not been opened`);
-    }
-
-    if (!cleaner.isActive()) {
-      // File finished cleaning
-      console.log(`File: ${filename} cleaning completed`);
-      //return reject(`File: ${filename} is no longer active`);
     }
 
     try {

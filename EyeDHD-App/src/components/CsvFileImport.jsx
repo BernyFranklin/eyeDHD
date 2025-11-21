@@ -72,7 +72,10 @@ export function CsvFileImport() {
 
     // Request backend to open a file selector, wait for filename
     const file = await electron.csv.openFile(200).catch(handleError);
-    if (error || !file) return;
+    if (error || !file) {
+      setIsLoading(false);
+      return;
+    }
 
     setFileName(file);
 
