@@ -94,76 +94,86 @@ export default function SidebySide() {
   };
 
   return (
-    <div style={{ marginTop: "1rem" }}>
+    <div
+      style={{
+        marginTop: "1rem",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center"
+      }}
+    >
       <p><strong>Side by Side</strong></p>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-        <button onClick={pickVr}>Select VR Video</button>
-        <span style={{ fontSize: "0.8rem" }}>{vrFile || "No VR file selected"}</span>
+      {/* top load buttons */}
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+        {!vrFile && <button onClick={pickVr}>Load VR Video</button>}
+        {!animFile && <button onClick={pickAnim}>Load Animation Video</button>}
       </div>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
-        <button onClick={pickAnim}>Select Animation Video</button>
-        <span style={{ fontSize: "0.8rem" }}>{animFile || "No animation file selected"}</span>
-      </div>
+      {/* centered video previews */}
+      {(vrFile || animFile) && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: "2rem",
+            marginBottom: "1rem"
+          }}
+        >
+          {vrFile && (
+            <div style={{ textAlign: "center" }}>
+              <video
+                ref={vrVideoRef}
+                src={vrSrc}
+                width={320}
+                controls
+                style={{ backgroundColor: "black", display: "block" }}
+              />
+              <button onClick={() => setVrFile(null)}>Clear VR</button>
+            </div>
+          )}
 
-      {/*adjust offset before export */}
-      <div style={{ margin: "0.5rem 0" }}>
-        <label>
-          Offset (seconds, animation delayed vs VR):{" "}
-          <input
-            type="number"
-            step="0.1"
-            value={offsetSeconds}
-            onChange={(e) => setOffsetSeconds(e.target.value)}
-            style={{ width: "5rem" }}
-          />
-        </label>
-      </div>
-
-      {/* side-by-side video preview */}
-      <div
-        style={{
-          display: "flex",
-          gap: "1rem",
-          margin: "0.5rem 0",
-          alignItems: "flex-start"
-        }}
-      >
-        <div>
-          <p style={{ fontSize: "0.8rem", marginBottom: "0.25rem" }}>VR Video</p>
-          <video
-            ref={vrVideoRef}
-            src={vrSrc}
-            width={320}
-            controls
-            style={{ backgroundColor: "black" }}
-          />
+          {animFile && (
+            <div style={{ textAlign: "center" }}>
+              <video
+                ref={animVideoRef}
+                src={animSrc}
+                width={320}
+                controls
+                style={{ backgroundColor: "black", display: "block" }}
+              />
+              <button onClick={() => setAnimFile(null)}>Clear Animation</button>
+            </div>
+          )}
         </div>
+      )}
 
-        <div>
-          <p style={{ fontSize: "0.8rem", marginBottom: "0.25rem" }}>Animation Video</p>
-          <video
-            ref={animVideoRef}
-            src={animSrc}
-            width={320}
-            controls
-            style={{ backgroundColor: "black" }}
-          />
-        </div>
-      </div>
+      {/* offset + sync controls only when both are loaded */}
+      {vrFile && animFile && (
+        <>
+          <div style={{ margin: "0.5rem 0" }}>
+            <label>
+              Offset (seconds, animation delayed vs VR):{" "}
+              <input
+                type="number"
+                step="0.1"
+                value={offsetSeconds}
+                onChange={(e) => setOffsetSeconds(e.target.value)}
+                style={{ width: "5rem" }}
+              />
+            </label>
+          </div>
 
-      <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-        {/*just preview timing, no ffmpeg yet */}
-        <button onClick={previewOffset}>Preview Offset Only</button>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button onClick={previewOffset}>Preview Offset Only</button>
+            <button onClick={syncVideos}>Create Synced Output</button>
+            <button onClick={clearSyncFiles}>Clear Files</button>
+          </div>
+        </>
+      )}
 
-        {/*actually export with ffmpeg */}
-        <button onClick={syncVideos}>Create Synced Output</button>
-        <button onClick={clearSyncFiles}>Clear Files</button>
-
-      </div>
-
-      {status && <p style={{ marginTop: "0.5rem", fontSize: "0.85rem" }}>{status}</p>}
+      {status && <p style={{ marginTop: "0.5rem" }}>{status}</p>}
     </div>
   );
+
 }
