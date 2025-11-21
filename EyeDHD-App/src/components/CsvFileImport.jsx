@@ -1,295 +1,348 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react';
 import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
 
 export function CsvFileImport() {
-    // Store data and handle the file load
-    const [csvData, setCsvData] = useState([]);
-    const [fileName, setFileName] = useState("");
-    const [error, setError] = useState("");
-    const [alertMessage, setAlertMessage] = useState("");
-    const [showAlert, setShowAlert] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+  // Store data and handle the file load
+  const [csvData, setCsvData] = useState([]);
+  const [fileName, setFileName] = useState('');
+  const [error, setError] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-    // Data cleaning state
-    const [isCleaning, setIsCleaning] = useState(false);
-    const [cleaningProgress, setCleaningProgress] = useState(null);
-    const [cleaningStats, setCleaningStats] = useState(null);
-    const [showCleaningResults, setShowCleaningResults] = useState(false);
-    const styles = {
-        buttonContainer: {
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'center',
-            gap: '20px',
-        },
-        cleaningContainer: {
-            margin: '20px 0',
-            padding: '15px',
-            backgroundColor: '#f5f5f5',
-            borderRadius: '8px',
-            border: '1px solid #ddd',
-        },
-        progressBar: {
-            width: '400px',
-            height: '20px',
-            backgroundColor: '#e0e0e0',
-            borderRadius: '10px',
-            overflow: 'hidden',
-            margin: '0 auto 10px auto',
-        },
-        progressFill: {
-            height: '100%',
-            backgroundColor: '#4caf50',
-            transition: 'width 0.3s ease',
-        },
-        statsGrid: {
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            gap: '10px',
-            marginTop: '10px',
-        },
-        statItem: {
-            padding: '8px 12px',
-            backgroundColor: 'white',
-            borderRadius: '4px',
-            border: '1px solid #ccc',
-        }
-    };
+  // Data cleaning state
+  const [isCleaning, setIsCleaning] = useState(false);
+  const [cleaningProgress, setCleaningProgress] = useState(null);
+  const [cleaningStats, setCleaningStats] = useState(null);
+  const [showCleaningResults, setShowCleaningResults] = useState(false);
+  const styles = {
+    buttonContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: '20px'
+    },
+    cleaningContainer: {
+      margin: '20px 0',
+      padding: '15px',
+      backgroundColor: '#f5f5f5',
+      borderRadius: '8px',
+      border: '1px solid #ddd'
+    },
+    progressBar: {
+      width: '400px',
+      height: '20px',
+      backgroundColor: '#e0e0e0',
+      borderRadius: '10px',
+      overflow: 'hidden',
+      margin: '0 auto 10px auto'
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: '#4caf50',
+      transition: 'width 0.3s ease'
+    },
+    statsGrid: {
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: '10px',
+      marginTop: '10px'
+    },
+    statItem: {
+      padding: '8px 12px',
+      backgroundColor: 'white',
+      borderRadius: '4px',
+      border: '1px solid #ccc'
+    }
+  };
 
-    const openFile = async () => {
-    	setIsLoading(true);
+  const openFile = async () => {
+    setIsLoading(true);
 
-     	clearFile();
+    setFileName('');
+    setCsvData([]);
+    setCleaningProgress(null);
+    setCleaningStats(null);
+    setShowCleaningResults(false);
+    setIsCleaning(false);
 
-        // Request backend to open a file selector, wait for filename
-        const file = await electron.csv.openFile(200).catch(handleError);
-        if (error || !file) return;
+    // Request backend to open a file selector, wait for filename
+    const file = await electron.csv.openFile(200).catch(handleError);
+    if (error || !file) {
+      setIsLoading(false);
+      return;
+    }
 
-        setFileName(file);
+    setFileName(file);
 
-       	const metadata = await window.electron.csv.getMetadata(file).catch(handleError);
-        if (metadata.completed) {
-	        setCleaningProgress({ ...cleaningProgress,
-		        isComplete: true
-	        });
+    const metadata = await window.electron.csv
+      .getMetadata(file)
+      .catch(handleError);
 
-	        // Request the first buffer of rows from the database
-	        const rows = await electron.csv.getBuffer(file).catch(handleError);
-	        if (error) return;
+    if (metadata.completed) {
+      setCleaningProgress({ ...cleaningProgress, isComplete: true });
+      // Request the first buffer of rows from the database
+      const rows = await electron.csv.getBuffer(file).catch(handleError);
+      if (error) return;
 
-			setCsvData(rows);
-        }
+      setCleaningStats({ ...cleaningStats, stats: { totalRows: metadata.cleaned }});
 
-        setIsLoading(false);
-    };
+      setCsvData(rows);
+    }
 
-    // Data cleaning functionality
-    const cleanData = async () => {
-        if (!fileName) {
-            sendError("No file selected for cleaning");
-            return;
-        }
+    setIsLoading(false);
+  };
 
-        if (cleaningProgress?.isComplete) return;
+  // Data cleaning functionality
+  const cleanData = async () => {
+    if (!fileName) {
+      sendError('No file selected for cleaning');
+      return;
+    }
 
+    if (cleaningProgress?.isComplete) return;
+
+    try {
+      setIsCleaning(true);
+      setCleaningProgress({
+        progressPercent: 0,
+        isComplete: false,
+        isReading: false,
+        rowsProcessed: 0
+      });
+      setCleaningStats(null);
+      setShowCleaningResults(true);
+
+      // Start the cleaning process
+      const result = await window.electron.csv.cleanData(fileName);
+
+      // Get initial progress immediately
+      try {
+        const initialProgress = await window.electron.csv.getProgress(fileName);
+        const initialStats = await window.electron.csv.getStats(fileName);
+        setCleaningProgress(initialProgress);
+        setCleaningStats(initialStats);
+      } catch (err) {
+        // Initial progress not available
+      }
+
+      // Set up progress monitoring
+      const progressInterval = setInterval(async () => {
         try {
-            setIsCleaning(true);
-            setCleaningProgress({
-                progressPercent: 0,
-                isComplete: false,
-                isReading: false,
-                rowsProcessed: 0
-            });
-            setCleaningStats(null);
-            setShowCleaningResults(true);
+          const progress = await window.electron.csv.getProgress(fileName);
+          const stats = await window.electron.csv.getStats(fileName);
 
-            // Start the cleaning process
-            const result = await window.electron.csv.cleanData(fileName);
+          setCleaningProgress(progress);
+          setCleaningStats(stats);
 
-            // Get initial progress immediately
-            try {
-                const initialProgress = await window.electron.csv.getProgress(fileName);
-                const initialStats = await window.electron.csv.getStats(fileName);
-                setCleaningProgress(initialProgress);
-                setCleaningStats(initialStats);
-            } catch (err) {
-                // Initial progress not available
-            }
-
-            // Set up progress monitoring
-            const progressInterval = setInterval(async () => {
-                try {
-                    const progress = await window.electron.csv.getProgress(fileName);
-                    const stats = await window.electron.csv.getStats(fileName);
-
-                    setCleaningProgress(progress);
-                    setCleaningStats(stats);
-
-                    // Stop monitoring when cleaning is complete
-                    if (progress.isComplete) {
-                        clearInterval(progressInterval);
-                        setIsCleaning(false);
-                        sendAlert(`Data cleaning completed! Quality Score: ${stats.stats?.qualityScore || 0}%`);
-
-                        // Refresh the data view with cleaned data
-                        try {
-                            // Request the first buffer of rows from the database
-                            const rows = await electron.csv.getBuffer(fileName).catch(handleError);
-                            if (error) return;
-
-                            setCsvData(rows);
-                        } catch (bufferError) {
-                            // Buffer no longer available after completion
-                        }
-                    }
-                } catch (err) {
-                    // Cleaning monitoring completed or file closed
-                    clearInterval(progressInterval);
-                    setIsCleaning(false);
-
-                    // If we have stats, show completion message
-                    if (cleaningStats) {
-                        sendAlert(`Data cleaning completed! Quality Score: ${cleaningStats.stats?.qualityScore || 0}%`);
-                    }
-                }
-            }, 50); // Check every 50ms for more responsive updates
-        } catch (err) {
+          // Stop monitoring when cleaning is complete
+          if (progress.isComplete) {
+            clearInterval(progressInterval);
             setIsCleaning(false);
-            sendError(err.message || 'Failed to start data cleaning');
-        }
+            sendAlert(
+              `Data cleaning completed! Quality Score: ${stats.stats?.qualityScore || 0}%`
+            );
 
-    };
+            // Refresh the data view with cleaned data
+            try {
+              // Request the first buffer of rows from the database
+              const rows = await electron.csv
+                .getBuffer(fileName)
+                .catch(handleError);
+              if (error) return;
 
-    // Export cleaned CSV data to a new file
-    const exportCleanedData = async () => {
-        if (!fileName) {
-            sendError("No file selected for export");
-            return;
-        }
-
-        // Check if cleaning is complete
-        if (!cleaningStats?.stats?.totalRows) {
-            sendError("No cleaned data available. Please clean the data first.");
-            return;
-        }
-
-        try {
-            setIsLoading(true);
-            const result = await window.electron.csv.exportData(fileName);
-
-            if (result.success) {
-                sendAlert(`Successfully exported ${result.stats.totalExported} rows to ${result.stats.filePath.split('\\').pop()}`);
-            } else {
-                sendError(result.message || 'Export failed');
+              setCsvData(rows);
+            } catch (bufferError) {
+              // Buffer no longer available after completion
             }
+          }
         } catch (err) {
-            sendError(err.message || 'Failed to export data');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+          // Cleaning monitoring completed or file closed
+          clearInterval(progressInterval);
+          setIsCleaning(false);
 
-    const sendAlert = (message) => {
-        setAlertMessage(message);
-        setShowAlert(true);
-        setTimeout(() => {
+          // If we have stats, show completion message
+          if (cleaningStats) {
+            sendAlert(
+              `Data cleaning completed! Quality Score: ${cleaningStats.stats?.qualityScore || 0}%`
+            );
+          }
+        }
+      }, 50); // Check every 50ms for more responsive updates
+    } catch (err) {
+      setIsCleaning(false);
+      sendError(err.message || 'Failed to start data cleaning');
+    }
+  };
+
+  // Export cleaned CSV data to a new file
+  const exportCleanedData = async () => {
+    if (!fileName) {
+      sendError('No file selected for export');
+      return;
+    }
+
+    // Check if cleaning is complete
+    if (!cleaningStats?.stats?.totalRows) {
+      sendError('No cleaned data available. Please clean the data first.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const result = await window.electron.csv.exportData(fileName);
+
+      if (result.success) {
+        sendAlert(
+          `Successfully exported ${result.stats.totalExported} rows to ${result.stats.filePath.split('\\').pop()}`
+        );
+      } else {
+        sendError(result.message || 'Export failed');
+      }
+    } catch (err) {
+      sendError(err.message || 'Failed to export data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendAlert = (message) => {
+    setAlertMessage(message);
+    setShowAlert(true);
+    setTimeout(() => {
+      setShowAlert(false);
+      setAlertMessage('');
+    }, 40000);
+  };
+
+  const handleError = (err) => {
+    sendError(err.message);
+  };
+
+  const sendError = (message) => {
+    setError(message);
+    setTimeout(() => {
+      setError('');
+    }, 4000);
+  };
+
+  const clearFile = async () => {
+    setCsvData([]);
+    setCleaningProgress({
+      progressPercent: 0,
+      isComplete: false,
+      isReading: false,
+      rowsProcessed: 0
+    });
+    setCleaningStats(null);
+    setShowCleaningResults(false);
+    setIsCleaning(false);
+
+    if (fileName) {
+      await electron.csv.resetCleaningProgress(fileName).catch(handleError);
+    }
+  };
+
+  return (
+    <div className="csv-import-container">
+      <LoadingOverlay isLoading={isLoading} />
+      <Button
+        onClick={openFile}
+        className="btn"
+        buttonText="Select a CSV File"
+      />
+
+      {error && (
+        <AlertWindow
+          message={error}
+          classColor=" red"
+          onClose={() => {
+            setError('');
             setShowAlert(false);
-            setAlertMessage("");
-        }, 40000);
-    }
+          }}
+        />
+      )}
+      {fileName && (
+        <>
+          <PreviewCsvFile fileName={fileName} csvData={csvData} />
 
-    const handleError = (err) => {
-        sendError(err.message);
-    }
+          {/* Data Cleaning Section */}
+          {showCleaningResults && (
+            <div style={styles.cleaningContainer}>
+              <h3>Data Cleaning {isCleaning ? 'In Progress...' : 'Results'}</h3>
 
-    const sendError = (message) => {
-        setError(message);
-        setTimeout(() => {
-            setError("");
-        }, 4000);
-    }
+              {cleaningProgress && (
+                <div>
+                  <div style={styles.progressBar}>
+                    <div
+                      style={{
+                        ...styles.progressFill,
+                        width: `${cleaningProgress.progressPercent}%`
+                      }}
+                    />
+                  </div>
+                  <p>{cleaningProgress.progressPercent.toFixed(1)}% Complete</p>
+                  <p>
+                    Status:{' '}
+                    {cleaningProgress.isComplete
+                      ? 'Complete'
+                      : cleaningProgress.isReading
+                        ? 'Processing...'
+                        : 'Ready'}
+                  </p>
+                </div>
+              )}
 
-    const clearFile = async () => {
-        setFileName("");
-        setCsvData([]);
-        setCleaningProgress(null);
-        setCleaningStats(null);
-        setShowCleaningResults(false);
-        setIsCleaning(false);
+              {cleaningStats && cleaningStats.stats && (
+                <div style={styles.statsGrid}>
+                  <div style={styles.statItem}>
+                    <strong>Total Rows:</strong>{' '}
+                    {(cleaningStats.stats.totalRows || 0).toLocaleString()}
+                  </div>
+                  <div style={styles.statItem}>
+                    <strong>Error Rows:</strong>{' '}
+                    {(cleaningStats.stats.errorRows || 0).toLocaleString()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
-        if (fileName) {
-        	await electron.csv.resetFile(fileName).catch(handleError);
-        }
-    };
-
-    return (
-        <div className="csv-import-container">
-
-            <LoadingOverlay isLoading={isLoading} />
-            <Button onClick={openFile} className="btn" buttonText="Select a CSV File" />
-
-            {error && <AlertWindow message={error} classColor=" red" onClose={() => {setError(""); setShowAlert(false)}} />}
-            {fileName &&
-                <>
-                    <PreviewCsvFile fileName={fileName} csvData={csvData} />
-
-                    {/* Data Cleaning Section */}
-                    {showCleaningResults && (
-                        <div style={styles.cleaningContainer}>
-                            <h3>Data Cleaning {isCleaning ? 'In Progress...' : 'Results'}</h3>
-
-                            {cleaningProgress && (
-                                <div>
-                                    <div style={styles.progressBar}>
-                                        <div
-                                            style={{
-                                                ...styles.progressFill,
-                                                width: `${cleaningProgress.progressPercent}%`
-                                            }}
-                                        />
-                                    </div>
-                                    <p>{cleaningProgress.progressPercent.toFixed(1)}% Complete</p>
-                                    <p>Status: {cleaningProgress.isComplete ? 'Complete' : cleaningProgress.isReading ? 'Processing...' : 'Ready'}</p>
-                                </div>
-                            )}
-
-                            {cleaningStats && cleaningStats.stats && (
-                                <div style={styles.statsGrid}>
-                                    <div style={styles.statItem}>
-                                        <strong>Total Rows:</strong> {(cleaningStats.stats.totalRows || 0).toLocaleString()}
-                                    </div>
-                                    <div style={styles.statItem}>
-                                        <strong>Error Rows:</strong> {(cleaningStats.stats.errorRows || 0).toLocaleString()}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    <div style={styles.buttonContainer}>
-                        {!cleaningProgress?.isComplete && (
-	                        <Button
-	                            onClick={isCleaning ? () => {} : cleanData}
-	                            className={`btn${isCleaning ? ' disabled' : ''}`}
-	                            buttonText={isCleaning ? "Cleaning..." : "Clean Data"}
-	                        />
-                        )}
-                        <Button
-                            onClick={exportCleanedData}
-                            className={`btn${!cleaningStats?.stats?.totalRows ? ' disabled' : ''}`}
-                            buttonText="Export Clean Data"
-                            disabled={!cleaningStats?.stats?.totalRows}
-                        />
-                        <Button onClick={clearFile} className="btn" buttonText="Clear File" />
-                    </div>
-                </>}
-            {showAlert && <AlertWindow message={alertMessage} classColor=" green" onClose={() => setShowAlert(false)} />}
-        </div>
-    );
+          <div style={styles.buttonContainer}>
+            {!cleaningProgress?.isComplete && (
+              <Button
+                onClick={isCleaning ? () => {} : cleanData}
+                className={`btn${isCleaning ? ' disabled' : ''}`}
+                buttonText={isCleaning ? 'Cleaning...' : 'Clean Data'}
+              />
+            )}
+            <Button
+              onClick={exportCleanedData}
+              className={`btn${!cleaningStats?.stats?.totalRows ? ' disabled' : ''}`}
+              buttonText="Export Clean Data"
+              disabled={!cleaningStats?.stats?.totalRows}
+            />
+            <Button
+              onClick={clearFile}
+              className="btn"
+              buttonText="Clear File"
+            />
+          </div>
+        </>
+      )}
+      {showAlert && (
+        <AlertWindow
+          message={alertMessage}
+          classColor=" green"
+          onClose={() => setShowAlert(false)}
+        />
+      )}
+    </div>
+  );
 }
 
 export default CsvFileImport;

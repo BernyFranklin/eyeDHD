@@ -1,7 +1,8 @@
-import fs from "fs";
-import rl from "readline";
+import fs from 'fs';
+import rl from 'readline';
 
-import { sleep } from "../utils.js";
+import metadataActions from '../../models/actions/metadata.js';
+import { sleep } from '../utils.js';
 
 /**
  * Reads and cleans a CSV file at the given path. Cleans data lazyily,
@@ -18,6 +19,7 @@ export default class DataCleaner {
   buf = [];
   header = [];
   status = {
+    start: false,
     reading: false,
     done: false,
     closed: false
@@ -35,8 +37,8 @@ export default class DataCleaner {
       numbers: 0,
       booleans: 0,
       nulls: 0,
-      sanitized: 0,
-    },
+      sanitized: 0
+    }
   };
 
   // Performance and memory optimization
@@ -44,7 +46,7 @@ export default class DataCleaner {
     startTime: null,
     rowsPerSecond: 0,
     memoryUsage: 0,
-    maxBufferSize: 0,
+    maxBufferSize: 0
   };
 
   // Progress tracking
@@ -52,30 +54,30 @@ export default class DataCleaner {
     bytesRead: 0,
     totalBytes: 0,
     estimatedRows: 0,
-    currentRow: 0,
+    currentRow: 0
   };
 
   // Eye tracking validation thresholds
   eyeTrackingConfig = {
     coordinateRange: { min: -10, max: 10 },
     requiredFields: [
-      "LeftEyeStatus",
-      "RightEyeStatus",
-      "LeftEyeForwardX",
-      "LeftEyeForwardY",
-      "LeftEyeForwardZ",
-      "LeftPupilDiameterInMM",
-      "LeftIrisDiameterInMM",
-      "RightEyeForwardX",
-      "RightEyeForwardY",
-      "RightEyeForwardZ",
-      "RightPupilDiameterInMM",
-      "RightIrisDiameterInMM",
+      'LeftEyeStatus',
+      'RightEyeStatus',
+      'LeftEyeForwardX',
+      'LeftEyeForwardY',
+      'LeftEyeForwardZ',
+      'LeftPupilDiameterInMM',
+      'LeftIrisDiameterInMM',
+      'RightEyeForwardX',
+      'RightEyeForwardY',
+      'RightEyeForwardZ',
+      'RightPupilDiameterInMM',
+      'RightIrisDiameterInMM'
     ],
-    validStatuses: ["VALID", "INVALID", "LOST", "TRACKING", "NOT_TRACKING"],
+    validStatuses: ['VALID', 'INVALID', 'LOST', 'TRACKING', 'NOT_TRACKING']
   };
 
-  constructor({ path, buf_len = 200 }) {
+  constructor({ db, name, path, buf_len = 200 }) {
     // Store the file path for later use
     this.filePath = path;
 
@@ -91,19 +93,34 @@ export default class DataCleaner {
       this.progress.totalBytes = 0;
     }
 
+    const metadata = metadataActions.read(db, name);
+
+    // If file has been cleaned set up progress and performance metrics to show it's finished
+    // to the front end
+    if (metadata.completed) {
+      this.status.start = true;
+      this.progress.bytesRead = this.progress.totalBytes;
+      this.progress.currentRow = metadata.cleaned;
+
+      this.updateStats([]);
+
+      this.close();
+      return;
+    }
+
     // Optimize buffer size based on available memory
     const optimalBufferSize = this.calculateOptimalBufferSize(buf_len);
     this.buf_len = optimalBufferSize;
 
     // Open file as a stream with optimized buffer size
     this.stream = fs.createReadStream(path, {
-      encoding: "utf-8",
-      highWaterMark: 64 * 1024, // 64KB buffer for better performance
+      encoding: 'utf-8',
+      highWaterMark: 64 * 1024 // 64KB buffer for better performance
     });
 
     this.readline = rl.createInterface({
       input: this.stream,
-      crlfDelay: Infinity,
+      crlfDelay: Infinity
     });
     this.iter = this.readline[Symbol.asyncIterator]();
 
@@ -113,7 +130,7 @@ export default class DataCleaner {
       .then(({ value, done }) => {
         if (done) {
           this.close();
-          throw new Error("File is empty");
+          throw new Error('File is empty');
         }
 
         // Parse header using the same CSV parsing logic to handle quoted headers
@@ -123,18 +140,31 @@ export default class DataCleaner {
         // Validate header structure
         const headerValidation = this.validateHeader();
         if (!headerValidation.isValid) {
-          console.warn("Header validation issues detected:", headerValidation);
+          console.warn('Header validation issues detected:', headerValidation);
         }
 
         this.performance.startTime = Date.now();
 
-        // Only auto-load rows if autoStart is true
+        // If cleaning is already in progress, skip metadata.cleaned rows
+        if (metadata.cleaned > 200) {
+          this.status.reading = true;
+          for (let i = 0; i < metadata.cleaned; i++) {
+            this.iter.next();
+            this.progress.bytesRead += Buffer.byteLength(value, 'utf8');
+            this.progress.currentRow++;
+
+            this.updateStats([]);
+          }
+
+          this.status.reading = false;
+        }
+
         this.loadRows(this.buf_len)
-        .then()
-        .catch((err) => {
+          .then()
+          .catch((err) => {
             this.close();
             throw err;
-        });
+          });
       })
       .catch((err) => {
         this.close();
@@ -149,11 +179,15 @@ export default class DataCleaner {
     if (this.status.closed) {
       return;
     }
-    this.readline.close();
-    this.stream.close();
+    this.readline?.close();
+    this.stream?.close();
     this.status.reading = false;
     this.status.done = true;
     this.status.closed = true;
+  }
+
+  start() {
+    this.status.start = true;
   }
 
   /**
@@ -234,8 +268,8 @@ export default class DataCleaner {
    */
   parseCsvLine(line) {
     const result = [];
-    const str = String(line).replace(/\r$/, ""); // Remove trailing carriage return
-    let field = "";
+    const str = String(line).replace(/\r$/, ''); // Remove trailing carriage return
+    let field = '';
     let inQuotes = false;
     let i = 0;
 
@@ -253,10 +287,10 @@ export default class DataCleaner {
           inQuotes = !inQuotes;
           i++;
         }
-      } else if (char === "," && !inQuotes) {
+      } else if (char === ',' && !inQuotes) {
         // Field separator outside of quotes
         result.push(field.trim());
-        field = "";
+        field = '';
         i++;
       } else {
         // Regular character
@@ -282,15 +316,15 @@ export default class DataCleaner {
 
     // Handle null/empty values
     const nullValues = new Set([
-      "",
-      "NA",
-      "N/A",
-      "null",
-      "NULL",
-      "NaN",
-      "nan",
-      "#N/A",
-      "n/a",
+      '',
+      'NA',
+      'N/A',
+      'null',
+      'NULL',
+      'NaN',
+      'nan',
+      '#N/A',
+      'n/a'
     ]);
     if (nullValues.has(trimmed.toLowerCase()) || nullValues.has(trimmed)) {
       return null;
@@ -298,22 +332,22 @@ export default class DataCleaner {
 
     // Handle boolean values
     const trueValues = new Set([
-      "true",
-      "yes",
-      "y",
-      "1",
-      "on",
-      "valid",
-      "VALID",
+      'true',
+      'yes',
+      'y',
+      '1',
+      'on',
+      'valid',
+      'VALID'
     ]);
     const falseValues = new Set([
-      "false",
-      "no",
-      "n",
-      "0",
-      "off",
-      "invalid",
-      "INVALID",
+      'false',
+      'no',
+      'n',
+      '0',
+      'off',
+      'invalid',
+      'INVALID'
     ]);
 
     if (trueValues.has(trimmed.toLowerCase()) || trueValues.has(trimmed)) {
@@ -362,8 +396,8 @@ export default class DataCleaner {
    */
   validateRow(row) {
     // Validate eye tracking specific fields
-    const eyePositions = ["Left", "Right"];
-    const coordinates = ["X", "Y", "Z"];
+    const eyePositions = ['Left', 'Right'];
+    const coordinates = ['X', 'Y', 'Z'];
 
     eyePositions.forEach((position) => {
       // Validate eye forward vectors
@@ -405,7 +439,7 @@ export default class DataCleaner {
   sanitizeEyeCoordinate(value) {
     if (value === null || value === undefined) return null;
 
-    if (typeof value === "number") {
+    if (typeof value === 'number') {
       // Clamp extreme values that might indicate sensor errors
       if (Math.abs(value) > 10000) {
         console.warn(`Extreme eye coordinate value detected: ${value}`);
@@ -415,7 +449,7 @@ export default class DataCleaner {
     }
 
     // Handle string values that might contain parentheses or other formatting
-    const stringValue = String(value).replace(/[()]/g, "").trim();
+    const stringValue = String(value).replace(/[()]/g, '').trim();
     const numeric = this.parseNumeric(stringValue);
 
     if (numeric !== null && Math.abs(numeric) <= 10000) {
@@ -433,11 +467,11 @@ export default class DataCleaner {
 
     const stringValue = String(value).toUpperCase().trim();
     const validStatuses = [
-      "VALID",
-      "INVALID",
-      "LOST",
-      "TRACKING",
-      "NOT_TRACKING",
+      'VALID',
+      'INVALID',
+      'LOST',
+      'TRACKING',
+      'NOT_TRACKING'
     ];
 
     if (validStatuses.includes(stringValue)) {
@@ -446,17 +480,17 @@ export default class DataCleaner {
 
     // Try to map common variations
     const statusMapping = {
-      TRUE: "VALID",
-      FALSE: "INVALID",
-      1: "VALID",
-      0: "INVALID",
-      OK: "VALID",
-      GOOD: "VALID",
-      BAD: "INVALID",
-      ERROR: "INVALID",
+      TRUE: 'VALID',
+      FALSE: 'INVALID',
+      1: 'VALID',
+      0: 'INVALID',
+      OK: 'VALID',
+      GOOD: 'VALID',
+      BAD: 'INVALID',
+      ERROR: 'INVALID'
     };
 
-    return statusMapping[stringValue] || "INVALID";
+    return statusMapping[stringValue] || 'INVALID';
   }
 
   /**
@@ -466,7 +500,7 @@ export default class DataCleaner {
     if (value === null || value === undefined) return null;
 
     // If it's already a number, assume it's a valid timestamp
-    if (typeof value === "number") {
+    if (typeof value === 'number') {
       return value;
     }
 
@@ -493,8 +527,8 @@ export default class DataCleaner {
    */
   async getBuffer() {
     if (this.status.done) {
-    	this.updatePerformanceMetrics();
-      	return null;
+      this.updatePerformanceMetrics();
+      return null;
     }
 
     while (this.buf.length === 0 || this.status.reading) {
@@ -549,10 +583,10 @@ export default class DataCleaner {
     });
 
     // Validate eye coordinates are within reasonable bounds
-    ["Left", "Right"].forEach((eye) => {
-      ["X", "Y", "Z"].forEach((coord) => {
+    ['Left', 'Right'].forEach((eye) => {
+      ['X', 'Y', 'Z'].forEach((coord) => {
         const field = `${eye}EyeForward${coord}`;
-        if (row[field] !== null && typeof row[field] === "number") {
+        if (row[field] !== null && typeof row[field] === 'number') {
           const { min, max } = this.eyeTrackingConfig.coordinateRange;
           if (row[field] < min || row[field] > max) {
             row[field] = Math.max(min, Math.min(max, row[field])); // Clamp value
@@ -611,9 +645,9 @@ export default class DataCleaner {
     Object.values(row).forEach((value) => {
       if (value === null) {
         this.stats.nullValues++;
-      } else if (typeof value === "number") {
+      } else if (typeof value === 'number') {
         this.stats.typeConversions.numbers++;
-      } else if (typeof value === "boolean") {
+      } else if (typeof value === 'boolean') {
         this.stats.typeConversions.booleans++;
       }
     });
@@ -635,36 +669,36 @@ export default class DataCleaner {
       errorRate:
         this.stats.totalRows > 0
           ? ((this.stats.errorRows / this.stats.totalRows) * 100).toFixed(2) +
-            "%"
-          : "0%",
+            '%'
+          : '0%',
       validRate:
         this.stats.totalRows > 0
           ? ((this.stats.validRows / this.stats.totalRows) * 100).toFixed(2) +
-            "%"
-          : "0%",
+            '%'
+          : '0%',
       eyeTrackingErrorRate:
         this.stats.totalRows > 0
           ? (
               (this.stats.eyeTrackingErrors / this.stats.totalRows) *
               100
-            ).toFixed(2) + "%"
-          : "0%",
+            ).toFixed(2) + '%'
+          : '0%',
       coordinateClampingRate:
         this.stats.totalRows > 0
           ? (
               (this.stats.coordinateClampings / this.stats.totalRows) *
               100
-            ).toFixed(2) + "%"
-          : "0%",
+            ).toFixed(2) + '%'
+          : '0%',
       performance: {
         ...this.performance,
         memoryUsageMB:
-          (this.performance.memoryUsage / 1024 / 1024).toFixed(2) + "MB",
-        rowsPerSecond: this.performance.rowsPerSecond.toFixed(2) + "/sec",
+          (this.performance.memoryUsage / 1024 / 1024).toFixed(2) + 'MB',
+        rowsPerSecond: this.performance.rowsPerSecond.toFixed(2) + '/sec',
         bufferEfficiency:
           ((this.performance.maxBufferSize / this.buf_len) * 100).toFixed(2) +
-          "%",
-      },
+          '%'
+      }
     };
   }
 
@@ -686,28 +720,28 @@ export default class DataCleaner {
     const memoryUsage = this.performance.memoryUsage;
     const maxMemory = process.memoryUsage().heapTotal * 0.8; // 80% threshold
 
-    let status = "HEALTHY";
+    let status = 'HEALTHY';
     const warnings = [];
 
     if (errorRate > 10) {
-      status = "WARNING";
+      status = 'WARNING';
       warnings.push(`High error rate: ${stats.errorRate}`);
     }
 
     if (eyeTrackingErrorRate > 5) {
-      status = "WARNING";
+      status = 'WARNING';
       warnings.push(
         `High eye tracking error rate: ${stats.eyeTrackingErrorRate}`
       );
     }
 
     if (memoryUsage > maxMemory) {
-      status = "CRITICAL";
+      status = 'CRITICAL';
       warnings.push(`High memory usage: ${stats.performance.memoryUsageMB}`);
     }
 
     if (this.performance.rowsPerSecond < 10) {
-      status = status === "CRITICAL" ? "CRITICAL" : "WARNING";
+      status = status === 'CRITICAL' ? 'CRITICAL' : 'WARNING';
       warnings.push(`Low processing speed: ${stats.performance.rowsPerSecond}`);
     }
 
@@ -715,7 +749,7 @@ export default class DataCleaner {
       status,
       warnings,
       timestamp: new Date().toISOString(),
-      summary: `${stats.totalRows} rows processed, ${stats.validRate} valid, ${stats.performance.rowsPerSecond} processing speed`,
+      summary: `${stats.totalRows} rows processed, ${stats.validRate} valid, ${stats.performance.rowsPerSecond} processing speed`
     };
   }
 
@@ -724,14 +758,14 @@ export default class DataCleaner {
    */
   validateHeader() {
     const requiredFields = [
-      "LeftEyeForwardX",
-      "LeftEyeForwardY",
-      "LeftEyeForwardZ",
-      "RightEyeForwardX",
-      "RightEyeForwardY",
-      "RightEyeForwardZ",
-      "LeftEyeStatus",
-      "RightEyeStatus",
+      'LeftEyeForwardX',
+      'LeftEyeForwardY',
+      'LeftEyeForwardZ',
+      'RightEyeForwardX',
+      'RightEyeForwardY',
+      'RightEyeForwardZ',
+      'LeftEyeStatus',
+      'RightEyeStatus'
     ];
 
     const missingFields = requiredFields.filter(
@@ -741,25 +775,25 @@ export default class DataCleaner {
 
     if (missingFields.length > 0) {
       console.warn(
-        "Warning: Missing expected eye tracking fields:",
+        'Warning: Missing expected eye tracking fields:',
         missingFields
       );
     }
 
     const hasTimestamp = this.header.some(
       (h) =>
-        h.toLowerCase().includes("time") || h.toLowerCase().includes("frame")
+        h.toLowerCase().includes('time') || h.toLowerCase().includes('frame')
     );
 
     if (!hasTimestamp) {
-      console.warn("Warning: No timestamp or frame field detected");
+      console.warn('Warning: No timestamp or frame field detected');
     }
 
     return {
       isValid: missingFields.length === 0 && hasTimestamp,
       missingFields,
       hasTimestamp,
-      detectedFields: this.header,
+      detectedFields: this.header
     };
   }
 
@@ -772,8 +806,14 @@ export default class DataCleaner {
     return {
       ...this.stats,
       qualityScore: this.calculateQualityScore(),
-      errorRate: this.stats.totalRows > 0 ? (this.stats.errorRows / this.stats.totalRows) * 100 : 0,
-      validationRate: this.stats.totalRows > 0 ? (this.stats.validRows / this.stats.totalRows) * 100 : 0
+      errorRate:
+        this.stats.totalRows > 0
+          ? (this.stats.errorRows / this.stats.totalRows) * 100
+          : 0,
+      validationRate:
+        this.stats.totalRows > 0
+          ? (this.stats.validRows / this.stats.totalRows) * 100
+          : 0
     };
   }
 
@@ -806,7 +846,10 @@ export default class DataCleaner {
         progressPercent = 99;
       } else {
         // Normal progress calculation: (currentRows / maxExpected) * 100, but cap at 99%
-        progressPercent = Math.min(99, (this.stats.totalRows / MAX_EXPECTED_ROWS) * 100);
+        progressPercent = Math.min(
+          99,
+          (this.stats.totalRows / MAX_EXPECTED_ROWS) * 100
+        );
       }
     }
 
@@ -822,7 +865,7 @@ export default class DataCleaner {
       bytesRead: this.progress.bytesRead,
       totalBytes: this.progress.totalBytes,
       currentRow: this.progress.currentRow,
-      maxExpectedRows: MAX_EXPECTED_ROWS,
+      maxExpectedRows: MAX_EXPECTED_ROWS
     };
   }
 
@@ -840,8 +883,12 @@ export default class DataCleaner {
     if (this.performance.startTime) {
       const elapsedTime = (Date.now() - this.performance.startTime) / 1000; // seconds
       this.performance.rowsPerSecond = this.stats.totalRows / elapsedTime;
-      this.performance.memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024; // MB
-      this.performance.maxBufferSize = Math.max(this.performance.maxBufferSize, this.buf.length);
+      this.performance.memoryUsage =
+        process.memoryUsage().heapUsed / 1024 / 1024; // MB
+      this.performance.maxBufferSize = Math.max(
+        this.performance.maxBufferSize,
+        this.buf.length
+      );
     }
   }
 
@@ -853,10 +900,12 @@ export default class DataCleaner {
 
     const validRatio = this.stats.validRows / this.stats.totalRows;
     const errorRatio = this.stats.errorRows / this.stats.totalRows;
-    const nullRatio = this.stats.nullValues / (this.stats.totalRows * this.header.length);
+    const nullRatio =
+      this.stats.nullValues / (this.stats.totalRows * this.header.length);
 
     // Score based on: 70% valid data, 20% low errors, 10% minimal nulls
-    const score = (validRatio * 0.7) + ((1 - errorRatio) * 0.2) + ((1 - nullRatio) * 0.1);
+    const score =
+      validRatio * 0.7 + (1 - errorRatio) * 0.2 + (1 - nullRatio) * 0.1;
     return Math.round(score * 100);
   }
 
@@ -882,7 +931,9 @@ export default class DataCleaner {
       let exportedRows = 0;
 
       // Add header row
-      csvContent += this.header.map(col => `"${col.replace(/"/g, '""')}"`).join(',') + '\n';
+      csvContent +=
+        this.header.map((col) => `"${col.replace(/"/g, '""')}"`).join(',') +
+        '\n';
 
       // Read through the entire file and clean each row for export
       for await (const line of exportReadline) {
@@ -898,18 +949,24 @@ export default class DataCleaner {
 
             // Only include valid rows (not error rows)
             if (cleaned && !cleaned._isError) {
-              const csvRow = this.header.map(col => {
-                const value = cleaned[col];
-                if (value === null || value === undefined) {
-                  return '';
-                }
-                // Escape quotes and wrap in quotes if contains comma, quote, or newline
-                const stringValue = String(value);
-                if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-                  return `"${stringValue.replace(/"/g, '""')}"`;
-                }
-                return stringValue;
-              }).join(',');
+              const csvRow = this.header
+                .map((col) => {
+                  const value = cleaned[col];
+                  if (value === null || value === undefined) {
+                    return '';
+                  }
+                  // Escape quotes and wrap in quotes if contains comma, quote, or newline
+                  const stringValue = String(value);
+                  if (
+                    stringValue.includes(',') ||
+                    stringValue.includes('"') ||
+                    stringValue.includes('\n')
+                  ) {
+                    return `"${stringValue.replace(/"/g, '""')}"`;
+                  }
+                  return stringValue;
+                })
+                .join(',');
               csvContent += csvRow + '\n';
               exportedRows++;
             }

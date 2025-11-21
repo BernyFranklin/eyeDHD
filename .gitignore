@@ -6,6 +6,7 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+.zed
 
 # IDE and Editor Files
 .vscode/
