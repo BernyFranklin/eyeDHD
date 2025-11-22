@@ -1,10 +1,10 @@
 import Database from 'better-sqlite3';
 import fs from 'fs';
 
-export default function getDB(options = { testing: false, path: null }) {
+export default function getDB(options = { logging: false, temporary: false, path: null }) {
   // Creates a temporary in memory database for testing
-  if (options.testing) {
-    const db = new Database(':memory:', { verbose: console.log });
+  if (options.temporary) {
+    const db = new Database(':memory:', options.logging ? { verbose: console.log } : {});
 
     return db;
   }
@@ -14,7 +14,7 @@ export default function getDB(options = { testing: false, path: null }) {
   }
   console.log(`Using database at ${options.path}`);
 
-  const db = new Database(options.path);
+  const db = new Database(options.path, options.logging ? { verbose: console.log } : {});
 
   // Set for performance
   db.pragma('journal_mode = WAL');

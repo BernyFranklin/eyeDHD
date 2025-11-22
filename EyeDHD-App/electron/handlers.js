@@ -18,7 +18,8 @@ import DataCleaner from './stuff/DataCleaner.js';
 const appRoot = app.getAppPath();
 const db = getDB({
   path: path.join(appRoot, 'main.db'),
-  testing: false
+  temporary: false,
+  logging: false
 });
 createMetadataTable(db);
 

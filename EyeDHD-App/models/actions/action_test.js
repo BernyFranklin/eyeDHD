@@ -8,7 +8,7 @@ export const test = vitest.extend({
   db: async ({}, use) => {
     console.log('Setting up test database...');
 
-    const db = getDB({ testing: true });
+    const db = getDB({ temporary: true, logging: true });
     createMetadataTable(db);
 
     db.prepare(`
