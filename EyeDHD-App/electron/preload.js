@@ -17,47 +17,13 @@ contextBridge.exposeInMainWorld('electron', {
     },
     notify: {
         /**
-         * Creates an OS notification displaying the argument: message
+         * Creates an OS notificationA displaying the argument: message
          */
         send: (message) => {
             ipcRenderer.send('notify', message);
         }
     },
 
-    video: {
-        /**
-         *open a native dialog to choose a video file and return full path
-         */
-        selectFile: async () => {
-        return await ipcRenderer.invoke("select-video-file");
-        },
-
-
-        /**
-         *sync vr + animation using main.js ffmpeg handler
-         */
-        SidebySide: async (vrFile, animFile) => {
-        return await ipcRenderer.invoke("video-sync-vr", {
-            vrFile,
-            animFile
-        });
-        },
-
-
-        /**
-         *convert OS path → safe video URL for <video src="">
-         * no Node 'path' module used so bundlers can't complain
-         */
-        toVideoURL: (filePath) => {
-        if (!filePath) return null;
-        const normalized = filePath.replace(/\\/g, "/");
-        // avoid double prefixing if it already starts with file:///
-        return normalized.startsWith("file:///")
-            ? normalized
-            : `file:///${normalized}`;
-        }
-      },
-      
     resetReadingProgress: async (filename) => {
       return await ipcRenderer.invoke('csv-reset-reading-progress', filename);
     },
@@ -121,6 +87,40 @@ contextBridge.exposeInMainWorld('electron', {
       return await ipcRenderer.invoke('csv-export-data', filename);
     }
   },
+
+  video: {
+    /**
+     *open a native dialog to choose a video file and return full path
+      */
+    selectFile: async () => {
+    return await ipcRenderer.invoke("select-video-file");
+    },
+
+
+    /**
+     *sync vr + animation using main.js ffmpeg handler
+      */
+    SidebySide: async (vrFile, animFile, offsetSeconds) => {
+    return await ipcRenderer.invoke("video-sync-vr", {
+        vrFile,
+        animFile,
+        offsetSeconds
+      });
+    },
+      /* convert OS path → safe video URL for <video src="">
+      * no Node 'path' module used so bundlers can't complain
+      */
+    toVideoURL: (filePath) => {
+      if (!filePath) return null;
+      const normalized = filePath.replace(/\\/g, "/");
+      // avoid double prefixing if it already starts with file:///
+      return normalized.startsWith("file:///")
+        ? normalized
+        : `file:///${normalized}`;
+      }
+    },
+
+
   notify: {
     /**
      * Creates an OS notification displaying the argument: message
@@ -128,6 +128,8 @@ contextBridge.exposeInMainWorld('electron', {
     send: (message) => {
       ipcRenderer.send('notify', message);
     }
-  }
-});
+  },
 
+})
+
+    

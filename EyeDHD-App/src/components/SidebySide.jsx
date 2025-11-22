@@ -79,13 +79,17 @@ export default function SidebySide() {
       setStatus("Select both VR + animation first.");
       return;
     }
+    // comment(jaz): log raw + numeric offset from ui
+    console.log("react offsetSeconds state =", offsetSeconds);
+    const numeric = Number(offsetSeconds);
+    console.log("react numeric offset =", numeric);
 
     setStatus("Syncing with offset...");
     try {
       const outPath = await window.electron.video.SidebySide(
         vrFile,
         animFile,
-        Number(offsetSeconds) || 0
+        numeric
       );
       setStatus(`Synced file saved at: ${outPath}`);
     } catch (err) {

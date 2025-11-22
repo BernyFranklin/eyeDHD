@@ -419,7 +419,7 @@ ipcMain.handle('csv-get-first-and-last', async (_, filename) => {
   });
 });
 
-ipcMain.handle('select-video-file', async () => {
+ipcMain.handle("select-video-file", async () => {
     const result = await dialog.showOpenDialog({
         properties: ['openFile'],
         filters: [{ name: 'Videos', extensions: ['mp4', 'mov', 'mkv', 'webm'] }]
@@ -429,36 +429,82 @@ ipcMain.handle('select-video-file', async () => {
     return result.filePaths[0];
 });
 
-function SidebySide(vrFile, animFile, outputPath) {
-    return new Promise((resolve, reject) => {
-        const args = [
-            "-i", vrFile,
-            "-i", animFile,
-            "-filter_complex",
-            "[0:v]scale=1280:-2[vr];[1:v]scale=1280:-2[anim];[vr][anim]vstack=inputs=2[v]",
-            "-map", "[v]",
-            "-map", "0:a?",
-            "-c:v", "libx264",
-            "-c:a", "copy",
-            "-preset", "veryfast",
-            "-crf", "20",
-            outputPath
-        ];
+function SidebySide(vrFile, animFile, offsetSeconds) {
+  return new Promise((resolve, reject) => {
+    const offset = Number(offsetSeconds);
 
-        const ff = spawn(FFMPEG_PATH, args);
-        ff.stderr.on("data", d => console.log("[ffmpeg sync]", d.toString()));
+    // offseting no going through? logs
+    // console.log("SidebySide raw offsetSeconds =", offsetSeconds);
+    // console.log("SidebySide numeric offset =", offset);
 
-        ff.on("close", code => {
-            if (code === 0) resolve(outputPath);
-            else reject(new Error("ffmpeg sync failed with code " + code));
-        });
+    if (Number.isNaN(offset)) {
+      // hard fail instead of silently using 0
+      return reject(new Error("invalid offsetSeconds passed into SidebySide"));
+    }
+    
+    // synced file saved next to vr video
+    const outputPath = path.join(
+      path.dirname(vrFile),
+      `synced_${Date.now()}.mp4`
+    );
+
+    // safe file names for drawtext labels
+    const vrName = path.basename(vrFile).replace(/'/g, "''");
+    const animName = path.basename(animFile).replace(/'/g, "''");
+
+    let filter;
+
+    if (offset >= 0) {
+      // positive offset = animation starts later than vr
+      filter =
+        `[0:v]scale=1280:-2,drawtext=text='${vrName}':x=10:y=10:fontsize=24:fontcolor=white[vr];` +
+        `[1:v]setpts=PTS+${offset}/TB,scale=1280:-2,` +
+        `drawtext=text='${animName}':x=10:y=10:fontsize=24:fontcolor=white[anim];` +
+        `[vr][anim]vstack=inputs=2[v]`;
+    } else {
+      // negative offset = animation leads, delay vr instead
+      const delay = Math.abs(offset);
+      filter =
+        `[0:v]setpts=PTS+${delay}/TB,scale=1280:-2,` +
+        `drawtext=text='${vrName}':x=10:y=10:fontsize=24:fontcolor=white[vr];` +
+        `[1:v]scale=1280:-2,drawtext=text='${animName}':x=10:y=10:fontsize=24:fontcolor=white[anim];` +
+        `[vr][anim]vstack=inputs=2[v]`;
+    }
+
+    const args = [
+      "-y",
+      "-i", vrFile,
+      "-i", animFile,
+      "-filter_complex", filter,
+      "-map", "[v]",
+      "-map", "0:a?",             // keep vr audio if it exists
+      "-c:v", "libx264",
+      "-c:a", "copy",
+      "-preset", "veryfast",
+      "-crf", "20",
+      outputPath
+    ];
+
+    console.log("[ffmpeg sync] running:", FFMPEG_PATH, args.join(" "));
+
+    const ff = spawn(FFMPEG_PATH, args);
+    ff.stderr.on("data", d => console.log("[ffmpeg sync]", d.toString()));
+
+    ff.on("close", code => {
+      if (code === 0) resolve(outputPath);
+      else reject(new Error("ffmpeg sync failed with code " + code));
     });
+  });
 }
 
-ipcMain.handle("video-sync-vr", async (_, { vrFile, animFile }) => {
-    const out = path.join(path.dirname(vrFile), "synced_output.mp4");
-    return await SidebySide(vrFile, animFile, out);
-});
+ipcMain.handle(
+  "video-sync-vr",
+  async (_, { vrFile, animFile, offsetSeconds }) => {
+    // check what main gets from preload
+    console.log("main handler got offsetSeconds =", offsetSeconds);
+    return await SidebySide(vrFile, animFile, offsetSeconds);
+  }
+);
 
 /**
  * Handles the notify request. Creates an OS notification with the given message
