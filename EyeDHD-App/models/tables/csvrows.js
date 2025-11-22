@@ -1,5 +1,3 @@
-export default createRowsTable;
-
 // Converts filename into table name
 // ID.011.csv -> ID_011_csv_rows
 export function toTableName(filename) {
@@ -8,8 +6,14 @@ export function toTableName(filename) {
   return `${name}_rows`;
 }
 
+export function deleteRowsTable(db, filename) {
+  db.prepare(`
+    DROP TABLE IF EXISTS ${toTableName(filename)};
+  `).run();
+}
+
 // Creates a new table for storing cleaned CSV data
-function createRowsTable(db, filename) {
+export function createRowsTable(db, filename) {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
       Frame INTEGER PRIMARY KEY NOT NULL,
@@ -40,7 +44,7 @@ function createRowsTable(db, filename) {
       LeftPupilIrisDiameterRatio REAL DEFAULT 0,
       LeftPupilDiameterInMM REAL DEFAULT 0,
       LeftIrisDiameterInMM REAL DEFAULT 0,
-      left REAL DEFAULT 0,
+      LeftEyeOpenness REAL DEFAULT 0,
       RightEyeStatus TEXT DEFAULT 'INVALID',
       RightEyeForwardX REAL DEFAULT 0,
       RightEyeForwardY REAL DEFAULT 0,
@@ -51,7 +55,7 @@ function createRowsTable(db, filename) {
       RightPupilIrisDiameterRatio REAL DEFAULT 0,
       RightPupilDiameterInMM REAL DEFAULT 0,
       RightIrisDiameterInMM REAL DEFAULT 0,
-      Right REAL DEFAULT 0,
+      RightEyeOpenness REAL DEFAULT 0,
       FocusDistance REAL DEFAULT 0,
       FocusStability REAL DEFAULT 0
     );

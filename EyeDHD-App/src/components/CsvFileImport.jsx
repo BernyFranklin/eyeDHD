@@ -4,7 +4,7 @@ import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
 
-export function CsvFileImport() {
+export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }) {
   // Store data and handle the file load
   const [csvData, setCsvData] = useState([]);
   const [fileName, setFileName] = useState('');
@@ -72,13 +72,14 @@ export function CsvFileImport() {
 
     // Request backend to open a file selector, wait for filename
     const file = await electron.csv.openFile(200).catch(handleError);
-    if (error || !file) return;
+    if (error || !file) {
+      setIsLoading(false);
+      return;
+    }
 
     setFileName(file);
 
-    const metadata = await window.electron.csv
-      .getMetadata(file)
-      .catch(handleError);
+    const metadata = await window.electron.csv.getMetadata(file).catch(handleError);
 
     if (metadata.completed) {
       setCleaningProgress({ ...cleaningProgress, isComplete: true });
@@ -86,7 +87,7 @@ export function CsvFileImport() {
       const rows = await electron.csv.getBuffer(file).catch(handleError);
       if (error) return;
 
-      setCleaningStats({ ...cleaningStats, stats: { totalRows: metadata.cleaned }});
+      setCleaningStats({ ...cleaningStats, stats: { totalRows: metadata.cleaned } });
 
       setCsvData(rows);
     }
@@ -104,6 +105,7 @@ export function CsvFileImport() {
     if (cleaningProgress?.isComplete) return;
 
     try {
+      setButtonsDisabled(true);
       setIsCleaning(true);
       setCleaningProgress({
         progressPercent: 0,
@@ -138,6 +140,7 @@ export function CsvFileImport() {
 
           // Stop monitoring when cleaning is complete
           if (progress.isComplete) {
+            setButtonsDisabled(false);
             clearInterval(progressInterval);
             setIsCleaning(false);
             sendAlert(
@@ -147,9 +150,7 @@ export function CsvFileImport() {
             // Refresh the data view with cleaned data
             try {
               // Request the first buffer of rows from the database
-              const rows = await electron.csv
-                .getBuffer(fileName)
-                .catch(handleError);
+              const rows = await electron.csv.getBuffer(fileName).catch(handleError);
               if (error) return;
 
               setCsvData(rows);
@@ -159,6 +160,7 @@ export function CsvFileImport() {
           }
         } catch (err) {
           // Cleaning monitoring completed or file closed
+          setButtonsDisabled(false);
           clearInterval(progressInterval);
           setIsCleaning(false);
 
@@ -171,6 +173,8 @@ export function CsvFileImport() {
         }
       }, 50); // Check every 50ms for more responsive updates
     } catch (err) {
+      setButtonsDisabled(false);
+      clearInterval(progressInterval);
       setIsCleaning(false);
       sendError(err.message || 'Failed to start data cleaning');
     }
@@ -213,7 +217,7 @@ export function CsvFileImport() {
     setTimeout(() => {
       setShowAlert(false);
       setAlertMessage('');
-    }, 40000);
+    }, 4000);
   };
 
   const handleError = (err) => {
@@ -249,7 +253,7 @@ export function CsvFileImport() {
       <LoadingOverlay isLoading={isLoading} />
       <Button
         onClick={openFile}
-        className="btn"
+        className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
         buttonText="Select a CSV File"
       />
 
@@ -271,7 +275,7 @@ export function CsvFileImport() {
           {showCleaningResults && (
             <div style={styles.cleaningContainer}>
               <h3>Data Cleaning {isCleaning ? 'In Progress...' : 'Results'}</h3>
-
+              {/* Cleaning progress  */}
               {cleaningProgress && (
                 <div>
                   <div style={styles.progressBar}>
@@ -293,7 +297,7 @@ export function CsvFileImport() {
                   </p>
                 </div>
               )}
-
+              {/* Cleaning stats */}
               {cleaningStats && cleaningStats.stats && (
                 <div style={styles.statsGrid}>
                   <div style={styles.statItem}>
@@ -308,7 +312,7 @@ export function CsvFileImport() {
               )}
             </div>
           )}
-
+          {/* File action buttons */}
           <div style={styles.buttonContainer}>
             {!cleaningProgress?.isComplete && (
               <Button
@@ -319,23 +323,28 @@ export function CsvFileImport() {
             )}
             <Button
               onClick={exportCleanedData}
-              className={`btn${!cleaningStats?.stats?.totalRows ? ' disabled' : ''}`}
+              className={`btn${buttonsDisabled || !cleaningProgress?.isComplete ? ' disabled' : ''}`}
               buttonText="Export Clean Data"
-              disabled={!cleaningStats?.stats?.totalRows}
+              disabled={buttonsDisabled || !cleaningProgress?.isComplete}
             />
             <Button
               onClick={clearFile}
-              className="btn"
+              className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
               buttonText="Clear File"
+              disabled={buttonsDisabled}
             />
           </div>
         </>
       )}
+      {/* Alert window */}
       {showAlert && (
         <AlertWindow
           message={alertMessage}
           classColor=" green"
-          onClose={() => setShowAlert(false)}
+          onClose={() => {
+            setShowAlert(false);
+            setAlertMessage('');
+          }}
         />
       )}
     </div>
