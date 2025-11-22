@@ -104,3 +104,7 @@ dist-ssr
 *.sln
 *.sw?
 *.local
+
+# Misc Files
+*.mp4
+*.csv

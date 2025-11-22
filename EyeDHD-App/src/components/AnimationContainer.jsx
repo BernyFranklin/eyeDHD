@@ -1,4 +1,4 @@
-import AnimationWindow from "./AnimationWindow";
+import AnimationWindow from "./animation/AnimationWindow.jsx";
 import Button from "./Button";
 
 export default function AnimationContainer({ csvData, loadMoreRows, isPlaying, setIsPlaying }) {

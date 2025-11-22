@@ -1,15 +1,47 @@
-export function GetPitch(x, y, z) {
-    return Math.atan2(-y, Math.sqrt(x * x + z * z));
+// Calculate pitch angle from forward vector
+export function GetPitch(x, y, z) { return Math.atan2(-y, Math.sqrt(x * x + z * z)); }
+
+// Calculate yaw angle from forward vector
+export function GetYaw(x, y, z) { return Math.atan2(x, z); }
+
+// Normalizes pupil dilation from mm to 0-1 range
+export function NormalizePupilDilation(dilationInMM, minMM = 1, maxMM = 8) {
+    if (typeof dilationInMM !== 'number' || Number.isNaN(dilationInMM) || !Number.isFinite(dilationInMM)) {
+        return 0; // Return 0 for invalid input
+    }
+
+    // Clamp dilation to min and max
+    const clampedDilation = Math.min(Math.max(dilationInMM, minMM), maxMM);
+
+    // Normalize to 0-1 range
+    return (clampedDilation - minMM) / (maxMM - minMM);
 }
 
-export function GetYaw(x, y, z) {
-    return Math.atan2(x, z);
-}
+// Check data validity for angle and required fields
+export function CheckDataValidity(angle, row) {
+    let isValid = true;
 
-export function GetPitchDegrees(x, y, z) {
-    return Math.atan2(-z, Math.sqrt(x * x + y * y)) * (180 / Math.PI);
-}
+    // Validate angle
+    if((typeof angle !== 'number' && Number.isNaN(angle) && !Number.isFinite(angle))){
+        isValid = false;
+    }
 
-export function GetYawDegrees(x, y, z) {
-    return Math.atan2(y, x) * (180 / Math.PI);
+    // Sanity check for required fields
+    const positions = ['Left', 'Right'];
+    const axis = ['X', 'Y', 'Z'];
+
+    // Check all required fields
+    for(const pos of positions) {
+        for(const ax of axis) {
+            let key = `${pos}EyeForward${ax}`;
+
+            // Check if the field is missing or empty
+            if(row[key] === undefined || row[key] === null) { 
+                isValid = false; 
+                break;
+            }
+        }
+    }
+
+    return isValid;
 }
