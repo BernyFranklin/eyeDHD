@@ -4,8 +4,8 @@ import os from 'os';
 
 import { filesMap } from './store.js';
 import getDB from '../models/dbmgr.js';
-import createMetadataTable from '../models/tables/metadata.js';
-import createRowsTable from '../models/tables/csvrows.js';
+import { createMetadataTable } from '../models/tables/metadata.js';
+import { createRowsTable, deleteRowsTable } from '../models/tables/csvrows.js';
 import metadataActions from '../models/actions/metadata.js';
 import csvrows from '../models/actions/csvrows.js';
 import DataCleaner from './stuff/DataCleaner.js';
@@ -175,7 +175,7 @@ function cleanFile(original) {
 //    const processChunk = async () => {
 //      let processedInChunk = 0;
 //      const chunkSize = 10; // Process 10 buffers per chunk
-//      
+//
 //      while (buffer && processedInChunk < chunkSize) {
 //        // Store rows
 //        let stored = csvrows.create(db, metadata, buffer);
@@ -197,7 +197,7 @@ function cleanFile(original) {
 //        metadata = metadataActions.read(db, metadata.name);
 //        processedInChunk++;
 //      }
-//      
+//
 //      if (buffer) {
 //        // Yield control back to the event loop
 //        setImmediate(processChunk);
@@ -238,9 +238,7 @@ ipcMain.handle('csv-get-file-list', async (_) => {
     }
 
     return resolve(
-      files
-        .filter((metadata) => metadata.completed)
-        .map((metadata) => metadata.name)
+      files.filter((metadata) => metadata.completed).map((metadata) => metadata.name)
     );
   });
 });
@@ -278,6 +276,9 @@ ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
       return reject(`Failed to reset cleaning progress for: ${filename}`);
     }
 
+    deleteRowsTable(db, metadata.name);
+    createRowsTable(db, metadata.name);
+
     const cleaner = filesMap.get(metadata.name);
     if (!cleaner) return resolve();
 
@@ -305,13 +306,13 @@ ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
   return new Promise(async (resolve, reject) => {
     const metadata = metadataActions.read(db, filename);
-    
+
     if (!metadata) {
       return reject(`File: ${filename} has not been opened`);
     }
-    
+
     const rows = await csvrows.read(db, metadata);
-    
+
     if (rows === undefined) {
       return reject(`Failed to read cleaned rows for file: ${filename}`);
     }
@@ -320,7 +321,7 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
       ...metadata,
       requested: metadata.requested + rows.length
     });
-    
+
     if (!updated) {
       return reject(`Failed to update requested count for file: ${filename}`);
     }
@@ -344,15 +345,13 @@ ipcMain.handle('csv-clean-data', async (_, filename) => {
       }
 
       // Start cleaning in background without blocking
-      cleanFile(metadata).catch(error => {
+      cleanFile(metadata).catch((error) => {
         console.error(`Background cleaning failed for ${filename}:`, error);
       });
 
       resolve({ success: true, message: 'Data cleaning initiated' });
     } catch (error) {
-      reject(
-        `Failed to start cleaning for file: ${filename}. Error: ${error.message}`
-      );
+      reject(`Failed to start cleaning for file: ${filename}. Error: ${error.message}`);
     }
   });
 });
@@ -378,16 +377,14 @@ ipcMain.handle('csv-get-stats', async (_, filename) => {
     try {
       const stats = cleaner.getStats();
       const performanceData = cleaner.getPerformance();
-      
+
       resolve({
         stats,
         performance: performanceData,
         status: cleaner.status
       });
     } catch (error) {
-      reject(
-        `Failed to get stats for file: ${filename}. Error: ${error.message}`
-      );
+      reject(`Failed to get stats for file: ${filename}. Error: ${error.message}`);
     }
   });
 });
@@ -414,9 +411,7 @@ ipcMain.handle('csv-get-progress', async (_, filename) => {
       const progress = cleaner.getProgress();
       resolve(progress);
     } catch (error) {
-      reject(
-        `Failed to get progress for file: ${filename}. Error: ${error.message}`
-      );
+      reject(`Failed to get progress for file: ${filename}. Error: ${error.message}`);
     }
   });
 });
@@ -433,19 +428,14 @@ ipcMain.handle('csv-export-data', async (_, filename) => {
     }
 
     if (cleaner.isActive()) {
-      return reject(
-        `File: ${filename} hasn't been cleaned yet. Clean the file first.`
-      );
+      return reject(`File: ${filename} hasn't been cleaned yet. Clean the file first.`);
     }
 
     try {
       // Show save dialog
       const { canceled, filePath } = await dialog.showSaveDialog({
         title: 'Export Cleaned CSV',
-        defaultPath: path.join(
-          os.homedir(),
-          `${path.parse(filename).name}_cleaned.csv`
-        ),
+        defaultPath: path.join(os.homedir(), `${path.parse(filename).name}_cleaned.csv`),
         filters: [{ name: 'CSV Files', extensions: ['csv'] }]
       });
 

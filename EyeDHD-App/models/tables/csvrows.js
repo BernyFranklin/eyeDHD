@@ -1,5 +1,3 @@
-export default createRowsTable;
-
 // Converts filename into table name
 // ID.011.csv -> ID_011_csv_rows
 export function toTableName(filename) {
@@ -8,8 +6,14 @@ export function toTableName(filename) {
   return `${name}_rows`;
 }
 
+export function deleteRowsTable(db, filename) {
+  db.prepare(`
+    DROP TABLE IF EXISTS ${toTableName(filename)};
+  `).run();
+}
+
 // Creates a new table for storing cleaned CSV data
-function createRowsTable(db, filename) {
+export function createRowsTable(db, filename) {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
       Frame INTEGER PRIMARY KEY NOT NULL,
