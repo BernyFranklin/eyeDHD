@@ -174,6 +174,7 @@ export function CsvFileImport() {
         }
       }, 50); // Check every 50ms for more responsive updates
     } catch (err) {
+      clearInterval(progressInterval);
       setIsCleaning(false);
       sendError(err.message || 'Failed to start data cleaning');
     }
@@ -216,7 +217,7 @@ export function CsvFileImport() {
     setTimeout(() => {
       setShowAlert(false);
       setAlertMessage('');
-    }, 40000);
+    }, 4000);
   };
 
   const handleError = (err) => {
@@ -338,7 +339,10 @@ export function CsvFileImport() {
         <AlertWindow
           message={alertMessage}
           classColor=" green"
-          onClose={() => setShowAlert(false)}
+          onClose={() => {
+              setShowAlert(false);
+              setAlertMessage('');
+          }}
         />
       )}
     </div>

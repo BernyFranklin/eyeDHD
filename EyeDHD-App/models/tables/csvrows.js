@@ -40,7 +40,7 @@ function createRowsTable(db, filename) {
       LeftPupilIrisDiameterRatio REAL DEFAULT 0,
       LeftPupilDiameterInMM REAL DEFAULT 0,
       LeftIrisDiameterInMM REAL DEFAULT 0,
-      left REAL DEFAULT 0,
+      LeftEyeOpenness REAL DEFAULT 0,
       RightEyeStatus TEXT DEFAULT 'INVALID',
       RightEyeForwardX REAL DEFAULT 0,
       RightEyeForwardY REAL DEFAULT 0,
@@ -51,7 +51,7 @@ function createRowsTable(db, filename) {
       RightPupilIrisDiameterRatio REAL DEFAULT 0,
       RightPupilDiameterInMM REAL DEFAULT 0,
       RightIrisDiameterInMM REAL DEFAULT 0,
-      Right REAL DEFAULT 0,
+      RightEyeOpenness REAL DEFAULT 0,
       FocusDistance REAL DEFAULT 0,
       FocusStability REAL DEFAULT 0
     );

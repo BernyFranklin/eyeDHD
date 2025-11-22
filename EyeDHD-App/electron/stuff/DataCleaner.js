@@ -19,7 +19,6 @@ export default class DataCleaner {
   buf = [];
   header = [];
   status = {
-    start: false,
     reading: false,
     done: false,
     closed: false
@@ -98,7 +97,6 @@ export default class DataCleaner {
     // If file has been cleaned set up progress and performance metrics to show it's finished
     // to the front end
     if (metadata.completed) {
-      this.status.start = true;
       this.progress.bytesRead = this.progress.totalBytes;
       this.progress.currentRow = metadata.cleaned;
 
@@ -146,7 +144,7 @@ export default class DataCleaner {
         this.performance.startTime = Date.now();
 
         // If cleaning is already in progress, skip metadata.cleaned rows
-        if (metadata.cleaned > 200) {
+        if (metadata.cleaned !== 0) {
           this.status.reading = true;
           for (let i = 0; i < metadata.cleaned; i++) {
             this.iter.next();

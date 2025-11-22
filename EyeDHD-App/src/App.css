@@ -123,7 +123,7 @@ input[type="file"]::file-selector-button:hover {
   position: absolute;
   top: 3px;
   right: 3px;
-  animation: fadeInOut 3s ease-in-out forwards;
+  animation: fadeInOut 4s ease-in-out forwards;
 }
 
 .green {
