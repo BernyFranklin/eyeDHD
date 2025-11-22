@@ -6,33 +6,95 @@ function create(db, file, rows) {
   try {
     const table = toTableName(file.name);
     const insert = db.prepare(`
-			INSERT INTO ${table} (
-				Frame,
-				CaptureTime,
-				LogTime,
-				LeftEyeStatus,
-				LeftEyeForwardX,
-				LeftEyeForwardY,
-				LeftEyeForwardZ,
-				RightEyeStatus,
-				RightEyeForwardX,
-				RightEyeForwardY,
-				RightEyeForwardZ
-			)
-			VALUES (
-				@Frame,
-				@CaptureTime,
-				@LogTime,
-				@LeftEyeStatus,
-				@LeftEyeForwardX,
-				@LeftEyeForwardY,
-				@LeftEyeForwardZ,
-				@RightEyeStatus,
-				@RightEyeForwardX,
-				@RightEyeForwardY,
-				@RightEyeForwardZ
-			);
-		`);
+    	INSERT INTO ${table} (
+        Frame,
+        CaptureTime,
+        LogTime,
+        HMDPositionX,
+        HMDPositionY,
+        HMDPositionz,
+        HMDRotationX,
+        HMDRotationY,
+        HMDRotationZ,
+        HMDRotationHuh,
+        GazeStatus,
+        CombinedGazeForwardX,
+        CombinedGazeForwardY,
+        CombinedGazeForwardZ,
+        CombinedGazePositionX,
+        CombinedGazePositionY,
+        CombinedGazePositionZ,
+        InterPupillaryDistanceInMM,
+        LeftEyeStatus,
+        LeftEyeForwardX,
+        LeftEyeForwardY,
+        LeftEyeForwardZ,
+        LeftEyePositionX,
+        LeftEyePositionY,
+        LeftEyePositionZ,
+        LeftPupilIrisDiameterRatio,
+        LeftPupilDiameterInMM,
+        LeftIrisDiameterInMM,
+        LeftEyeOpenness,
+        RightEyeStatus,
+        RightEyeForwardX,
+        RightEyeForwardY,
+        RightEyeForwardZ,
+        RightEyePositionX,
+        RightEyePositionY,
+        RightEyePositionZ,
+        RightPupilIrisDiameterRatio,
+        RightPupilDiameterInMM,
+        RightIrisDiameterInMM,
+        RightEyeOpenness,
+        FocusDistance,
+        FocusStability
+    	)
+    	VALUES (
+        @Frame,
+        @CaptureTime,
+        @LogTime,
+        @HMDPositionX,
+        @HMDPositionY,
+        @HMDPositionz,
+        @HMDRotationX,
+        @HMDRotationY,
+        @HMDRotationZ,
+        @HMDRotationHuh,
+        @GazeStatus,
+        @CombinedGazeForwardX,
+        @CombinedGazeForwardY,
+        @CombinedGazeForwardZ,
+        @CombinedGazePositionX,
+        @CombinedGazePositionY,
+        @CombinedGazePositionZ,
+        @InterPupillaryDistanceInMM,
+        @LeftEyeStatus,
+        @LeftEyeForwardX,
+        @LeftEyeForwardY,
+        @LeftEyeForwardZ,
+        @LeftEyePositionX,
+        @LeftEyePositionY,
+        @LeftEyePositionZ,
+        @LeftPupilIrisDiameterRatio,
+        @LeftPupilDiameterInMM,
+        @LeftIrisDiameterInMM,
+        @LeftEyeOpenness,
+        @RightEyeStatus,
+        @RightEyeForwardX,
+        @RightEyeForwardY,
+        @RightEyeForwardZ,
+        @RightEyePositionX,
+        @RightEyePositionY,
+        @RightEyePositionZ,
+        @RightPupilIrisDiameterRatio,
+        @RightPupilDiameterInMM,
+        @RightIrisDiameterInMM,
+        @RightEyeOpenness,
+        @FocusDistance,
+        @FocusStability
+    	);
+    `);
 
     const insertMany = db.transaction((rows) => {
       for (const row of rows) {
@@ -42,7 +104,7 @@ function create(db, file, rows) {
           // If error is that the Frame primary key already exists continue
           if (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
             console.warn(
-              `Frame ${row.Frame} already exists in table ${table}, skipping insert.`
+              `Frame ${row.Frame} already exists in table ${table}. Skipping insert.`
             );
             continue;
           } else {
@@ -66,13 +128,11 @@ function read(db, file) {
   try {
     const table = toTableName(file.name);
     let rows = db
-      .prepare(
-        `
-			SELECT * FROM ${table}
-			LIMIT ? OFFSET ?;
-		`
-      )
-      .all(file.buffer_size, file.requested);
+      .prepare(`
+        SELECT * FROM ${table}
+			  LIMIT ? OFFSET ?;
+			`)
+      .all(file.request_size, file.requested);
 
     return rows;
   } catch (err) {
@@ -87,21 +147,17 @@ function firstAndLast(db, file) {
     const table = toTableName(file.name);
 
     const first = db
-      .prepare(
-        `
-			SELECT * FROM ${table}
-			WHERE frame = ?;
-		`
-      )
+      .prepare(`
+        SELECT * FROM ${table}
+        WHERE frame = ?;
+      `)
       .get(file.first_frame);
 
     const last = db
-      .prepare(
-        `
-			SELECT * FROM ${table}
-			WHERE frame = ?;
-		`
-      )
+      .prepare(`
+        SELECT * FROM ${table}
+			  WHERE frame = ?;
+			`)
       .get(file.last_frame);
 
     return { first, last };

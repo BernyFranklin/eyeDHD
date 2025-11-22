@@ -12,8 +12,8 @@ contextBridge.exposeInMainWorld('electron', {
      *
      * @returns filename of file opened or null if cancelled
      */
-    openFile: async (buffer_size) => {
-      return await ipcRenderer.invoke('csv-open-file', buffer_size);
+    openFile: async (request_size) => {
+      return await ipcRenderer.invoke('csv-open-file', request_size);
     },
     resetReadingProgress: async (filename) => {
       return await ipcRenderer.invoke('csv-reset-reading-progress', filename);
