@@ -4,7 +4,7 @@ import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
 
-export function CsvFileImport() {
+export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }) {
   // Store data and handle the file load
   const [csvData, setCsvData] = useState([]);
   const [fileName, setFileName] = useState('');
@@ -105,6 +105,7 @@ export function CsvFileImport() {
     if (cleaningProgress?.isComplete) return;
 
     try {
+      setButtonsDisabled(true);
       setIsCleaning(true);
       setCleaningProgress({
         progressPercent: 0,
@@ -139,6 +140,7 @@ export function CsvFileImport() {
 
           // Stop monitoring when cleaning is complete
           if (progress.isComplete) {
+            setButtonsDisabled(false);
             clearInterval(progressInterval);
             setIsCleaning(false);
             sendAlert(
@@ -158,6 +160,7 @@ export function CsvFileImport() {
           }
         } catch (err) {
           // Cleaning monitoring completed or file closed
+          setButtonsDisabled(false);
           clearInterval(progressInterval);
           setIsCleaning(false);
 
@@ -170,6 +173,7 @@ export function CsvFileImport() {
         }
       }, 50); // Check every 50ms for more responsive updates
     } catch (err) {
+      setButtonsDisabled(false);
       clearInterval(progressInterval);
       setIsCleaning(false);
       sendError(err.message || 'Failed to start data cleaning');
@@ -247,7 +251,11 @@ export function CsvFileImport() {
   return (
     <div className="csv-import-container">
       <LoadingOverlay isLoading={isLoading} />
-      <Button onClick={openFile} className="btn" buttonText="Select a CSV File" />
+      <Button
+        onClick={openFile}
+        className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
+        buttonText="Select a CSV File"
+      />
 
       {error && (
         <AlertWindow
@@ -315,11 +323,16 @@ export function CsvFileImport() {
             )}
             <Button
               onClick={exportCleanedData}
-              className={`btn${!cleaningStats?.stats?.totalRows ? ' disabled' : ''}`}
+              className={`btn${buttonsDisabled || !cleaningProgress?.isComplete ? ' disabled' : ''}`}
               buttonText="Export Clean Data"
-              disabled={!cleaningStats?.stats?.totalRows}
+              disabled={buttonsDisabled || !cleaningProgress?.isComplete}
             />
-            <Button onClick={clearFile} className="btn" buttonText="Clear File" />
+            <Button
+              onClick={clearFile}
+              className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
+              buttonText="Clear File"
+              disabled={buttonsDisabled}
+            />
           </div>
         </>
       )}

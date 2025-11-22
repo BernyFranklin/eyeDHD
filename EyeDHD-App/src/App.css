@@ -62,7 +62,6 @@ body {
 
 .navbar-links a:hover {
   text-decoration: underline;
-  cursor: pointer;
 }
 
 .csv-import-container {
@@ -171,6 +170,12 @@ input[type='file']::file-selector-button:hover {
   z-index: 9999;
 }
 
+.disabled {
+  background-color: #33486c;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
 /* Spinner animation */
 .spinner {
   border: 6px solid #f3f3f3;
@@ -195,7 +200,6 @@ input[type='file']::file-selector-button:hover {
 }
 
 .home-link:hover {
-  cursor: pointer;
   transform: translateX(-2px);
   transition: transform 0.3s ease-in-out;
 }

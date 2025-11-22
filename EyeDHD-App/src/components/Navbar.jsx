@@ -16,20 +16,34 @@ const linkStyles = {
   backgroundColor: '#13284c',
   borderRadius: '10px',
   padding: '2px',
-  display: 'inline-block'
+  display: 'inline-block',
+  cursor: 'pointer'
 };
 
-export default function Navbar({ current, setCurrent }) {
+const disabledLinkStyles = {
+  backgroundColor: '#33486c',
+  opacity: '0.8',
+  borderRadius: '10px',
+  padding: '2px',
+  display: 'inline-block',
+  cursor: 'not-allowed'
+};
+
+export default function Navbar({ current, setCurrent, buttonsDisabled }) {
   const handleHomeClick = () => {
+    if (buttonsDisabled) return;
     setCurrent(0);
   };
   const handleImportClick = () => {
+    if (buttonsDisabled) return;
     setCurrent(1);
   };
   const handleGenerateEyeAnimationClick = () => {
+    if (buttonsDisabled) return;
     setCurrent(2);
   };
   const handleSideBySideViewerClick = () => {
+    if (buttonsDisabled) return;
     setCurrent(3);
   };
 
@@ -39,14 +53,14 @@ export default function Navbar({ current, setCurrent }) {
         <img className="navbar-logo-image" src="./images/fs-logo-white.png" alt="Logo" />
       </span>
       <span className="navbar-links">
-        <div style={linkStyles}>
+        <div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
           <a onClick={handleHomeClick} className="home-link">
             <img src="./images/house-solid-full.svg" alt="Home" style={imgStyles} />
           </a>
         </div>
         {current !== 0 && (
           <>
-            <div style={linkStyles}>
+            <div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
               <a onClick={handleImportClick} className="home-link">
                 <img
                   src="./images/file-import-solid-full.svg"
@@ -55,7 +69,7 @@ export default function Navbar({ current, setCurrent }) {
                 />
               </a>
             </div>
-            <div style={linkStyles}>
+            <div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
               <a onClick={handleGenerateEyeAnimationClick} className="home-link">
                 <img
                   src="./images/eye-solid-full.svg"
@@ -64,7 +78,7 @@ export default function Navbar({ current, setCurrent }) {
                 />
               </a>
             </div>
-            <div style={linkStyles}>
+            <div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
               <a onClick={handleSideBySideViewerClick} className="home-link">
                 <img
                   src="./images/file-video-solid-full.svg"
