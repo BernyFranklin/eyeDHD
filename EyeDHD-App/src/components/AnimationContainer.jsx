@@ -1,5 +1,5 @@
-import AnimationWindow from './AnimationWindow';
-import Button from './Button';
+import AnimationWindow from "./animation/AnimationWindow.jsx";
+import Button from "./Button";
 
 export default function AnimationContainer({
   csvData,
