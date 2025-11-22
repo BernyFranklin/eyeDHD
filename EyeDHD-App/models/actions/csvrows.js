@@ -125,8 +125,11 @@ function create(db, file, rows) {
 }
 
 function read(db, file) {
+  console.log('Reading DB:', db.name, " and file name: ", file.name, " and file size", file.size);
+
   try {
     const table = toTableName(file.name);
+
     let rows = db
       .prepare(`
         SELECT * FROM ${table}
