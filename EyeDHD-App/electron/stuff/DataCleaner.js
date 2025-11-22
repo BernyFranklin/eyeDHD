@@ -296,17 +296,6 @@ export default class DataCleaner {
       return null;
     }
 
-    // // Handle boolean values
-    // const trueValues = new Set(['true', 'yes', 'y', '1', 'on', 'valid', 'VALID']);
-    // const falseValues = new Set(['false', 'no', 'n', '0', 'off', 'invalid', 'INVALID']);
-
-    // if (trueValues.has(trimmed.toLowerCase()) || trueValues.has(trimmed)) {
-    //   return true;
-    // }
-    // if (falseValues.has(trimmed.toLowerCase()) || falseValues.has(trimmed)) {
-    //   return false;
-    // }
-
     // Handle numeric values
     const numericValue = this.parseNumeric(trimmed);
     if (numericValue !== null) {
@@ -379,13 +368,13 @@ export default class DataCleaner {
    * Sanitizes eye coordinate values
    */
   sanitizeEyeCoordinate(value) {
-    if (value === null || value === undefined) return null;
+    if (value === null || value === undefined) return 0.0;
 
     if (typeof value === 'number') {
       // Clamp extreme values that might indicate sensor errors
       if (Math.abs(value) > 10000) {
         console.warn(`Extreme eye coordinate value detected: ${value}`);
-        return null;
+        return 0.0;
       }
       return value;
     }
@@ -398,14 +387,14 @@ export default class DataCleaner {
       return numeric;
     }
 
-    return null; // Invalid coordinate
+    return 0.0; // Invalid coordinate
   }
 
   /**
    * Sanitizes eye status values
    */
   sanitizeEyeStatus(value) {
-    if (value === null || value === undefined) return null;
+    if (value === null || value === undefined) return 'INVALID';
 
     const stringValue = String(value).toUpperCase().trim();
     const validStatuses = ['VALID', 'INVALID', 'LOST', 'TRACKING', 'NOT_TRACKING'];
@@ -433,7 +422,7 @@ export default class DataCleaner {
    * Sanitizes timestamp values
    */
   sanitizeTimestamp(value) {
-    if (value === null || value === undefined) return null;
+    if (value === null || value === undefined) return 0;
 
     // If it's already a number, assume it's a valid timestamp
     if (typeof value === 'number') {
@@ -453,7 +442,7 @@ export default class DataCleaner {
       return date.getTime();
     }
 
-    return null; // Invalid timestamp
+    return 0; // Invalid timestamp
   }
 
   /**
@@ -819,96 +808,5 @@ export default class DataCleaner {
     // Score based on: 70% valid data, 20% low errors, 10% minimal nulls
     const score = validRatio * 0.7 + (1 - errorRatio) * 0.2 + (1 - nullRatio) * 0.1;
     return Math.round(score * 100);
-  }
-
-  /**
-   * @TODO move this functionality to the database
-   *
-   * Exports all cleaned data to a new CSV file
-   *
-   * @param {string} outputPath - The path where to save the cleaned CSV file
-   * @returns {Promise<Object>} - Result object with success status and message
-   */
-  async exportToCSV(outputPath) {
-    try {
-      // Create a new stream to read through the entire file for export
-      const exportStream = fs.createReadStream(this.filePath);
-      const exportReadline = rl.createInterface({
-        input: exportStream,
-        crlfDelay: Infinity
-      });
-
-      let csvContent = '';
-      let isFirstLine = true;
-      let exportedRows = 0;
-
-      // Add header row
-      csvContent +=
-        this.header.map((col) => `"${col.replace(/"/g, '""')}"`).join(',') + '\n';
-
-      // Read through the entire file and clean each row for export
-      for await (const line of exportReadline) {
-        if (isFirstLine) {
-          isFirstLine = false;
-          continue; // Skip header line
-        }
-
-        if (line.trim()) {
-          try {
-            // Clean the row using the same logic as loadRows
-            const cleaned = this.cleanRow(line);
-
-            // Only include valid rows (not error rows)
-            if (cleaned && !cleaned._isError) {
-              const csvRow = this.header
-                .map((col) => {
-                  const value = cleaned[col];
-                  if (value === null || value === undefined) {
-                    return '';
-                  }
-                  // Escape quotes and wrap in quotes if contains comma, quote, or newline
-                  const stringValue = String(value);
-                  if (
-                    stringValue.includes(',') ||
-                    stringValue.includes('"') ||
-                    stringValue.includes('\n')
-                  ) {
-                    return `"${stringValue.replace(/"/g, '""')}"`;
-                  }
-                  return stringValue;
-                })
-                .join(',');
-              csvContent += csvRow + '\n';
-              exportedRows++;
-            }
-          } catch (error) {
-            // Skip invalid rows during export
-            continue;
-          }
-        }
-      }
-
-      // Close the export stream
-      exportStream.close();
-
-      // Write to file
-      await fs.promises.writeFile(outputPath, csvContent, 'utf8');
-
-      return {
-        success: true,
-        message: `Successfully exported ${exportedRows} cleaned rows to ${outputPath}`,
-        stats: {
-          totalExported: exportedRows,
-          filePath: outputPath,
-          fileSize: csvContent.length
-        }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to export CSV: ${error.message}`,
-        error: error
-      };
-    }
   }
 }

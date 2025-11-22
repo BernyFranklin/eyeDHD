@@ -6,6 +6,7 @@ export function createMetadataTable(db) {
 			name TEXT UNIQUE NOT NULL,
 			path TEXT NOT NULL,
 			request_size INTEGER NOT NULL,
+			header TEXT DEFAULT '',
 			completed BOOLEAN DEFAULT 0,
 			cleaned INTEGER DEFAULT 0,
 			requested INTEGER DEFAULT 0,

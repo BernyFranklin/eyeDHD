@@ -61,6 +61,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }) {
   };
 
   const openFile = async () => {
+    if (buttonsDisabled) return;
     setIsLoading(true);
 
     setFileName('');
@@ -97,6 +98,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }) {
 
   // Data cleaning functionality
   const cleanData = async () => {
+    if (buttonsDisabled) return;
     if (!fileName) {
       sendError('No file selected for cleaning');
       return;
@@ -182,6 +184,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }) {
 
   // Export cleaned CSV data to a new file
   const exportCleanedData = async () => {
+    if (buttonsDisabled) return;
     if (!fileName) {
       sendError('No file selected for export');
       return;
@@ -211,6 +214,25 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }) {
     }
   };
 
+  const clearFile = async () => {
+    if (buttonsDisabled) return;
+    setCsvData([]);
+    setCleaningProgress({
+      progressPercent: 0,
+      isComplete: false,
+      isReading: false,
+      rowsProcessed: 0
+    });
+    setCleaningStats(null);
+    setShowCleaningResults(false);
+    setIsCleaning(false);
+
+    if (fileName) {
+      await electron.csv.resetCleaningProgress(fileName).catch(handleError);
+    }
+  };
+
+
   const sendAlert = (message) => {
     setAlertMessage(message);
     setShowAlert(true);
@@ -231,29 +253,13 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }) {
     }, 4000);
   };
 
-  const clearFile = async () => {
-    setCsvData([]);
-    setCleaningProgress({
-      progressPercent: 0,
-      isComplete: false,
-      isReading: false,
-      rowsProcessed: 0
-    });
-    setCleaningStats(null);
-    setShowCleaningResults(false);
-    setIsCleaning(false);
-
-    if (fileName) {
-      await electron.csv.resetCleaningProgress(fileName).catch(handleError);
-    }
-  };
-
   return (
     <div className="csv-import-container">
       <LoadingOverlay isLoading={isLoading} />
       <Button
         onClick={openFile}
         className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
+        disabled={buttonsDisabled}
         buttonText="Select a CSV File"
       />
 

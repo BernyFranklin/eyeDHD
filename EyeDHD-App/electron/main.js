@@ -8,9 +8,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function createWindow() {
-	const win = new BrowserWindow({
-		width: 1920,
-		height: 1080,
+  const win = new BrowserWindow({
+    width: 1920,
+    height: 1080,
     minWidth: 100,
     minHeight: 20,
     icon: path.join(__dirname, '../images/eyedhd-logo.ico'),

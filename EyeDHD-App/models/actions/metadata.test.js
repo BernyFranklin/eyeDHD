@@ -1,6 +1,6 @@
 import { test } from './action_test';
 
-import metadata from './metadata';
+import metadataActions from './metadata';
 
 function compare(expect, result, expected) {
   expect(result.id).toBe(expected.id);
@@ -24,7 +24,7 @@ test.concurrent('files create', async ({ db, expect }) => {
     requested: 0
   };
 
-  const result = metadata.create(db, expected.name, expected.path, expected.request_size);
+  const result = metadataActions.create(db, expected.name, expected.path, expected.request_size);
   expect(result).not.toBeNull();
 
   compare(expect, result, expected);
@@ -42,7 +42,7 @@ test.concurrent('files read', async ({ db, expect }) => {
     requested: 0
   };
 
-  const result = metadata.read(db, 'test2.csv');
+  const result = metadataActions.read(db, 'test2.csv');
   expect(result).not.toBeNull();
 
   compare(expect, result, expected);
@@ -60,17 +60,17 @@ test.concurrent('files update', async ({ db, expect }) => {
     requested: 0
   };
 
-  const original = metadata.read(db, 'test2.csv');
+  const original = metadataActions.read(db, 'test2.csv');
   expect(original).not.toBeNull();
 
-  const success = metadata.update(db, {
+  const success = metadataActions.update(db, {
     ...original,
     cleaned: original.cleaned + 200,
     completed: 1
   });
   expect(success).toBe(true);
 
-  const updated = metadata.read(db, 'test2.csv');
+  const updated = metadataActions.read(db, 'test2.csv');
   expect(updated).not.toBeNull();
 
   compare(expect, updated, expected);
@@ -78,14 +78,14 @@ test.concurrent('files update', async ({ db, expect }) => {
 
 // Test removing a file entry in the files table
 test.concurrent('files remove', async ({ db, expect }) => {
-  const original = metadata.read(db, 'test2.csv');
+  const original = metadataActions.read(db, 'test2.csv');
   expect(original).not.toBeNull();
 
-  const removed = metadata.remove(db, original);
+  const removed = metadataActions.remove(db, original);
   expect(removed).not.toBeNull();
 
   compare(expect, removed, original);
 
-  const file = metadata.read(db, 'test2.csv');
+  const file = metadataActions.read(db, 'test2.csv');
   expect(file).toBeNull();
 });

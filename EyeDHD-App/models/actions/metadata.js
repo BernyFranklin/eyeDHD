@@ -70,6 +70,7 @@ function update(db, file) {
         UPDATE metadata
 			  SET
 					request_size = @request_size,
+					header = @header,
 				  completed = @completed,
 				  cleaned = @cleaned,
 				  requested = @requested,

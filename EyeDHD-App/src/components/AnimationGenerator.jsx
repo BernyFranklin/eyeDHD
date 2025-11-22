@@ -32,7 +32,11 @@ export default function AnimationGenerator() {
     const files = await electron.csv.getFileList().catch(handleError);
     if (error) return;
 
-    setFiles(files);
+    const cleaned = files
+      .filter((metadata) => metadata.completed)
+      .map((metadata) => metadata.name);
+
+    setFiles(cleaned);
 
     setIsLoading(false);
   };
@@ -63,7 +67,7 @@ export default function AnimationGenerator() {
     setTimeout(() => {
       setShowAlert(false);
       setAlertMessage('');
-    }, 40000);
+    }, 4000);
   };
 
   const handleError = (err) => {
@@ -157,7 +161,10 @@ export default function AnimationGenerator() {
         <AlertWindow
           message={alertMessage}
           classColor=" green"
-          onClose={() => setShowAlert(false)}
+          onClose={() => {
+            setShowAlert(false);
+            setAlertMessage('');
+          }}
         />
       )}
     </div>
