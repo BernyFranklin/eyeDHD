@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow from './AlertWindow';
 import AnimationContainer from './AnimationContainer';
+import Button from './Button';
 
 export default function AnimationGenerator() {
   const [csvData, setCsvData] = useState([]);
@@ -14,16 +15,39 @@ export default function AnimationGenerator() {
 
   const [files, setFiles] = useState(null);
 
-  const containerStyles = {
-    textAlign: ' center',
-    backgroundColor: '#fff',
-    padding: '2rem',
-    display: 'flex',
-    flexDirection: 'column',
-    width: '60%',
-    margin: '2rem auto',
-    alignItems: 'center'
+  const styles = {
+    container: {
+      textAlign: ' center',
+      backgroundColor: '#fff',
+      padding: '2rem',
+      display: 'flex',
+      flexDirection: 'column',
+      width: '60%',
+      margin: '2rem auto',
+      alignItems: 'center'
+    },
+    buttonContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      gap: '10px',
+      justifyContent: 'center',
+      marginTop: '1rem',
+    },
+    select: {
+      fontSize: '1rem',
+      color: '#000',
+      border: '1px solid #ccc',
+      borderRadius: '4px',
+      padding: '1rem',
+      backgroundColor: '#f9f9f9',
+      marginTop: '1rem',
+      width: 'fit-content',
+    },
+    buttonInline: {
+      display: 'inline-block',
+    }
   };
+ 
 
   // gets the list of cleaned files
   const getFilesList = async () => {
@@ -110,15 +134,17 @@ export default function AnimationGenerator() {
   }, []);
 
   return (
-    <div className="animation-generator-container" style={containerStyles}>
+    <div className="animation-generator-container" style={styles.container}>
       {/*Used for when things take awhile to load*/}
       <LoadingOverlay isLoading={isLoading} />
       {/*Conditionally render an upload message*/}
       {files && (
         <form method="post" onSubmit={handleSubmit} onReset={handleReset}>
           <label htmlFor="file-select">
-            Please select a file:&nbsp;
-            <select name="fileSelect" defaultValue="none">
+            Please select a file to generate an animation.
+          </label>
+          <div style={styles.buttonContainer}>
+            <select name="fileSelect" defaultValue="none" style={styles.select}>
               <option disabled value="none">
                 none
               </option>
@@ -130,10 +156,9 @@ export default function AnimationGenerator() {
                 );
               })}
             </select>
-            &nbsp;to generate an animation.
-          </label>
-          <button type="submit">Generate</button>
-          <button type="reset">reset</button>
+            <Button onClick={handleSubmit()} className="btn" buttonText="Generate" style={styles.buttonInline}/>
+            <Button onClick={handleReset()} className="btn" buttonText="Reset" style={styles.buttonInline}/>
+          </div>
         </form>
       )}
       {/*Conditionally render an error message*/}
