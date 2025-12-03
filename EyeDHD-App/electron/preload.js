@@ -12,8 +12,8 @@ contextBridge.exposeInMainWorld('electron', {
      *
      * @returns filename of file opened or null if cancelled
      */
-    openFile: async (buffer_size) => {
-      return await ipcRenderer.invoke('csv-open-file', buffer_size);
+    openFile: async (request_size) => {
+      return await ipcRenderer.invoke('csv-open-file', request_size);
     },
     notify: {
         /**
@@ -33,7 +33,7 @@ contextBridge.exposeInMainWorld('electron', {
     getMetadata: async (filename) => {
       return await ipcRenderer.invoke('csv-get-metadata', filename);
     },
-    // gets the list of cleaned files
+    // gets the list of opened files
     getFileList: async () => {
       return await ipcRenderer.invoke('csv-get-file-list');
     },

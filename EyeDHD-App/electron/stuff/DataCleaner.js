@@ -6,11 +6,10 @@ import { sleep } from '../utils.js';
 
 /**
  * Reads and cleans a CSV file at the given path. Cleans data lazyily,
- * keeping a buffer of buf_len cleaned rows
+ * keeping a buffer of request_size cleaned rows
  *
  * The first line of the CSV file must be the column names
  */
-
 export default class DataCleaner {
   stream;
   readline;
@@ -19,7 +18,6 @@ export default class DataCleaner {
   buf = [];
   header = [];
   status = {
-    start: false,
     reading: false,
     done: false,
     closed: false
@@ -77,7 +75,7 @@ export default class DataCleaner {
     validStatuses: ['VALID', 'INVALID', 'LOST', 'TRACKING', 'NOT_TRACKING']
   };
 
-  constructor({ db, name, path, buf_len = 200 }) {
+  constructor({ db, name, path, request_size }) {
     // Store the file path for later use
     this.filePath = path;
 
@@ -98,7 +96,6 @@ export default class DataCleaner {
     // If file has been cleaned set up progress and performance metrics to show it's finished
     // to the front end
     if (metadata.completed) {
-      this.status.start = true;
       this.progress.bytesRead = this.progress.totalBytes;
       this.progress.currentRow = metadata.cleaned;
 
@@ -109,7 +106,7 @@ export default class DataCleaner {
     }
 
     // Optimize buffer size based on available memory
-    const optimalBufferSize = this.calculateOptimalBufferSize(buf_len);
+    const optimalBufferSize = this.calculateOptimalBufferSize(request_size);
     this.buf_len = optimalBufferSize;
 
     // Open file as a stream with optimized buffer size
@@ -146,7 +143,7 @@ export default class DataCleaner {
         this.performance.startTime = Date.now();
 
         // If cleaning is already in progress, skip metadata.cleaned rows
-        if (metadata.cleaned > 200) {
+        if (metadata.cleaned !== 0) {
           this.status.reading = true;
           for (let i = 0; i < metadata.cleaned; i++) {
             this.iter.next();
@@ -191,7 +188,7 @@ export default class DataCleaner {
   }
 
   /**
-   * Loads buf_len cleaned rows into the internal buffer
+   * Loads request_size cleaned rows into the internal buffer
    */
   async loadRows(count) {
     try {
@@ -238,10 +235,12 @@ export default class DataCleaner {
       const cleaned = {};
 
       this.header.forEach((column, index) => {
-        if (index < values.length) {
-          cleaned[column] = this.cleanValue(values[index]);
+        if (column === 'left Eye Openness') {
+          cleaned.LeftEyeOpenness = this.cleanValue(values[index]);
+        } else if (column === 'Right Eye Openness') {
+          cleaned.RightEyeOpenness = this.cleanValue(values[index]);
         } else {
-          cleaned[column] = null; // Handle missing values
+          cleaned[column] = this.cleanValue(values[index]);
         }
       });
 
@@ -267,52 +266,19 @@ export default class DataCleaner {
    * Parses a CSV line handling quoted fields, escaped quotes, and commas within quotes
    */
   parseCsvLine(line) {
-    const result = [];
-    const str = String(line).replace(/\r$/, ''); // Remove trailing carriage return
-    let field = '';
-    let inQuotes = false;
-    let i = 0;
-
-    while (i < str.length) {
-      const char = str[i];
-      const nextChar = str[i + 1];
-
-      if (char === '"') {
-        if (inQuotes && nextChar === '"') {
-          // Escaped quote within quoted field
-          field += '"';
-          i += 2; // Skip both quotes
-        } else {
-          // Toggle quote state
-          inQuotes = !inQuotes;
-          i++;
-        }
-      } else if (char === ',' && !inQuotes) {
-        // Field separator outside of quotes
-        result.push(field.trim());
-        field = '';
-        i++;
-      } else {
-        // Regular character
-        field += char;
-        i++;
-      }
-    }
-
-    // Add the last field
-    result.push(field.trim());
-    return result;
+    const values = line.split(',');
+    return values;
   }
 
   /**
    * Cleans and converts individual field values
    */
   cleanValue(value) {
-    if (value === undefined || value === null) {
-      return null;
+    if (value === undefined || value === null || value === '') {
+      return 0.0;
     }
 
-    const trimmed = String(value).trim();
+    const trimmed = String(value).trim().replace(/[()]/g, '');
 
     // Handle null/empty values
     const nullValues = new Set([
@@ -330,44 +296,10 @@ export default class DataCleaner {
       return null;
     }
 
-    // Handle boolean values
-    const trueValues = new Set([
-      'true',
-      'yes',
-      'y',
-      '1',
-      'on',
-      'valid',
-      'VALID'
-    ]);
-    const falseValues = new Set([
-      'false',
-      'no',
-      'n',
-      '0',
-      'off',
-      'invalid',
-      'INVALID'
-    ]);
-
-    if (trueValues.has(trimmed.toLowerCase()) || trueValues.has(trimmed)) {
-      return true;
-    }
-    if (falseValues.has(trimmed.toLowerCase()) || falseValues.has(trimmed)) {
-      return false;
-    }
-
     // Handle numeric values
     const numericValue = this.parseNumeric(trimmed);
     if (numericValue !== null) {
       return numericValue;
-    }
-
-    // Handle parentheses around numbers (common in eye tracking data)
-    const parenMatch = trimmed.match(/^\(([^)]+)\)$/);
-    if (parenMatch) {
-      const innerValue = this.parseNumeric(parenMatch[1]);
-      return innerValue !== null ? innerValue : trimmed;
     }
 
     // Return as string if no other conversion applies
@@ -384,11 +316,10 @@ export default class DataCleaner {
 
     const num = parseFloat(value);
     if (isNaN(num)) {
-      return null;
+      return 0.0;
     }
 
-    // Return integer if it's a whole number, otherwise return float
-    return Number.isInteger(num) ? parseInt(value, 10) : num;
+    return num;
   }
 
   /**
@@ -437,13 +368,13 @@ export default class DataCleaner {
    * Sanitizes eye coordinate values
    */
   sanitizeEyeCoordinate(value) {
-    if (value === null || value === undefined) return null;
+    if (value === null || value === undefined) return 0.0;
 
     if (typeof value === 'number') {
       // Clamp extreme values that might indicate sensor errors
       if (Math.abs(value) > 10000) {
         console.warn(`Extreme eye coordinate value detected: ${value}`);
-        return null;
+        return 0.0;
       }
       return value;
     }
@@ -456,23 +387,17 @@ export default class DataCleaner {
       return numeric;
     }
 
-    return null; // Invalid coordinate
+    return 0.0; // Invalid coordinate
   }
 
   /**
    * Sanitizes eye status values
    */
   sanitizeEyeStatus(value) {
-    if (value === null || value === undefined) return null;
+    if (value === null || value === undefined) return 'INVALID';
 
     const stringValue = String(value).toUpperCase().trim();
-    const validStatuses = [
-      'VALID',
-      'INVALID',
-      'LOST',
-      'TRACKING',
-      'NOT_TRACKING'
-    ];
+    const validStatuses = ['VALID', 'INVALID', 'LOST', 'TRACKING', 'NOT_TRACKING'];
 
     if (validStatuses.includes(stringValue)) {
       return stringValue;
@@ -497,7 +422,7 @@ export default class DataCleaner {
    * Sanitizes timestamp values
    */
   sanitizeTimestamp(value) {
-    if (value === null || value === undefined) return null;
+    if (value === null || value === undefined) return 0;
 
     // If it's already a number, assume it's a valid timestamp
     if (typeof value === 'number') {
@@ -517,7 +442,7 @@ export default class DataCleaner {
       return date.getTime();
     }
 
-    return null; // Invalid timestamp
+    return 0; // Invalid timestamp
   }
 
   /**
@@ -668,36 +593,27 @@ export default class DataCleaner {
       ...this.stats,
       errorRate:
         this.stats.totalRows > 0
-          ? ((this.stats.errorRows / this.stats.totalRows) * 100).toFixed(2) +
-            '%'
+          ? ((this.stats.errorRows / this.stats.totalRows) * 100).toFixed(2) + '%'
           : '0%',
       validRate:
         this.stats.totalRows > 0
-          ? ((this.stats.validRows / this.stats.totalRows) * 100).toFixed(2) +
-            '%'
+          ? ((this.stats.validRows / this.stats.totalRows) * 100).toFixed(2) + '%'
           : '0%',
       eyeTrackingErrorRate:
         this.stats.totalRows > 0
-          ? (
-              (this.stats.eyeTrackingErrors / this.stats.totalRows) *
-              100
-            ).toFixed(2) + '%'
+          ? ((this.stats.eyeTrackingErrors / this.stats.totalRows) * 100).toFixed(2) + '%'
           : '0%',
       coordinateClampingRate:
         this.stats.totalRows > 0
-          ? (
-              (this.stats.coordinateClampings / this.stats.totalRows) *
-              100
-            ).toFixed(2) + '%'
+          ? ((this.stats.coordinateClampings / this.stats.totalRows) * 100).toFixed(2) +
+            '%'
           : '0%',
       performance: {
         ...this.performance,
-        memoryUsageMB:
-          (this.performance.memoryUsage / 1024 / 1024).toFixed(2) + 'MB',
+        memoryUsageMB: (this.performance.memoryUsage / 1024 / 1024).toFixed(2) + 'MB',
         rowsPerSecond: this.performance.rowsPerSecond.toFixed(2) + '/sec',
         bufferEfficiency:
-          ((this.performance.maxBufferSize / this.buf_len) * 100).toFixed(2) +
-          '%'
+          ((this.performance.maxBufferSize / this.buf_len) * 100).toFixed(2) + '%'
       }
     };
   }
@@ -730,9 +646,7 @@ export default class DataCleaner {
 
     if (eyeTrackingErrorRate > 5) {
       status = 'WARNING';
-      warnings.push(
-        `High eye tracking error rate: ${stats.eyeTrackingErrorRate}`
-      );
+      warnings.push(`High eye tracking error rate: ${stats.eyeTrackingErrorRate}`);
     }
 
     if (memoryUsage > maxMemory) {
@@ -769,20 +683,15 @@ export default class DataCleaner {
     ];
 
     const missingFields = requiredFields.filter(
-      (field) =>
-        !this.header.some((h) => h.toLowerCase().includes(field.toLowerCase()))
+      (field) => !this.header.some((h) => h.toLowerCase().includes(field.toLowerCase()))
     );
 
     if (missingFields.length > 0) {
-      console.warn(
-        'Warning: Missing expected eye tracking fields:',
-        missingFields
-      );
+      console.warn('Warning: Missing expected eye tracking fields:', missingFields);
     }
 
     const hasTimestamp = this.header.some(
-      (h) =>
-        h.toLowerCase().includes('time') || h.toLowerCase().includes('frame')
+      (h) => h.toLowerCase().includes('time') || h.toLowerCase().includes('frame')
     );
 
     if (!hasTimestamp) {
@@ -811,9 +720,7 @@ export default class DataCleaner {
           ? (this.stats.errorRows / this.stats.totalRows) * 100
           : 0,
       validationRate:
-        this.stats.totalRows > 0
-          ? (this.stats.validRows / this.stats.totalRows) * 100
-          : 0
+        this.stats.totalRows > 0 ? (this.stats.validRows / this.stats.totalRows) * 100 : 0
     };
   }
 
@@ -846,10 +753,7 @@ export default class DataCleaner {
         progressPercent = 99;
       } else {
         // Normal progress calculation: (currentRows / maxExpected) * 100, but cap at 99%
-        progressPercent = Math.min(
-          99,
-          (this.stats.totalRows / MAX_EXPECTED_ROWS) * 100
-        );
+        progressPercent = Math.min(99, (this.stats.totalRows / MAX_EXPECTED_ROWS) * 100);
       }
     }
 
@@ -883,8 +787,7 @@ export default class DataCleaner {
     if (this.performance.startTime) {
       const elapsedTime = (Date.now() - this.performance.startTime) / 1000; // seconds
       this.performance.rowsPerSecond = this.stats.totalRows / elapsedTime;
-      this.performance.memoryUsage =
-        process.memoryUsage().heapUsed / 1024 / 1024; // MB
+      this.performance.memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024; // MB
       this.performance.maxBufferSize = Math.max(
         this.performance.maxBufferSize,
         this.buf.length
@@ -900,104 +803,10 @@ export default class DataCleaner {
 
     const validRatio = this.stats.validRows / this.stats.totalRows;
     const errorRatio = this.stats.errorRows / this.stats.totalRows;
-    const nullRatio =
-      this.stats.nullValues / (this.stats.totalRows * this.header.length);
+    const nullRatio = this.stats.nullValues / (this.stats.totalRows * this.header.length);
 
     // Score based on: 70% valid data, 20% low errors, 10% minimal nulls
-    const score =
-      validRatio * 0.7 + (1 - errorRatio) * 0.2 + (1 - nullRatio) * 0.1;
+    const score = validRatio * 0.7 + (1 - errorRatio) * 0.2 + (1 - nullRatio) * 0.1;
     return Math.round(score * 100);
-  }
-
-  /**
-   * @TODO move this functionality to the database
-   *
-   * Exports all cleaned data to a new CSV file
-   *
-   * @param {string} outputPath - The path where to save the cleaned CSV file
-   * @returns {Promise<Object>} - Result object with success status and message
-   */
-  async exportToCSV(outputPath) {
-    try {
-      // Create a new stream to read through the entire file for export
-      const exportStream = fs.createReadStream(this.filePath);
-      const exportReadline = rl.createInterface({
-        input: exportStream,
-        crlfDelay: Infinity
-      });
-
-      let csvContent = '';
-      let isFirstLine = true;
-      let exportedRows = 0;
-
-      // Add header row
-      csvContent +=
-        this.header.map((col) => `"${col.replace(/"/g, '""')}"`).join(',') +
-        '\n';
-
-      // Read through the entire file and clean each row for export
-      for await (const line of exportReadline) {
-        if (isFirstLine) {
-          isFirstLine = false;
-          continue; // Skip header line
-        }
-
-        if (line.trim()) {
-          try {
-            // Clean the row using the same logic as loadRows
-            const cleaned = this.cleanRow(line);
-
-            // Only include valid rows (not error rows)
-            if (cleaned && !cleaned._isError) {
-              const csvRow = this.header
-                .map((col) => {
-                  const value = cleaned[col];
-                  if (value === null || value === undefined) {
-                    return '';
-                  }
-                  // Escape quotes and wrap in quotes if contains comma, quote, or newline
-                  const stringValue = String(value);
-                  if (
-                    stringValue.includes(',') ||
-                    stringValue.includes('"') ||
-                    stringValue.includes('\n')
-                  ) {
-                    return `"${stringValue.replace(/"/g, '""')}"`;
-                  }
-                  return stringValue;
-                })
-                .join(',');
-              csvContent += csvRow + '\n';
-              exportedRows++;
-            }
-          } catch (error) {
-            // Skip invalid rows during export
-            continue;
-          }
-        }
-      }
-
-      // Close the export stream
-      exportStream.close();
-
-      // Write to file
-      await fs.promises.writeFile(outputPath, csvContent, 'utf8');
-
-      return {
-        success: true,
-        message: `Successfully exported ${exportedRows} cleaned rows to ${outputPath}`,
-        stats: {
-          totalExported: exportedRows,
-          filePath: outputPath,
-          fileSize: csvContent.length
-        }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `Failed to export CSV: ${error.message}`,
-        error: error
-      };
-    }
   }
 }

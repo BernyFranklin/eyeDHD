@@ -62,7 +62,6 @@ body {
 
 .navbar-links a:hover {
   text-decoration: underline;
-  cursor: pointer;
 }
 
 .csv-import-container {
@@ -86,13 +85,13 @@ body {
   background-color: #ced1d4;
 }
 
-input[type="file"] {
+input[type='file'] {
   font-family: inherit;
   font-size: 1rem;
   border-radius: 5px;
 }
 
-input[type="file"]::file-selector-button {
+input[type='file']::file-selector-button {
   background-color: #13284c;
   color: #fff;
   border: none;
@@ -104,7 +103,7 @@ input[type="file"]::file-selector-button {
   transition: ease background-color 0.3s;
 }
 
-input[type="file"]::file-selector-button:hover {
+input[type='file']::file-selector-button:hover {
   background-color: #27395c;
 }
 
@@ -123,7 +122,7 @@ input[type="file"]::file-selector-button:hover {
   position: absolute;
   top: 3px;
   right: 3px;
-  animation: fadeInOut 3s ease-in-out forwards;
+  animation: fadeInOut 4s ease-in-out forwards;
 }
 
 .green {
@@ -171,6 +170,12 @@ input[type="file"]::file-selector-button:hover {
   z-index: 9999;
 }
 
+.disabled {
+  background-color: #33486c;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
 /* Spinner animation */
 .spinner {
   border: 6px solid #f3f3f3;
@@ -186,7 +191,6 @@ input[type="file"]::file-selector-button:hover {
   flex-direction: column;
   align-items: center;
   margin-top: 1rem;
-
 }
 
 .card-link:hover {
@@ -196,19 +200,30 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .home-link:hover {
-  cursor: pointer;
   transform: translateX(-2px);
   transition: transform 0.3s ease-in-out;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes fadeInOut {
-  0% { opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }

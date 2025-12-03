@@ -1,13 +1,12 @@
-export default createMetadataTable;
-
 // Creates a new table for storing file metadata
-function createMetadataTable(db) {
-	db.prepare(`
+export function createMetadataTable(db) {
+  db.prepare(`
 		CREATE TABLE IF NOT EXISTS metadata (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT UNIQUE NOT NULL,
 			path TEXT NOT NULL,
-			buffer_size INTEGER NOT NULL,
+			request_size INTEGER NOT NULL,
+			header TEXT DEFAULT '',
 			completed BOOLEAN DEFAULT 0,
 			cleaned INTEGER DEFAULT 0,
 			requested INTEGER DEFAULT 0,
@@ -17,4 +16,54 @@ function createMetadataTable(db) {
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
 	`).run();
+
+  // Migrate existing table by adding missing columns
+  migrateMetadataTable(db);
+}
+
+// Adds missing columns to existing metadata table for backward compatibility
+function migrateMetadataTable(db) {
+  try {
+    // Get current table schema
+    const tableInfo = db.prepare(`PRAGMA table_info(metadata);`).all();
+    const existingColumns = new Set(tableInfo.map(col => col.name));
+
+    // Handle column rename: buffer_size -> request_size
+    if (existingColumns.has('buffer_size') && !existingColumns.has('request_size')) {
+      console.log('Renaming column: buffer_size -> request_size');
+      // SQLite doesn't support RENAME COLUMN directly in older versions, so we copy the data
+      db.prepare(`ALTER TABLE metadata ADD COLUMN request_size INTEGER NOT NULL DEFAULT 200;`).run();
+      db.prepare(`UPDATE metadata SET request_size = buffer_size;`).run();
+      // Note: We can't drop buffer_size in SQLite without recreating the table, so we leave it
+    }
+
+    // Define required columns with their default values
+    const requiredColumns = [
+      { name: 'request_size', type: 'INTEGER NOT NULL DEFAULT 200' },
+      { name: 'completed', type: 'BOOLEAN DEFAULT 0' },
+      { name: 'cleaned', type: 'INTEGER DEFAULT 0' },
+      { name: 'requested', type: 'INTEGER DEFAULT 0' },
+      { name: 'first_frame', type: 'INTEGER DEFAULT 0' },
+      { name: 'last_frame', type: 'INTEGER DEFAULT 0' },
+      { name: 'created_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' },
+      { name: 'updated_at', type: 'DATETIME DEFAULT CURRENT_TIMESTAMP' }
+    ];
+
+    // Add missing columns
+    for (const column of requiredColumns) {
+      if (!existingColumns.has(column.name)) {
+        console.log(`Adding missing column to metadata table: ${column.name}`);
+        db.prepare(`ALTER TABLE metadata ADD COLUMN ${column.name} ${column.type};`).run();
+      }
+    }
+  } catch (err) {
+    console.error('Error migrating metadata table:', err);
+    // Don't throw - table might not exist yet, which is fine
+  }
+}
+
+export function deleteMetadataTable(db) {
+  db.prepare(`
+    DROP TABLE IF EXISTS metadata;
+  `).run();
 }

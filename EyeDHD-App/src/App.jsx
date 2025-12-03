@@ -10,20 +10,27 @@ import SidebySide from './components/SidebySide'
 function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [current, setCurrent] = useState(0);
+  const [buttonsDisabled, setButtonsDisabled] = useState(false);
   const content = [
-    <HomePage setCurrent={setCurrent}/>,
-    //<CsvFileImport isLoading={isLoading} setIsLoading={setIsLoading} />,
-    <CsvFileImport />,
+    <HomePage setCurrent={setCurrent} />,
+    <CsvFileImport
+      buttonsDisabled={buttonsDisabled}
+      setButtonsDisabled={setButtonsDisabled}
+    />,
     <AnimationGenerator />,
     <SidebySide />
-  ]
+  ];
   return (
     <>
       <LoadingOverlay isLoading={isLoading} />
-      <Navbar current={current} setCurrent={setCurrent} />
+      <Navbar
+        current={current}
+        setCurrent={setCurrent}
+        buttonsDisabled={buttonsDisabled}
+      />
       {content[current]}
     </>
-  )
+  );
 }
 
-export default App
+export default App;
