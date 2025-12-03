@@ -11,7 +11,7 @@ import { initializeCanvasRecording, stopCanvasRecording } from './RecorderHelper
 export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, currentIndex, setCurrentIndex }) {
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
-  const [endReached, setEndReached] = useState(true);
+  const [endReached, setEndReached] = useState(false);
   const [hasNewData, setHasNewData] = useState(false);
 
   // Monitor current index and load more rows if needed
@@ -20,7 +20,6 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, curr
     if (!isPlaying || !csvData)
     {
       // End has been reached
-      setEndReached(true);
 
       return;
     }
@@ -91,7 +90,7 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, curr
       recorder.stop();
       console.log('Recording stopped due to playback end or stop.');
       // Log isPlaying and endReached states separately
-      console.log('isPlaying:', isPlaying, 'endReached:', endReached);
+      console.log('isPlaying:', isPlaying, 'endReached:', endReached, 'csvLength', csvData ? csvData.length : 'no data');
       setFinishedRecording(true);
     }
   }, [isPlaying, csvData, endReached, canvasReady]);

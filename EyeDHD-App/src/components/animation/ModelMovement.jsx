@@ -55,7 +55,6 @@ export default function RotatingModel({ csvData, currentIndex, eyePosition, posi
             if (CheckDataValidity(pitch, row) && CheckDataValidity(yaw, row)) {
                 targetRotation.current = { x: pitch, y: yaw, z: 0 };
                 targetPupilDilation.current = NormalizePupilDilation(row[`${eyePosition}PupilDiameterInMM`]);
-                console.log("Row pupil data: ", row[`${eyePosition}PupilDiameterInMM`]);
             }
         }
     }, [csvData, currentIndex, eyePosition, isPlaying]);
