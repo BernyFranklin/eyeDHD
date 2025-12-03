@@ -156,8 +156,8 @@ export default function AnimationGenerator() {
                 );
               })}
             </select>
-            <Button onClick={handleSubmit()} className="btn" buttonText="Generate" style={styles.buttonInline}/>
-            <Button onClick={handleReset} className="btn" buttonText="Reset" style={styles.buttonInline}/>
+            <Button type="submit" onClick={() => {}} className="btn" buttonText="Generate" style={styles.buttonInline}/>
+            <Button type="reset" onClick={() => {}} className="btn" buttonText="Reset" style={styles.buttonInline}/>
           </div>
         </form>
       )}
