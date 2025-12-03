@@ -8,11 +8,19 @@ import RotatingModel from './ModelMovement.jsx';
 import { initializeCanvasRecording, stopCanvasRecording } from './RecorderHelper.jsx';
 
 // Main animation window component
-export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, currentIndex, setCurrentIndex }) {
+export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, shouldRecord = false, onIndexChange }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
   const [endReached, setEndReached] = useState(false);
   const [hasNewData, setHasNewData] = useState(false);
+
+  // Notify parent of current index changes
+  useEffect(() => {
+    if (onIndexChange) {
+      onIndexChange(currentIndex);
+    }
+  }, [currentIndex, onIndexChange]);
 
   // Monitor current index and load more rows if needed
   useEffect(() => {
@@ -20,7 +28,7 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, curr
     if (!isPlaying || !csvData)
     {
       // End has been reached
-
+      setEndReached(true);
       return;
     }
 
@@ -55,7 +63,7 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, curr
 
     // Cleanup on unmount or when dependencies change
     return () => clearInterval(interval);
-  }, [csvData, isPlaying, loadMoreRows]);
+  }, [csvData, isPlaying]);
 
   // Recording setup
   const mediaRecorderRef = useRef(null);
@@ -72,35 +80,35 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, curr
     }
   }, [csvData, endReached]);
 
-  // Start/stop recording based on playback and canvas readiness
+  // Start/stop recording based on shouldRecord prop and canvas readiness
   useEffect(() => {
     const recorder = mediaRecorderRef.current;
     if (!recorder || !canvasReady) return;
 
-    // Start when playing and we have data, and recorder is inactive
-    if (isPlaying && csvData && recorder.state === "inactive") {
+    // Start when shouldRecord is true and we have data, and recorder is inactive
+    if (shouldRecord && isPlaying && csvData && recorder.state === "inactive") {
       chunksRef.current = [];
       recorder.start();
       console.log('Recording started after inactive.');
       setFinishedRecording(false);
     }
 
-    // Stop when not playing or when we hit the end
-    if ((!isPlaying || endReached) && recorder.state === "recording") {
+    // Stop when shouldRecord is false or when we hit the end
+    if ((!shouldRecord || !isPlaying || endReached) && recorder.state === "recording") {
       recorder.stop();
       console.log('Recording stopped due to playback end or stop.');
       // Log isPlaying and endReached states separately
       console.log('isPlaying:', isPlaying, 'endReached:', endReached, 'csvLength', csvData ? csvData.length : 'no data');
       setFinishedRecording(true);
     }
-  }, [isPlaying, csvData, endReached, canvasReady]);
+  }, [shouldRecord, isPlaying, csvData, endReached, canvasReady]);
 
-  // Handle new data arrival: if playing, restart cleanly once.
+  // Handle new data arrival: if recording and playing, restart cleanly once.
   useEffect(() => {
     const recorder = mediaRecorderRef.current;
     if (!recorder || !canvasReady) return;
 
-    if (hasNewData && isPlaying && csvData) {
+    if (hasNewData && shouldRecord && isPlaying && csvData) {
       if (recorder.state === "recording") {
         recorder.stop();
       }
@@ -110,7 +118,7 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, curr
       setHasNewData(false);
       setFinishedRecording(false);
     }
-  }, [hasNewData, isPlaying, csvData, canvasReady]);
+  }, [hasNewData, shouldRecord, isPlaying, csvData, canvasReady]);
 
   return (
     <Canvas style={{ width: '720px', height: '480px' }} onCreated={({ gl }) => initializeCanvasRecording(gl.domElement, setCanvasReady, mediaRecorderRef, chunksRef)} >
