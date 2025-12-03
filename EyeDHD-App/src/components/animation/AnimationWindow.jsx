@@ -8,8 +8,7 @@ import RotatingModel from './ModelMovement.jsx';
 import { initializeCanvasRecording, stopCanvasRecording } from './RecorderHelper.jsx';
 
 // Main animation window component
-export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, currentIndex, setCurrentIndex }) {
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
   const [endReached, setEndReached] = useState(true);
