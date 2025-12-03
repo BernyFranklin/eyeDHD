@@ -65,31 +65,54 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying }) {
 
   // Helpers are defined at module scope: initializeCanvasRecording, stopCanvasRecording
 
-  // Stop recording when CSV data runs out
-  if(!isPlaying && !finishedRecording|| !csvData && mediaRecorderRef.current && !finishedRecording || endReached && mediaRecorderRef.current && !finishedRecording) {
-    stopCanvasRecording(mediaRecorderRef);
-    setFinishedRecording(true);
-  }
+  // Manage recording strictly via effects; avoid side effects in render.
 
   // Detect new CSV data loaded
-  if(csvData && endReached && !hasNewData) {
-    setHasNewData(true);
-  }
+  useEffect(() => {
+    if (csvData && endReached) {
+      setHasNewData(true);
+    }
+  }, [csvData, endReached]);
 
-  // Problem Child
+  // Start/stop recording based on playback and canvas readiness
   useEffect(() => {
     const recorder = mediaRecorderRef.current;
+    if (!recorder || !canvasReady) return;
 
-    if (hasNewData && canvasReady && recorder && endReached && csvData && isPlaying) {
-      if (recorder.state !== "inactive") recorder.stop();
+    // Start when playing and we have data, and recorder is inactive
+    if (isPlaying && csvData && recorder.state === "inactive") {
       chunksRef.current = [];
-
       recorder.start();
-      console.log("Recording restarted due to new CSV data.");
+      console.log('Recording started after inactive.');
+      setFinishedRecording(false);
+    }
+
+    // Stop when not playing or when we hit the end
+    if ((!isPlaying || endReached) && recorder.state === "recording") {
+      recorder.stop();
+      console.log('Recording stopped due to playback end or stop.');
+      // Log isPlaying and endReached states separately
+      console.log('isPlaying:', isPlaying, 'endReached:', endReached);
+      setFinishedRecording(true);
+    }
+  }, [isPlaying, csvData, endReached, canvasReady]);
+
+  // Handle new data arrival: if playing, restart cleanly once.
+  useEffect(() => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder || !canvasReady) return;
+
+    if (hasNewData && isPlaying && csvData) {
+      if (recorder.state === "recording") {
+        recorder.stop();
+      }
+      chunksRef.current = [];
+      recorder.start();
+      console.log('Recording restarted due to new data.');
       setHasNewData(false);
       setFinishedRecording(false);
     }
-  }, [hasNewData, canvasReady, endReached, csvData, isPlaying]);
+  }, [hasNewData, isPlaying, csvData, canvasReady]);
 
   return (
     <Canvas style={{ width: '720px', height: '480px' }} onCreated={({ gl }) => initializeCanvasRecording(gl.domElement, setCanvasReady, mediaRecorderRef, chunksRef)} >

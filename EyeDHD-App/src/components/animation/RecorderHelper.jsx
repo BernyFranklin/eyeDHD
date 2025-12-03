@@ -18,9 +18,6 @@ function initializeCanvasRecording(canvas, setCanvasReady, mediaRecorderRef, chu
     a.download = 'animation.webm';
     a.click();
   };
-
-  recorder.start();
-  console.log('Recording started');
 }
 
 // Stop recording helper

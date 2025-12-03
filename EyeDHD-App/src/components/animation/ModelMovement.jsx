@@ -12,25 +12,26 @@ export default function RotatingModel({ csvData, currentIndex, eyePosition, posi
     const { scene } = useGLTF('/eye_model.glb');
     const ref = useRef();
 
-    // Clone the scene for this instance so each eye has its own geometry
-    const { clonedScene, mesh } = useMemo(() => {
+    // Clone the scene and collect all meshes with an "Open" shapekey
+    const { clonedScene, morphMeshes } = useMemo(() => {
         const clone = scene.clone(true);
         clone.position.set(...position);
 
-        let targetMesh = null;
+        const targets = [];
         clone.traverse(o => {
-            if (o.isMesh && o.morphTargetDictionary) {
-                targetMesh = o;
+            if (o.isMesh && o.morphTargetDictionary && o.morphTargetInfluences) {
+                if (o.morphTargetDictionary["Open"] !== undefined) {
+                    targets.push(o);
+                }
             }
         });
 
-        return { clonedScene: clone, mesh: targetMesh };
+        return { clonedScene: clone, morphMeshes: targets };
     }, [scene, position]);
 
     // Keep track of target and current rotation
     const targetRotation = useRef({ x: 0, y: 0, z: 0 });
     const currentRotation = useRef({ x: 0, y: 0, z: 0 });
-
     const targetPupilDilation = useRef(0);
 
     // Update target rotation based on CSV data
@@ -39,8 +40,6 @@ export default function RotatingModel({ csvData, currentIndex, eyePosition, posi
         if (!isPlaying || !csvData || currentIndex >= csvData.length) return;
 
         const row = csvData[currentIndex];
-
-        console.log('Current Eye Position:', eyePosition);
 
         // Get the forward vector components - note uppercase first letter
         const forwardX = row[`${eyePosition}EyeForwardX`];
@@ -77,14 +76,12 @@ export default function RotatingModel({ csvData, currentIndex, eyePosition, posi
         if (ref.current) { ref.current.rotation.set(r.x, r.y, r.z); }
 
         // Apply morph target (shape key)
-        if (mesh?.morphTargetDictionary && mesh?.morphTargetInfluences) {
-            const dict = mesh.morphTargetDictionary;
-            const infl = mesh.morphTargetInfluences;
-
-            const openIndex = dict["Open"]; // ← your shape key name
-
-            if (openIndex !== undefined) {
-                infl[openIndex] = targetPupilDilation.current;
+        if (morphMeshes?.length) {
+            for (const m of morphMeshes) {
+                const idx = m.morphTargetDictionary["Open"];
+                if (idx !== undefined) {
+                    m.morphTargetInfluences[idx] = targetPupilDilation.current;
+                }
             }
         }
     });
