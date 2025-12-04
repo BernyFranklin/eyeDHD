@@ -76,14 +76,66 @@ contextBridge.exposeInMainWorld('electron', {
      */
     exportData: async (filename) => {
       return await ipcRenderer.invoke('csv-export-data', filename);
+    },
+    /**
+     * Saves binary data to a file with save dialog
+     *
+     * @param options - Save options (defaultPath, filters, data)
+     * @returns Promise with save result
+     */
+    saveFile: async (options) => {
+      return await ipcRenderer.invoke('csv-save-file', options);
     }
   },
-  notify: {
+  animation: {
     /**
-     * Creates an OS notification displaying the argument: message
+     * Initialize a new animation export session
+     *
+     * @param options - Export options (fileName, format, quality)
+     * @returns Promise with session ID and export path
      */
-    send: (message) => {
-      ipcRenderer.send('notify', message);
+    exportInit: async (options) => {
+      return await ipcRenderer.invoke('animation-export-init', options);
+    },
+    /**
+     * Add frame data to the current export session
+     *
+     * @param sessionId - The export session ID
+     * @param frameData - Frame data object with frameIndex, frameData, timestamp
+     * @returns Promise with success status
+     */
+    exportAddFrame: async (sessionId, frameData) => {
+      return await ipcRenderer.invoke('animation-export-add-frame', sessionId, frameData);
+    },
+    /**
+     * Finalize the export and create video/image sequence
+     *
+     * @param sessionId - The export session ID
+     * @returns Promise with export result
+     */
+    exportFinalize: async (sessionId) => {
+      return await ipcRenderer.invoke('animation-export-finalize', sessionId);
+    },
+    /**
+     * Get progress of the current export session
+     *
+     * @param sessionId - The export session ID
+     * @returns Promise with progress information
+     */
+    exportProgress: async (sessionId) => {
+      return await ipcRenderer.invoke('animation-export-progress', sessionId);
+    },
+    /**
+     * Cancel the current export session
+     *
+     * @param sessionId - The export session ID
+     * @returns Promise with cancellation result
+     */
+    exportCancel: async (sessionId) => {
+      return await ipcRenderer.invoke('animation-export-cancel', sessionId);
     }
+  },
+  notify: (message) => {
+    ipcRenderer.send('notify', message);
   }
 });

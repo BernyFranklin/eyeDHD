@@ -23,6 +23,7 @@
     "csv": "^6.4.1",
     "express": "^5.1.0",
     "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
     "papaparse": "^5.5.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

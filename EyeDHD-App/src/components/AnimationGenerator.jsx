@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow from './AlertWindow';
 import AnimationContainer from './AnimationContainer';
+import ExportManager from './ExportManager';
 import Button from './Button';
 
 export default function AnimationGenerator() {
@@ -174,12 +175,25 @@ export default function AnimationGenerator() {
       )}
       {/*Conditionally render the AnimationContainer*/}
       {fileName && (
-        <AnimationContainer
-          csvData={csvData}
-          loadMoreRows={loadMoreRows}
-          isPlaying={isPlaying}
-          setIsPlaying={setIsPlaying}
-        />
+        <>
+          <AnimationContainer
+            csvData={csvData}
+            loadMoreRows={loadMoreRows}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+          />
+          
+          {/* Export functionality */}
+          <ExportManager
+            csvData={csvData}
+            fileName={fileName}
+            onExportComplete={(result) => {
+              if (result.success) {
+                sendAlert(`Animation exported successfully! ${result.frameCount} frames exported.`);
+              }
+            }}
+          />
+        </>
       )}
       {/*Conditionally render the alert message*/}
       {showAlert && (
