@@ -121,7 +121,7 @@ export default function AnimationWindow({ csvData, loadMoreRows, isPlaying, shou
   }, [hasNewData, shouldRecord, isPlaying, csvData, canvasReady]);
 
   return (
-    <Canvas style={{ width: '720px', height: '480px' }} onCreated={({ gl }) => initializeCanvasRecording(gl.domElement, setCanvasReady, mediaRecorderRef, chunksRef)} >
+    <Canvas style={ {width: '100%', height: '200px'} } onCreated={({ gl }) =>      initializeCanvasRecording(gl.domElement, setCanvasReady, mediaRecorderRef, chunksRef)} >
       <OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
       <OrbitControls enablePan={true} enableZoom={true} />
       <ambientLight intensity={2} color="white" />

@@ -17,20 +17,17 @@ export default function ExportManager({ csvData, fileName, onExportComplete }) {
 
   const styles = {
     container: {
-      backgroundColor: '#ced1d4',
-      padding: '1.5rem',
-      margin: '1rem 0',
-      borderRadius: '8px',
-      border: '1px solid #13284c',
-      alignItems: 'center',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      height: '100%',
+      flex: 1,
+      alignItems: 'stretch',
     },
     title: {
       fontSize: '1.2rem',
       fontWeight: 'bold',
       marginBottom: '1rem',
-      color: '#333'
+      color: '#333',
     },
     progressContainer: {
       width: '100%',
@@ -194,7 +191,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }) {
   };
 
   return (
-    <div style={styles.container}>
+    <>
       <h3 style={styles.title}>Export Animation</h3>
       
       <div style={styles.infoBox}>
@@ -258,6 +255,6 @@ export default function ExportManager({ csvData, fileName, onExportComplete }) {
           isExporting={isExporting}
         />
       )}
-    </div>
+    </>
   );
 }

@@ -1,6 +1,13 @@
 import AnimationWindow from "./animation/AnimationWindow.jsx";
 import Button from "./Button";
 
+const styles = {
+  container: {
+    width: '100%',
+    textWrap: 'wrap'
+  }
+}
+
 export default function AnimationContainer({
   csvData,
   loadMoreRows,
@@ -8,7 +15,9 @@ export default function AnimationContainer({
   setIsPlaying
 }) {
   return (
-    <div className="animation-window-container">
+    <div className="animation-window-container" style={styles.container}>
+      <h3>Preview of Animation</h3>
+      <p>Use the controls below to play or pause the animation preview. To save the animation, use the export options provided.</p>
       <AnimationWindow
         csvData={csvData}
         loadMoreRows={loadMoreRows}
