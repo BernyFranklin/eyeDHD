@@ -17,11 +17,14 @@ export default function ExportManager({ csvData, fileName, onExportComplete }) {
 
   const styles = {
     container: {
-      backgroundColor: '#f5f5f5',
+      backgroundColor: '#ced1d4',
       padding: '1.5rem',
       margin: '1rem 0',
       borderRadius: '8px',
-      border: '1px solid #ddd'
+      border: '1px solid #13284c',
+      alignItems: 'center',
+      display: 'flex',
+      flexDirection: 'column'
     },
     title: {
       fontSize: '1.2rem',
@@ -64,7 +67,11 @@ export default function ExportManager({ csvData, fileName, onExportComplete }) {
       padding: '1rem',
       marginBottom: '1rem',
       fontSize: '0.9rem',
-      color: '#0d47a1'
+      color: '#0d47a1',
+      maxWidth: '80%',
+      wordWrap: 'break-word',
+      overflowWrap: 'break-word',
+      whiteSpace: 'normal'
     }
   };
 
@@ -138,6 +145,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }) {
     setCurrentFrame(0);
     setTotalFrames(0);
     setFullCsvData(null);
+    setFullCsvData([]);
     
     // Log cancellation
     console.log('🚫 Video export cancelled at:', new Date().toLocaleTimeString());
@@ -190,10 +198,12 @@ export default function ExportManager({ csvData, fileName, onExportComplete }) {
       <h3 style={styles.title}>Export Animation</h3>
       
       <div style={styles.infoBox}>
-        📹 <strong>Real-time Video Recording</strong><br/>
+        <strong>Real-time Video Recording</strong><br/>
         This export method records the animation in real-time as an MP4 video (or WebM if MP4 isn't supported). 
-        For {csvData ? Math.round(csvData.length / 200 / 60) : '?'} minutes of data, 
-        the export will take approximately the same time as the animation duration.
+        The export will take approximately the same time as the animation duration.
+        For example, 20 minutes of data, will take approximately 20 minutes to export.
+        <br/><br/>
+        Ensure that the application remains open and active during the export process.
       </div>
 
       {isLoadingData && (
@@ -225,7 +235,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }) {
           buttonText={
             isLoadingData ? 'Loading Data...' :
             isExporting ? 'Recording...' : 
-            `Export Video (${csvData ? csvData.length.toLocaleString() : 0} frames loaded)`
+            `Export Video`
           }
         />
         

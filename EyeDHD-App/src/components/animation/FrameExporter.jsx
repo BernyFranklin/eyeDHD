@@ -17,6 +17,7 @@ export default function FrameExporter({ csvData, onProgress, onExportComplete, i
   const [isReady, setIsReady] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const intervalRef = useRef(null);
+  const isCancelledRef = useRef(false);
 
   // Initialize MediaRecorder when canvas is ready
   const initializeRecording = useCallback((canvas) => {
@@ -56,8 +57,14 @@ export default function FrameExporter({ csvData, onProgress, onExportComplete, i
       };
       
       recorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: options.mimeType });
-        saveVideoFile(blob, fileExtension);
+        // Only save video if export wasn't cancelled
+        if (!isCancelledRef.current) {
+          const blob = new Blob(chunksRef.current, { type: options.mimeType });
+          saveVideoFile(blob, fileExtension);
+        } else {
+          console.log('Export was cancelled, skipping video save');
+          onExportComplete({ success: false, error: 'Export cancelled' });
+        }
       };
       
       setIsReady(true);
@@ -105,7 +112,8 @@ export default function FrameExporter({ csvData, onProgress, onExportComplete, i
     if (!isReady || !mediaRecorderRef.current) return;
 
     if (isExporting && mediaRecorderRef.current.state === 'inactive') {
-      // Start recording
+      // Start recording - reset cancellation flag
+      isCancelledRef.current = false;
       chunksRef.current = [];
       mediaRecorderRef.current.start();
       setCurrentIndex(0);
@@ -115,8 +123,9 @@ export default function FrameExporter({ csvData, onProgress, onExportComplete, i
       
       console.log(`Export started for ${csvData.length} frames`);
     } else if (!isExporting && mediaRecorderRef.current.state === 'recording') {
-      // Stop recording
-      console.log('Export manually stopped');
+      // Stop recording - mark as cancelled
+      isCancelledRef.current = true;
+      console.log('Export manually cancelled');
       mediaRecorderRef.current.stop();
       stopAnimation();
     }
@@ -176,6 +185,7 @@ export default function FrameExporter({ csvData, onProgress, onExportComplete, i
     return () => {
       stopAnimation();
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        isCancelledRef.current = true;
         mediaRecorderRef.current.stop();
       }
     };

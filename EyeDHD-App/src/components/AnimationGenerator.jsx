@@ -125,9 +125,15 @@ export default function AnimationGenerator() {
   const handleReset = async (e) => {
     e.preventDefault();
 
-    await electron.csv.resetReadingProgress(fileName).catch(handleError);
+    // Reset reading progress if we have a filename
+    if (fileName) {
+      await electron.csv.resetReadingProgress(fileName).catch(handleError);
+    }
 
+    // Reset all state
     setFileName('');
+    setCsvData([]);
+    setIsPlaying(false);
   };
 
   useEffect(() => {
@@ -158,7 +164,7 @@ export default function AnimationGenerator() {
               })}
             </select>
             <Button type="submit" onClick={() => {}} className="btn" buttonText="Generate" style={styles.buttonInline}/>
-            <Button type="reset" onClick={() => {}} className="btn" buttonText="Reset" style={styles.buttonInline}/>
+            <Button type="reset" onClick={handleReset} className="btn" buttonText="Reset" style={styles.buttonInline}/>
           </div>
         </form>
       )}
@@ -174,7 +180,7 @@ export default function AnimationGenerator() {
         />
       )}
       {/*Conditionally render the AnimationContainer*/}
-      {fileName && (
+      {fileName !== '' && (
         <>
           <AnimationContainer
             csvData={csvData}
