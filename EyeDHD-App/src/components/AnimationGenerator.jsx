@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow from './AlertWindow';
 import AnimationContainer from './AnimationContainer';
+import ExportManager from './ExportManager';
 import Button from './Button';
 
 export default function AnimationGenerator() {
@@ -12,6 +13,7 @@ export default function AnimationGenerator() {
   const [showAlert, setShowAlert] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isHidden, setIsHidden] = useState(true);
 
   const [files, setFiles] = useState(null);
 
@@ -21,10 +23,12 @@ export default function AnimationGenerator() {
       backgroundColor: '#fff',
       padding: '2rem',
       display: 'flex',
-      flexDirection: 'column',
-      width: '60%',
+      flexDirection: 'row',
+      width: '100%',
       margin: '2rem auto',
-      alignItems: 'center'
+      alignItems: 'stretch',
+      justifyContent: 'center',
+      gap: '2rem'
     },
     buttonContainer: {
       display: 'flex',
@@ -45,10 +49,29 @@ export default function AnimationGenerator() {
     },
     buttonInline: {
       display: 'inline-block',
-    }
+    },
+    singlePane: {
+      width: '40%',
+      padding: '1rem',
+      border: '1px solid #ccc',
+      borderRadius: '8px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      alignItems: 'center'
+    },
   };
- 
 
+  styles.leftPane = {
+    ...styles.singlePane,
+    backgroundColor: '#f8f9fa'
+  }
+  
+  styles.rightPane = {
+    ...styles.singlePane,
+    backgroundColor: '#f1f3f4'
+  }
+  
   // gets the list of cleaned files
   const getFilesList = async () => {
     setIsLoading(true);
@@ -108,6 +131,7 @@ export default function AnimationGenerator() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFileName('');
+    setIsHidden(false);
 
     const form = e.target;
     const data = new FormData(form);
@@ -123,10 +147,16 @@ export default function AnimationGenerator() {
 
   const handleReset = async (e) => {
     e.preventDefault();
+    setIsHidden(true);
+    // Reset reading progress if we have a filename
+    if (fileName) {
+      await electron.csv.resetReadingProgress(fileName).catch(handleError);
+    }
 
-    await electron.csv.resetReadingProgress(fileName).catch(handleError);
-
+    // Reset all state
     setFileName('');
+    setCsvData([]);
+    setIsPlaying(false);
   };
 
   useEffect(() => {
@@ -134,33 +164,7 @@ export default function AnimationGenerator() {
   }, []);
 
   return (
-    <div className="animation-generator-container" style={styles.container}>
-      {/*Used for when things take awhile to load*/}
-      <LoadingOverlay isLoading={isLoading} />
-      {/*Conditionally render an upload message*/}
-      {files && (
-        <form method="post" onSubmit={handleSubmit} onReset={handleReset}>
-          <label htmlFor="file-select">
-            Please select a file to generate an animation.
-          </label>
-          <div style={styles.buttonContainer}>
-            <select name="fileSelect" defaultValue="none" style={styles.select}>
-              <option disabled value="none">
-                none
-              </option>
-              {files.map((file, index) => {
-                return (
-                  <option key={index} value={file}>
-                    {file}
-                  </option>
-                );
-              })}
-            </select>
-            <Button type="submit" onClick={() => {}} className="btn" buttonText="Generate" style={styles.buttonInline}/>
-            <Button type="reset" onClick={() => {}} className="btn" buttonText="Reset" style={styles.buttonInline}/>
-          </div>
-        </form>
-      )}
+    <>
       {/*Conditionally render an error message*/}
       {error && (
         <AlertWindow
@@ -170,15 +174,6 @@ export default function AnimationGenerator() {
             setError('');
             setShowAlert(false);
           }}
-        />
-      )}
-      {/*Conditionally render the AnimationContainer*/}
-      {fileName && (
-        <AnimationContainer
-          csvData={csvData}
-          loadMoreRows={loadMoreRows}
-          isPlaying={isPlaying}
-          setIsPlaying={setIsPlaying}
         />
       )}
       {/*Conditionally render the alert message*/}
@@ -192,6 +187,61 @@ export default function AnimationGenerator() {
           }}
         />
       )}
-    </div>
+      <div className="animation-generator-container" style={styles.container}>
+        {/*Used for when things take awhile to load*/}
+        <LoadingOverlay isLoading={isLoading} />
+        <div className="left-pane" style={isHidden ? {...styles.leftPane,width: 'auto'} : styles.leftPane}>
+          <h3>Generate Animation</h3>
+          {files && (
+            <form method="post" onSubmit={handleSubmit} onReset={handleReset}>
+              <label htmlFor="file-select">
+                Please select a file to generate an animation.
+              </label>
+              <div style={styles.buttonContainer}>
+                <select name="fileSelect" defaultValue="none" style={styles.select}>
+                  <option disabled value="none">
+                    none
+                  </option>
+                  {files.map((file, index) => {
+                    return (
+                      <option key={index} value={file}>
+                        {file}
+                      </option>
+                    );
+                  })}
+                </select>
+                <Button type="submit" onClick={() => {}} className="btn" buttonText="Generate" style={styles.buttonInline}/>
+                <Button type="reset" onClick={handleReset} className="btn" buttonText="Reset" style={styles.buttonInline}/>
+              </div>
+            </form>
+          )}
+          {/*Conditionally render the AnimationContainer*/}
+          {fileName !== '' && (
+              <AnimationContainer
+                csvData={csvData}
+                loadMoreRows={loadMoreRows}
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+              />
+          )}
+        </div>
+        <div className="right-pane" style={isHidden ? {display: 'none'} : styles.rightPane}>
+          {/* Export functionality */}
+          {fileName !== '' && (  
+            <ExportManager
+              csvData={csvData}
+              fileName={fileName}
+              onExportComplete={(result) => {
+                if (result.success) {
+                  sendAlert(
+                    `Animation exported successfully! ${result.frameCount} frames exported.`
+                  );
+                }
+              }}
+            />
+          )}
+        </div>
+      </div>
+    </>
   );
 }

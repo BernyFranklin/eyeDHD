@@ -156,6 +156,11 @@ input[type='file']::file-selector-button:hover {
   background-color: #27395c;
 }
 
+.btn:disabled {
+  background-color: #33486c;
+  cursor: not-allowed;
+}
+
 /* Overlay background */
 .loading-overlay {
   position: fixed;

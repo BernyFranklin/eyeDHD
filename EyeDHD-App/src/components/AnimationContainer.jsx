@@ -1,7 +1,12 @@
 import AnimationWindow from "./animation/AnimationWindow.jsx";
-import PupilData from "./PupilData.jsx";
 import Button from "./Button";
-import { useState } from "react";
+
+const styles = {
+  container: {
+    width: '100%',
+    textWrap: 'wrap'
+  }
+}
 
 export default function AnimationContainer({
   csvData,
@@ -9,25 +14,15 @@ export default function AnimationContainer({
   isPlaying,
   setIsPlaying
 }) {
-  // Track the current frame index to sync PupilData with animation
-  const [currentIndex, setCurrentIndex] = useState(0);
-
   return (
-    <div className="animation-window-container" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+    <div className="animation-window-container" style={styles.container}>
+      <h3>Preview of Animation</h3>
+      <p>Use the controls below to play or pause the animation preview. To save the animation, use the export options provided.</p>
       <AnimationWindow
         csvData={csvData}
         loadMoreRows={loadMoreRows}
         isPlaying={isPlaying}
-        currentIndex={currentIndex}
-        setCurrentIndex={setCurrentIndex}
       />
-      
-      <PupilData
-        csvData={csvData}
-        currentIndex={currentIndex}
-        isPlaying={isPlaying}
-      />
-      
       <div className="animation-controls">
         <Button
           onClick={() => setIsPlaying(!isPlaying)}
