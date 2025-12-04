@@ -35,7 +35,7 @@ export default function AnimationGenerator() {
       flexDirection: 'row',
       gap: '10px',
       justifyContent: 'center',
-      marginTop: '1rem',
+      marginTop: '1rem'
     },
     select: {
       fontSize: '1rem',
@@ -45,10 +45,10 @@ export default function AnimationGenerator() {
       padding: '1rem',
       backgroundColor: '#f9f9f9',
       marginTop: '1rem',
-      width: 'fit-content',
+      width: 'fit-content'
     },
     buttonInline: {
-      display: 'inline-block',
+      display: 'inline-block'
     },
     singlePane: {
       width: '40%',
@@ -59,19 +59,19 @@ export default function AnimationGenerator() {
       flexDirection: 'column',
       justifyContent: 'space-between',
       alignItems: 'center'
-    },
+    }
   };
 
   styles.leftPane = {
     ...styles.singlePane,
     backgroundColor: '#f8f9fa'
-  }
-  
+  };
+
   styles.rightPane = {
     ...styles.singlePane,
     backgroundColor: '#f1f3f4'
-  }
-  
+  };
+
   // gets the list of cleaned files
   const getFilesList = async () => {
     setIsLoading(true);
@@ -148,6 +148,12 @@ export default function AnimationGenerator() {
   const handleReset = async (e) => {
     e.preventDefault();
     setIsHidden(true);
+
+    // Set form select back to 'none'
+    const form = e.target;
+    const select = document.querySelector('select[name="fileSelect"]');
+    if (select) select.value = 'none';
+
     // Reset reading progress if we have a filename
     if (fileName) {
       await electron.csv.resetReadingProgress(fileName).catch(handleError);
@@ -190,7 +196,10 @@ export default function AnimationGenerator() {
       <div className="animation-generator-container" style={styles.container}>
         {/*Used for when things take awhile to load*/}
         <LoadingOverlay isLoading={isLoading} />
-        <div className="left-pane" style={isHidden ? {...styles.leftPane,width: 'auto'} : styles.leftPane}>
+        <div
+          className="left-pane"
+          style={isHidden ? { ...styles.leftPane, width: 'auto' } : styles.leftPane}
+        >
           <h3>Generate Animation</h3>
           {files && (
             <form method="post" onSubmit={handleSubmit} onReset={handleReset}>
@@ -210,24 +219,39 @@ export default function AnimationGenerator() {
                     );
                   })}
                 </select>
-                <Button type="submit" onClick={() => {}} className="btn" buttonText="Generate" style={styles.buttonInline}/>
-                <Button type="reset" onClick={handleReset} className="btn" buttonText="Reset" style={styles.buttonInline}/>
+                <Button
+                  type="submit"
+                  onClick={() => {}}
+                  className="btn"
+                  buttonText="Generate"
+                  style={styles.buttonInline}
+                />
+                <Button
+                  type="reset"
+                  onClick={handleReset}
+                  className="btn"
+                  buttonText="Reset"
+                  style={styles.buttonInline}
+                />
               </div>
             </form>
           )}
           {/*Conditionally render the AnimationContainer*/}
           {fileName !== '' && (
-              <AnimationContainer
-                csvData={csvData}
-                loadMoreRows={loadMoreRows}
-                isPlaying={isPlaying}
-                setIsPlaying={setIsPlaying}
-              />
+            <AnimationContainer
+              csvData={csvData}
+              loadMoreRows={loadMoreRows}
+              isPlaying={isPlaying}
+              setIsPlaying={setIsPlaying}
+            />
           )}
         </div>
-        <div className="right-pane" style={isHidden ? {display: 'none'} : styles.rightPane}>
+        <div
+          className="right-pane"
+          style={isHidden ? { display: 'none' } : styles.rightPane}
+        >
           {/* Export functionality */}
-          {fileName !== '' && (  
+          {fileName !== '' && (
             <ExportManager
               csvData={csvData}
               fileName={fileName}
