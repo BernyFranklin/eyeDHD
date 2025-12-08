@@ -230,6 +230,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }) {
     if (fileName) {
       await electron.csv.resetCleaningProgress(fileName).catch(handleError);
     }
+    setFileName('');
   };
 
 
@@ -273,7 +274,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }) {
           }}
         />
       )}
-      {fileName && (
+      {fileName !== '' && (
         <>
           <PreviewCsvFile fileName={fileName} csvData={csvData} />
 

@@ -6,7 +6,7 @@ export default function PreviewCsvFile({ fileName, csvData }) {
 
     // If it's an array, show a readable preview (first 100 rows max)
     if (Array.isArray(csvData)) {
-      if (csvData.length === 0) return 'No data to display.';
+      if (csvData.length === 0) return 'Data not processed yet.';
       const rows = csvData.slice(0, 5);
 
       // If rows are objects (typical Papa.parse header:true), pretty-print JSON
@@ -24,10 +24,6 @@ export default function PreviewCsvFile({ fileName, csvData }) {
     return typeof csvData === 'object'
       ? JSON.stringify(csvData, null, 2)
       : String(csvData);
-    // Code from Feature_Animation
-    //if (csvData === null) return "File read fully.";
-    //if (csvData.length === 0) return "No data to display.";
-    //return csvData.map(row => `X: ${row.LeftEyeForwardX.replace(/[()]/g, '')},` ?? ' ').join("\t");
   }, [csvData]);
 
   return (
