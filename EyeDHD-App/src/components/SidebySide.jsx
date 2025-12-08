@@ -5,7 +5,7 @@ export default function SidebySide() {
   const [vrFile, setVrFile] = useState("");
   const [animFile, setAnimFile] = useState("");
   const [offsetSeconds, setOffsetSeconds] = useState(0); //animation delay vs VR
-  const [status, setStatus] = useState("Placeholder status messages here.");
+  const [status, setStatus] = useState("Ready.");
 
   const styles = {
     parent: {
@@ -15,56 +15,55 @@ export default function SidebySide() {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      border: "1px solid #ccc",
       textWrap: "wrap"
     },
-    childOne: {
-      border: "1px dashed red",
+    headerContainer: {
+      padding: "1rem",
+      border: "1px solid #ccc",
+      borderRadius: "8px",
+      backgroundColor: '#f8f9fa',
       margin: "1rem 1rem 0rem 1rem",
     },
-    childTwo: {
-      border: "1px dashed red",
-      width: "calc(100% - 2rem)",
+    sideBySideContainer: {
+      padding: "1rem",
+      border: "1px solid #ccc",
+      borderRadius: "8px",
+      backgroundColor: '#f8f9fa',
+      width: "calc(100% - 4rem)",
       margin: "1rem 1rem 0rem 1rem",
       display: 'flex',
       flexDirection: 'row',
       justifyContent: 'space-between',
 
     },
-    childThree: {
-      border: "1px dashed red",
-      width: "calc(100% - 2rem)",
+    offsetMenuContainer: {
+      padding: "1rem",
+      border: "1px solid #ccc",
+      borderRadius: "8px",
+      backgroundColor: '#f8f9fa',
+      width: "calc(100% - 4rem)",
       margin: "1rem 1rem 1rem 1rem",
       display: "flex",
       flexDirection: "column",
       alignItems: "center"
     },
-    childFour: {
-      border: "1px dashed red",
+    elemContainer: {
       margin: "1rem"
     },
-    middleGrandchild: {
+    videoContainer: {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      border: "1px dotted green",
       margin: "1rem",
       width: "50%"
     },
-    grandchildThreeTop: {
-      border: "1px dotted green",
-      margin: "1rem"
-    },
-    grandchildThreeBottom: {
-      border: "1px dotted green",
+    buttonBarContainer: {
       width: "80%",
-      margin: "1rem",
       display: "flex",
       flexDirection: "row",
       justifyContent: "space-around",
     },
     button: {
-      border: "1px solid blue",
       margin: "1rem",
       width: "20%",
       display: "flex",
@@ -129,7 +128,7 @@ export default function SidebySide() {
     handleClearVr();
     handleClearAnim();
     setOffsetSeconds(0);
-    setStatus("");
+    setStatus("Ready.");
   };
 
   const isDisabled = !vrFile || !animFile;
@@ -166,7 +165,15 @@ export default function SidebySide() {
       }, delay * 1000);
     }
 
-    setStatus(`Previewing with offset ${off.toFixed(2)}s (animation vs VR).`);
+    if (off > 0) {
+      setStatus(`Previewing with offset of ${off.toFixed(2)}s (animation delayed).`);
+    }
+    else if (off < 0) {
+      setStatus(`Previewing with offset of ${off.toFixed(2)}s (user view delayed).`);
+    }
+    else if (off === 0) {
+      setStatus(`Previewing with offset of ${off.toFixed(2)}s.`);
+    }
   };
 
   const syncVideos = async () => {
@@ -194,14 +201,14 @@ export default function SidebySide() {
 
   return (
     <div id="parent-container" style={styles.parent}>
-      <div id="title-header" style={styles.childOne}>
+      <div id="title-header" style={styles.headerContainer}>
         <h3>Side by Side Tool</h3>
         <p>
           This tool aims to create a side by side video of the generated animation alongside the VR video captured during the experiment. Upload an animation video and its associated VR video, specify any offset in seconds (positive = animation delayed vs VR), and click "Create Synced Output" to generate a side by side video file.
         </p>
       </div>
-      <div id="video-container" style={styles.childTwo}>
-        <div id="left-video" style ={styles.middleGrandchild}>
+      <div id="video-container" style={styles.sideBySideContainer}>
+        <div id="left-video" style ={styles.videoContainer}>
           <video
             ref={vrVideoRef}
             src={vrSrc}
@@ -212,7 +219,7 @@ export default function SidebySide() {
           />
           <Button onClick={vrFile ? handleClearVr : pickVr} className="btn" buttonText={vrFile ? "Clear VR Video" : "Load VR Video"} />
         </div>
-        <div id="right-video" style={styles.middleGrandchild}>
+        <div id="right-video" style={styles.videoContainer}>
           <video
             ref={animVideoRef}
             src={animSrc}
@@ -224,8 +231,8 @@ export default function SidebySide() {
           <Button onClick={animFile ? handleClearAnim : pickAnim} className="btn" buttonText={animFile ? "Clear Animation Video" : "Load Animation Video"} />
         </div>
       </div>
-      <div id="offset-menu" style={styles.childThree}>
-          <div id="offset-input" style={styles.grandchildThreeTop}>
+      <div id="offset-menu" style={styles.offsetMenuContainer}>
+          <div id="offset-input" style={styles.elemContainer}>
             <label>
               {offsetStr}
               <input
@@ -238,7 +245,7 @@ export default function SidebySide() {
               />
             </label>
           </div>
-          <div id="button-bar" style={styles.grandchildThreeBottom}>
+          <div id="button-bar" style={styles.buttonBarContainer}>
             <div id="preview-button" style={styles.button}>
               <Button onClick={previewOffset} className="btn" buttonText="Preview Offset Only" disabled={isDisabled} />
             </div>
@@ -249,9 +256,9 @@ export default function SidebySide() {
               <Button onClick={clearSyncFiles} className="btn" buttonText="Clear Files" />
             </div>
           </div>
-      </div>
-      <div id="status-message" style={styles.childFour}>
-        {status && <p style={{ marginTop: "0.5rem" }}>{status}</p>}
+          <div id="status-message" style={styles.elemContainer}>
+            <p style={{ marginTop: "0.5rem" }}><strong>Status:  </strong>{status}</p>
+          </div>
       </div>
     </div>
   );
