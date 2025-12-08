@@ -37,16 +37,6 @@ export default function AnimationGenerator() {
       justifyContent: 'center',
       marginTop: '1rem'
     },
-    select: {
-      fontSize: '1rem',
-      color: '#000',
-      border: '1px solid #ccc',
-      borderRadius: '4px',
-      padding: '1rem',
-      backgroundColor: '#f9f9f9',
-      marginTop: '1rem',
-      width: 'fit-content'
-    },
     buttonInline: {
       display: 'inline-block'
     },
@@ -207,8 +197,8 @@ export default function AnimationGenerator() {
                 Please select a file to generate an animation.
               </label>
               <div style={styles.buttonContainer}>
-                <select name="fileSelect" defaultValue="none" style={styles.select}>
-                  <option disabled value="none">
+                <select name="fileSelect" defaultValue="none">
+                  <option disabled value="none" >
                     none
                   </option>
                   {files.map((file, index) => {

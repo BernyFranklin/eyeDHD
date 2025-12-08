@@ -209,6 +209,22 @@ input[type='file']::file-selector-button:hover {
   transition: transform 0.3s ease-in-out;
 }
 
+select {
+  font-size: 1rem;
+  color: #000;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  margin-top: 1rem;
+  width: 10rem;
+}
+select>option {
+  background-color: #eee;
+  color: #000;
+  border: 1px solid #111;
+}
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);

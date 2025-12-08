@@ -1,10 +1,91 @@
 import { useState, useRef } from "react";
+import Button from "./Button.jsx";
 
 export default function SidebySide() {
   const [vrFile, setVrFile] = useState("");
   const [animFile, setAnimFile] = useState("");
   const [offsetSeconds, setOffsetSeconds] = useState(0); //animation delay vs VR
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("Placeholder status messages here.");
+
+  const styles = {
+    parent: {
+      marginTop: "1rem",
+      width: "80%",
+      margin: "1rem auto",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      border: "1px solid #ccc",
+      textWrap: "wrap"
+    },
+    childOne: {
+      border: "1px dashed red",
+      margin: "1rem 1rem 0rem 1rem",
+    },
+    childTwo: {
+      border: "1px dashed red",
+      width: "calc(100% - 2rem)",
+      margin: "1rem 1rem 0rem 1rem",
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+
+    },
+    childThree: {
+      border: "1px dashed red",
+      width: "calc(100% - 2rem)",
+      margin: "1rem 1rem 1rem 1rem",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center"
+    },
+    childFour: {
+      border: "1px dashed red",
+      margin: "1rem"
+    },
+    middleGrandchild: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      border: "1px dotted green",
+      margin: "1rem",
+      width: "50%"
+    },
+    grandchildThreeTop: {
+      border: "1px dotted green",
+      margin: "1rem"
+    },
+    grandchildThreeBottom: {
+      border: "1px dotted green",
+      width: "80%",
+      margin: "1rem",
+      display: "flex",
+      flexDirection: "row",
+      justifyContent: "space-around",
+    },
+    button: {
+      border: "1px solid blue",
+      margin: "1rem",
+      width: "20%",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center"
+    },
+    textInput: {
+      backgroundColor: "#fff",
+      border: "1px solid #ccc",
+      borderRadius: "4px",
+      padding: "0.5rem",
+      fontSize: "1rem",
+      color: "#000",
+    }
+  }
+
+  // Video player dimesnions height and width
+  const vpw = 640;
+  const vph = 480;
+  // String var for offset
+  const offsetStr = "Offset (seconds, animation delayed vs VR):  ";
 
   const vrVideoRef = useRef(null);
   const animVideoRef = useRef(null);
@@ -23,21 +104,35 @@ export default function SidebySide() {
     if (file) setAnimFile(file);
   };
 
-   const clearSyncFiles = () => {
+  const handleClearVr = () => {
+    setVrFile(null);
+    // Force the video element to clear its content
     if (vrVideoRef.current) {
       vrVideoRef.current.pause();
-      vrVideoRef.current.currentTime = 0;
+      vrVideoRef.current.removeAttribute('src');
+      vrVideoRef.current.load(); // This forces the video to reset
     }
+  }
+
+  const handleClearAnim = () => {
+    setAnimFile(null);
+    // Force the video element to clear its content
     if (animVideoRef.current) {
       animVideoRef.current.pause();
-      animVideoRef.current.currentTime = 0;
+      animVideoRef.current.removeAttribute('src');
+      animVideoRef.current.load(); // This forces the video to reset
     }
+  }
 
-    setVrFile(null);
-    setAnimFile(null);
+  const clearSyncFiles = () => {
+    
+    handleClearVr();
+    handleClearAnim();
     setOffsetSeconds(0);
     setStatus("");
   };
+
+  const isDisabled = !vrFile || !animFile;
 
   // preview timing in the player BEFORE calling ffmpeg
   const previewOffset = () => {
@@ -98,85 +193,66 @@ export default function SidebySide() {
   };
 
   return (
-    <div
-      style={{
-        marginTop: "1rem",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center"
-      }}
-    >
-      <p><strong>Side by Side</strong></p>
-
-      {/* top load buttons */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
-        {!vrFile && <button onClick={pickVr}>Load VR Video</button>}
-        {!animFile && <button onClick={pickAnim}>Load Animation Video</button>}
+    <div id="parent-container" style={styles.parent}>
+      <div id="title-header" style={styles.childOne}>
+        <h3>Side by Side Tool</h3>
+        <p>
+          This tool aims to create a side by side video of the generated animation alongside the VR video captured during the experiment. Upload an animation video and its associated VR video, specify any offset in seconds (positive = animation delayed vs VR), and click "Create Synced Output" to generate a side by side video file.
+        </p>
       </div>
-
-      {/* centered video previews */}
-      {(vrFile || animFile) && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: "2rem",
-            marginBottom: "1rem"
-          }}
-        >
-          {vrFile && (
-            <div style={{ textAlign: "center" }}>
-              <video
-                ref={vrVideoRef}
-                src={vrSrc}
-                width={320}
-                controls
-                style={{ backgroundColor: "black", display: "block" }}
-              />
-              <button onClick={() => setVrFile(null)}>Clear VR</button>
-            </div>
-          )}
-
-          {animFile && (
-            <div style={{ textAlign: "center" }}>
-              <video
-                ref={animVideoRef}
-                src={animSrc}
-                width={320}
-                controls
-                style={{ backgroundColor: "black", display: "block" }}
-              />
-              <button onClick={() => setAnimFile(null)}>Clear Animation</button>
-            </div>
-          )}
+      <div id="video-container" style={styles.childTwo}>
+        <div id="left-video" style ={styles.middleGrandchild}>
+          <video
+            ref={vrVideoRef}
+            src={vrSrc}
+            width={vpw}
+            height={vph}
+            controls
+            style={{ backgroundColor: "black", display: "block" }}
+          />
+          <Button onClick={vrFile ? handleClearVr : pickVr} className="btn" buttonText={vrFile ? "Clear VR Video" : "Load VR Video"} />
         </div>
-      )}
-
-      {/* offset + sync controls only when both are loaded */}
-      {vrFile && animFile && (
-        <>
-          <div style={{ margin: "0.5rem 0" }}>
+        <div id="right-video" style={styles.middleGrandchild}>
+          <video
+            ref={animVideoRef}
+            src={animSrc}
+            width={vpw}
+            height={vph}
+            controls
+            style={{ backgroundColor: "black", display: "block" }}
+          />
+          <Button onClick={animFile ? handleClearAnim : pickAnim} className="btn" buttonText={animFile ? "Clear Animation Video" : "Load Animation Video"} />
+        </div>
+      </div>
+      <div id="offset-menu" style={styles.childThree}>
+          <div id="offset-input" style={styles.grandchildThreeTop}>
             <label>
-              Offset (seconds, animation delayed vs VR):{" "}
+              {offsetStr}
               <input
+                id="offset-input-field"
                 type="number"
                 step="0.1"
                 value={offsetSeconds}
                 onChange={(e) => setOffsetSeconds(e.target.value)}
-                style={{ width: "5rem" }}
+                style={styles.textInput}
               />
             </label>
           </div>
-
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button onClick={previewOffset}>Preview Offset Only</button>
-            <button onClick={syncVideos}>Create Synced Output</button>
-            <button onClick={clearSyncFiles}>Clear Files</button>
+          <div id="button-bar" style={styles.grandchildThreeBottom}>
+            <div id="preview-button" style={styles.button}>
+              <Button onClick={previewOffset} className="btn" buttonText="Preview Offset Only" disabled={isDisabled} />
+            </div>
+            <div id="export-sync-button" style={styles.button}>
+              <Button onClick={syncVideos} className="btn" buttonText="Create Synced Output" disabled={isDisabled} />
+            </div>
+            <div id="clear-files-button" style={styles.button}>
+              <Button onClick={clearSyncFiles} className="btn" buttonText="Clear Files" />
+            </div>
           </div>
-        </>
-      )}
-
-      {status && <p style={{ marginTop: "0.5rem" }}>{status}</p>}
+      </div>
+      <div id="status-message" style={styles.childFour}>
+        {status && <p style={{ marginTop: "0.5rem" }}>{status}</p>}
+      </div>
     </div>
   );
 
