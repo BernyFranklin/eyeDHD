@@ -2,11 +2,11 @@ import { useState, useRef } from "react";
 import Button from "./Button.jsx";
 
 export default function SidebySide() {
+  const defaultStatus = "Ready.";
   const [vrFile, setVrFile] = useState("");
   const [animFile, setAnimFile] = useState("");
   const [offsetSeconds, setOffsetSeconds] = useState(0); //animation delay vs VR
-  const [status, setStatus] = useState("Ready.");
-
+  const [status, setStatus] = useState(defaultStatus);
   const styles = {
     parent: {
       marginTop: "1rem",
@@ -128,7 +128,7 @@ export default function SidebySide() {
     handleClearVr();
     handleClearAnim();
     setOffsetSeconds(0);
-    setStatus("Ready.");
+    setStatus(defaultStatus);
   };
 
   const isDisabled = !vrFile || !animFile;
