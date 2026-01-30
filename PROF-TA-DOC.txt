@@ -1,0 +1,28 @@
+Test Case for our Saccade Detection feature 
+
+Saccades are rapid, ballistic eye movements that occur when the visual 
+system shifts focus from one point of interest to another. 
+	 
+In this project, saccades are extracted from processed eye-tracking data 
+using a velocity-based detection approach grounded in standard 
+eye-movement research. 
+	 
+Gaze direction is represented as a sequence of normalized 3D vectors, 
+and saccadic motion is identified by computing the angular change between 
+consecutive gaze samples. 
+	 
+This angular displacement is converted into angular velocity (degrees per 
+second) using the known sampling rate of the eye-tracking system. 
+	 
+Samples exceeding a configurable velocity threshold are classified as 
+saccadic, while lower-velocity samples are treated as fixations. 
+	 
+Consecutive saccadic samples are grouped into individual saccade events, 
+from which metrics such as duration, peak velocity, and movement 
+amplitude are derived. 
+	 
+Threshold values are intentionally parameterized to allow tuning based on 
+experimental context, with an initial default of approximately 40 degrees 
+per second, which is commonly used in VR eye-tracking studies to balance 
+sensitivity and noise rejection.
+
