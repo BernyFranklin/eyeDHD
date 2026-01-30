@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "electron/main.js",
+  "main": "electron/main.ts",
   "scripts": {
     "rebuild:electron": "npx electron-rebuild -f -w better-sqlite3",
     "dev": "npm run rebuild:electron && vite",

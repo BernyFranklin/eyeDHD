@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import LoadingOverlay from './LoadingOverlay';
-import AlertWindow from './AlertWindow';
-import AnimationContainer from './AnimationContainer';
-import ExportManager from './ExportManager';
-import Button from './Button';
+import LoadingOverlay from './LoadingOverlay.jsx';
+import AlertWindow from './AlertWindow.jsx';
+import AnimationContainer from './AnimationContainer.jsx';
+import ExportManager from './ExportManager.jsx';
+import Button from './Button.jsx';
 
 export default function AnimationGenerator() {
   const [csvData, setCsvData] = useState([]);
@@ -66,7 +66,7 @@ export default function AnimationGenerator() {
   const getFilesList = async () => {
     setIsLoading(true);
 
-    const files = await electron.csv.getFileList().catch(handleError);
+    const files = await window.electron.csv.getFileList().catch(handleError);
     if (error) return;
 
     const cleaned = files
@@ -86,7 +86,7 @@ export default function AnimationGenerator() {
     }
 
     // Request 200 more rows from the backend
-    const rows = await electron.csv.getBuffer(filename).catch(handleError);
+    const rows = await window.electron.csv.getBuffer(filename).catch(handleError);
     if (error) return;
 
     if (rows.length === 0) {
@@ -129,7 +129,7 @@ export default function AnimationGenerator() {
     const selected_file = data.get('fileSelect');
     if (selected_file === 'none') return;
 
-    await electron.csv.resetReadingProgress(selected_file).catch(handleError);
+    await window.electron.csv.resetReadingProgress(selected_file).catch(handleError);
 
     setFileName(selected_file);
     await loadMoreRows(selected_file);
@@ -146,7 +146,7 @@ export default function AnimationGenerator() {
 
     // Reset reading progress if we have a filename
     if (fileName) {
-      await electron.csv.resetReadingProgress(fileName).catch(handleError);
+      await window.electron.csv.resetReadingProgress(fileName).catch(handleError);
     }
 
     // Reset all state
@@ -198,7 +198,7 @@ export default function AnimationGenerator() {
               </label>
               <div style={styles.buttonContainer}>
                 <select name="fileSelect" defaultValue="none">
-                  <option disabled value="none" >
+                  <option disabled value="none">
                     none
                   </option>
                   {files.map((file, index) => {

@@ -1,20 +1,21 @@
 import { app, dialog, ipcMain, Notification } from 'electron';
+import type { Database } from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
 
-import { filesMap } from './store.js';
-import getDB from '../models/dbmgr.js';
-import { createMetadataTable } from '../models/tables/metadata.js';
-import { createRowTable, deleteRowTable } from '../models/tables/row.js';
-import metadataActions from '../models/actions/metadata.js';
-import rowActions from '../models/actions/row.js';
+import { filesMap } from './store.ts';
+import getDB from '../models/dbmgr.ts';
+import { createMetadataTable, type FileMetadata } from '../models/tables/metadata.ts';
+import { createRowTable, type CsvRow, deleteRowTable } from '../models/tables/row.ts';
+import metadataActions from '../models/actions/metadata.ts';
+import rowActions from '../models/actions/row.ts';
 import DataCleaner from './stuff/DataCleaner.js';
 
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 
-const FFMPEG_PATH = ffmpegPath;
+const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
 /*
  * Database setup
@@ -94,7 +95,16 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
   });
 });
 
-function cleanFile(original) {
+function readMetadata(db: Database, name: string): FileMetadata {
+  let metadata = metadataActions.read(db, name);
+  if (metadata === null) {
+    throw new Error(`File: ${name} has not been opened`);
+  }
+
+  return metadata;
+}
+
+function cleanFile(original: FileMetadata): Promise<void> {
   return new Promise(async (resolve, reject) => {
     let metadata = original;
 
@@ -122,7 +132,7 @@ function cleanFile(original) {
         return reject(`Failed to update metadata for file: ${metadata.name}`);
       }
 
-      metadata = metadataActions.read(db, metadata.name);
+      metadata = readMetadata(db, metadata.name);
     }
 
     while (buffer) {
@@ -144,7 +154,7 @@ function cleanFile(original) {
 
       buffer = await cleaner.getBuffer();
 
-      metadata = metadataActions.read(db, metadata.name);
+      metadata = readMetadata(db, metadata.name);
     }
 
     // Update file metadata to show cleaning has completed
@@ -183,7 +193,7 @@ ipcMain.handle('csv-get-file-list', async (_) => {
 });
 
 ipcMain.handle('csv-reset-reading-progress', async (_, filename) => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise<void>(async (resolve, reject) => {
     const metadata = metadataActions.read(db, filename);
     if (!metadata) {
       return reject(`File: ${filename} has not been opened`);
@@ -199,7 +209,7 @@ ipcMain.handle('csv-reset-reading-progress', async (_, filename) => {
 });
 
 ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
-  return new Promise(async (resolve, reject) => {
+  return new Promise<void>(async (resolve, reject) => {
     const metadata = metadataActions.read(db, filename);
     if (!metadata) {
       return reject(`File: ${filename} has not been opened`);
@@ -248,7 +258,10 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
   return getBuffer(filename);
 });
 
-async function getBuffer(filename, request_size_override = null) {
+async function getBuffer(
+  filename: string,
+  request_size_override: number | null = null
+): Promise<CsvRow[] | null> {
   return new Promise(async (resolve, reject) => {
     try {
       const metadata = metadataActions.read(db, filename);
@@ -259,11 +272,12 @@ async function getBuffer(filename, request_size_override = null) {
 
       let rows;
       if (request_size_override !== null) {
-        rows = await rowActions.read(db, { ...metadata,
+        rows = rowActions.read(db, {
+          ...metadata,
           request_size: request_size_override
         });
       } else {
-        rows = await rowActions.read(db, metadata);
+        rows = rowActions.read(db, metadata);
       }
 
       if (rows === undefined) {
@@ -306,7 +320,7 @@ ipcMain.handle('csv-clean-data', async (_, filename) => {
       });
 
       resolve({ success: true, message: 'Data cleaning initiated' });
-    } catch (error) {
+    } catch (error: any) {
       reject(`Failed to start cleaning for file: ${filename}. Error: ${error.message}`);
     }
   });
@@ -339,7 +353,7 @@ ipcMain.handle('csv-get-stats', async (_, filename) => {
         performance: performanceData,
         status: cleaner.status
       });
-    } catch (error) {
+    } catch (error: any) {
       reject(`Failed to get stats for file: ${filename}. Error: ${error.message}`);
     }
   });
@@ -366,7 +380,7 @@ ipcMain.handle('csv-get-progress', async (_, filename) => {
     try {
       const progress = cleaner.getProgress();
       resolve(progress);
-    } catch (error) {
+    } catch (error: any) {
       reject(`Failed to get progress for file: ${filename}. Error: ${error.message}`);
     }
   });
@@ -401,7 +415,7 @@ ipcMain.handle('csv-export-data', async (_, filename) => {
       // Export the cleaned data
       const result = await exportToCSV(filename, filePath);
       resolve(result);
-    } catch (error) {
+    } catch (error: any) {
       reject(`Failed to export file: ${filename}. Error: ${error.message}`);
     }
   });
@@ -444,13 +458,13 @@ ipcMain.handle('csv-save-file', async (_, options) => {
         filePath: filePath,
         message: `File saved to ${filePath}`
       });
-    } catch (error) {
+    } catch (error: any) {
       reject(`Failed to save file: ${error.message}`);
     }
   });
 });
 
-async function exportToCSV(filename, outputPath) {
+async function exportToCSV(filename: string, outputPath: string) {
   return new Promise(async (resolve, reject) => {
     try {
       let csvContent = '';
@@ -473,8 +487,8 @@ async function exportToCSV(filename, outputPath) {
         }
 
         for (const row of rows) {
-          Object.values(row).forEach(value => {
-            csvContent += (value + ',');
+          Object.values(row).forEach((value) => {
+            csvContent += value + ',';
           });
           csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
           exportedRows++;
@@ -488,7 +502,7 @@ async function exportToCSV(filename, outputPath) {
 
       stream.end();
 
-      console.log("export complete.")
+      console.log('export complete.');
 
       return resolve({
         success: true,
@@ -499,7 +513,7 @@ async function exportToCSV(filename, outputPath) {
           fileSize: csvContent.length
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       return resolve({
         success: false,
         message: `Failed to export CSV: ${error.message}`,
@@ -525,17 +539,17 @@ ipcMain.handle('csv-get-first-and-last', async (_, filename) => {
   });
 });
 
-ipcMain.handle("select-video-file", async () => {
-    const result = await dialog.showOpenDialog({
-        properties: ['openFile'],
-        filters: [{ name: 'Videos', extensions: ['mp4', 'mov', 'mkv', 'webm'] }]
-    });
+ipcMain.handle('select-video-file', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [{ name: 'Videos', extensions: ['mp4', 'mov', 'mkv', 'webm'] }]
+  });
 
-    if (result.canceled || result.filePaths.length === 0) return null;
-    return result.filePaths[0];
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
 });
 
-function SidebySide(vrFile, animFile, offsetSeconds) {
+function SidebySide(vrFile: any, animFile: any, offsetSeconds: number) {
   return new Promise((resolve, reject) => {
     const offset = Number(offsetSeconds);
 
@@ -545,14 +559,11 @@ function SidebySide(vrFile, animFile, offsetSeconds) {
 
     if (Number.isNaN(offset)) {
       // hard fail instead of silently using 0
-      return reject(new Error("invalid offsetSeconds passed into SidebySide"));
+      return reject(new Error('invalid offsetSeconds passed into SidebySide'));
     }
-    
+
     // synced file saved next to vr video
-    const outputPath = path.join(
-      path.dirname(vrFile),
-      `synced_${Date.now()}.mp4`
-    );
+    const outputPath = path.join(path.dirname(vrFile), `synced_${Date.now()}.mp4`);
 
     // safe file names for drawtext labels
     const vrName = path.basename(vrFile).replace(/'/g, "''");
@@ -578,39 +589,45 @@ function SidebySide(vrFile, animFile, offsetSeconds) {
     }
 
     const args = [
-      "-y",
-      "-i", vrFile,
-      "-i", animFile,
-      "-filter_complex", filter,
-      "-map", "[v]",
-      "-map", "0:a?",             // keep vr audio if it exists
-      "-c:v", "libx264",
-      "-c:a", "copy",
-      "-preset", "veryfast",
-      "-crf", "20",
+      '-y',
+      '-i',
+      vrFile,
+      '-i',
+      animFile,
+      '-filter_complex',
+      filter,
+      '-map',
+      '[v]',
+      '-map',
+      '0:a?', // keep vr audio if it exists
+      '-c:v',
+      'libx264',
+      '-c:a',
+      'copy',
+      '-preset',
+      'veryfast',
+      '-crf',
+      '20',
       outputPath
     ];
 
-    console.log("[ffmpeg sync] running:", FFMPEG_PATH, args.join(" "));
+    console.log('[ffmpeg sync] running:', FFMPEG_PATH, args.join(' '));
 
-    const ff = spawn(FFMPEG_PATH, args);
-    ff.stderr.on("data", d => console.log("[ffmpeg sync]", d.toString()));
+    const ff: any = spawn(FFMPEG_PATH, args);
+    ff.stderr.on('data', (d: any) => console.log('[ffmpeg sync]', d.toString()));
 
-    ff.on("close", code => {
+    ff.on('close', (code: number) => {
       if (code === 0) resolve(outputPath);
-      else reject(new Error("ffmpeg sync failed with code " + code));
+      else reject(new Error('ffmpeg sync failed with code ' + code));
     });
   });
 }
 
-ipcMain.handle(
-  "video-sync-vr",
-  async (_, { vrFile, animFile, offsetSeconds }) => {
-    // check what main gets from preload
-    console.log("main handler got offsetSeconds =", offsetSeconds);
-    return await SidebySide(vrFile, animFile, offsetSeconds);
-  }
-);
+ipcMain.handle('video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }) => {
+  // check what main gets from preload
+  console.log('main handler got offsetSeconds =', offsetSeconds);
+  return await SidebySide(vrFile, animFile, offsetSeconds);
+});
 
 /**
  * Animation Export Handlers
@@ -627,11 +644,11 @@ ipcMain.handle('animation-export-init', async (_, options) => {
     try {
       const sessionId = Date.now().toString();
       const { fileName, exportFormat = 'webm', quality = 'high' } = options;
-      
+
       // Show save dialog
       let fileExtension;
       let filterName;
-      
+
       if (exportFormat === 'zip') {
         fileExtension = 'zip';
         filterName = 'Image Sequence';
@@ -645,10 +662,11 @@ ipcMain.handle('animation-export-init', async (_, options) => {
 
       const { canceled, filePath } = await dialog.showSaveDialog({
         title: 'Export Animation',
-        defaultPath: path.join(os.homedir(), `${path.parse(fileName).name}_animation.${fileExtension}`),
-        filters: [
-          { name: filterName, extensions: [fileExtension] }
-        ]
+        defaultPath: path.join(
+          os.homedir(),
+          `${path.parse(fileName).name}_animation.${fileExtension}`
+        ),
+        filters: [{ name: filterName, extensions: [fileExtension] }]
       });
 
       if (canceled || !filePath) {
@@ -670,9 +688,9 @@ ipcMain.handle('animation-export-init', async (_, options) => {
       };
 
       exportSessions.set(sessionId, session);
-      
+
       resolve({ success: true, sessionId, outputPath: filePath });
-    } catch (error) {
+    } catch (error: any) {
       reject(`Failed to initialize export: ${error.message}`);
     }
   });
@@ -692,7 +710,7 @@ ipcMain.handle('animation-export-add-frame', async (_, sessionId, frameData) => 
       // Convert base64 data URL to buffer
       const base64Data = frameData.frameData.replace(/^data:image\/png;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
-      
+
       // Store frame data with proper timestamp
       session.frames.push({
         index: frameData.frameIndex,
@@ -704,7 +722,7 @@ ipcMain.handle('animation-export-add-frame', async (_, sessionId, frameData) => 
       session.status = 'collecting';
 
       resolve({ success: true, frameCount: session.frames.length });
-    } catch (error) {
+    } catch (error: any) {
       reject(`Failed to add frame: ${error.message}`);
     }
   });
@@ -725,7 +743,7 @@ ipcMain.handle('animation-export-finalize', async (_, sessionId) => {
       session.totalFrames = session.frames.length;
 
       // Sort frames by index to ensure proper order
-      session.frames.sort((a, b) => a.index - b.index);
+      session.frames.sort((a: any, b: any) => a.index - b.index);
 
       if (session.exportFormat === 'zip') {
         // Export as image sequence
@@ -749,7 +767,7 @@ ipcMain.handle('animation-export-finalize', async (_, sessionId) => {
       exportSessions.delete(sessionId);
 
       resolve(result);
-    } catch (error) {
+    } catch (error: any) {
       const session = exportSessions.get(sessionId);
       if (session) {
         session.status = 'error';
@@ -774,7 +792,10 @@ ipcMain.handle('animation-export-progress', async (_, sessionId) => {
       status: session.status,
       processedFrames: session.processedFrames,
       totalFrames: session.totalFrames,
-      progress: session.totalFrames > 0 ? (session.processedFrames / session.totalFrames) * 100 : 0
+      progress:
+        session.totalFrames > 0
+          ? (session.processedFrames / session.totalFrames) * 100
+          : 0
     });
   });
 });
@@ -794,10 +815,10 @@ ipcMain.handle('animation-export-cancel', async (_, sessionId) => {
 });
 
 // Helper function to export as image sequence (ZIP)
-async function exportImageSequence(session) {
+async function exportImageSequence(session: any) {
   const JSZip = await import('jszip');
   const zip = new JSZip.default();
-  
+
   // Add each frame as PNG to zip with proper naming
   for (const frame of session.frames) {
     const paddedIndex = frame.index.toString().padStart(8, '0');
@@ -820,7 +841,7 @@ async function exportImageSequence(session) {
 }
 
 // Helper function to use browser MediaRecorder approach
-async function exportUsingMediaRecorder(session) {
+async function exportUsingMediaRecorder(session: any) {
   // Since we can't easily recreate MediaRecorder on the backend,
   // let's create a simple WebM file using the frames
   // For now, fall back to image sequence if WebM was requested

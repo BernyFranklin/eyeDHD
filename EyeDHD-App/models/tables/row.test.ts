@@ -13,9 +13,11 @@ test.concurrent('csv table create', async ({ expect }) => {
 
   // Check whether csv data table is created
   const table = db
-    .prepare(`
+    .prepare(
+      `
       SELECT name FROM sqlite_master WHERE type='table' AND name=?;
-    `)
+    `
+    )
     .get(toTableName(file.name));
 
   expect(table).toStrictEqual({ name: toTableName(file.name) });

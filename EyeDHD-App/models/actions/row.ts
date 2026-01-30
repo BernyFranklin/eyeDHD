@@ -1,8 +1,10 @@
-import { toTableName } from '../tables/row.js';
+import type { Database } from 'better-sqlite3';
+import { toTableName, type CsvRow } from '../tables/row.ts';
+import type { FileMetadata } from '../tables/metadata.ts';
 
 export default { create, read, readAll, firstAndLast };
 
-function create(db, file, rows) {
+function create(db: Database, file: FileMetadata, rows: number) {
   try {
     const table = toTableName(file.name);
     const insert = db.prepare(`
@@ -102,7 +104,7 @@ function create(db, file, rows) {
           insert.run(row);
         } catch (err) {
           // If error is that the Frame primary key already exists continue
-          if (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
+          if ((err as any).code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
             console.warn(
               `Frame ${row.Frame} already exists in table ${table}. Skipping insert.`
             );
@@ -124,14 +126,16 @@ function create(db, file, rows) {
   }
 }
 
-function read(db, file) {
+function read(db: Database, file: FileMetadata): CsvRow[] | undefined {
   try {
     const table = toTableName(file.name);
     const rows = db
-      .prepare(`
+      .prepare<[number, number], CsvRow>(
+        `
         SELECT * FROM ${table}
 			  LIMIT ? OFFSET ?;
-			`)
+			`
+      )
       .all(file.request_size, file.requested);
 
     return rows;
@@ -142,13 +146,15 @@ function read(db, file) {
   }
 }
 
-function readAll(db, file) {
+function readAll(db: Database, file: FileMetadata) {
   try {
     const table = toTableName(file.name);
     const rows = db
-      .prepare(`
+      .prepare(
+        `
         SELECT * FROM ${table};
-      `)
+      `
+      )
       .all();
 
     return rows;
@@ -159,22 +165,26 @@ function readAll(db, file) {
   }
 }
 
-function firstAndLast(db, file) {
+function firstAndLast(db: Database, file: FileMetadata) {
   try {
     const table = toTableName(file.name);
 
     const first = db
-      .prepare(`
+      .prepare(
+        `
         SELECT * FROM ${table}
         WHERE frame = ?;
-      `)
+      `
+      )
       .get(file.first_frame);
 
     const last = db
-      .prepare(`
+      .prepare(
+        `
         SELECT * FROM ${table}
 			  WHERE frame = ?;
-			`)
+			`
+      )
       .get(file.last_frame);
 
     return { first, last };
