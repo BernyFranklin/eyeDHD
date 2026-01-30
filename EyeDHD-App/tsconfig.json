@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "allowJs": true,
+    "incremental": true,
+    "baseUrl": ".",
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src", "electron", "vite-env.d.ts", "src/types/**/*.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

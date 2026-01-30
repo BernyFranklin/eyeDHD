@@ -1,18 +1,30 @@
+import type { Database } from 'better-sqlite3';
+import type { FileMetadata } from '../tables/metadata.ts';
+
 export default { create, read, readAll, update, remove };
 
-function create(db, filename, filepath, request_size) {
+function create(
+  db: Database,
+  filename: string,
+  filepath: string,
+  request_size: number
+): FileMetadata | null {
   try {
     const result = db
-      .prepare(`
+      .prepare<[string, string, number], FileMetadata>(
+        `
   			INSERT INTO metadata (name, path, request_size)
   			VALUES (?, ?, ?);
-  		`)
+  		`
+      )
       .run(filename, filepath, request_size);
 
     const file = db
-      .prepare(`
+      .prepare<any, FileMetadata>(
+        `
         SELECT * FROM metadata WHERE id = ?;
-			`)
+			`
+      )
       .get(result.lastInsertRowid);
 
     if (!file) {
@@ -27,12 +39,14 @@ function create(db, filename, filepath, request_size) {
   }
 }
 
-function read(db, filename) {
+function read(db: Database, filename: string): FileMetadata | null {
   try {
     const file = db
-      .prepare(`
+      .prepare<string, FileMetadata>(
+        `
         SELECT * FROM metadata WHERE name = ?;
-			`)
+			`
+      )
       .get(filename);
 
     if (!file) {
@@ -47,12 +61,14 @@ function read(db, filename) {
   }
 }
 
-function readAll(db) {
+function readAll(db: Database): FileMetadata[] | null {
   try {
     const files = db
-      .prepare(`
+      .prepare<[], FileMetadata>(
+        `
         SELECT * FROM metadata;
-			`)
+			`
+      )
       .all();
 
     return files;
@@ -63,10 +79,11 @@ function readAll(db) {
   }
 }
 
-function update(db, file) {
+function update(db: Database, file: FileMetadata): boolean {
   try {
     const result = db
-      .prepare(`
+      .prepare(
+        `
         UPDATE metadata
 			  SET
 					request_size = @request_size,
@@ -78,7 +95,8 @@ function update(db, file) {
 				  last_frame = @last_frame,
 				  updated_at = CURRENT_TIMESTAMP
 				WHERE id = @id;
-			`)
+			`
+      )
       .run(file);
 
     if (!result.changes) {
@@ -93,15 +111,20 @@ function update(db, file) {
   }
 }
 
-function remove(db, file) {
+function remove(db: Database, file: FileMetadata): FileMetadata | null {
   try {
     const original = read(db, file.name);
+    if (original === null) {
+      throw new Error(`File entry not found for deletion: ${file.name}`);
+    }
 
     const result = db
-      .prepare(`
+      .prepare(
+        `
         DELETE FROM metadata
 			  WHERE id = ?
-			`)
+			`
+      )
       .run(original.id);
 
     if (!result.changes) {

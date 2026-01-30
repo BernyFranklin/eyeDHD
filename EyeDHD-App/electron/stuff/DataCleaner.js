@@ -1,8 +1,8 @@
 import fs from 'fs';
 import rl from 'readline';
 
-import metadataActions from '../../models/actions/metadata.js';
-import { sleep } from '../utils.js';
+import metadataActions from '../../models/actions/metadata.ts';
+import { sleep } from '../utils.ts';
 
 /**
  * Reads and cleans a CSV file at the given path. Cleans data lazyily,

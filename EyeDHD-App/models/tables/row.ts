@@ -1,20 +1,70 @@
+import type { Database } from 'better-sqlite3';
+
 // Converts filename into table name
 // ID.011.csv -> ID_011_csv_rows
-export function toTableName(filename) {
+export function toTableName(filename: string) {
   // Replace '.' with '_' in filename
   const name = filename.replace(/\./g, '_');
   return `${name}_rows`;
 }
 
-export function deleteRowTable(db, filename) {
-  db.prepare(`
+export type CsvRow = {
+  Frame: number;
+  CaptureTime: number;
+  LogTime: number;
+  HMDPositionX: number;
+  HMDPositionY: number;
+  HMDPositionz: number;
+  HMDRotationX: number;
+  HMDRotationY: number;
+  HMDRotationZ: number;
+  HMDRotationHuh: number;
+  GazeStatus: string;
+  CombinedGazeForwardX: number;
+  CombinedGazeForwardY: number;
+  CombinedGazeForwardZ: number;
+  CombinedGazePositionX: number;
+  CombinedGazePositionY: number;
+  CombinedGazePositionZ: number;
+  InterPupillaryDistanceInMM: number;
+  LeftEyeStatus: string;
+  LeftEyeForwardX: number;
+  LeftEyeForwardY: number;
+  LeftEyeForwardZ: number;
+  LeftEyePositionX: number;
+  LeftEyePositionY: number;
+  LeftEyePositionZ: number;
+  LeftPupilIrisDiameterRatio: number;
+  LeftPupilDiameterInMM: number;
+  LeftIrisDiameterInMM: number;
+  LeftEyeOpenness: number;
+  RightEyeStatus: string;
+  RightEyeForwardX: number;
+  RightEyeForwardY: number;
+  RightEyeForwardZ: number;
+  RightEyePositionX: number;
+  RightEyePositionY: number;
+  RightEyePositionZ: number;
+  RightPupilIrisDiameterRatio: number;
+  RightPupilDiameterInMM: number;
+  RightIrisDiameterInMM: number;
+  RightEyeOpenness: number;
+  FocusDistance: number;
+  FocusStability: number;
+};
+
+export function deleteRowTable(db: Database, filename: string) {
+  db.prepare(
+    `
     DROP TABLE IF EXISTS ${toTableName(filename)};
-  `).run();
+  `
+  ).run();
 }
 
 // Creates a new table for storing cleaned CSV data
-export function createRowTable(db, filename) {
-  db.prepare(`
+export function createRowTable(db: Database, filename: string) {
+  db.prepare(
+    `
     CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
       Frame INTEGER PRIMARY KEY NOT NULL,
       CaptureTime INTEGER DEFAULT 0,
@@ -59,5 +109,6 @@ export function createRowTable(db, filename) {
       FocusDistance REAL DEFAULT 0,
       FocusStability REAL DEFAULT 0
     );
-  `).run();
+  `
+  ).run();
 }
