@@ -1,16 +1,17 @@
 TO-DO
+X = DONE
 
-Make a directory for saccades
+X Make a directory for saccades
 
 Create and implement these files:
 	index.js     (API)
-	velocity.js  (Angular Velocity Math)
+  X velocity.js  (Angular Velocity Math)
 	detection.js (Threshold and grouping logic)
 	metrics.js   (Amplitude, duration, peak velocity)
 	
 Create tests:
 	index.js
-	velocity.js
+  X velocity.js
 		Zero movement => 0 deg/sec 
 		Purpose: Baseline
 			Input vectors
@@ -66,7 +67,7 @@ Create tests:
     detection.js
 	metrics.js
 
-Add a README for reference:
+X Add a README for reference:
 	"Saccades are rapid, ballistic eye movements that occur when the visual 
 	 system shifts focus from one point of interest to another. 
 	 
