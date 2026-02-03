@@ -22,8 +22,21 @@ export interface SaccadeEventExtended extends SaccadeEvent {
 }
 
 export interface SaccadeDetectionOptions {
-    samplingrate: number;                   // Sampling rate in Hz
+    samplingRate: number;                   // Sampling rate in Hz
     velocityThresholdDegPerSec: number ;    // Velocity threshold for saccade detection in degrees per second
     minDurationMs: number;                  // Minimum duration of a saccade in milliseconds
     maxDurationMs: number;                  // Maximum duration of a saccade in milliseconds
+    includeExtended: boolean;               // Whether to include extended saccade data
 }
+
+// Default params for saccade detection
+// Tuned for Varjo headset at 200 Hz
+export const DEFAULT_SACCADE_OPTIONS: Omit<
+    SaccadeDetectionOptions,
+    "samplingRate"
+    > = {
+        velocityThresholdDegPerSec: 100,
+        minDurationMs: 10,
+        maxDurationMs: 150,
+        includeExtended: true,
+    };
