@@ -36,7 +36,7 @@ used in VR eye-tracking studies to balance sensitivity and
 noise rejection.
 
 //-----------------------------------------------------------
-// Step 1
+// Step 1 Calculating velocities
 //-----------------------------------------------------------
 First we need to create a module for calculating angular 
 velocities (velocities.ts) and the following tests 
