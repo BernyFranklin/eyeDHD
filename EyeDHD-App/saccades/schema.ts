@@ -1,5 +1,7 @@
 import type { Vec3 } from './velocities';
 
+export const DEFAULT_SAMPLING_RATE_HZ = 200;    // Default for Varjo headset
+
 // Schema for saccade detection parameters
 export interface SaccadeEvent {
     startIndex: number;                     // Index of the start of the saccade in the data array
@@ -31,10 +33,8 @@ export interface SaccadeDetectionOptions {
 
 // Default params for saccade detection
 // Tuned for Varjo headset at 200 Hz
-export const DEFAULT_SACCADE_OPTIONS: Omit<
-    SaccadeDetectionOptions,
-    "samplingRate"
-    > = {
+export const DEFAULT_SACCADE_OPTIONS: SaccadeDetectionOptions = {
+        samplingRate: DEFAULT_SAMPLING_RATE_HZ,
         velocityThresholdDegPerSec: 100,
         minDurationMs: 10,
         maxDurationMs: 150,
