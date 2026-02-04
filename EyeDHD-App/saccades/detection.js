@@ -12,10 +12,10 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.detectSaccadesFromVectors = detectSaccadesFromVectors;
-var schema_1 = require("./schema");
+var schema_ts_1 = require("./schema.ts");
 function detectSaccadesFromVectors(vectors, options) {
     // Merge user options with defaults
-    var opts = __assign(__assign({}, schema_1.DEFAULT_SACCADE_OPTIONS), options);
+    var opts = __assign(__assign({}, schema_ts_1.DEFAULT_SACCADE_OPTIONS), options);
     // Used to suppress unused variable warning: remove later
     console.log("Saccade detection options:", opts);
     // Temp stub implementation

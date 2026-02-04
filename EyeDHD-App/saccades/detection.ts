@@ -1,10 +1,10 @@
-import type { Vec3 } from "./velocities";
+import type { Vec3 } from "./velocities.js";
 import type {
     SaccadeEvent,
     SaccadeEventExtended,
     SaccadeDetectionOptions,
-} from "./schema";
-import { DEFAULT_SACCADE_OPTIONS } from "./schema";
+} from "./schema.js";
+import { DEFAULT_SACCADE_OPTIONS } from "./schema.js";
 
 export interface DetectSaccadeResult {
     velocitiesDegPerSec: number [];

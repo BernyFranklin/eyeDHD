@@ -1,4 +1,4 @@
-import type { Vec3 } from './velocities';
+import type { Vec3 } from './velocities.ts';
 
 export const DEFAULT_SAMPLING_RATE_HZ = 200;    // Default for Varjo headset
 

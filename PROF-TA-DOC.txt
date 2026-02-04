@@ -93,3 +93,75 @@ Constant rotation each frame => constant velocity
             0 deg, 1 deg, 2 deg, 3 deg, rotations in XY plane (each step is 1 deg)
         Expected
             each step velocity = 200 deg/sec
+
+//-----------------------------------------------------------
+// Step 2: Saccade Detection
+//-----------------------------------------------------------
+
+Saccade schema and interfaces for detection (schema.ts)
+Saccade detection logic (detextion.ts)
+Test file (detection.test.ts)
+
+Returning Array with expected length 
+    Purpose: Ensures result array is same length as original
+        Input
+            vectors[]
+        Expected
+            result.length == vectors.length 
+
+No saccades when velocities stay below threshold
+    Purpose: make sure we only detect saccades above threshold.
+        Input
+            vectors[] = [
+                vectors with 0.1-0.4 degree values
+                each jump is less than our threshold 
+            ]
+        Expected 
+            result.length == 0
+
+Detects a single saccade burst above threshold and compute metrics
+    Purpose: Make sure we detect a saccade and log the data accordingly
+        Input
+            vectors[] = [
+                vectors with a few jumps above the minimum threshold 
+            ]
+        Expected
+            result.length == 1
+            saccade.startIndex == 3
+            saccade.endIndex == 5
+            saccade.durationSec =~ 0.01
+            saccade.peakVelocityDegPerSec =~ 200
+            saccade.meanVelocityDegPerSec =~ 200
+            saccade.amplitudeDeg =~ 3
+            result.saccadesExtended.length == 1
+            result.saccadesExtended[0].startVector == true
+            result.saccadesExtened[0].endVector == true
+
+Rejects events shorter than minDurationMs
+    Purpose: Doesn't log insignificant values 
+        Input
+            vectors[] = [
+                vectors with minimal movements
+            ]
+        Expected
+            result.saccades.length == 0
+            result.saccadesExtended.length == 0
+
+Splits into two saccades when separated by a below-threshold gap
+    Purpose: Detect and log multiple saccades
+        Input
+            vectors[] = [
+                vectors with distinct saccades separated by a gap
+            ]
+        Expected
+            result.saccades.length == 2
+            result.saccadesExtended.length == 2
+
+includeExtended: false returns no extended data
+    Purpose: Return data that was requested => base no extensions
+        Input
+            vectors[]
+            includeExtended flag set to false 
+        Expected    
+            result.saccades.length == 1
+            result.saccadesExtended.length = 0
