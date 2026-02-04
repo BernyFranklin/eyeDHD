@@ -19,6 +19,9 @@ export default function HomePage({ setCurrent }) {
   const handleSideBySideViewerClick = () => {
     setCurrent(3);
   };
+  const handleVisualizationClick = () => {
+    setCurrent(4);
+  };
 
   return (
     <div>
@@ -34,6 +37,13 @@ export default function HomePage({ setCurrent }) {
         <a className="card-link" onClick={handleSideBySideViewerClick}>
           <DoubleCard
             title="Side-by-side Viewer"
+            img1="../images/file-video-solid-full.svg"
+            img2="../images/eye-solid-full.svg"
+          />
+        </a>
+        <a className="card-link" onClick={handleVisualizationClick}>
+          <DoubleCard
+            title="Visualization"
             img1="../images/file-video-solid-full.svg"
             img2="../images/eye-solid-full.svg"
           />

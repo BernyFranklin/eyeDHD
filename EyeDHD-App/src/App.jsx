@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import './App.css'
-import HomePage from './components/HomePage.jsx'
-import CsvFileImport from './components/CsvFileImport.jsx'
-import AnimationGenerator from './components/AnimationGenerator.jsx'
-import LoadingOverlay from './components/LoadingOverlay.jsx'
-import Navbar from './components/Navbar.jsx'
-import SidebySide from './components/SidebySide'
+import { useState } from 'react';
+import './App.css';
+import HomePage from './components/HomePage.jsx';
+import CsvFileImport from './components/CsvFileImport.jsx';
+import AnimationGenerator from './components/AnimationGenerator.jsx';
+import { Visualization } from './components/visualization';
+import LoadingOverlay from './components/LoadingOverlay.jsx';
+import Navbar from './components/Navbar.jsx';
+import SidebySide from './components/SidebySide';
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +19,8 @@ function App() {
       setButtonsDisabled={setButtonsDisabled}
     />,
     <AnimationGenerator />,
-    <SidebySide />
+    <SidebySide />,
+    <Visualization />
   ];
   return (
     <>

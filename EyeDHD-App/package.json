@@ -19,6 +19,7 @@
     "@ffmpeg/util": "^0.12.2",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
+    "@types/better-sqlite3": "^7.6.13",
     "better-sqlite3": "^12.4.1",
     "csv": "^6.4.1",
     "express": "^5.1.0",
@@ -28,6 +29,7 @@
     "papaparse": "^5.5.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "recharts": "^3.7.0",
     "three": "^0.180.0"
   },
   "devDependencies": {

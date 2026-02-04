@@ -46,6 +46,10 @@ export default function Navbar({ current, setCurrent, buttonsDisabled }) {
     if (buttonsDisabled) return;
     setCurrent(3);
   };
+  const handleVisualizationClick = () => {
+    if (buttonsDisabled) return;
+    setCurrent(4);
+  };
 
   return (
     <nav className="navbar" style={navbarStyles}>
@@ -88,6 +92,15 @@ export default function Navbar({ current, setCurrent, buttonsDisabled }) {
                 <img
                   src="./images/eye-solid-full.svg"
                   alt="Side-by-Side Viewer"
+                  style={imgStyles}
+                />
+              </a>
+            </div>
+            <div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
+              <a onClick={handleVisualizationClick} className="home-link">
+                <img
+                  src="./images/eye-solid-full.svg"
+                  alt="Visualization"
                   style={imgStyles}
                 />
               </a>
