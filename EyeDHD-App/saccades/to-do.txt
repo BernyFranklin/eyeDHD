@@ -6,91 +6,13 @@ X Make a directory for saccades
 Create and implement these files:
 	index.js     (API)
   X velocity.js  (Angular Velocity Math)
-	detection.js (Threshold and grouping logic)
+  X detection.js (Threshold and grouping logic)
 	metrics.js   (Amplitude, duration, peak velocity)
 	
 Create tests:
 	index.js
   X velocity.js
-		Zero movement => 0 deg/sec 
-		Purpose: Baseline
-			Input vectors
-				v0 = (1,0,0)
-				v1 = (1,0,0)
-			Expected
-				angle = 0
-				velocity = 0 deg/sec
-			Assertion
-				velocity[1] === 0
-		Known 90 deg change in one frame => 18,000 deg/sec at 200hz
-		Purpose: check acos, dot, degree conversion
-			Input
-				v0 = (1,0,0)
-				v1 = (0,1,0)
-				Dot = 0 -> angle = 90 deg
-			Expected
-				velocity = 90 / 0.005 = 18000 deg/sec 
-			Assertion: close to 18000
-		Known 60 deg change => 12,000 deg/sec 
-		Purpose: another known angle
-			Input
-				v0 = (1,0,0)
-				v1 = (0.5, sqrt(3)/2, 0)    // 60 deg 
-				Dot = 0.5 -> angle = 60
-			Expected
-				velocity = 60/0.005 = 12000 deg/sec
-		Tiny change (micro movement) => small but non-zero velocity
-		Purpose: floating-point stability
-			Input
-				v0 = (1,0,0)
-				v1 = (cos(1 deg), sin(1 deg), 0)
-				Angle = 1 deg 
-			Expected
-				velocity = 1 / 0.005 = 200 deg/sec
-			Assertion: close to 200 with epsilon (+- 0.5)
-			
-		Multi-sample output length + first element convention
-		Purpose: define output shape
-			Input
-				3 samples (v0, v1, v2)
-			Expected
-				Same as samples length (with vel[0] = 0 or null)
-				or
-				length = samples length -1 (velocities between samples)
-		Constant rotation each frame => constant velocity
-		Purpose: validates consistent computation across list.
-			Input 
-				0 deg, 1 deg, 2 deg, 3 deg, rotations in XY plane (each step is 1 deg)
-			Expected
-				each step velocity = 200 deg/sec
-			
-    detection.js
+  x detection.js
 	metrics.js
 
-X Add a README for reference:
-	"Saccades are rapid, ballistic eye movements that occur when the visual 
-	 system shifts focus from one point of interest to another. 
-	 
-	 In this project, saccades are extracted from processed eye-tracking data 
-	 using a velocity-based detection approach grounded in standard 
-	 eye-movement research. 
-	 
-	 Gaze direction is represented as a sequence of normalized 3D vectors, 
-	 and saccadic motion is identified by computing the angular change between 
-	 consecutive gaze samples. 
-	 
-	 This angular displacement is converted into angular velocity (degrees per 
-	 second) using the known sampling rate of the eye-tracking system. 
-	 
-	 Samples exceeding a configurable velocity threshold are classified as 
-	 saccadic, while lower-velocity samples are treated as fixations. 
-	 
-	 Consecutive saccadic samples are grouped into individual saccade events, 
-	 from which metrics such as duration, peak velocity, and movement 
-	 amplitude are derived. 
-	 
-	 Threshold values are intentionally parameterized to allow tuning based on 
-	 experimental context, with an initial default of approximately 40 degrees 
-	 per second, which is commonly used in VR eye-tracking studies to balance 
-	 sensitivity and noise rejection."
-	 
+X Add a README for reference
