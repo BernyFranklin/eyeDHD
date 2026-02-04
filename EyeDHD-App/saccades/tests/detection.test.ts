@@ -108,13 +108,17 @@ describe('Saccade Detection', () => {
         const vectors: Vec3[] = [
             makeUnitVecXY(0),
             makeUnitVecXY(0),
+            // Burst 1
             makeUnitVecXY(1),
             makeUnitVecXY(2),
-            makeUnitVecXY(2),   // gap
-            makeUnitVecXY(2),
+            makeUnitVecXY(3), 
+            // Gap  
             makeUnitVecXY(3),
+            // Burst 2
             makeUnitVecXY(4),
-            makeUnitVecXY(4),
+            makeUnitVecXY(5),
+            makeUnitVecXY(6),
+            makeUnitVecXY(6),
         ];
 
         const result = detectSaccadesFromVectors(vectors, defaultThresholds);
