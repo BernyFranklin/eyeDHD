@@ -137,7 +137,10 @@ describe('Saccade Detection', () => {
             makeUnitVecXY(3),
         ];
 
-        const result = detectSaccadesFromVectors(vectors, defaultThresholds);
+        const result = detectSaccadesFromVectors(vectors, {
+            ...defaultThresholds,
+            includeExtended: false,
+        });
 
         expect(result.saccades.length).toBe(1);
         expect(result.saccadesExtended.length).toBe(0);
