@@ -78,7 +78,7 @@ describe('Saccade Detection', () => {
         expect(saccade.endIndex).toBe(5);
         // Duration = (end - start) * dt, dt = 1/200 = 0.005 sec
         // (5-3) * 0.005 = 0.01s => 10ms
-        expect(saccade.durationSec).toBeCloseTo(0.01, 6);
+        expect(saccade.durationMs).toBeCloseTo(10, 6);
         // Amplitudes
         expect(saccade.peakVelocityDegPerSec).toBeCloseTo(200, 3);
         expect(saccade.meanVelocityDegPerSec).toBeCloseTo(200, 3);

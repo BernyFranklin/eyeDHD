@@ -27,7 +27,7 @@ function findAboveThresholdIntervals(
         // Check if current sample is above threshold
         const isSaccadeSample = velocities[i] >= threshold;
 
-        if (isSaccadeSample && start !== null) {
+        if (isSaccadeSample && start == null) {
             start = i;  // Mark start of new interval
         }
         else if (!isSaccadeSample && start !== null){
@@ -87,7 +87,7 @@ function buildSaccadeEvent(
         endIndex,
         startTimeSec,
         endTimeSec,
-        durationSec: durationMs / 1000,
+        durationMs,
         peakVelocityDegPerSec: peak,
         meanVelocityDegPerSec: mean,
         amplitudeDeg,

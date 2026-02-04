@@ -9,7 +9,7 @@ export interface SaccadeEvent {
 
     startTimeSec: number;                   // Time in seconds at the start of the saccade
     endTimeSec: number;                     // Time in seconds at the end of the saccade
-    durationSec: number;                    // Duration of the saccade in seconds
+    durationMs: number;                    // Duration of the saccade in seconds
 
     peakVelocityDegPerSec: number;          // Peak angular velocity during the saccade in degrees per second
     meanVelocityDegPerSec: number;          // Mean angular velocity during the saccade in degrees per second
