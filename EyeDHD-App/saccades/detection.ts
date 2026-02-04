@@ -1,10 +1,11 @@
-import type { Vec3 } from "./velocities.js";
+import type { Vec3 } from "./velocities.ts";
 import type {
     SaccadeEvent,
     SaccadeEventExtended,
     SaccadeDetectionOptions,
-} from "./schema.js";
-import { DEFAULT_SACCADE_OPTIONS } from "./schema.js";
+} from "./schema";
+import { DEFAULT_SACCADE_OPTIONS } from "./schema";
+import { computeAngularVelocitiesDegPerSec } from "./velocities";
 
 export interface DetectSaccadeResult {
     velocitiesDegPerSec: number [];
@@ -21,12 +22,14 @@ export function detectSaccadesFromVectors(
         ...DEFAULT_SACCADE_OPTIONS,
         ...options,
     };
-    // Used to suppress unused variable warning: remove later
-    console.log("Saccade detection options:", opts);
 
-    // Temp stub implementation
+    const velocitiesDegPerSec = computeAngularVelocitiesDegPerSec(
+        vectors,
+        opts.samplingRate
+    );
+
     return {
-        velocitiesDegPerSec: new Array(vectors.length).fill(0),
+        velocitiesDegPerSec,
         saccades: [],
         saccadesExtended: [],
     };
