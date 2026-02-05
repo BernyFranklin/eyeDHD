@@ -18,3 +18,230 @@ Create tests:
 X Add a README for reference
 
 //-----------------------------------------------------------
+Phase 3: metrics.ts — tests-first spec
+Assumed inputs
+
+saccades: SaccadeEvent[] (already detected; metrics never re-detects)
+
+options?: MetricOptions
+
+segments?: Segment[] (optional; each has { label, startTsMs, endTsMs })
+
+Required fields per saccade for metrics
+
+startTsMs, endTsMs
+
+amplitudeDeg
+
+peakVelocityDegPerSec
+
+(any other fields are allowed; metrics ignores what it doesn’t need)
+
+A) Derived fields
+
+Test A1 — computes durationMs
+
+Given an event with startTsMs=1000, endTsMs=1012
+
+Expect derived durationMs=12
+
+Test A2 — computes midpointTsMs
+
+Given startTsMs=1000, endTsMs=1012
+
+Expect midpointTsMs=1006
+
+Test A3 — handles invalid timestamps
+
+If startTsMs or endTsMs missing, non-finite, or endTsMs <= startTsMs
+
+Event is filtered with reason missingTimestamps or nonPositiveDuration (pick exact reason names and lock them)
+
+B) Filtering and transparency
+
+Test B1 — filters outside plausible bounds
+
+Given bounds (example): duration [6,200], amplitude [0.05,40], peakVel [10,1500], isi [0,2000]
+
+Events outside each bound are excluded from summaries and series
+
+Each filtered event increments the correct filteredByReason.*
+
+Test B2 — transparency counts are correct
+
+totalDetected === input length
+
+validIncluded + filteredTotal === totalDetected
+
+filteredTotal === sum(filteredByReason.*)
+
+Test B3 — filtering does not mutate inputs
+
+Original saccade objects remain unchanged (deep equality check on input vs cloned input)
+
+C) Session rate metrics
+
+Test C1 — session duration uses timestamps
+
+Session duration uses max(endTsMs) - min(startTsMs) across all events with valid timestamps (or across included events — choose one and lock it)
+
+Irregular gaps in timestamps do not affect correctness
+
+Test C2 — ratePerSec and ratePerMin computed from included events
+
+ratePerSec = validIncluded / sessionDurationSec
+
+ratePerMin = validIncluded / sessionDurationMin
+
+Ensure ratePerMin is exactly ratePerSec * 60 within tolerance
+
+Test C3 — empty or fully filtered dataset yields safe zeros
+
+If no valid included events OR sessionDuration <= 0
+
+Expect ratePerSec=0, ratePerMin=0, and summaries return n=0 without throwing
+
+D) Segment-level metrics
+
+Test D1 — segment assignment is deterministic
+
+Provide one segment window and 3 saccades; only those whose midpointTsMs falls in [start,end) are counted
+(If you choose “start time” instead, lock that instead — midpoint is my recommendation.)
+
+Expect segment counts match that rule exactly
+
+Test D2 — segment rate calculations
+
+segmentRatePerSec = includedInSegment / segmentDurationSec
+
+segmentRatePerMin = includedInSegment / segmentDurationMin
+
+Test D3 — segments with no events still return rows
+
+Segment summaries exist for every provided segment
+
+If none included, stats show n=0, rates 0, filter counts still reported (optional per-segment filter counts; if not, explicitly test they’re omitted)
+
+Test D4 — overlapping segments behavior is explicit
+Pick one and test it:
+
+Either “a saccade can belong to multiple segments” (common)
+
+Or “first matching segment wins” (less common)
+Lock it with a unit test.
+
+E) Distribution stats
+
+For each metric distribution (durationMs, amplitudeDeg, peakVelocityDegPerSec, isiMs), the summary includes:
+
+n, mean, median, p10, p50, p90, min, max, std
+
+Test E1 — correct summary values on small known set
+
+Use a tiny hand-computable array (e.g., [1,2,3,4,5,6,7,8,9,10])
+
+Verify mean/median/min/max/std and percentiles (define percentile method and lock it)
+
+Test E2 — percentile method is deterministic
+
+Decide interpolation rule (nearest-rank vs linear interpolation) and test it
+
+This prevents “stats drift” later
+
+Test E3 — n=0 returns nulls (or NaNs) consistently
+Pick a consistent contract:
+
+Either return null for mean/median/std/percentiles when n=0
+
+Or return NaN
+Whatever you choose, test it everywhere.
+
+F) ISI (inter-saccadic interval) + comparisons
+ISI definition (default)
+
+offset-to-next-onset: isiMs[i] = saccades[i+1].startTsMs - saccades[i].endTsMs
+
+Optionally support onset-to-onset via options.isiDefinition
+
+Test F1 — computes ISI for consecutive included events
+
+With two events:
+
+e1: end=1100
+
+e2: start=1150
+
+Expect isiMs=50
+
+Test F2 — last event has no ISI
+
+Expect ISI series length is validIncluded - 1
+
+Or expect last event ISI is null — pick and lock it
+
+Test F3 — negative ISIs
+
+If ISI < 0 (overlapping events or ordering issues)
+
+Either filter those ISI entries with reason isiNegative
+
+Or clamp to 0 (I recommend filtering for transparency)
+Lock with a test.
+
+ISI comparison outputs (client-friendly)
+
+Provide at least:
+
+isiSummary (same stats package: mean/median/p10/p50/p90/min/max/std)
+
+isiHistogram or isiBins (CSV/plot-ready)
+
+isiBySegment (if segments exist)
+
+Test F4 — histogram/binning is stable
+
+Given known ISI values and a bin width (e.g., 25ms)
+
+Expect exact bin counts and edges
+
+Test F5 — compares ISI between segments
+
+Given two segments with different ISI distributions
+
+Output includes per-segment ISI summaries, enabling side-by-side comparison
+
+G) Plot/CSV-ready outputs
+
+Test G1 — perSaccadeRows contains computed fields
+Each output row includes:
+
+original identifiers if present (index at minimum)
+
+derived durationMs, midpointTsMs
+
+computed ISI field per row (isiToNextMs nullable) if you choose row-wise
+
+isFiltered boolean
+
+filterReason (single string or string array; choose and lock)
+
+Test G2 — series arrays are post-filter
+
+series.durationsMs, series.amplitudesDeg, series.peakVelocityDegPerSec, series.isiMs
+contain only included events (and included ISIs)
+
+Test G3 — optional raw series (if you include them)
+
+If options.includeRawSeries === true
+
+Provide rawSeries.* including filtered values
+
+Test both modes
+
+H) Ordering guarantees
+
+Test H1 — metrics sorts events by startTsMs
+
+If input is unsorted, metrics should sort before computing ISI and session duration
+
+Sorting must be stable and deterministic
