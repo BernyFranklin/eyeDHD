@@ -165,3 +165,41 @@ includeExtended: false returns no extended data
         Expected    
             result.saccades.length == 1
             result.saccadesExtended.length = 0
+
+//-----------------------------------------------------------
+// Step 3: Metrics
+//-----------------------------------------------------------
+
+// Derived Fields
+//-----------------------------------------------------------
+Computes derived per-saccade fields
+    Purpose: Given raw saccade events, derives metrics 
+        Input
+            [{ startTime: 1000, endTime: 1050, amplitudeDeg: 5 }]
+        Expected 
+            result.perSaccade.length == 1
+            saccade.durationMs       == 50
+            saccade.durationsSec     =~ 0.05
+            saccade.ratePerSec       =~ 100
+
+Computes derived fields for multiple saccades and preserve order
+    Purpose: Given multiple raw saccade events, derives metrics
+        Input
+            [
+                { startTime: 2000, endTime: 2100, amplitudeDeg: 2  },
+                { startTime: 500,  endTime: 520,  amplitudeDeg: 1  },
+                { startTime: 9000, endTime: 9050, amplitudeDeg: 10 }
+            ]
+        Expected
+            result.perSaccade.length == 3
+            result.perSaccade[0].durationMs  == 100
+            result.perSaccade[0].durationSec =~ 0.1
+            result.perSaccade[0].ratePerSec  =~ 20
+
+            result.perSaccade[1].durationMs  == 20
+            result.perSaccade[1].durationSec =~ 0.02
+            result.perSaccade[1].ratePerSec  =~ 50
+
+            result.perSaccade[2].durationMs  == 50
+            result.perSaccade[2].durationSec =~ 0.05
+            result.perSaccade[2].ratePerSec  =~ 200
