@@ -46,7 +46,30 @@ describe('Saccade Metrics', () => {
             expect(result.perSaccade[2].ratePerSec).toBeCloseTo(200, 6);
         });
         
-        it('A3)', () => {});
+        it('A3) Handles zero or negative durations without Infinity/NaN', () => {
+            const input = [
+                { startTime: 1000, endTime: 1000, amplitudeDeg: 5 },   // zero duration
+                { startTime: 2000, endTime: 1990, amplitudeDeg: 5 }    // negative duration
+            ];
+
+            const result = computeSaccadeMetrics(input);
+
+            expect(result.perSaccade.length).toBe(2);
+            
+            const zeroResult = result.perSaccade[0];
+            
+            expect(zeroResult.durationMs).toBe(0);
+            expect(zeroResult.durationSec).toBeCloseTo(0, 6);
+            expect(Number.isFinite(zeroResult.ratePerSec)).toBe(true);
+            expect(Number.isNaN(zeroResult.ratePerSec)).toBe(false);
+
+            const negativeResult = result.perSaccade[1];
+            expect(negativeResult.durationMs).toBe(-10);
+            expect(negativeResult.durationSec).toBeCloseTo(-0.01, 6);
+            expect(Number.isFinite(negativeResult.ratePerSec)).toBe(true);
+            expect(Number.isNaN(negativeResult.ratePerSec)).toBe(false);
+            expect(negativeResult.ratePerSec).toBe(0);
+        });
 
     });
 

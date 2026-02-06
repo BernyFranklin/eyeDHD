@@ -203,3 +203,24 @@ Computes derived fields for multiple saccades and preserve order
             result.perSaccade[2].durationMs  == 50
             result.perSaccade[2].durationSec =~ 0.05
             result.perSaccade[2].ratePerSec  =~ 200
+
+Handles zero or negative durations without Infinity/NaN
+    Purpose: Ensure pure derivation
+        Input
+            [
+                { startTime: 1000, endTime: 1000, amplitudeDeg: 5  },
+                { startTime: 2000, endTime: 1990, amplitudeDeg: 5  }
+            ]
+        Expected
+            result.perSaccade.length == 2
+            
+            zeroResult.durationMs                     == 0
+            zeroResult.durationSec                    == 0
+            Number.isFinite(zeroResult.ratePerSec     == true
+            Number.isNaN(zeroResult.ratePerSec        == false
+
+            negativeResult.durationMs                 == -10
+            negativeResult.durationSec)               =~ -0.01
+            Number.isFinite(negativeResult.ratePerSec == true
+            Number.isNaN(negativeResult.ratePerSec    == false
+            negativeResult.ratePerSec)                == 0
