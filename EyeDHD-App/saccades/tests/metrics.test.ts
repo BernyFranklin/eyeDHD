@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {computeSaccadeMetrics } from '../metrics'
+import { max } from 'three/tsl';
 
 describe('Saccade Metrics', () => {
     // Derived fields
@@ -74,7 +75,30 @@ describe('Saccade Metrics', () => {
     });
 
     describe('B) Filtering and Transparency', () => {
-        it('B1)', () => {});
+        it('B1)', () => {
+            const input = [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5   },    // Keep: Plausible
+                { startTime: 2000, endTime: 2500, amplitudeDeg: 500 },    // Filter: amplitude too large
+                { startTime: 3000, endTime: 5000, amplitudeDeg: 5   }     // Filter: duration too long
+            ];
+
+            // Applying filter with plausible bounds for amplitude and duration
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 0, max: 250 }    
+                },
+            });
+
+            // Only the first saccade should be kept
+            expect(result.perSaccade.length).toBe(1);
+            // Transparency Contract
+            expect(result.filtered.totalFiltered).toBe(2);
+            expect(result.filtered.byReason).toEqual({
+                amplitude_out_of_bounds: 1,
+                duration_out_of_bounds: 1,
+            });
+    });
     
         it('B2)', () => {});
     

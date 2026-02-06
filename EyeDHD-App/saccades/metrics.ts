@@ -1,4 +1,4 @@
 
-export function computeSaccadeMetrics(input: any): any {
+export function computeSaccadeMetrics(input: any, options?: any): any {
     
 }

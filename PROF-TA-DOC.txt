@@ -224,3 +224,16 @@ Handles zero or negative durations without Infinity/NaN
             Number.isFinite(negativeResult.ratePerSec == true
             Number.isNaN(negativeResult.ratePerSec    == false
             negativeResult.ratePerSec)                == 0
+
+Filtering and Transparency
+    Purpose: Filters implausible saccades using configurable bounds and reports filtered counts
+        Input
+            [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5   },    // Keep: Plausible
+                { startTime: 2000, endTime: 2500, amplitudeDeg: 500 },    // Filter: amplitude too large
+                { startTime: 3000, endTime: 5000, amplitudeDeg: 5   }     // Filter: duration too long
+            ]
+        Expected 
+            result.perSaccade.length      == 1
+            result.filtered.totalFiltered == 2
+            result.filtered.byReason      == { amplitude_out_of_bounds: 1, duration_out_of_bounds: 1 } 
