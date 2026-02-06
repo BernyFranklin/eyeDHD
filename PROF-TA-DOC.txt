@@ -237,3 +237,15 @@ Filtering and Transparency
             result.perSaccade.length      == 1
             result.filtered.totalFiltered == 2
             result.filtered.byReason      == { amplitude_out_of_bounds: 1, duration_out_of_bounds: 1 } 
+
+Counts all applicable filter reasons while totalFiltered counts unique events
+    Purpose: We want to filter out bad samples, but account for every reason the event was filtered
+            Input
+                [
+                    { startTime: 1000, endTime: 2000, amplitudeDeg: 999 },  // violates amplitude and duration bounds
+                    { startTime: 3000, endTime: 3050, amplitudeDeg: 999 },  // violates amplitude bound only
+                ]
+            Expected
+                result.perSaccade.length == 0
+                result.filtered.totalFiltered == 2  // both events
+                result.filtered.byReason == { amplitude_out_of_bounds: 2, duration_out_of_bounds: 1, }  // 2 for amplitude, 1 for duration

@@ -23,7 +23,7 @@ describe('Saccade Metrics', () => {
             expect(saccade.ratePerSec).toBeCloseTo(100, 6);
         });
     
-        it('A2) Computes derived fields for multiple saccades and preserve order', () => {
+        it('A2) Computes derived fields for multiple saccades and preserves order', () => {
             const input = [
                 { startTime: 2000, endTime: 2100, amplitudeDeg: 2  },   // 100ms, 0.1s, 20deg/s
                 { startTime: 500,  endTime: 520,  amplitudeDeg: 1  },   // 20ms, 0.02s, 50deg/s
@@ -74,7 +74,7 @@ describe('Saccade Metrics', () => {
 
     });
 
-    describe('B) Filtering and Transparency', () => {
+    describe('B) Filters events outside plausible bounds and reports counts by reason', () => {
         it('B1)', () => {
             const input = [
                 { startTime: 1000, endTime: 1050, amplitudeDeg: 5   },    // Keep: Plausible
@@ -100,7 +100,29 @@ describe('Saccade Metrics', () => {
             });
     });
     
-        it('B2)', () => {});
+        it('B2) Counts all applicable filter reasons while totalFiltered counts unique events', () => {
+            const input = [
+                { startTime: 1000, endTime: 2000, amplitudeDeg: 999 },  // Violates amplitude and duration bounds
+                { startTime: 3000, endTime: 3050, amplitudeDeg: 999 },  // Violates amplitude bound only
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 }    
+                },
+            });
+
+            // Event removed
+            expect(result.perSaccade.length).toBe(0);
+            // Unique filtered events
+            expect(result.filtered.totalFiltered).toBe(2);
+            // But multiple reasons apply to a single event
+            expect(result.filtered.byReason).toEqual({
+                amplitude_out_of_bounds: 2,
+                duration_out_of_bounds: 1,
+            });
+        });
     
         it('B3)', () => {});
 
