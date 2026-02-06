@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {computeSaccadeMetrics } from '../metrics'
-import { max } from 'three/tsl';
+import { max, or } from 'three/tsl';
 
 describe('Saccade Metrics', () => {
     // Derived fields
@@ -124,7 +124,35 @@ describe('Saccade Metrics', () => {
             });
         });
     
-        it('B3)', () => {});
+        it('B3) Filtering does not mutate inputs', () => {
+            const input = [
+                { startTime: 1000, endTime: 1050, amplitudeDeg:5    },     // Keep
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 999 },     // Filter: amplitude too large
+            ];
+
+            // Capture original references and values
+            const originalArrayRef = input;
+            const originalObj0Ref = input[0];
+            const originalObj1Ref = input[1];
+            const orignalJson = JSON.stringify(input);
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 }    
+                },
+            });
+
+            // Input array and objects unchanged
+            expect(input).toBe(originalArrayRef);
+            expect(input[0]).toBe(originalObj0Ref);
+            expect(input[1]).toBe(originalObj1Ref);
+            expect(JSON.stringify(input)).toBe(orignalJson);
+
+            // Returned kept saccade should not be the same object reference as the input item
+            expect(result.perSaccade[0].length).toBe(1);
+            expect(result.perSaccade[0]).not.toBe(originalObj0Ref);
+        });
 
     });
 

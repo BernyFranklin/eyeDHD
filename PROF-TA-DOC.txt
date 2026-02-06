@@ -249,3 +249,27 @@ Counts all applicable filter reasons while totalFiltered counts unique events
                 result.perSaccade.length == 0
                 result.filtered.totalFiltered == 2  // both events
                 result.filtered.byReason == { amplitude_out_of_bounds: 2, duration_out_of_bounds: 1, }  // 2 for amplitude, 1 for duration
+
+Filtering does not mutate inputs
+    Purpose: Ensure object mutation doesn't happen, that way we can utilize the original object.
+        Input
+            [
+                { startTime: 1000, endTime: 1050, amplitudeDeg:5    },     // Keep
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 999 },     // Filter: amplitude too large
+            ]
+            // Capture original references and values
+            const originalArrayRef = input;
+            const originalObj0Ref = input[0];
+            const originalObj1Ref = input[1];
+            const orignalJson = JSON.stringify(input);
+        Expected 
+            // Input array and objects unchanged
+            input[0]                     == originalObj0Ref
+            input                        == originalArrayRef
+            input[1])                    == originalObj1Ref
+            JSON.stringify(input)        == orignalJson
+
+            // Returned kept saccade should not be the same object reference as the input item
+            result.perSaccade[0].length  == 1
+            result.perSaccade[0]         != originalObj0Ref
+
