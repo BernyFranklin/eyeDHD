@@ -12,7 +12,7 @@ import metadataActions, {
   createMetadataTable
 } from './tables/metadata.ts';
 import saccadeActions, { type SaccadeData } from './tables/saccade.ts';
-import DataCleaner from '../data/DataCleaner.js';
+import DataCleaner from './DataCleaner.ts';
 
 // Database options
 type DBOptions = {
@@ -48,7 +48,7 @@ export default class DatabaseManager {
   saccade: SaccadeDataActions;
 
   private streams = new Map<string, DataStream<any>>();
-  private cleaners = new Map<string, DataCleaner>();
+  cleaners = new Map<string, DataCleaner>();
 
   constructor(options: DBOptions = { logging: false, temporary: false }) {
     this.options = options;

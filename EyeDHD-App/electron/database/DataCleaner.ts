@@ -1,7 +1,7 @@
 import fs from 'fs';
 import rl from 'readline';
 
-import metadataActions from '../database/tables/metadata.ts';
+import DatabaseManager from './Manager.ts';
 import { sleep } from '../utils.ts';
 
 /**
@@ -14,23 +14,59 @@ export default class DataCleaner {
   stream;
   readline;
   iter;
-  buf_len;
-  buf = [];
-  header = [];
-  status = {
+  buf_len = 0;
+  buf: any[] = [];
+  header: string[] = [];
+  status: {
+    reading: boolean;
+    done: boolean;
+    closed: boolean;
+    start: boolean;
+  } = {
     reading: false,
     done: false,
-    closed: false
+    closed: false,
+    start: false
   };
+  filePath: string;
 
   // Statistics for monitoring data quality
-  stats = {
+  stats: {
+    totalRows: number;
+    validRows: number;
+    errorRows: number;
+    nullValues: number;
+    validRate: number;
+    eyeTrackingErrors: number;
+    eyeTrackingErrorRate: number;
+    coordinateClampings: number;
+    performance: {
+      startTime: number | null;
+      rowsPerSecond: number;
+      memoryUsageMB: number;
+      maxBufferSize: number;
+    };
+    typeConversions: {
+      numbers: number;
+      booleans: number;
+      nulls: number;
+      sanitized: number;
+    };
+  } = {
     totalRows: 0,
     validRows: 0,
     errorRows: 0,
     nullValues: 0,
+    validRate: 0,
     eyeTrackingErrors: 0,
+    eyeTrackingErrorRate: 0,
     coordinateClampings: 0,
+    performance: {
+      startTime: null,
+      rowsPerSecond: 0,
+      memoryUsageMB: 0,
+      maxBufferSize: 0
+    },
     typeConversions: {
       numbers: 0,
       booleans: 0,
@@ -40,7 +76,12 @@ export default class DataCleaner {
   };
 
   // Performance and memory optimization
-  performance = {
+  performance: {
+    startTime: number | null;
+    rowsPerSecond: number;
+    memoryUsage: number;
+    maxBufferSize: number;
+  } = {
     startTime: null,
     rowsPerSecond: 0,
     memoryUsage: 0,
@@ -48,7 +89,12 @@ export default class DataCleaner {
   };
 
   // Progress tracking
-  progress = {
+  progress: {
+    bytesRead: number;
+    totalBytes: number;
+    estimatedRows: number;
+    currentRow: number;
+  } = {
     bytesRead: 0,
     totalBytes: 0,
     estimatedRows: 0,
@@ -56,7 +102,11 @@ export default class DataCleaner {
   };
 
   // Eye tracking validation thresholds
-  eyeTrackingConfig = {
+  eyeTrackingConfig: {
+    coordinateRange: { min: number; max: number };
+    requiredFields: string[];
+    validStatuses: string[];
+  } = {
     coordinateRange: { min: -10, max: 10 },
     requiredFields: [
       'LeftEyeStatus',
@@ -75,7 +125,17 @@ export default class DataCleaner {
     validStatuses: ['VALID', 'INVALID', 'LOST', 'TRACKING', 'NOT_TRACKING']
   };
 
-  constructor({ db, name, path, request_size }) {
+  constructor({
+    dbmgr,
+    name,
+    path,
+    request_size
+  }: {
+    dbmgr: DatabaseManager;
+    name: string;
+    path: string;
+    request_size: number;
+  }) {
     // Store the file path for later use
     this.filePath = path;
 
@@ -91,11 +151,11 @@ export default class DataCleaner {
       this.progress.totalBytes = 0;
     }
 
-    const metadata = metadataActions.read(db, name);
+    const metadata = dbmgr.metadata.read(name);
 
     // If file has been cleaned set up progress and performance metrics to show it's finished
     // to the front end
-    if (metadata.completed) {
+    if (metadata?.completed) {
       this.progress.bytesRead = this.progress.totalBytes;
       this.progress.currentRow = metadata.cleaned;
 
@@ -132,7 +192,7 @@ export default class DataCleaner {
 
         // Parse header using the same CSV parsing logic to handle quoted headers
         const headerValues = this.parseCsvLine(value);
-        this.header = headerValues.map((name) => name.trim());
+        this.header = headerValues.map((name: string) => name.trim());
 
         // Validate header structure
         const headerValidation = this.validateHeader();
@@ -143,10 +203,10 @@ export default class DataCleaner {
         this.performance.startTime = Date.now();
 
         // If cleaning is already in progress, skip metadata.cleaned rows
-        if (metadata.cleaned !== 0) {
+        if (metadata?.cleaned !== 0) {
           this.status.reading = true;
-          for (let i = 0; i < metadata.cleaned; i++) {
-            this.iter.next();
+          for (let i = 0; i < metadata?.cleaned!; i++) {
+            this.iter?.next();
             this.progress.bytesRead += Buffer.byteLength(value, 'utf8');
             this.progress.currentRow++;
 
@@ -190,13 +250,13 @@ export default class DataCleaner {
   /**
    * Loads request_size cleaned rows into the internal buffer
    */
-  async loadRows(count) {
+  async loadRows(count: number) {
     try {
       const wasAlreadyReading = this.status.reading;
       this.status.reading = true;
 
       while (this.buf.length < count) {
-        const { value, done } = await this.iter.next();
+        const { value, done } = await this.iter?.next()!;
         if (done) {
           this.status.done = true;
           // Only set reading to false if we weren't already in a cleaning process
@@ -229,16 +289,16 @@ export default class DataCleaner {
    * Cleans a row of CSV data, converting it from a string to JSON
    * Implements proper CSV parsing with type conversion and validation
    */
-  cleanRow(raw) {
+  cleanRow(raw: string): Record<string, any> {
     try {
       const values = this.parseCsvLine(raw);
-      const cleaned = {};
+      const cleaned: any = {};
 
       this.header.forEach((column, index) => {
         if (column === 'left Eye Openness') {
-          cleaned.LeftEyeOpenness = this.cleanValue(values[index]);
+          cleaned.LeftEyeOpenness = this.cleanValue(values[index]) as number;
         } else if (column === 'Right Eye Openness') {
-          cleaned.RightEyeOpenness = this.cleanValue(values[index]);
+          cleaned.RightEyeOpenness = this.cleanValue(values[index]) as number;
         } else {
           cleaned[column] = this.cleanValue(values[index]);
         }
@@ -250,10 +310,10 @@ export default class DataCleaner {
       this.validateEyeTrackingRow(validatedRow);
 
       return validatedRow;
-    } catch (error) {
+    } catch (error: any) {
       console.warn(`ERROR cleaning row: ${error.message}`);
       // Return a minimal valid row structure to prevent crashes
-      const errorRow = {};
+      const errorRow: any = {};
       this.header.forEach((column) => {
         errorRow[column] = null;
       });
@@ -265,7 +325,7 @@ export default class DataCleaner {
   /**
    * Parses a CSV line handling quoted fields, escaped quotes, and commas within quotes
    */
-  parseCsvLine(line) {
+  parseCsvLine(line: string) {
     const values = line.split(',');
     return values;
   }
@@ -273,7 +333,7 @@ export default class DataCleaner {
   /**
    * Cleans and converts individual field values
    */
-  cleanValue(value) {
+  cleanValue(value: string) {
     if (value === undefined || value === null || value === '') {
       return 0.0;
     }
@@ -309,7 +369,7 @@ export default class DataCleaner {
   /**
    * Attempts to parse a numeric value, handling various formats
    */
-  parseNumeric(value) {
+  parseNumeric(value: string) {
     if (!/^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
       return null; // Not a valid number format
     }
@@ -325,7 +385,7 @@ export default class DataCleaner {
   /**
    * Validates and sanitizes eye tracking data
    */
-  validateRow(row) {
+  validateRow(row: Record<string, any>) {
     // Validate eye tracking specific fields
     const eyePositions = ['Left', 'Right'];
     const coordinates = ['X', 'Y', 'Z'];
@@ -367,7 +427,7 @@ export default class DataCleaner {
   /**
    * Sanitizes eye coordinate values
    */
-  sanitizeEyeCoordinate(value) {
+  sanitizeEyeCoordinate(value: any) {
     if (value === null || value === undefined) return 0.0;
 
     if (typeof value === 'number') {
@@ -393,7 +453,7 @@ export default class DataCleaner {
   /**
    * Sanitizes eye status values
    */
-  sanitizeEyeStatus(value) {
+  sanitizeEyeStatus(value: any) {
     if (value === null || value === undefined) return 'INVALID';
 
     const stringValue = String(value).toUpperCase().trim();
@@ -404,7 +464,7 @@ export default class DataCleaner {
     }
 
     // Try to map common variations
-    const statusMapping = {
+    const statusMapping: any = {
       TRUE: 'VALID',
       FALSE: 'INVALID',
       1: 'VALID',
@@ -421,7 +481,7 @@ export default class DataCleaner {
   /**
    * Sanitizes timestamp values
    */
-  sanitizeTimestamp(value) {
+  sanitizeTimestamp(value: any) {
     if (value === null || value === undefined) return 0;
 
     // If it's already a number, assume it's a valid timestamp
@@ -482,7 +542,7 @@ export default class DataCleaner {
   /**
    * Calculates optimal buffer size based on available memory and data characteristics
    */
-  calculateOptimalBufferSize(requestedSize) {
+  calculateOptimalBufferSize(requestedSize: number) {
     const availableMemory = process.memoryUsage().heapTotal;
     const maxBufferMemory = availableMemory * 0.1; // Use max 10% of heap for buffer
     const estimatedRowSize = 2048; // Estimated bytes per row for eye tracking data
@@ -495,9 +555,9 @@ export default class DataCleaner {
   /**
    * Enhanced data validation specifically for eye tracking data
    */
-  validateEyeTrackingRow(row) {
+  validateEyeTrackingRow(row: Record<string, any>) {
     let isValid = true;
-    const issues = [];
+    const issues: any[] = [];
 
     // Check required eye tracking fields
     this.eyeTrackingConfig.requiredFields.forEach((field) => {
@@ -541,23 +601,9 @@ export default class DataCleaner {
   }
 
   /**
-   * Enhanced performance monitoring
-   */
-  updatePerformanceMetrics() {
-    const now = Date.now();
-    const elapsed = (now - this.performance.startTime) / 1000; // seconds
-    this.performance.rowsPerSecond = this.stats.totalRows / elapsed;
-    this.performance.memoryUsage = process.memoryUsage().heapUsed;
-    this.performance.maxBufferSize = Math.max(
-      this.performance.maxBufferSize,
-      this.buf.length
-    );
-  }
-
-  /**
    * Updates statistics based on the cleaned row
    */
-  updateStats(row) {
+  updateStats(row: Record<string, any>) {
     this.stats.totalRows++;
 
     if (row._error) {
@@ -584,41 +630,6 @@ export default class DataCleaner {
   }
 
   /**
-   * Gets current cleaning statistics
-   */
-  getStats() {
-    this.updatePerformanceMetrics(); // Ensure latest metrics
-
-    return {
-      ...this.stats,
-      errorRate:
-        this.stats.totalRows > 0
-          ? ((this.stats.errorRows / this.stats.totalRows) * 100).toFixed(2) + '%'
-          : '0%',
-      validRate:
-        this.stats.totalRows > 0
-          ? ((this.stats.validRows / this.stats.totalRows) * 100).toFixed(2) + '%'
-          : '0%',
-      eyeTrackingErrorRate:
-        this.stats.totalRows > 0
-          ? ((this.stats.eyeTrackingErrors / this.stats.totalRows) * 100).toFixed(2) + '%'
-          : '0%',
-      coordinateClampingRate:
-        this.stats.totalRows > 0
-          ? ((this.stats.coordinateClampings / this.stats.totalRows) * 100).toFixed(2) +
-            '%'
-          : '0%',
-      performance: {
-        ...this.performance,
-        memoryUsageMB: (this.performance.memoryUsage / 1024 / 1024).toFixed(2) + 'MB',
-        rowsPerSecond: this.performance.rowsPerSecond.toFixed(2) + '/sec',
-        bufferEfficiency:
-          ((this.performance.maxBufferSize / this.buf_len) * 100).toFixed(2) + '%'
-      }
-    };
-  }
-
-  /**
    * Logs current statistics to console
    */
   logStats() {
@@ -631,8 +642,8 @@ export default class DataCleaner {
    */
   getHealthStatus() {
     const stats = this.getStats();
-    const errorRate = parseFloat(stats.errorRate);
-    const eyeTrackingErrorRate = parseFloat(stats.eyeTrackingErrorRate);
+    const errorRate = stats.errorRate;
+    const eyeTrackingErrorRate = stats.eyeTrackingErrorRate;
     const memoryUsage = this.performance.memoryUsage;
     const maxMemory = process.memoryUsage().heapTotal * 0.8; // 80% threshold
 
@@ -723,6 +734,41 @@ export default class DataCleaner {
         this.stats.totalRows > 0 ? (this.stats.validRows / this.stats.totalRows) * 100 : 0
     };
   }
+
+  /**
+   * Gets current cleaning statistics
+   */
+  // getStats() {
+  //   this.updatePerformanceMetrics(); // Ensure latest metrics
+
+  //   return {
+  //     ...this.stats,
+  //     errorRate:
+  //       this.stats.totalRows > 0
+  //         ? ((this.stats.errorRows / this.stats.totalRows) * 100).toFixed(2) + '%'
+  //         : '0%',
+  //     validRate:
+  //       this.stats.totalRows > 0
+  //         ? ((this.stats.validRows / this.stats.totalRows) * 100).toFixed(2) + '%'
+  //         : '0%',
+  //     eyeTrackingErrorRate:
+  //       this.stats.totalRows > 0
+  //         ? ((this.stats.eyeTrackingErrors / this.stats.totalRows) * 100).toFixed(2) + '%'
+  //         : '0%',
+  //     coordinateClampingRate:
+  //       this.stats.totalRows > 0
+  //         ? ((this.stats.coordinateClampings / this.stats.totalRows) * 100).toFixed(2) +
+  //           '%'
+  //         : '0%',
+  //     performance: {
+  //       ...this.performance,
+  //       memoryUsageMB: (this.performance.memoryUsage / 1024 / 1024).toFixed(2) + 'MB',
+  //       rowsPerSecond: this.performance.rowsPerSecond.toFixed(2) + '/sec',
+  //       bufferEfficiency:
+  //         ((this.performance.maxBufferSize / this.buf_len) * 100).toFixed(2) + '%'
+  //     }
+  //   };
+  // }
 
   /**
    * Gets current performance metrics

@@ -3,11 +3,10 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 
-import { filesMap } from './store.ts';
 import DatabaseManager from './database/Manager.ts';
 import { type Metadata } from './database/tables/metadata.ts';
 import { type CSVData } from './database/tables/csv.ts';
-import DataCleaner from './data/DataCleaner.js';
+import DataCleaner from './database/DataCleaner.ts';
 
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
@@ -47,11 +46,11 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
     // If file is already opened and cleaning, just return filename
     let metadata = dbmgr.metadata.read(filename);
     if (metadata) {
-      if (!filesMap.get(metadata.name)) {
-        filesMap.set(
+      if (!dbmgr.cleaners.get(metadata.name)) {
+        dbmgr.cleaners.set(
           metadata.name,
           new DataCleaner({
-            db: dbmgr.db,
+            dbmgr,
             name: metadata.name,
             path: metadata.path,
             request_size: metadata.request_size
@@ -79,13 +78,13 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
     dbmgr.createCSVTable(metadata);
 
     const cleaner = new DataCleaner({
-      db: dbmgr.db,
+      dbmgr,
       name: metadata.name,
       path: metadata.path,
       request_size: metadata.request_size
     });
 
-    filesMap.set(metadata.name, cleaner);
+    dbmgr.cleaners.set(metadata.name, cleaner);
 
     return resolve(filename);
   });
@@ -105,7 +104,7 @@ function cleanFile(original: Metadata): Promise<void> {
     let metadata = original;
 
     // fetch cleaner
-    const cleaner = filesMap.get(metadata.name);
+    const cleaner = dbmgr.cleaners.get(metadata.name);
     if (!cleaner) {
       return reject(`No cleaner found for metadata: ${metadata.name}`);
     }
@@ -118,11 +117,11 @@ function cleanFile(original: Metadata): Promise<void> {
     }
 
     // Only set the first frame number when cleaning is not in progress
-    if (cleaner.progress.currentRow <= cleaner.request_size || metadata.cleaned === 0) {
+    if (metadata.cleaned === 0) {
       const ok = dbmgr.metadata.update({
         ...metadata,
         header: cleaner.header.join(',') + '\n',
-        first_frame: buffer[0].Frame
+        first_frame: buffer?.[0].Frame
       });
       if (!ok) {
         return reject(`Failed to update metadata for file: ${metadata.name}`);
@@ -226,15 +225,15 @@ ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
     dbmgr.deleteCSVTable(metadata);
     dbmgr.createCSVTable(metadata);
 
-    const cleaner = filesMap.get(metadata.name);
+    const cleaner = dbmgr.cleaners.get(metadata.name);
     if (!cleaner) return resolve();
 
     cleaner.close();
-    filesMap.delete(metadata.name);
-    filesMap.set(
+    dbmgr.cleaners.delete(metadata.name);
+    dbmgr.cleaners.set(
       metadata.name,
       new DataCleaner({
-        db: dbmgr.db,
+        dbmgr,
         name: metadata.name,
         path: metadata.path,
         request_size: metadata.request_size
@@ -330,7 +329,7 @@ ipcMain.handle('csv-clean-data', async (_, filename) => {
  */
 ipcMain.handle('csv-get-stats', async (_, filename) => {
   return new Promise(async (resolve, reject) => {
-    const cleaner = filesMap.get(filename);
+    const cleaner = dbmgr.cleaners.get(filename);
     if (!cleaner) {
       return reject(`File: ${filename} has not been opened`);
     }
@@ -363,7 +362,7 @@ ipcMain.handle('csv-get-stats', async (_, filename) => {
  */
 ipcMain.handle('csv-get-progress', async (_, filename) => {
   return new Promise(async (resolve, reject) => {
-    const cleaner = filesMap.get(filename);
+    const cleaner = dbmgr.cleaners.get(filename);
     if (!cleaner) {
       return reject(`File: ${filename} has not been opened`);
     }
