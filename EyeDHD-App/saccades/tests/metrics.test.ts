@@ -202,7 +202,22 @@ describe('Saccade Metrics', () => {
             expect(result.session.ratePerMin).toBeCloseTo(expectedRatePerMin, 6);
         });
     
-        it('C3)', () => {});
+        it('C3) Omits session ratePerMin when includeRatePerMin is not enabled', () => {
+            const input = [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+
+            expect(result.session.ratePerSec).toBeTypeOf('number');
+            expect(result.session.ratePerMin).toBeUndefined();
+        });
     
     });
 

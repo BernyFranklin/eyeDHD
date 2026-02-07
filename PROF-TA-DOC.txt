@@ -318,3 +318,20 @@ Computes session ratePerMin when includeRatePerMin is true
             const expectedRatePerMin  = expectedRatePerSec * 60;
             result.session.ratePerSec =~ expectedRatePerSec
             result.session.ratePerMin =~ expectedRatePerMin
+
+Omits session ratePerMin when includeRatePerMin is not enabled
+    Purpose: Making sure the ratePerMin flag works as advertised
+        Input 
+            [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },
+            ]
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+        Expected 
+            typeOf(result.session.ratePerSec) == 'number'
+            typeOf(result.session.ratePerMin) == Undefined
