@@ -1,5 +1,3 @@
-import type { CSVData } from './tables/csvdata';
-
 export default class DataStream<T> {
   buf: T[];
 

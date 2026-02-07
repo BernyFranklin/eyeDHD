@@ -2,10 +2,10 @@ import { test } from 'vitest';
 import { test as action_test } from './action_test';
 
 import DatabaseManager from '../Manager';
-import { createRowTable, toTableName } from './csvdata';
+import { createRowTable, toTableName } from './csv';
 
 import metadataActions from './metadata';
-import rowsActions from './csvdata';
+import rowsActions from './csv';
 
 test.concurrent('csv table create', async ({ expect }) => {
   const file = {
@@ -16,7 +16,6 @@ test.concurrent('csv table create', async ({ expect }) => {
     temporary: true,
     logging: true
   });
-  dbmgr.init();
 
   createRowTable(dbmgr.db, file.name);
 

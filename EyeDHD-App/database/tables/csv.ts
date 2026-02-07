@@ -116,7 +116,7 @@ export function createRowTable(db: Database, filename: string) {
   ).run();
 }
 
-function create(db: Database, file: Metadata, rows: number) {
+function create(db: Database, file: Metadata, rows: CSVData[]) {
   try {
     const table = toTableName(file.name);
     const insert = db.prepare(`
@@ -210,7 +210,7 @@ function create(db: Database, file: Metadata, rows: number) {
     	);
     `);
 
-    const insertMany = db.transaction((rows) => {
+    const insertMany = db.transaction((rows: CSVData[]) => {
       for (const row of rows) {
         try {
           insert.run(row);
@@ -258,11 +258,11 @@ function read(db: Database, file: Metadata): CSVData[] | undefined {
   }
 }
 
-function readAll(db: Database, file: Metadata) {
+function readAll(db: Database, file: Metadata): CSVData[] | undefined {
   try {
     const table = toTableName(file.name);
     const rows = db
-      .prepare(
+      .prepare<[], CSVData>(
         `
         SELECT * FROM ${table};
       `
@@ -277,27 +277,30 @@ function readAll(db: Database, file: Metadata) {
   }
 }
 
-function firstAndLast(db: Database, file: Metadata) {
+function firstAndLast(
+  db: Database,
+  file: Metadata
+): { first: CSVData; last: CSVData } | undefined {
   try {
     const table = toTableName(file.name);
 
     const first = db
-      .prepare(
+      .prepare<[number], CSVData>(
         `
         SELECT * FROM ${table}
         WHERE frame = ?;
       `
       )
-      .get(file.first_frame);
+      .get(file.first_frame) as CSVData;
 
     const last = db
-      .prepare(
+      .prepare<[number], CSVData>(
         `
         SELECT * FROM ${table}
 			  WHERE frame = ?;
 			`
       )
-      .get(file.last_frame);
+      .get(file.last_frame) as CSVData;
 
     return { first, last };
   } catch (err) {

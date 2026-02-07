@@ -2,26 +2,43 @@ import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
 import DataStream from './DataStream';
-import CSVDataActions, { type CSVData } from './tables/csvdata';
-import MetadataActions, { createMetadataTable, type Metadata } from './tables/metadata';
-import SaccadeActions, { type SaccadeData } from './tables/saccade';
+import csvActions, { type CSVData, createRowTable, deleteRowTable } from './tables/csv';
+import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
+import saccadeActions, { type SaccadeData } from './tables/saccade';
 import DataCleaner from '../electron/data/DataCleaner';
 
+// Database options
 type DBOptions = {
   logging: boolean;
   temporary: boolean;
   path?: string;
 };
 
+// Database action types
+type MetadataActions = {
+  create: (filename: string, filepath: string, request_size: number) => Metadata | null;
+  read: (filename: string) => Metadata | null;
+  readAll: () => Metadata[] | null;
+  update: (updates: Metadata) => boolean;
+  remove: (file: Metadata) => Metadata | null;
+};
+
+type CSVActions = {
+  create: (file: Metadata, rows: CSVData[]) => boolean;
+  read: (file: Metadata) => CSVData[] | undefined;
+  readAll: (file: Metadata) => CSVData[] | undefined;
+  firstAndLast: (file: Metadata) => { first: CSVData; last: CSVData } | undefined;
+};
+
+type SaccadeDataActions = {};
+
+// Database manager
 export default class DatabaseManager {
   db: Database;
   options: DBOptions;
-
-  actions = {
-    metadata: MetadataActions,
-    csvdata: CSVDataActions,
-    saccadedata: SaccadeActions
-  };
+  metadata: MetadataActions;
+  csv: CSVActions;
+  saccade: SaccadeDataActions;
 
   private streams = new Map<string, DataStream<any>>();
   private cleaners = new Map<string, DataCleaner>();
@@ -30,14 +47,54 @@ export default class DatabaseManager {
     this.options = options;
 
     this.db = this.getDB();
-  }
-
-  init() {
     createMetadataTable(this.db);
+
+    this.metadata = {
+      create: (filename: string, filepath: string, request_size: number) => {
+        return metadataActions.create(this.db, filename, filepath, request_size);
+      },
+      read: (filename: string) => {
+        return metadataActions.read(this.db, filename);
+      },
+      readAll: () => {
+        return metadataActions.readAll(this.db);
+      },
+      update: (updates: Metadata) => {
+        return metadataActions.update(this.db, updates);
+      },
+      remove: (file: Metadata) => {
+        return metadataActions.remove(this.db, file);
+      }
+    };
+
+    this.csv = {
+      create: (file: Metadata, rows: CSVData[]) => {
+        return csvActions.create(this.db, file, rows);
+      },
+      read: (file: Metadata) => {
+        return csvActions.read(this.db, file);
+      },
+      readAll: (file: Metadata) => {
+        return csvActions.readAll(this.db, file);
+      },
+      firstAndLast: (file: Metadata) => {
+        return csvActions.firstAndLast(this.db, file);
+      }
+    };
+
+    this.saccade = saccadeActions;
   }
 
   prepare(sql: string) {
     return this.db.prepare(sql);
+  }
+
+  createCSVTable(file: Metadata) {
+    createRowTable(this.db, file.name);
+  }
+
+  deleteCSVTable(file: Metadata) {
+    deleteRowTable(this.db, file.name);
   }
 
   private getDB() {

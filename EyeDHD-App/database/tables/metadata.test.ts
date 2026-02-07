@@ -11,7 +11,6 @@ test.concurrent('files table create', async ({ expect }) => {
     temporary: true,
     logging: true
   });
-  dbmgr.init();
 
   createMetadataTable(dbmgr.db);
 
