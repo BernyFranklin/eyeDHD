@@ -1,11 +1,11 @@
 import type { Database } from 'better-sqlite3';
 
 import { test } from './action_test';
-import type { FileMetadata } from '../tables/metadata.ts';
+import type { Metadata } from '../tables/metadata.ts';
 
 import metadataActions from './metadata';
 
-function compare(expect: any, result: FileMetadata, expected: FileMetadata) {
+function compare(expect: any, result: Metadata, expected: Metadata) {
   expect(result.id).toBe(expected.id);
   expect(result.name).toBe(expected.name);
   expect(result.path).toBe(expected.path);
@@ -40,7 +40,7 @@ test.concurrent('files create', async ({ db, expect }: { db: Database; expect: a
   );
   expect(result).not.toBeNull();
 
-  compare(expect, result as FileMetadata, expected);
+  compare(expect, result as Metadata, expected);
 });
 
 // Test reading a file entry in the files table
@@ -63,7 +63,7 @@ test.concurrent('files read', async ({ db, expect }: { db: Database; expect: any
   const result = metadataActions.read(db, 'test2.csv');
   expect(result).not.toBeNull();
 
-  compare(expect, result as FileMetadata, expected);
+  compare(expect, result as Metadata, expected);
 });
 
 // // Test updating a file entry in the files table

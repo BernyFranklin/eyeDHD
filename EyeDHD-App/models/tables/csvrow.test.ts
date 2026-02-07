@@ -1,18 +1,23 @@
 import { test } from 'vitest';
 
-import getDB from '../dbmgr';
-import { createRowTable, toTableName } from './row';
+import DatabaseManager from '../DatabaseManager';
+import { createRowTable, toTableName } from './csvrow';
 
 test.concurrent('csv table create', async ({ expect }) => {
   const file = {
     name: 'test.csv'
   };
 
-  const db = getDB({ temporary: true, logging: true });
-  createRowTable(db, file.name);
+  const dbmgr = new DatabaseManager({
+    temporary: true,
+    logging: true
+  });
+  dbmgr.init();
+
+  createRowTable(dbmgr.db, file.name);
 
   // Check whether csv data table is created
-  const table = db
+  const table = dbmgr.db
     .prepare(
       `
       SELECT name FROM sqlite_master WHERE type='table' AND name=?;

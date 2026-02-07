@@ -8,7 +8,7 @@ export function toTableName(filename: string) {
   return `${name}_rows`;
 }
 
-export type CsvRow = {
+export class CSVData {
   Frame: number;
   CaptureTime: number;
   LogTime: number;
@@ -51,7 +51,52 @@ export type CsvRow = {
   RightEyeOpenness: number;
   FocusDistance: number;
   FocusStability: number;
-};
+
+  constructor() {
+    this.Frame = 0;
+    this.CaptureTime = 0;
+    this.LogTime = 0;
+    this.HMDPositionX = 0;
+    this.HMDPositionY = 0;
+    this.HMDPositionz = 0;
+    this.HMDRotationX = 0;
+    this.HMDRotationY = 0;
+    this.HMDRotationZ = 0;
+    this.HMDRotationHuh = 0;
+    this.GazeStatus = 'INVALID';
+    this.CombinedGazeForwardX = 0;
+    this.CombinedGazeForwardY = 0;
+    this.CombinedGazeForwardZ = 0;
+    this.CombinedGazePositionX = 0;
+    this.CombinedGazePositionY = 0;
+    this.CombinedGazePositionZ = 0;
+    this.InterPupillaryDistanceInMM = 0;
+    this.LeftEyeStatus = 'INVALID';
+    this.LeftEyeForwardX = 0;
+    this.LeftEyeForwardY = 0;
+    this.LeftEyeForwardZ = 0;
+    this.LeftEyePositionX = 0;
+    this.LeftEyePositionY = 0;
+    this.LeftEyePositionZ = 0;
+    this.LeftPupilIrisDiameterRatio = 0;
+    this.LeftPupilDiameterInMM = 0;
+    this.LeftIrisDiameterInMM = 0;
+    this.LeftEyeOpenness = 0;
+    this.RightEyeStatus = 'INVALID';
+    this.RightEyeForwardX = 0;
+    this.RightEyeForwardY = 0;
+    this.RightEyeForwardZ = 0;
+    this.RightEyePositionX = 0;
+    this.RightEyePositionY = 0;
+    this.RightEyePositionZ = 0;
+    this.RightPupilIrisDiameterRatio = 0;
+    this.RightPupilDiameterInMM = 0;
+    this.RightIrisDiameterInMM = 0;
+    this.RightEyeOpenness = 0;
+    this.FocusDistance = 0;
+    this.FocusStability = 0;
+  }
+}
 
 export function deleteRowTable(db: Database, filename: string) {
   db.prepare(

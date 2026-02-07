@@ -5,12 +5,12 @@ import fs from 'fs';
 import os from 'os';
 
 import { filesMap } from './store.ts';
-import getDB from '../models/dbmgr.ts';
-import { createMetadataTable, type FileMetadata } from '../models/tables/metadata.ts';
-import { createRowTable, type CsvRow, deleteRowTable } from '../models/tables/row.ts';
+import DatabaseManager from '../models/DatabaseManager.ts';
+import { createMetadataTable, type Metadata } from '../models/tables/metadata.ts';
+import { createRowTable, type CSVData, deleteRowTable } from '../models/tables/csvrow.ts';
 import metadataActions from '../models/actions/metadata.ts';
 import rowActions from '../models/actions/row.ts';
-import DataCleaner from './stuff/DataCleaner.js';
+import DataCleaner from './data/DataCleaner.js';
 
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
@@ -22,12 +22,12 @@ const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
  * Set testing to true to use a temporary db instead of a file
  */
 const appRoot = app.getAppPath();
-const db = getDB({
+const dbmgr = new DatabaseManager({
   path: path.join(appRoot, 'main.db'),
   temporary: false,
   logging: false
 });
-createMetadataTable(db);
+dbmgr.init();
 
 /**
  * Handles the csv-open-file request. Opens a file selector
@@ -49,13 +49,13 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
     const filename = path.basename(filepath);
 
     // If file is already opened and cleaning, just return filename
-    let metadata = metadataActions.read(db, filename);
+    let metadata = dbmgr.read<Metadata>('Metadata', filename);
     if (metadata) {
       if (!filesMap.get(metadata.name)) {
         filesMap.set(
           metadata.name,
           new DataCleaner({
-            db,
+            db: dbmgr.db,
             name: metadata.name,
             path: metadata.path,
             request_size: metadata.request_size
@@ -95,7 +95,7 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
   });
 });
 
-function readMetadata(db: Database, name: string): FileMetadata {
+function readMetadata(db: Database, name: string): Metadata {
   let metadata = metadataActions.read(db, name);
   if (metadata === null) {
     throw new Error(`File: ${name} has not been opened`);
@@ -104,7 +104,7 @@ function readMetadata(db: Database, name: string): FileMetadata {
   return metadata;
 }
 
-function cleanFile(original: FileMetadata): Promise<void> {
+function cleanFile(original: Metadata): Promise<void> {
   return new Promise(async (resolve, reject) => {
     let metadata = original;
 
@@ -261,7 +261,7 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
 async function getBuffer(
   filename: string,
   request_size_override: number | null = null
-): Promise<CsvRow[] | null> {
+): Promise<CSVData[] | null> {
   return new Promise(async (resolve, reject) => {
     try {
       const metadata = metadataActions.read(db, filename);

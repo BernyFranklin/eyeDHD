@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 
-export type FileMetadata = {
+export class Metadata {
   id: number;
   name: string;
   path: string;
@@ -13,7 +13,22 @@ export type FileMetadata = {
   last_frame: number;
   created_at: string;
   updated_at: string;
-};
+
+  constructor() {
+    this.id = 0;
+    this.name = '';
+    this.path = '';
+    this.request_size = 200;
+    this.header = '';
+    this.completed = 0;
+    this.cleaned = 0;
+    this.requested = 0;
+    this.first_frame = 0;
+    this.last_frame = 0;
+    this.created_at = '';
+    this.updated_at = '';
+  }
+}
 
 // Creates a new table for storing file metadata
 export function createMetadataTable(db: Database) {

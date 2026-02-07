@@ -1,5 +1,5 @@
 import type { Database } from 'better-sqlite3';
-import type { FileMetadata } from '../tables/metadata.ts';
+import type { Metadata } from '../tables/metadata.ts';
 
 export default { create, read, readAll, update, remove };
 
@@ -8,10 +8,10 @@ function create(
   filename: string,
   filepath: string,
   request_size: number
-): FileMetadata | null {
+): Metadata | null {
   try {
     const result = db
-      .prepare<[string, string, number], FileMetadata>(
+      .prepare<[string, string, number], Metadata>(
         `
   			INSERT INTO metadata (name, path, request_size)
   			VALUES (?, ?, ?);
@@ -20,7 +20,7 @@ function create(
       .run(filename, filepath, request_size);
 
     const file = db
-      .prepare<any, FileMetadata>(
+      .prepare<any, Metadata>(
         `
         SELECT * FROM metadata WHERE id = ?;
 			`
@@ -39,10 +39,10 @@ function create(
   }
 }
 
-function read(db: Database, filename: string): FileMetadata | null {
+function read(db: Database, filename: string): Metadata | null {
   try {
     const file = db
-      .prepare<string, FileMetadata>(
+      .prepare<string, Metadata>(
         `
         SELECT * FROM metadata WHERE name = ?;
 			`
@@ -61,10 +61,10 @@ function read(db: Database, filename: string): FileMetadata | null {
   }
 }
 
-function readAll(db: Database): FileMetadata[] | null {
+function readAll(db: Database): Metadata[] | null {
   try {
     const files = db
-      .prepare<[], FileMetadata>(
+      .prepare<[], Metadata>(
         `
         SELECT * FROM metadata;
 			`
@@ -79,7 +79,7 @@ function readAll(db: Database): FileMetadata[] | null {
   }
 }
 
-function update(db: Database, file: FileMetadata): boolean {
+function update(db: Database, file: Metadata): boolean {
   try {
     const result = db
       .prepare(
@@ -111,7 +111,7 @@ function update(db: Database, file: FileMetadata): boolean {
   }
 }
 
-function remove(db: Database, file: FileMetadata): FileMetadata | null {
+function remove(db: Database, file: Metadata): Metadata | null {
   try {
     const original = read(db, file.name);
     if (original === null) {

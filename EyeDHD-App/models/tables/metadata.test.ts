@@ -1,14 +1,19 @@
 import { test } from 'vitest';
 
-import getDB from '../dbmgr.ts';
+import DatabaseManager from '../DatabaseManager';
 import { createMetadataTable } from './metadata.ts';
 
 test.concurrent('files table create', async ({ expect }) => {
-  const db = getDB({ temporary: true, logging: true });
-  createMetadataTable(db);
+  const dbmgr = new DatabaseManager({
+    temporary: true,
+    logging: true
+  });
+  dbmgr.init();
+
+  createMetadataTable(dbmgr.db);
 
   // Check whether the files database was created
-  const result = db
+  const result = dbmgr.db
     .prepare(
       `
       SELECT name FROM sqlite_master WHERE type='table' AND name='metadata';

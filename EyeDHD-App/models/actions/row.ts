@@ -1,10 +1,10 @@
 import type { Database } from 'better-sqlite3';
-import { toTableName, type CsvRow } from '../tables/row.ts';
-import type { FileMetadata } from '../tables/metadata.ts';
+import { toTableName, type CSVData } from '../tables/csvrow.ts';
+import type { Metadata } from '../tables/metadata.ts';
 
 export default { create, read, readAll, firstAndLast };
 
-function create(db: Database, file: FileMetadata, rows: number) {
+function create(db: Database, file: Metadata, rows: number) {
   try {
     const table = toTableName(file.name);
     const insert = db.prepare(`
@@ -126,11 +126,11 @@ function create(db: Database, file: FileMetadata, rows: number) {
   }
 }
 
-function read(db: Database, file: FileMetadata): CsvRow[] | undefined {
+function read(db: Database, file: Metadata): CSVData[] | undefined {
   try {
     const table = toTableName(file.name);
     const rows = db
-      .prepare<[number, number], CsvRow>(
+      .prepare<[number, number], CSVData>(
         `
         SELECT * FROM ${table}
 			  LIMIT ? OFFSET ?;
@@ -146,7 +146,7 @@ function read(db: Database, file: FileMetadata): CsvRow[] | undefined {
   }
 }
 
-function readAll(db: Database, file: FileMetadata) {
+function readAll(db: Database, file: Metadata) {
   try {
     const table = toTableName(file.name);
     const rows = db
@@ -165,7 +165,7 @@ function readAll(db: Database, file: FileMetadata) {
   }
 }
 
-function firstAndLast(db: Database, file: FileMetadata) {
+function firstAndLast(db: Database, file: Metadata) {
   try {
     const table = toTableName(file.name);
 
