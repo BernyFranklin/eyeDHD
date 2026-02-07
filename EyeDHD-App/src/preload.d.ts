@@ -4,10 +4,6 @@ declare global {
       csv: {
         openFile(request_size?: number): Promise<string | null>;
 
-        notify: {
-          send(message: string): void;
-        };
-
         resetReadingProgress(filename: string): Promise<any>;
         resetCleaningProgress(filename: string): Promise<any>;
         getMetadata(filename: string): Promise<any>;

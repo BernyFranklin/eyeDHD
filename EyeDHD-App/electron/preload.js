@@ -15,14 +15,6 @@ contextBridge.exposeInMainWorld('electron', {
     openFile: async (request_size) => {
       return await ipcRenderer.invoke('csv-open-file', request_size);
     },
-    notify: {
-      /**
-       * Creates an OS notificationA displaying the argument: message
-       */
-      send: (message) => {
-        ipcRenderer.send('notify', message);
-      }
-    },
 
     resetReadingProgress: async (filename) => {
       return await ipcRenderer.invoke('csv-reset-reading-progress', filename);
@@ -174,6 +166,7 @@ contextBridge.exposeInMainWorld('electron', {
       return await ipcRenderer.invoke('animation-export-cancel', sessionId);
     }
   },
+
   notify: (message) => {
     ipcRenderer.send('notify', message);
   }

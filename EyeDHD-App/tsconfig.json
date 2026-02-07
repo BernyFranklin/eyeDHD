@@ -26,8 +26,7 @@
     "electron/**/*",
     "saccades/**/*",
     "vite-env.d.ts",
-    "src/types/**/*.ts",
-    "src/types/**/*.d.ts"
+    "src/**/*.d.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }
