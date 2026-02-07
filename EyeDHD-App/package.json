@@ -20,6 +20,7 @@
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
     "@types/better-sqlite3": "^7.6.13",
+    "apexcharts": "^5.3.6",
     "better-sqlite3": "^12.4.1",
     "csv": "^6.4.1",
     "express": "^5.1.0",
