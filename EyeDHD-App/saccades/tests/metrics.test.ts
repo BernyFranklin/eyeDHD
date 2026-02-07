@@ -222,7 +222,47 @@ describe('Saccade Metrics', () => {
     });
 
     describe('D) Segment-level Metrics', () => {
-        it('D1)', () => {});
+        it('D1) Assigns saccades to segments and computes segment ratePerSec', () => {
+            const input = [
+                // Segment 1: [0, 2000)
+                { startTime: 500,  endTime: 550,  amplitudeDeg: 5 },    // Seg 1
+                { startTime: 1500, endTime: 1550, amplitudeDeg: 5 },    // Seg 1
+
+                // Segment 2: [2000, 400)
+                { startTime: 2500, endTime: 2550, amplitudeDeg: 5 },    // Seg 2]
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+
+            // All are plausible, so all should remain
+            expect(result.perSaccade.length).toBe(3);
+
+            expect(result.segmentSummaries.length).toBe(2);
+
+            const s1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const s2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            // Segment durations: 2000ms each => 2s
+            expect(s1.durationMs).toBe(2000);
+            expect(s2.durationMs).toBe(2000);
+
+            // Counts
+            expect(s1.count).toBe(2);
+            expect(s2.count).toBe(1);
+
+            // Rates: count / 2s
+            expect(s1.ratePerSec).toBeCloseTo(1, 6);    // 2 / 2
+            expect(s2.ratePerSec).toBeCloseTo(0.5, 6);  // 1 / 2
+        });
     
         it('D2)', () => {});
     
