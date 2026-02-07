@@ -74,8 +74,8 @@ describe('Saccade Metrics', () => {
 
     });
 
-    describe('B) Filters events outside plausible bounds and reports counts by reason', () => {
-        it('B1)', () => {
+    describe('B) Filtering and Transparency', () => {
+        it('B1) Filters events outside plausible bounds and reports counts by reason', () => {
             const input = [
                 { startTime: 1000, endTime: 1050, amplitudeDeg: 5   },    // Keep: Plausible
                 { startTime: 2000, endTime: 2500, amplitudeDeg: 500 },    // Filter: amplitude too large
@@ -157,7 +157,29 @@ describe('Saccade Metrics', () => {
     });
 
     describe('C) Session Rate Metrics', () => {
-        it('C1)', () => {});
+        it('C1) Computes session ratePerSec from kept saccades over session duration', () => {
+            const input = [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5   },   // Keep
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 5   },   // Keep
+                { startTime: 3000, endTime: 3050, amplitudeDeg: 999 },   // Filter: amplitude too large
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 }
+                },
+            });
+
+            // Sanity check: filtering applied
+            expect(result.perSaccade.length).toBe(2);
+            // Session span: min start = 1000, max end = 2050 => 1050ms = 1.05s
+            expect(result.session.durationMs).toBe(1050);
+            expect(result.session.durationSec).toBeCloseTo(1.05, 6);
+
+            // ratePerSec: 2 saccades / 1.05s
+            expect(result.session.ratePerSec).toBeCloseTo(2 / 1.05, 6);
+        });
     
         it('C2)', () => {});
     
