@@ -181,7 +181,26 @@ describe('Saccade Metrics', () => {
             expect(result.session.ratePerSec).toBeCloseTo(2 / 1.05, 6);
         });
     
-        it('C2)', () => {});
+        it('C2) Computes session ratePerMin when includeRatePerMin is true', () => {
+            const input = [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   // Keep
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },   // Keep
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                includeRatePerMin: true,
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+
+            // Session span: min start = 1000,, max end = 2050 => 1050ms => 1.05s
+            const expectedRatePerSec = 2 / 1.05;
+            const expectedRatePerMin = expectedRatePerSec * 60;
+            expect(result.session.ratePerSec).toBeCloseTo(expectedRatePerSec, 6);
+            expect(result.session.ratePerMin).toBeCloseTo(expectedRatePerMin, 6);
+        });
     
         it('C3)', () => {});
     
