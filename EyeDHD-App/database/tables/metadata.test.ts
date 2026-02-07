@@ -3,7 +3,7 @@ import { test as action_test } from './action_test';
 
 import type { Database } from 'better-sqlite3';
 
-import DatabaseManager from '../DatabaseManager';
+import DatabaseManager from '../Manager';
 import metadataActions, { type Metadata, createMetadataTable } from './metadata.ts';
 
 test.concurrent('files table create', async ({ expect }) => {
