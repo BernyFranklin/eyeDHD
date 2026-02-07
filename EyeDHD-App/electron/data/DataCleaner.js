@@ -1,7 +1,7 @@
 import fs from 'fs';
 import rl from 'readline';
 
-import metadataActions from '../../models/tables/metadata.ts';
+import metadataActions from '../database/tables/metadata.ts';
 import { sleep } from '../utils.ts';
 
 /**

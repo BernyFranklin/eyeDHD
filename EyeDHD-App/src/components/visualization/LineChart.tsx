@@ -1,4 +1,4 @@
-import { CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts';
+//import { CartesianGrid, Legend, Line, LineChart, Tooltip, XAxis, YAxis } from 'recharts';
 import { useEffect, useState } from 'react';
 
 import LoadingOverlay from '../LoadingOverlay.jsx';
@@ -255,35 +255,7 @@ export const Chart = () => {
             </form>
           )}
           {/*Conditionally render the LineChart*/}
-          {fileName !== '' && (
-            <LineChart
-              style={{ width: '100%', aspectRatio: 1.618, maxWidth: 600 }}
-              responsive
-              data={csvData}
-              margin={{
-                top: 20,
-                right: 20,
-                bottom: 5,
-                left: 0
-              }}
-            >
-              <CartesianGrid stroke="#aaa" strokeDasharray="5 5" />
-              <Line
-                type="monotone"
-                dataKey="LeftPupilDiameterInMM"
-                stroke="purple"
-                strokeWidth={2}
-                name="Left Dilation"
-              />
-              <XAxis dataKey="CaptureTime" />
-              <YAxis
-                width="auto"
-                label={{ value: 'DILATION', position: 'insideLeft', angle: -90 }}
-              />
-              <Legend align="right" />
-              <Tooltip />
-            </LineChart>
-          )}
+          {fileName !== '' && <div></div>}
         </div>
       </div>
     </>

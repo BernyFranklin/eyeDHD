@@ -1,11 +1,18 @@
 import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
-import DataStream from './DataStream';
-import csvActions, { type CSVData, createRowTable, deleteRowTable } from './tables/csv';
-import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
-import saccadeActions, { type SaccadeData } from './tables/saccade';
-import DataCleaner from '../electron/data/DataCleaner';
+import DataStream from './DataStream.ts';
+import csvActions, {
+  type CSVData,
+  createRowTable,
+  deleteRowTable
+} from './tables/csv.ts';
+import metadataActions, {
+  type Metadata,
+  createMetadataTable
+} from './tables/metadata.ts';
+import saccadeActions, { type SaccadeData } from './tables/saccade.ts';
+import DataCleaner from '../data/DataCleaner.js';
 
 // Database options
 type DBOptions = {

@@ -22,11 +22,11 @@
     "types": ["vite/client", "node"]
   },
   "include": [
-    "src",
-    "electron",
-    "saccades",
-    "models",
+    "src/**/*",
+    "electron/**/*",
+    "saccades/**/*",
     "vite-env.d.ts",
+    "src/types/**/*.ts",
     "src/types/**/*.d.ts"
   ],
   "exclude": ["node_modules", "dist"]

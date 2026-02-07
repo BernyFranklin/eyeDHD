@@ -4,9 +4,9 @@ import fs from 'fs';
 import os from 'os';
 
 import { filesMap } from './store.ts';
-import DatabaseManager from '../database/Manager.ts';
-import { type Metadata } from '../database/tables/metadata.ts';
-import { type CSVData } from '../database/tables/csv.ts';
+import DatabaseManager from './database/Manager.ts';
+import { type Metadata } from './database/tables/metadata.ts';
+import { type CSVData } from './database/tables/csv.ts';
 import DataCleaner from './data/DataCleaner.js';
 
 import { spawn } from 'child_process';
