@@ -1,7 +1,7 @@
 import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
-import DataStream from './DataStream.ts';
+import DataStream from './Stream.ts';
 import csvActions, {
   type CSVData,
   createRowTable,
@@ -12,7 +12,7 @@ import metadataActions, {
   createMetadataTable
 } from './tables/metadata.ts';
 import saccadeActions, { type SaccadeData } from './tables/saccade.ts';
-import DataCleaner from './DataCleaner.ts';
+import DataCleaner from './Cleaner.ts';
 
 // Database options
 type DBOptions = {

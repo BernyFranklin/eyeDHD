@@ -16,12 +16,12 @@ contextBridge.exposeInMainWorld('electron', {
       return await ipcRenderer.invoke('csv-open-file', request_size);
     },
     notify: {
-        /**
-         * Creates an OS notificationA displaying the argument: message
-         */
-        send: (message) => {
-            ipcRenderer.send('notify', message);
-        }
+      /**
+       * Creates an OS notificationA displaying the argument: message
+       */
+      send: (message) => {
+        ipcRenderer.send('notify', message);
+      }
     },
 
     resetReadingProgress: async (filename) => {
@@ -100,34 +100,31 @@ contextBridge.exposeInMainWorld('electron', {
   video: {
     /**
      *open a native dialog to choose a video file and return full path
-      */
+     */
     selectFile: async () => {
-    return await ipcRenderer.invoke("select-video-file");
+      return await ipcRenderer.invoke('select-video-file');
     },
-
 
     /**
      *sync vr + animation using main.js ffmpeg handler
-      */
+     */
     SidebySide: async (vrFile, animFile, offsetSeconds) => {
-    return await ipcRenderer.invoke("video-sync-vr", {
+      return await ipcRenderer.invoke('video-sync-vr', {
         vrFile,
         animFile,
         offsetSeconds
       });
     },
-      /* convert OS path → safe video URL for <video src="">
-      * no Node 'path' module used so bundlers can't complain
-      */
+    /* convert OS path → safe video URL for <video src="">
+     * no Node 'path' module used so bundlers can't complain
+     */
     toVideoURL: (filePath) => {
       if (!filePath) return null;
-      const normalized = filePath.replace(/\\/g, "/");
+      const normalized = filePath.replace(/\\/g, '/');
       // avoid double prefixing if it already starts with file:///
-      return normalized.startsWith("file:///")
-        ? normalized
-        : `file:///${normalized}`;
-      }
-    },
+      return normalized.startsWith('file:///') ? normalized : `file:///${normalized}`;
+    }
+  },
 
   animation: {
     /**

@@ -3,10 +3,10 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 
-import DatabaseManager from './database/Manager.ts';
-import { type Metadata } from './database/tables/metadata.ts';
-import { type CSVData } from './database/tables/csv.ts';
-import DataCleaner from './database/DataCleaner.ts';
+import DatabaseManager from './data/Manager.ts';
+import { type Metadata } from './data/tables/metadata.ts';
+import { type CSVData } from './data/tables/csv.ts';
+import DataCleaner from './data/Cleaner.ts';
 
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
