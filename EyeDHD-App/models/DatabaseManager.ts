@@ -2,9 +2,9 @@ import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
 import DataStream from './DataStream';
-import { type CSVData } from './tables/csvrow';
-import { createMetadataTable, type Metadata } from './tables/metadata';
-import { type SaccadeData } from './tables/saccades';
+import CSVDataActions, { type CSVData } from './tables/csvdata';
+import MetadataActions, { createMetadataTable, type Metadata } from './tables/metadata';
+import SaccadeActions, { type SaccadeData } from './tables/saccade';
 import DataCleaner from '../electron/data/DataCleaner';
 
 type DBOptions = {
@@ -17,6 +17,12 @@ export default class DatabaseManager {
   db: Database;
   options: DBOptions;
 
+  actions = {
+    metadata: MetadataActions,
+    csvdata: CSVDataActions,
+    saccadedata: SaccadeActions
+  };
+
   private streams = new Map<string, DataStream<any>>();
   private cleaners = new Map<string, DataCleaner>();
 
@@ -28,45 +34,6 @@ export default class DatabaseManager {
 
   init() {
     createMetadataTable(this.db);
-  }
-
-  read<T>(
-    kind: new (...args: any[]) => T,
-    filename: string,
-    amount: number = 1
-  ): T | null {
-    if (kind === CSVData) {
-      return true as T;
-    } else if (kind === Metadata) {
-      return true as T;
-    } else if (kind === SaccadeData) {
-      return true as T;
-    }
-    return null;
-  }
-
-  write<T>(kind: Kind, filename: string, data: T | T[]): boolean {
-    if (kind === 'CSVData') {
-      return true;
-    } else if (kind === 'Metadata') {
-      return true;
-    } else if (kind === 'SaccadeData') {
-      return true;
-    }
-
-    return false;
-  }
-
-  update<T>(kind: Kind, filename: string, data: T): boolean {
-    if (kind === 'CSVData') {
-      return true;
-    } else if (kind === 'Metadata') {
-      return true;
-    } else if (kind === 'SaccadeData') {
-      return true;
-    }
-
-    return false;
   }
 
   prepare(sql: string) {

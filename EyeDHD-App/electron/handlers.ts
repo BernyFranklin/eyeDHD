@@ -7,9 +7,13 @@ import os from 'os';
 import { filesMap } from './store.ts';
 import DatabaseManager from '../models/DatabaseManager.ts';
 import { createMetadataTable, type Metadata } from '../models/tables/metadata.ts';
-import { createRowTable, type CSVData, deleteRowTable } from '../models/tables/csvrow.ts';
-import metadataActions from '../models/actions/metadata.ts';
-import rowActions from '../models/actions/row.ts';
+import {
+  createRowTable,
+  type CSVData,
+  deleteRowTable
+} from '../models/tables/csvdata.ts';
+import metadataActions from '../models/tables/metadata.ts';
+import rowActions from '../models/tables/csvdata.ts';
 import DataCleaner from './data/DataCleaner.js';
 
 import { spawn } from 'child_process';
@@ -49,7 +53,7 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
     const filename = path.basename(filepath);
 
     // If file is already opened and cleaning, just return filename
-    let metadata = dbmgr.read<Metadata>('Metadata', filename);
+    let metadata = dbmgr.read(Metadata, filename);
     if (metadata) {
       if (!filesMap.get(metadata.name)) {
         filesMap.set(
