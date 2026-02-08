@@ -93,3 +93,28 @@ typings/
 
 # Electron-Forge
 out/
+
+# Misc files
+*.mp4
+*.csv
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.local
+
+# Hot Reload for Electron
+.tmp/
+.cache/
+node_modules
+dist
+dist-electron
+dist-ssr
+*.local
