@@ -15,6 +15,8 @@
   "parser": "@typescript-eslint/parser",
   "rules": {
     "no-empty-pattern": "off",
-    "no-async-promise-executor": "off"
+    "no-async-promise-executor": "off",
+    "no-empty-function": "off",
+    "@typescript-eslint/no-empty-function": "off"
   }
 }
