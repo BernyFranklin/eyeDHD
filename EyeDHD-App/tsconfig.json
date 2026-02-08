@@ -1,32 +1,26 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
+    "target": "ES6",
+    "module": "commonjs",
+    "lib": ["ES6", "DOM"],
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,
-    "allowImportingTsExtensions": true,
-    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
     "noEmit": true,
     "allowJs": true,
     "incremental": true,
-    "baseUrl": ".",
-    "rootDir": ".",
-    "outDir": "./dist",
-    "types": ["vite/client", "node"]
+    "rootDir": "./",
+    "outDir": "./dist"
   },
   "include": [
     "src/**/*",
     "electron/**/*",
     "saccades/**/*",
     "vite-env.d.ts",
-    "src/**/*.d.ts"
+    "./**/*.d.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

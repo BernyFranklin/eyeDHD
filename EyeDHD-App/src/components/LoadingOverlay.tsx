@@ -1,4 +1,8 @@
-export default function LoadingOverlay({ isLoading }) {
+type Props = {
+  isLoading: boolean;
+};
+
+export default function LoadingOverlay({ isLoading }: Props) {
   if (!isLoading) return null;
 
   return (

@@ -6,6 +6,15 @@ import { Environment, OrbitControls, OrthographicCamera } from '@react-three/dre
 // Component to render and rotate the 3D eye model
 import RotatingModel from './ModelMovement.jsx';
 import { initializeCanvasRecording, stopCanvasRecording } from './RecorderHelper.jsx';
+import { type CSVData } from '../../../electron/data/tables/csv';
+
+type Props = {
+  csvData: CSVData[];
+  loadMoreRows: () => void;
+  isPlaying: boolean;
+  shouldRecord?: boolean;
+  onIndexChange?: (index: number) => void;
+};
 
 // Main animation window component
 export default function AnimationWindow({
@@ -14,7 +23,7 @@ export default function AnimationWindow({
   isPlaying,
   shouldRecord = false,
   onIndexChange
-}) {
+}: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
@@ -71,7 +80,7 @@ export default function AnimationWindow({
   }, [csvData, isPlaying]);
 
   // Recording setup
-  const mediaRecorderRef = useRef(null);
+  const mediaRecorderRef = useRef<MediaRecorder>(null);
   const chunksRef = useRef([]);
 
   // Helpers are defined at module scope: initializeCanvasRecording, stopCanvasRecording

@@ -3,7 +3,7 @@ const cardStyles = {
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  width: '200px',
+  width: '300px',
   height: '250px',
   backgroundColor: '#13284c',
   color: '#fff',
@@ -19,11 +19,21 @@ const imgStyles = {
   color: 'white',
   filter: 'brightness(0) invert(1)'
 };
-export default function Card({ title, img }) {
+
+type Props = {
+  title: string;
+  img1: string;
+  img2: string;
+};
+
+export default function DoubleCard({ title, img1, img2 }: Props) {
   return (
-    <div className="card" style={cardStyles}>
+    <div className="card" style={cardStyles as React.CSSProperties}>
       <p>{title}</p>
-      <img src={img} alt={title} style={imgStyles} />
+      <div style={{ display: 'inline-block' }}>
+        <img src={img1} alt={title} style={imgStyles} />
+        <img src={img2} alt={title} style={imgStyles} />
+      </div>
     </div>
   );
 }

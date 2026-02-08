@@ -29,7 +29,13 @@ const disabledLinkStyles = {
   cursor: 'not-allowed'
 };
 
-export default function Navbar({ current, setCurrent, buttonsDisabled }) {
+type Props = {
+  current: number;
+  setCurrent: (index: number) => void;
+  buttonsDisabled: boolean;
+};
+
+export default function Navbar({ current, setCurrent, buttonsDisabled }: Props) {
   const handleHomeClick = () => {
     if (buttonsDisabled) return;
     setCurrent(0);

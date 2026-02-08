@@ -1,36 +1,43 @@
 import { useState, useEffect } from 'react';
+import { CSVData } from '../../electron/data/tables/csv';
 
-export default function PupilData({ csvData, currentIndex, isPlaying }) {
+type Props = {
+  csvData: CSVData[];
+  currentIndex: number;
+  isPlaying: boolean;
+};
+
+export default function PupilData({ csvData, currentIndex, isPlaying }: Props) {
   const [leftPupilSize, setLeftPupilSize] = useState(0);
   const [rightPupilSize, setRightPupilSize] = useState(0);
-  const [timestamp, setTimestamp] = useState('');
+  const [timestamp, setTimestamp] = useState<string>('');
 
   // Update pupil data based on current animation frame
   useEffect(() => {
     if (!csvData || !isPlaying || currentIndex >= csvData.length) return;
 
     const row = csvData[currentIndex];
-    
+
     // Extract pupil diameter data
-    const leftPupil = parseFloat(row['LeftPupilDiameterInMM']) || 0;
-    const rightPupil = parseFloat(row['RightPupilDiameterInMM']) || 0;
-    const frameTime = row['CaptureTime'] || row['LogTime'] || `Frame ${row['Frame']}`;
+    const leftPupil = row['LeftPupilDiameterInMM'];
+    const rightPupil = row['RightPupilDiameterInMM'];
+    const frameTime = row['CaptureTime'] || row['LogTime'];
 
     setLeftPupilSize(leftPupil);
     setRightPupilSize(rightPupil);
-    setTimestamp(frameTime);
+    setTimestamp(String(frameTime));
   }, [csvData, currentIndex, isPlaying]);
 
   // Helper function to get color based on pupil size (optional visual enhancement)
-  const getPupilColor = (size) => {
+  const getPupilColor = (size: number) => {
     if (size < 2) return '#ff4444'; // Small pupil - red
-    if (size < 4) return '#ffaa00'; // Medium pupil - orange  
+    if (size < 4) return '#ffaa00'; // Medium pupil - orange
     if (size < 6) return '#44ff44'; // Large pupil - green
     return '#4444ff'; // Very large pupil - blue
   };
 
   // Helper function to calculate pupil size percentage for visual bars
-  const getPupilPercentage = (size) => {
+  const getPupilPercentage = (size: number) => {
     const maxSize = 8; // Assume max pupil diameter of 8mm
     return Math.min((size / maxSize) * 100, 100);
   };
@@ -101,18 +108,20 @@ export default function PupilData({ csvData, currentIndex, isPlaying }) {
 
   return (
     <div style={styles.container}>
-      <div style={styles.header}>Pupil Dilation Data</div>
-      {timestamp && <div style={styles.timestamp}>Time: {timestamp}</div>}
-      
+      <div style={styles.header as React.CSSProperties}>Pupil Dilation Data</div>
+      {timestamp && (
+        <div style={styles.timestamp as React.CSSProperties}>Time: {timestamp}</div>
+      )}
+
       <div style={styles.eyeContainer}>
         {/* Left Eye Data */}
-        <div style={styles.eyeData}>
+        <div style={styles.eyeData as React.CSSProperties}>
           <div style={styles.eyeLabel}>Left Eye</div>
-          <div style={{...styles.pupilValue, color: getPupilColor(leftPupilSize)}}>
+          <div style={{ ...styles.pupilValue, color: getPupilColor(leftPupilSize) }}>
             {leftPupilSize.toFixed(2)}
           </div>
-          <div style={styles.pupilBar}>
-            <div 
+          <div style={styles.pupilBar as React.CSSProperties}>
+            <div
               style={{
                 ...styles.pupilFill,
                 width: `${getPupilPercentage(leftPupilSize)}%`,
@@ -124,13 +133,13 @@ export default function PupilData({ csvData, currentIndex, isPlaying }) {
         </div>
 
         {/* Right Eye Data */}
-        <div style={styles.eyeData}>
+        <div style={styles.eyeData as React.CSSProperties}>
           <div style={styles.eyeLabel}>Right Eye</div>
-          <div style={{...styles.pupilValue, color: getPupilColor(rightPupilSize)}}>
+          <div style={{ ...styles.pupilValue, color: getPupilColor(rightPupilSize) }}>
             {rightPupilSize.toFixed(2)}
           </div>
-          <div style={styles.pupilBar}>
-            <div 
+          <div style={styles.pupilBar as React.CSSProperties}>
+            <div
               style={{
                 ...styles.pupilFill,
                 width: `${getPupilPercentage(rightPupilSize)}%`,
@@ -144,7 +153,14 @@ export default function PupilData({ csvData, currentIndex, isPlaying }) {
 
       {/* Optional: Display additional metrics */}
       {leftPupilSize > 0 && rightPupilSize > 0 && (
-        <div style={{textAlign: 'center', marginTop: '10px', fontSize: '12px', color: '#666'}}>
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: '10px',
+            fontSize: '12px',
+            color: '#666'
+          }}
+        >
           Difference: {Math.abs(leftPupilSize - rightPupilSize).toFixed(2)}mm
         </div>
       )}

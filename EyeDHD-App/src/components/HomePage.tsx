@@ -9,7 +9,11 @@ const homePageStyles = {
   padding: '20px'
 };
 
-export default function HomePage({ setCurrent }) {
+type Props = {
+  setCurrent: (page: number) => void;
+};
+
+export default function HomePage({ setCurrent }: Props) {
   const handleImportClick = () => {
     setCurrent(1);
   };
@@ -27,7 +31,7 @@ export default function HomePage({ setCurrent }) {
     <div>
       <h1>Welcome to EyeDHD</h1>
       <p>Your go-to application for eye movement data analysis and visualization.</p>
-      <div style={homePageStyles}>
+      <div style={homePageStyles as React.CSSProperties}>
         <a className="card-link" onClick={handleImportClick}>
           <Card title="Import Raw CSV Data" img="../images/file-import-solid-full.svg" />
         </a>

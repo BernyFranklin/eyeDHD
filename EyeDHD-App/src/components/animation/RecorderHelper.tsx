@@ -1,5 +1,12 @@
+import { RefObject } from 'react';
+
 // Initialize recording helper
-function initializeCanvasRecording(canvas, setCanvasReady, mediaRecorderRef, chunksRef) {
+function initializeCanvasRecording(
+  canvas: HTMLCanvasElement,
+  setCanvasReady: any,
+  mediaRecorderRef: RefObject<MediaRecorder | null>,
+  chunksRef: RefObject<BlobPart[]>
+) {
   console.log('Canvas ready:', canvas);
   const stream = canvas.captureStream(60);
   setCanvasReady(true);
@@ -21,7 +28,7 @@ function initializeCanvasRecording(canvas, setCanvasReady, mediaRecorderRef, chu
 }
 
 // Stop recording helper
-function stopCanvasRecording(mediaRecorderRef) {
+function stopCanvasRecording(mediaRecorderRef: RefObject<MediaRecorder>) {
   const recorder = mediaRecorderRef.current;
   if (!recorder) {
     console.warn('Recorder not initialized yet, skipping stop.');

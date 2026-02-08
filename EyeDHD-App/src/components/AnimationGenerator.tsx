@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
-import LoadingOverlay from './LoadingOverlay.jsx';
-import AlertWindow from './AlertWindow.jsx';
-import AnimationContainer from './AnimationContainer.jsx';
-import ExportManager from './ExportManager.jsx';
-import Button from './Button.jsx';
+import LoadingOverlay from './LoadingOverlay.js';
+import AlertWindow from './AlertWindow.js';
+import AnimationContainer from './AnimationContainer.js';
+import ExportManager from './ExportManager.js';
+import Button from './Button.js';
+
+import { type Metadata } from '../../electron/data/tables/metadata';
+import { type CSVData } from '../../electron/data/tables/csv.js';
+
+const electron = (window as any).electron;
 
 export default function AnimationGenerator() {
-  const [csvData, setCsvData] = useState([]);
+  const [csvData, setCsvData] = useState<CSVData[]>([]);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
@@ -15,7 +20,7 @@ export default function AnimationGenerator() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHidden, setIsHidden] = useState(true);
 
-  const [files, setFiles] = useState(null);
+  const [files, setFiles] = useState<Metadata[]>([]);
 
   const styles = {
     container: {
@@ -50,7 +55,7 @@ export default function AnimationGenerator() {
       justifyContent: 'space-between',
       alignItems: 'center'
     }
-  };
+  } as any;
 
   styles.leftPane = {
     ...styles.singlePane,
@@ -66,19 +71,19 @@ export default function AnimationGenerator() {
   const getFilesList = async () => {
     setIsLoading(true);
 
-    const files = await window.electron.csv.getFileList().catch(handleError);
+    const files = await electron.csv.getFileList().catch(handleError);
     if (error) return;
 
     const cleaned = files
-      .filter((metadata) => metadata.completed)
-      .map((metadata) => metadata.name);
+      .filter((metadata: Metadata) => metadata.completed)
+      .map((metadata: Metadata) => metadata.name);
 
     setFiles(cleaned);
 
     setIsLoading(false);
   };
 
-  const loadMoreRows = async (name = null) => {
+  const loadMoreRows = async (name: string | null = null) => {
     const filename = name ? name : fileName;
     if (!filename) {
       sendError('No file loaded');
@@ -86,11 +91,11 @@ export default function AnimationGenerator() {
     }
 
     // Request 200 more rows from the backend
-    const rows = await window.electron.csv.getBuffer(filename).catch(handleError);
+    const rows = await electron.csv.getBuffer(filename).catch(handleError);
     if (error) return;
 
     if (rows.length === 0) {
-      setCsvData(null);
+      setCsvData([]);
       setIsPlaying(false);
       sendAlert(`End of "${filename}" reached!`);
     }
@@ -98,7 +103,7 @@ export default function AnimationGenerator() {
     setCsvData(rows);
   };
 
-  const sendAlert = (message) => {
+  const sendAlert = (message: string) => {
     setAlertMessage(message);
     setShowAlert(true);
     setTimeout(() => {
@@ -107,46 +112,48 @@ export default function AnimationGenerator() {
     }, 4000);
   };
 
-  const handleError = (err) => {
+  const handleError = (err: any) => {
     sendError(err.message);
   };
 
-  const sendError = (message) => {
+  const sendError = (message: string) => {
     setError(message);
     setTimeout(() => {
       setError('');
     }, 4000);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: Event) => {
     e.preventDefault();
     setFileName('');
     setIsHidden(false);
 
-    const form = e.target;
+    const form: HTMLFormElement | undefined = e.target as HTMLFormElement;
     const data = new FormData(form);
 
     const selected_file = data.get('fileSelect');
     if (selected_file === 'none') return;
 
-    await window.electron.csv.resetReadingProgress(selected_file).catch(handleError);
+    await electron.csv.resetReadingProgress(selected_file).catch(handleError);
 
-    setFileName(selected_file);
-    await loadMoreRows(selected_file);
+    setFileName(selected_file as string);
+    await loadMoreRows(selected_file as string);
   };
 
-  const handleReset = async (e) => {
+  const handleReset = async (e: Event) => {
     e.preventDefault();
     setIsHidden(true);
 
     // Set form select back to 'none'
     const form = e.target;
-    const select = document.querySelector('select[name="fileSelect"]');
+    const select: HTMLSelectElement | null = document.querySelector(
+      'select[name="fileSelect"]'
+    );
     if (select) select.value = 'none';
 
     // Reset reading progress if we have a filename
     if (fileName) {
-      await window.electron.csv.resetReadingProgress(fileName).catch(handleError);
+      await electron.csv.resetReadingProgress(fileName).catch(handleError);
     }
 
     // Reset all state
@@ -192,7 +199,11 @@ export default function AnimationGenerator() {
         >
           <h3>Generate Animation</h3>
           {files && (
-            <form method="post" onSubmit={handleSubmit} onReset={handleReset}>
+            <form
+              method="post"
+              onSubmit={handleSubmit as any}
+              onReset={handleReset as any}
+            >
               <label htmlFor="file-select">
                 Please select a file to generate an animation.
               </label>
@@ -203,8 +214,8 @@ export default function AnimationGenerator() {
                   </option>
                   {files.map((file, index) => {
                     return (
-                      <option key={index} value={file}>
-                        {file}
+                      <option key={index} value={file.name}>
+                        {file.name}
                       </option>
                     );
                   })}
@@ -214,14 +225,14 @@ export default function AnimationGenerator() {
                   onClick={() => {}}
                   className="btn"
                   buttonText="Generate"
-                  style={styles.buttonInline}
+                  style={styles.buttonInline as any}
                 />
                 <Button
                   type="reset"
                   onClick={handleReset}
                   className="btn"
                   buttonText="Reset"
-                  style={styles.buttonInline}
+                  style={styles.buttonInline as any}
                 />
               </div>
             </form>
@@ -245,7 +256,7 @@ export default function AnimationGenerator() {
             <ExportManager
               csvData={csvData}
               fileName={fileName}
-              onExportComplete={(result) => {
+              onExportComplete={(result: any) => {
                 if (result.success) {
                   sendAlert(
                     `Animation exported successfully! ${result.frameCount} frames exported.`

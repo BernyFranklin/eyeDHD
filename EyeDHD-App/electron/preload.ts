@@ -12,17 +12,17 @@ contextBridge.exposeInMainWorld('electron', {
      *
      * @returns filename of file opened or null if cancelled
      */
-    openFile: async (request_size) => {
+    openFile: async (request_size: number) => {
       return await ipcRenderer.invoke('csv-open-file', request_size);
     },
 
-    resetReadingProgress: async (filename) => {
+    resetReadingProgress: async (filename: string) => {
       return await ipcRenderer.invoke('csv-reset-reading-progress', filename);
     },
-    resetCleaningProgress: async (filename) => {
+    resetCleaningProgress: async (filename: string) => {
       return await ipcRenderer.invoke('csv-reset-cleaning-progress', filename);
     },
-    getMetadata: async (filename) => {
+    getMetadata: async (filename: string) => {
       return await ipcRenderer.invoke('csv-get-metadata', filename);
     },
     // gets the list of opened files
@@ -35,11 +35,11 @@ contextBridge.exposeInMainWorld('electron', {
      *
      * @returns an array of rows, or null if the entire file has been read
      */
-    getBuffer: async (filename) => {
+    getBuffer: async (filename: string) => {
       return await ipcRenderer.invoke('csv-get-buffer', filename);
     },
     // Returns { first, last }
-    getFirstAndLast: async (filename) => {
+    getFirstAndLast: async (filename: string) => {
       return await ipcRenderer.invoke('csv-get-first-and-last', filename);
     },
     /**
@@ -48,7 +48,7 @@ contextBridge.exposeInMainWorld('electron', {
      * @param filename - The name of the file to clean
      * @returns Promise with success status and message
      */
-    cleanData: async (filename) => {
+    cleanData: async (filename: string) => {
       return await ipcRenderer.invoke('csv-clean-data', filename);
     },
     /**
@@ -57,7 +57,7 @@ contextBridge.exposeInMainWorld('electron', {
      * @param filename - The name of the file to get stats for
      * @returns Object containing stats, performance metrics, and status
      */
-    getStats: async (filename) => {
+    getStats: async (filename: string) => {
       return await ipcRenderer.invoke('csv-get-stats', filename);
     },
     /**
@@ -66,7 +66,7 @@ contextBridge.exposeInMainWorld('electron', {
      * @param filename - The name of the file to get progress for
      * @returns Object containing progress information
      */
-    getProgress: async (filename) => {
+    getProgress: async (filename: string) => {
       return await ipcRenderer.invoke('csv-get-progress', filename);
     },
     /**
@@ -75,7 +75,7 @@ contextBridge.exposeInMainWorld('electron', {
      * @param filename - The name of the file to export
      * @returns Promise with export result
      */
-    exportData: async (filename) => {
+    exportData: async (filename: string) => {
       return await ipcRenderer.invoke('csv-export-data', filename);
     },
     /**
@@ -84,7 +84,7 @@ contextBridge.exposeInMainWorld('electron', {
      * @param options - Save options (defaultPath, filters, data)
      * @returns Promise with save result
      */
-    saveFile: async (options) => {
+    saveFile: async (options: any) => {
       return await ipcRenderer.invoke('csv-save-file', options);
     }
   },
@@ -100,7 +100,7 @@ contextBridge.exposeInMainWorld('electron', {
     /**
      *sync vr + animation using main.js ffmpeg handler
      */
-    SidebySide: async (vrFile, animFile, offsetSeconds) => {
+    SidebySide: async (vrFile: any, animFile: any, offsetSeconds: any) => {
       return await ipcRenderer.invoke('video-sync-vr', {
         vrFile,
         animFile,
@@ -110,7 +110,7 @@ contextBridge.exposeInMainWorld('electron', {
     /* convert OS path → safe video URL for <video src="">
      * no Node 'path' module used so bundlers can't complain
      */
-    toVideoURL: (filePath) => {
+    toVideoURL: (filePath: string) => {
       if (!filePath) return null;
       const normalized = filePath.replace(/\\/g, '/');
       // avoid double prefixing if it already starts with file:///
@@ -125,7 +125,7 @@ contextBridge.exposeInMainWorld('electron', {
      * @param options - Export options (fileName, format, quality)
      * @returns Promise with session ID and export path
      */
-    exportInit: async (options) => {
+    exportInit: async (options: any) => {
       return await ipcRenderer.invoke('animation-export-init', options);
     },
     /**
@@ -135,7 +135,7 @@ contextBridge.exposeInMainWorld('electron', {
      * @param frameData - Frame data object with frameIndex, frameData, timestamp
      * @returns Promise with success status
      */
-    exportAddFrame: async (sessionId, frameData) => {
+    exportAddFrame: async (sessionId: any, frameData: any) => {
       return await ipcRenderer.invoke('animation-export-add-frame', sessionId, frameData);
     },
     /**
@@ -144,7 +144,7 @@ contextBridge.exposeInMainWorld('electron', {
      * @param sessionId - The export session ID
      * @returns Promise with export result
      */
-    exportFinalize: async (sessionId) => {
+    exportFinalize: async (sessionId: any) => {
       return await ipcRenderer.invoke('animation-export-finalize', sessionId);
     },
     /**
@@ -153,7 +153,7 @@ contextBridge.exposeInMainWorld('electron', {
      * @param sessionId - The export session ID
      * @returns Promise with progress information
      */
-    exportProgress: async (sessionId) => {
+    exportProgress: async (sessionId: any) => {
       return await ipcRenderer.invoke('animation-export-progress', sessionId);
     },
     /**
@@ -162,12 +162,12 @@ contextBridge.exposeInMainWorld('electron', {
      * @param sessionId - The export session ID
      * @returns Promise with cancellation result
      */
-    exportCancel: async (sessionId) => {
+    exportCancel: async (sessionId: any) => {
       return await ipcRenderer.invoke('animation-export-cancel', sessionId);
     }
   },
 
-  notify: (message) => {
+  notify: (message: string) => {
     ipcRenderer.send('notify', message);
   }
 });

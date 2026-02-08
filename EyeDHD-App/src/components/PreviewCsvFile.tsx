@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
+import { CSVData } from '../../electron/data/tables/csv';
 
-export default function PreviewCsvFile({ fileName, csvData }) {
+type Props = {
+  fileName: string;
+  csvData: CSVData[];
+};
+
+export default function PreviewCsvFile({ fileName, csvData }: Props) {
   const displayText = useMemo(() => {
     if (csvData == null) return 'File read fully.';
 
