@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {computeSaccadeMetrics } from '../metrics'
-import { max, or } from 'three/tsl';
 
 describe('Saccade Metrics', () => {
     // Derived fields
@@ -13,40 +12,40 @@ describe('Saccade Metrics', () => {
                     amplitudeDeg: 5        // degrees
                 }
             ];
-    
+
             const result = computeSaccadeMetrics(input);
             expect(result.perSaccade.length).toBe(1);
-    
+
             const saccade = result.perSaccade[0];
             expect(saccade.durationMs).toBe(50);
             expect(saccade.durationSec).toBeCloseTo(0.05, 6);
             expect(saccade.ratePerSec).toBeCloseTo(100, 6);
         });
-    
+
         it('A2) Computes derived fields for multiple saccades and preserves order', () => {
             const input = [
                 { startTime: 2000, endTime: 2100, amplitudeDeg: 2  },   // 100ms, 0.1s, 20deg/s
                 { startTime: 500,  endTime: 520,  amplitudeDeg: 1  },   // 20ms, 0.02s, 50deg/s
                 { startTime: 9000, endTime: 9050, amplitudeDeg: 10 }    // 50ms, 0.05s, 200deg/s
             ];
-    
+
             const result = computeSaccadeMetrics(input);
             expect(result.perSaccade.length).toBe(3);
-    
+
             // Order preserved: index 0 corresponds to the first input saccade, etc.
             expect(result.perSaccade[0].durationMs).toBe(100);
             expect(result.perSaccade[0].durationSec).toBeCloseTo(0.1, 6);
             expect(result.perSaccade[0].ratePerSec).toBeCloseTo(20, 6);
-    
+
             expect(result.perSaccade[1].durationMs).toBe(20);
             expect(result.perSaccade[1].durationSec).toBeCloseTo(0.02, 6);
             expect(result.perSaccade[1].ratePerSec).toBeCloseTo(50, 6);
-    
+
             expect(result.perSaccade[2].durationMs).toBe(50);
             expect(result.perSaccade[2].durationSec).toBeCloseTo(0.05, 6);
             expect(result.perSaccade[2].ratePerSec).toBeCloseTo(200, 6);
         });
-        
+
         it('A3) Handles zero or negative durations without Infinity/NaN', () => {
             const input = [
                 { startTime: 1000, endTime: 1000, amplitudeDeg: 5 },   // zero duration
@@ -56,9 +55,9 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input);
 
             expect(result.perSaccade.length).toBe(2);
-            
+
             const zeroResult = result.perSaccade[0];
-            
+
             expect(zeroResult.durationMs).toBe(0);
             expect(zeroResult.durationSec).toBeCloseTo(0, 6);
             expect(Number.isFinite(zeroResult.ratePerSec)).toBe(true);
@@ -86,7 +85,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs:   { min: 0, max: 250 }    
+                    durationMs:   { min: 0, max: 250 }
                 },
             });
 
@@ -99,7 +98,7 @@ describe('Saccade Metrics', () => {
                 duration_out_of_bounds: 1,
             });
     });
-    
+
         it('B2) Counts all applicable filter reasons while totalFiltered counts unique events', () => {
             const input = [
                 { startTime: 1000, endTime: 2000, amplitudeDeg: 999 },  // Violates amplitude and duration bounds
@@ -109,7 +108,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs:   { min: 1, max: 250 }    
+                    durationMs:   { min: 1, max: 250 }
                 },
             });
 
@@ -123,7 +122,7 @@ describe('Saccade Metrics', () => {
                 duration_out_of_bounds: 1,
             });
         });
-    
+
         it('B3) Filtering does not mutate inputs', () => {
             const input = [
                 { startTime: 1000, endTime: 1050, amplitudeDeg:5    },     // Keep
@@ -139,7 +138,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs:   { min: 1, max: 250 }    
+                    durationMs:   { min: 1, max: 250 }
                 },
             });
 
@@ -180,7 +179,7 @@ describe('Saccade Metrics', () => {
             // ratePerSec: 2 saccades / 1.05s
             expect(result.session.ratePerSec).toBeCloseTo(2 / 1.05, 6);
         });
-    
+
         it('C2) Computes session ratePerMin when includeRatePerMin is true', () => {
             const input = [
                 { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   // Keep
@@ -201,10 +200,10 @@ describe('Saccade Metrics', () => {
             expect(result.session.ratePerSec).toBeCloseTo(expectedRatePerSec, 6);
             expect(result.session.ratePerMin).toBeCloseTo(expectedRatePerMin, 6);
         });
-    
+
         it('C3) Omits session ratePerMin when includeRatePerMin is not enabled', () => {
             const input = [
-                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },
                 { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },
             ];
 
@@ -218,7 +217,7 @@ describe('Saccade Metrics', () => {
             expect(result.session.ratePerSec).toBeTypeOf('number');
             expect(result.session.ratePerMin).toBeUndefined();
         });
-    
+
     });
 
     describe('D) Segment-level Metrics', () => {
@@ -263,7 +262,7 @@ describe('Saccade Metrics', () => {
             expect(s1.ratePerSec).toBeCloseTo(1, 6);    // 2 / 2
             expect(s2.ratePerSec).toBeCloseTo(0.5, 6);  // 1 / 2
         });
-    
+
         it('D2) Assigns by startTime with [start, end) boundaries and tracks unassigned', () => {
             const input = [
                 // Boundary case: exactly at seg1 end -> should fall into seg2
@@ -295,7 +294,7 @@ describe('Saccade Metrics', () => {
 
             expect(result.unassigned.count).toBe(1);      // Unassigned tracking
         });
-    
+
         it('D3) Computes segment ratePerMin when includeRatePerMin is true', () => {
             const input = [
                 // Segment 1: [0, 2000) => 2 seconds
@@ -327,7 +326,7 @@ describe('Saccade Metrics', () => {
             expect(seg2.ratePerSec).toBeCloseTo(0.5, 6);
             expect(seg2.ratePerMin).toBeCloseTo(30, 6);
         });
-    
+
         it('D4) Omits segment ratePerMin when includeRatePerMin is not enabled', () => {
             const input = [
                 { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },  // seg1
@@ -351,7 +350,6 @@ describe('Saccade Metrics', () => {
             expect(seg1.ratePerMin).toBeUndefined();
             expect(seg2.ratePerMin).toBeUndefined();
         });
-
     });
 
     describe('E) Distribution Stats', () => {
@@ -386,7 +384,7 @@ describe('Saccade Metrics', () => {
             expect(Number.isFinite(stats.std)).toBe(true);
             expect(stats.std).toBeGreaterThan(0);
         });
-    
+
         it('E2) Uses deterministic percentile coalculation and population standard deviation', () => {
                 const input = [
                     { startTime: 0,   endTime: 50,  amplitudeDeg: 10 },
@@ -456,28 +454,28 @@ describe('Saccade Metrics', () => {
 
     describe('F) ISI (inter-saccadic interval) + comparisons', () => {
         it('F1)', () => {});
-    
+
         it('F2)', () => {});
-    
+
         it('F3)', () => {});
-    
+
         it('F4)', () => {});
-    
+
         it('F5)', () => {});
 
     });
 
     describe('G) Plot/CSV-ready Outputs', () => {
         it('G1)', () => {});
-    
+
         it('G2)', () => {});
-    
+
         it('G3)', () => {});
 
     });
 
     describe('H) Ordering guarantees', () => {
         it('H1)', () => {});
-        
+
     });
 });
