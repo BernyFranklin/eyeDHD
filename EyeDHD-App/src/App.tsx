@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import './App.css';
-import HomePage from './components/HomePage.jsx';
-import CsvFileImport from './components/CsvFileImport.jsx';
-import AnimationGenerator from './components/AnimationGenerator.jsx';
+import HomePage from './components/HomePage';
+import CsvFileImport from './components/CsvFileImport';
+import AnimationGenerator from './components/AnimationGenerator';
 import { Visualization } from './components/visualization';
-import LoadingOverlay from './components/LoadingOverlay.jsx';
-import Navbar from './components/Navbar.jsx';
+import LoadingOverlay from './components/LoadingOverlay';
+import Navbar from './components/Navbar';
 import SidebySide from './components/SidebySide';
 
 function App() {

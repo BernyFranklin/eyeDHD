@@ -1,11 +1,9 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
 import { type CSVData } from '../../electron/data/tables/csv';
-
-const electron = (window as any).electron;
 
 type Props = {
   buttonsDisabled: boolean;
@@ -80,7 +78,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
     setIsCleaning(false);
 
     // Request backend to open a file selector, wait for filename
-    const file = await electron.csv.openFile(200).catch(handleError);
+    const file = await window.electron.csv.openFile(200).catch(handleError);
     if (error || !file) {
       setIsLoading(false);
       return;
@@ -88,17 +86,20 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 
     setFileName(file);
 
-    const metadata = await electron.csv.getMetadata(file).catch(handleError);
+    try {
+      const metadata = await window.electron.csv.getMetadata(file);
+      if (metadata.completed) {
+        setCleaningProgress({ ...cleaningProgress, isComplete: true });
+        // Request the first buffer of rows from the database
+        const rows = await window.electron.csv.getBuffer(file);
+        if (error) return;
 
-    if (metadata.completed) {
-      setCleaningProgress({ ...cleaningProgress, isComplete: true });
-      // Request the first buffer of rows from the database
-      const rows = await electron.csv.getBuffer(file).catch(handleError);
-      if (error) return;
+        setCleaningStats({ ...cleaningStats, stats: { totalRows: metadata.cleaned } });
 
-      setCleaningStats({ ...cleaningStats, stats: { totalRows: metadata.cleaned } });
-
-      setCsvData(rows);
+        setCsvData(rows);
+      }
+    } catch (err: any) {
+      handleError(err);
     }
 
     setIsLoading(false);
@@ -127,12 +128,12 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
       setShowCleaningResults(true);
 
       // Start the cleaning process
-      const result = await electron.csv.cleanData(fileName);
+      const result = await window.electron.csv.cleanData(fileName);
 
       // Get initial progress immediately
       try {
-        const initialProgress = await electron.csv.getProgress(fileName);
-        const initialStats = await electron.csv.getStats(fileName);
+        const initialProgress = await window.electron.csv.getProgress(fileName);
+        const initialStats = await window.electron.csv.getStats(fileName);
         setCleaningProgress(initialProgress);
         setCleaningStats(initialStats);
       } catch (err) {
@@ -142,8 +143,8 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
       // Set up progress monitoring
       const progressInterval = setInterval(async () => {
         try {
-          const progress = await electron.csv.getProgress(fileName);
-          const stats = await electron.csv.getStats(fileName);
+          const progress = await window.electron.csv.getProgress(fileName);
+          const stats = await window.electron.csv.getStats(fileName);
 
           setCleaningProgress(progress);
           setCleaningStats(stats);
@@ -160,11 +161,12 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
             // Refresh the data view with cleaned data
             try {
               // Request the first buffer of rows from the database
-              const rows = await electron.csv.getBuffer(fileName).catch(handleError);
+              const rows = await window.electron.csv.getBuffer(fileName);
               if (error) return;
 
               setCsvData(rows);
             } catch (bufferError) {
+              handleError(bufferError);
               // Buffer no longer available after completion
             }
           }
@@ -206,7 +208,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 
     try {
       setIsLoading(true);
-      const result = await electron.csv.exportData(fileName);
+      const result = await window.electron.csv.exportData(fileName);
 
       if (result.success) {
         sendAlert(
@@ -236,7 +238,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
     setIsCleaning(false);
 
     if (fileName) {
-      await electron.csv.resetCleaningProgress(fileName).catch(handleError);
+      await window.electron.csv.resetCleaningProgress(fileName).catch(handleError);
     }
     setFileName('');
   };
@@ -330,7 +332,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
           <div style={styles.buttonContainer as React.CSSProperties}>
             {!cleaningProgress?.isComplete && (
               <Button
-                onClick={isCleaning ? () => {} : cleanData}
+                onClick={isCleaning ? undefined : cleanData}
                 className={`btn${isCleaning ? ' disabled' : ''}`}
                 buttonText={isCleaning ? 'Cleaning...' : 'Clean Data'}
               />

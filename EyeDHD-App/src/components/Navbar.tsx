@@ -1,3 +1,5 @@
+import React from 'react';
+
 const imgStyles = {
   width: '50px',
   color: 'white',

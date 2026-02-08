@@ -1,4 +1,6 @@
-const { contextBridge, ipcRenderer } = require('electron');
+import { contextBridge, ipcRenderer } from 'electron';
+
+console.log('Preload script loaded, exposing API to renderer process');
 
 /**
  * Defines requests that the frontend can send to the backend
@@ -12,7 +14,7 @@ contextBridge.exposeInMainWorld('electron', {
      *
      * @returns filename of file opened or null if cancelled
      */
-    openFile: async (request_size: number) => {
+    openFile: async (request_size: number): Promise<string> => {
       return await ipcRenderer.invoke('csv-open-file', request_size);
     },
 

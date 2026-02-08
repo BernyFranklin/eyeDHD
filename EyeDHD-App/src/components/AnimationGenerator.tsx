@@ -1,14 +1,12 @@
-import { useState, useEffect } from 'react';
-import LoadingOverlay from './LoadingOverlay.js';
-import AlertWindow from './AlertWindow.js';
-import AnimationContainer from './AnimationContainer.js';
-import ExportManager from './ExportManager.js';
-import Button from './Button.js';
+import React, { useState, useEffect } from 'react';
+import LoadingOverlay from './LoadingOverlay';
+import AlertWindow from './AlertWindow';
+import AnimationContainer from './AnimationContainer';
+import ExportManager from './ExportManager';
+import Button from './Button';
 
 import { type Metadata } from '../../electron/data/tables/metadata';
-import { type CSVData } from '../../electron/data/tables/csv.js';
-
-const electron = (window as any).electron;
+import { type CSVData } from '../../electron/data/tables/csv';
 
 export default function AnimationGenerator() {
   const [csvData, setCsvData] = useState<CSVData[]>([]);
@@ -20,7 +18,7 @@ export default function AnimationGenerator() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHidden, setIsHidden] = useState(true);
 
-  const [files, setFiles] = useState<Metadata[]>([]);
+  const [files, setFiles] = useState<string[]>([]);
 
   const styles = {
     container: {
@@ -71,14 +69,18 @@ export default function AnimationGenerator() {
   const getFilesList = async () => {
     setIsLoading(true);
 
-    const files = await electron.csv.getFileList().catch(handleError);
-    if (error) return;
+    try {
+      const files = await window.electron.csv.getFileList();
+      if (error) return;
 
-    const cleaned = files
-      .filter((metadata: Metadata) => metadata.completed)
-      .map((metadata: Metadata) => metadata.name);
+      const cleaned = files
+        .filter((metadata: Metadata) => metadata.completed)
+        .map((metadata: Metadata) => metadata.name);
 
-    setFiles(cleaned);
+      setFiles(cleaned);
+    } catch (err) {
+      handleError(err);
+    }
 
     setIsLoading(false);
   };
@@ -91,16 +93,20 @@ export default function AnimationGenerator() {
     }
 
     // Request 200 more rows from the backend
-    const rows = await electron.csv.getBuffer(filename).catch(handleError);
-    if (error) return;
+    try {
+      const rows = await window.electron.csv.getBuffer(filename);
+      if (error) return;
 
-    if (rows.length === 0) {
-      setCsvData([]);
-      setIsPlaying(false);
-      sendAlert(`End of "${filename}" reached!`);
+      if (rows.length === 0) {
+        setCsvData([]);
+        setIsPlaying(false);
+        sendAlert(`End of "${filename}" reached!`);
+      }
+
+      setCsvData(rows);
+    } catch (err) {
+      handleError(err);
     }
-
-    setCsvData(rows);
   };
 
   const sendAlert = (message: string) => {
@@ -134,10 +140,14 @@ export default function AnimationGenerator() {
     const selected_file = data.get('fileSelect');
     if (selected_file === 'none') return;
 
-    await electron.csv.resetReadingProgress(selected_file).catch(handleError);
+    try {
+      await window.electron.csv.resetReadingProgress(selected_file as string);
 
-    setFileName(selected_file as string);
-    await loadMoreRows(selected_file as string);
+      setFileName(selected_file as string);
+      await loadMoreRows(selected_file as string);
+    } catch (err) {
+      handleError(err);
+    }
   };
 
   const handleReset = async (e: Event) => {
@@ -153,7 +163,7 @@ export default function AnimationGenerator() {
 
     // Reset reading progress if we have a filename
     if (fileName) {
-      await electron.csv.resetReadingProgress(fileName).catch(handleError);
+      await window.electron.csv.resetReadingProgress(fileName).catch(handleError);
     }
 
     // Reset all state
@@ -214,25 +224,25 @@ export default function AnimationGenerator() {
                   </option>
                   {files.map((file, index) => {
                     return (
-                      <option key={index} value={file.name}>
-                        {file.name}
+                      <option key={index} value={file}>
+                        {file}
                       </option>
                     );
                   })}
                 </select>
                 <Button
                   type="submit"
-                  onClick={() => {}}
+                  onClick={undefined}
                   className="btn"
                   buttonText="Generate"
-                  style={styles.buttonInline as any}
+                  style={styles.buttonInline as React.CSSProperties}
                 />
                 <Button
                   type="reset"
                   onClick={handleReset}
                   className="btn"
                   buttonText="Reset"
-                  style={styles.buttonInline as any}
+                  style={styles.buttonInline as React.CSSProperties}
                 />
               </div>
             </form>

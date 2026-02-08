@@ -1,3 +1,5 @@
+import React from 'react';
+
 type Props = {
   onClick: (() => Promise<void>) | (() => void) | ((e: Event) => void);
   className?: string;

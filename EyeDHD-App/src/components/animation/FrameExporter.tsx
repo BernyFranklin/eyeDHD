@@ -1,12 +1,10 @@
 // React and Three.js imports
 import { Canvas, RootState } from '@react-three/fiber';
-import { Suspense, useRef, useEffect, useState, useCallback } from 'react';
+import React, { Suspense, useRef, useEffect, useState, useCallback } from 'react';
 import { Environment, OrthographicCamera } from '@react-three/drei';
 
 // Component to render the 3D eye model
-import RotatingModel from './ModelMovement.jsx';
-
-const electron = (window as any).electron;
+import RotatingModel from './ModelMovement';
 
 type Props = {
   csvData: Array<any>; // CSV data array
@@ -48,8 +46,8 @@ export default function FrameExporter({
         const stream = canvas.captureStream(60);
 
         // Try MP4 first, fallback to WebM if not supported
-        let options;
-        let fileExtension;
+        let options: any;
+        let fileExtension: string;
 
         if (MediaRecorder.isTypeSupported('video/mp4; codecs=avc1')) {
           options = { mimeType: 'video/mp4; codecs=avc1' };
@@ -106,7 +104,7 @@ export default function FrameExporter({
       const uint8Array = new Uint8Array(arrayBuffer);
 
       // Use electron's save dialog
-      const result = await electron.csv.saveFile({
+      const result = await window.electron.csv.saveFile({
         defaultPath: `${fileName.replace('.csv', '')}_animation.${extension}`,
         filters: [
           { name: 'MP4 Video', extensions: ['mp4'] },
@@ -116,7 +114,7 @@ export default function FrameExporter({
       });
 
       if (result.success) {
-        electron.notify(`Animation exported successfully to ${result.filePath}`);
+        window.electron.notify(`Animation exported successfully to ${result.filePath}`);
         onExportComplete({
           success: true,
           outputPath: result.filePath,

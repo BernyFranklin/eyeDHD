@@ -1,11 +1,11 @@
 // React and Three.js imports
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useRef, useEffect, useState } from 'react';
+import React, { Suspense, useRef, useEffect, useState } from 'react';
 import { Environment, OrbitControls, OrthographicCamera } from '@react-three/drei';
 
 // Component to render and rotate the 3D eye model
-import RotatingModel from './ModelMovement.jsx';
-import { initializeCanvasRecording, stopCanvasRecording } from './RecorderHelper.jsx';
+import RotatingModel from './ModelMovement';
+import { initializeCanvasRecording, stopCanvasRecording } from './RecorderHelper';
 import { type CSVData } from '../../../electron/data/tables/csv';
 
 type Props = {

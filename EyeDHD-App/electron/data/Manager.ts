@@ -1,18 +1,11 @@
 import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
-import DataStream from './Stream.ts';
-import csvActions, {
-  type CSVData,
-  createRowTable,
-  deleteRowTable
-} from './tables/csv.ts';
-import metadataActions, {
-  type Metadata,
-  createMetadataTable
-} from './tables/metadata.ts';
-import saccadeActions, { type SaccadeData } from './tables/saccade.ts';
-import DataCleaner from './Cleaner.ts';
+import DataStream from './Stream';
+import csvActions, { type CSVData, createRowTable, deleteRowTable } from './tables/csv';
+import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
+import saccadeActions, { type SaccadeData } from './tables/saccade';
+import DataCleaner from './Cleaner';
 
 // Database options
 type DBOptions = {
@@ -37,7 +30,9 @@ type CSVActions = {
   firstAndLast: (file: Metadata) => { first: CSVData; last: CSVData } | undefined;
 };
 
-type SaccadeDataActions = {};
+type SaccadeDataActions = {
+  create: () => boolean;
+};
 
 // Database manager
 export default class DatabaseManager {
@@ -89,7 +84,11 @@ export default class DatabaseManager {
       }
     };
 
-    this.saccade = saccadeActions;
+    this.saccade = {
+      create: () => {
+        return false;
+      }
+    };
   }
 
   prepare(sql: string) {

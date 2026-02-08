@@ -1,10 +1,8 @@
-import { useState, useRef } from 'react';
-import FrameExporter from './animation/FrameExporter.jsx';
-import Button from './Button.js';
+import React, { useState, useRef } from 'react';
+import FrameExporter from './animation/FrameExporter';
+import Button from './Button';
 
 import { type CSVData } from '../../electron/data/tables/csv';
-
-const electron = (window as any).electron;
 
 type Options = {
   csvData: CSVData[] | null;
@@ -88,7 +86,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }: O
 
     try {
       // Reset reading progress to start from beginning
-      await electron.csv.resetReadingProgress(fileName);
+      await window.electron.csv.resetReadingProgress(fileName);
 
       let allData: CSVData[] = [];
       let batch;
@@ -96,7 +94,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }: O
 
       do {
         // Load data in larger chunks for export
-        batch = await electron.csv.getBuffer(fileName);
+        batch = await window.electron.csv.getBuffer(fileName);
         if (batch && batch.length > 0) {
           allData = [...allData, ...batch];
           batchCount++;

@@ -1,5 +1,5 @@
 // React and Three.js imports
-import { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 
@@ -12,8 +12,6 @@ import {
 } from '../../utils/animationUtil.js';
 
 import { type CSVData } from '../../../electron/data/tables/csv';
-import { Object3D } from 'three';
-import { Object3DEventMap } from 'three';
 
 type Props = {
   csvData: CSVData[] | null;

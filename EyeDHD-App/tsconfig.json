@@ -1,26 +1,19 @@
 {
   "compilerOptions": {
-    "target": "ES6",
+    "target": "ESNext",
     "module": "commonjs",
-    "lib": ["ES6", "DOM"],
-    "jsx": "react-jsx",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "allowImportingTsExtensions": true,
-    "noEmit": true,
     "allowJs": true,
-    "incremental": true,
-    "rootDir": "./",
-    "outDir": "./dist"
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "jsx": "react-jsx"
   },
-  "include": [
-    "src/**/*",
-    "electron/**/*",
-    "saccades/**/*",
-    "vite-env.d.ts",
-    "./**/*.d.ts"
-  ],
+  "include": ["src/**/*", "."],
+  "files": ["src/global.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,4 +1,4 @@
-import type { Vec3 } from "./velocities.ts";
+import type { Vec3 } from "./velocities";
 import { computeAngularVelocitiesDegPerSec } from "./velocities";
 import type {
     SaccadeEvent,
@@ -101,13 +101,13 @@ function buildExtendedEvent(
     // startVector: vector before the first saccadic step (if available)
     const startVector =
         base.startIndex - 1 >= 0 ? vectors[base.startIndex - 1] : vectors[0];
-    
+
     // endVector: vector at the last saccadic index (if available)
     const endVector =
         base.endIndex >= 0 && base.endIndex < vectors.length
             ? vectors[base.endIndex]
             : vectors[vectors.length - 1];
-    
+
     // Direction is optional
     const direction: Vec3 = {
         x: endVector.x - startVector.x,

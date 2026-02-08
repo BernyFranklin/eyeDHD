@@ -1,5 +1,7 @@
-import AnimationWindow from './animation/AnimationWindow.jsx';
-import Button from './Button.jsx';
+import React from 'react';
+
+import AnimationWindow from './animation/AnimationWindow';
+import Button from './Button';
 
 import { type CSVData } from '../../electron/data/tables/csv';
 
@@ -24,7 +26,10 @@ export default function AnimationContainer({
   setIsPlaying
 }: Props) {
   return (
-    <div className="animation-window-container" style={styles.container as any}>
+    <div
+      className="animation-window-container"
+      style={styles.container as React.CSSProperties}
+    >
       <h3>Preview of Animation</h3>
       <p>
         Use the controls below to play or pause the animation preview. To save the

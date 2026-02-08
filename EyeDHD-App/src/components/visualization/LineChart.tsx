@@ -1,10 +1,10 @@
 import ApexCharts from 'apexcharts';
 
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
-import LoadingOverlay from '../LoadingOverlay.jsx';
-import AlertWindow from '../AlertWindow.jsx';
-import Button from '../Button.jsx';
+import LoadingOverlay from '../LoadingOverlay';
+import AlertWindow from '../AlertWindow';
+import Button from '../Button';
 
 // #region Sample data
 const data = [
@@ -92,7 +92,7 @@ export const Chart = () => {
   };
 
   useEffect(() => {
-    var chart = new ApexCharts(document.getElementById(id), {
+    const chart = new ApexCharts(document.getElementById(id), {
       chart: {
         type: 'line',
         height: 350
@@ -115,7 +115,10 @@ export const Chart = () => {
 
   return (
     <>
-      <div className="dilation-chart-container" style={styles.container}>
+      <div
+        className="dilation-chart-container"
+        style={styles.container as React.CSSProperties}
+      >
         {/*Used for when things take awhile to load*/}
         <LoadingOverlay isLoading={isLoading} />
         <h3>Chart Dilation</h3>

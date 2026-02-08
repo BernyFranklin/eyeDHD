@@ -1,13 +1,18 @@
+import { type CSVData } from '../electron/data/tables/csv';
+import { type Metadata } from '../electron/data/tables/metadata';
+
+export {};
+
 declare interface Electron {
   csv: {
     openFile(request_size?: number): Promise<string | null>;
 
-    resetReadingProgress(filename: string): Promise<any>;
-    resetCleaningProgress(filename: string): Promise<any>;
-    getMetadata(filename: string): Promise<any>;
-    getFileList(): Promise<string[]>;
-    getBuffer(filename: string): Promise<any[] | null>;
-    getFirstAndLast(filename: string): Promise<{ first: any; last: any } | null>;
+    resetReadingProgress(filename: string): Promise<void>;
+    resetCleaningProgress(filename: string): Promise<void>;
+    getMetadata(filename: string): Promise<Metadata>;
+    getFileList(): Promise<Metadata[]>;
+    getBuffer(filename: string): Promise<CSVData[] | null>;
+    getFirstAndLast(filename: string): Promise<{ first: CSVData; last: CSVData } | null>;
     cleanData(filename: string): Promise<any>;
     getStats(filename: string): Promise<Record<string, any>>;
     getProgress(filename: string): Promise<Record<string, any>>;

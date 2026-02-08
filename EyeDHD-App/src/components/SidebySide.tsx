@@ -1,7 +1,5 @@
-import { useState, useRef } from 'react';
-import Button from './Button.js';
-
-const electron = (window as any).electron;
+import React, { useState, useRef } from 'react';
+import Button from './Button';
 
 export default function SidebySide() {
   const defaultStatus = 'Ready.';
@@ -91,16 +89,16 @@ export default function SidebySide() {
   const animVideoRef = useRef<HTMLVideoElement>(null);
 
   //turn OS path into a usable <video> src
-  const vrSrc = vrFile ? electron.video.toVideoURL(vrFile) : null;
-  const animSrc = animFile ? electron.video.toVideoURL(animFile) : null;
+  const vrSrc = vrFile ? window.electron.video.toVideoURL(vrFile) : null;
+  const animSrc = animFile ? window.electron.video.toVideoURL(animFile) : null;
 
   const pickVr = async () => {
-    const file = await electron.video.selectFile();
+    const file = await window.electron.video.selectFile();
     if (file) setVrFile(file);
   };
 
   const pickAnim = async () => {
-    const file = await electron.video.selectFile();
+    const file = await window.electron.video.selectFile();
     if (file) setAnimFile(file);
   };
 
@@ -186,7 +184,7 @@ export default function SidebySide() {
 
     setStatus('Syncing with offset...');
     try {
-      const outPath = await electron.video.SidebySide(vrFile, animFile, numeric);
+      const outPath = await window.electron.video.SidebySide(vrFile, animFile, numeric);
       setStatus(`Synced file saved at: ${outPath}`);
     } catch (err: any) {
       setStatus(`Error: ${err.message}`);

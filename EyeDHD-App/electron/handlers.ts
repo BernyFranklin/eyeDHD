@@ -3,10 +3,10 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 
-import DatabaseManager from './data/Manager.ts';
-import { type Metadata } from './data/tables/metadata.ts';
-import { type CSVData } from './data/tables/csv.ts';
-import DataCleaner from './data/Cleaner.ts';
+import DatabaseManager from './data/Manager';
+import { type Metadata } from './data/tables/metadata';
+import { type CSVData } from './data/tables/csv';
+import DataCleaner from './data/Cleaner';
 
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
@@ -91,7 +91,7 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
 });
 
 function readMetadata(name: string): Metadata {
-  let metadata = dbmgr.metadata.read(name);
+  const metadata = dbmgr.metadata.read(name);
   if (metadata === null) {
     throw new Error(`File: ${name} has not been opened`);
   }
@@ -132,7 +132,7 @@ function cleanFile(original: Metadata): Promise<void> {
 
     while (buffer) {
       // Store rows
-      let stored = dbmgr.csv.create(metadata, buffer);
+      const stored = dbmgr.csv.create(metadata, buffer);
       if (!stored) {
         return reject(`Failed to store rows for file: ${metadata.name}`);
       }
@@ -467,7 +467,7 @@ async function exportToCSV(filename: string, outputPath: string) {
 
       const stream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
 
-      let metadata = dbmgr.metadata.read(filename);
+      const metadata = dbmgr.metadata.read(filename);
       if (!metadata) {
         return reject(`File: ${filename} has not been opened`);
       }
@@ -675,7 +675,7 @@ ipcMain.handle('animation-export-init', async (_, options) => {
         outputPath: filePath,
         exportFormat: fileExtension,
         quality,
-        frames: [],
+        frames: [] as any[],
         status: 'initialized',
         totalFrames: 0,
         processedFrames: 0,

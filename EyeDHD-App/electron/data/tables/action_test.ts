@@ -1,41 +1,47 @@
 import { test as vitest } from 'vitest';
 
-import getDB from '../dbmgr.ts';
-import { createMetadataTable } from '../tables/metadata.ts';
+import DatabaseManager from '../Manager';
+import { createMetadataTable } from './metadata';
 
 // Adds a testing db with entries added to it for each test
 export const test = vitest.extend({
-  db: async ({}, use) => {
+  db: async ({}, use: any) => {
     console.log('Setting up test database...');
 
-    const db = getDB({ temporary: true, logging: true });
-    createMetadataTable(db);
+    const dbmgr = new DatabaseManager({ temporary: true, logging: true });
+    createMetadataTable(dbmgr.db);
 
-    db.prepare(
-      `
+    dbmgr
+      .prepare(
+        `
 			INSERT INTO metadata (name, path, request_size)
 			VALUES (?, ?, ?);
 		`
-    ).run('test.csv', 'test.csv', 200);
+      )
+      .run('test.csv', 'test.csv', 200);
 
-    db.prepare(
-      `
+    dbmgr
+      .prepare(
+        `
 			INSERT INTO metadata (name, path, request_size)
 			VALUES (?, ?, ?);
 		`
-    ).run('test2.csv', 'test2.csv', 200);
+      )
+      .run('test2.csv', 'test2.csv', 200);
 
-    db.prepare(
-      `
+    dbmgr
+      .prepare(
+        `
 			INSERT INTO metadata (name, path, request_size)
 			VALUES (?, ?, ?);
 		`
-    ).run('test3.csv', 'test3.csv', 200);
+      )
+      .run('test3.csv', 'test3.csv', 200);
 
     console.log('Setting up test database complete.');
 
-    await use(db);
+    await use(dbmgr.db);
 
-    db.close();
+    dbmgr.db.close();
   }
 });

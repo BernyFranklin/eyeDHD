@@ -1,4 +1,6 @@
-import { Chart } from './LineChart.jsx';
+import React from 'react';
+
+import { Chart } from './LineChart';
 
 export const Visualization = () => {
   return (
