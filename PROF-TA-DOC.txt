@@ -379,3 +379,155 @@ Assigns saccades to segments and computes segment ratePerSec
             s1.ratePerSec =~ 1    // 2 / 2
             s2.ratePerSec =~ 0.5  // 1 / 2
 
+Assigns by startTime with [start, end) boundarties and tracks unassigned
+    Purpose: startTime === seg.endTime belongs to next segment, if no match, it's unassigned.
+        Input
+            [
+                // Boundary case: exactly at seg1 end -> should fall into seg2
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },    // Seg 2
+                // Outside all segments -> unassigned
+                { startTime: 4500, endTime: 4550, amplitudeDeg: 5 },    // Unassigned
+            ]
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            })
+        Expected
+            // Both are plausible, so both should remain in perSaccade
+            result.perSaccade.length == 2
+
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            seg1.count == 0
+            seg2.count == 1
+
+            seg2.ratePerSec         =~ 0.5    // 1 saccade in 2s segment
+            result.unassigned.count =~ 1      // Unassigned tracking
+
+Computes segment ratePerMin when includeRatePerMin is true
+    Purpose: Checks includeRatePerMin flag and returns value when called
+        Input
+            [
+                { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },    // Segment 1: [0, 2000) => 2 seconds
+                { startTime: 1100, endTime: 1150, amplitudeDeg: 5 },
+                { startTime: 2100, endTime: 2150, amplitudeDeg: 5 },    // Segment 2: [2000, 4000) => 2 seconds
+            ]
+            result = computeSaccadeMetrics(input, {
+                includeRatePerMin: true,
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+        Expected
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            // Segment 1: 2 events / 2s = 1/sec => 60/min
+            seg1.ratePerSec =~ 1
+            seg1.ratePerMin =~ 60
+            // Segment2: 1 event / 2s = 0.5/sec => 30/min
+            seg2.ratePerSec =~ 0.5
+            seg2.ratePerMin =~ 30
+
+Omits segment ratePerMin when includeRatePerMin is not enabled
+    Purpose: Checks includeRatePerMin flag and returns undefined when not called 
+        Input
+            [
+                { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },  // seg1
+                { startTime: 2100, endTime: 2150, amplitudeDeg: 5 },  // seg2
+            ]
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+        Expected
+            // Look for segments
+            seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+            // Come up empty handed
+            seg1.ratePerMin == Undefined
+            seg2.ratePerMin == Undefined
+
+// Distribution Stats
+//-----------------------------------------------------------
+Computes amplitude distribution stats (mean/median/p10/p50/p90/min/max/std)
+    Purpose: Start applying our distribution statistics for analysis
+        Input
+            [
+                { startTime: 0, endTime: 50, amplitudeDeg: 10 },        // min
+                { startTime: 100, endTime: 150, amplitudeDeg: 20 },
+                { startTime: 200, endTime: 250, amplitudeDeg: 30 },
+                { startTime: 300, endTime: 350, amplitudeDeg: 40 },
+                { startTime: 400, endTime: 450, amplitudeDeg: 50 },     // max
+            ]
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+        Expected
+            stats = result.session.distributions.amplitudeDeg;
+
+            stats.min    == 10
+            stats.max    == 50
+            stats.mean   =~ 30
+            stats.median =~ 30
+
+            stats.p10 =~ 10
+            stats.p50 =~ 30
+            stats.p90 =~ 50
+
+            // Lock in exact std definition in E2
+            Number.isFinite(stats.std) == true
+            stats.std                   > 0
+
+Uses deterministic percentile coalculation and population standard deviation
+    Purpose: Verifies distribution statistics use deterministic percentile method and a population std definition
+        Input
+                [
+                    { startTime: 0,   endTime: 50,  amplitudeDeg: 10 },
+                    { startTime: 100, endTime: 150, amplitudeDeg: 20 },
+                    { startTime: 200, endTime: 250, amplitudeDeg: 40 },
+                    { startTime: 300, endTime: 350, amplitudeDeg: 80 },
+                ];
+                result = computeSaccadeMetrics(input, {
+                    plausibleBounds: {
+                        amplitudeDeg: { min: 0, max: 100 },
+                        durationMs: { min: 1, max: 250 },
+                    },
+                });
+        Expected
+                const stats = result.session.distributions.amplitudeDeg;
+
+                // Basic distribution checks
+                stats.min  == 10
+                stats.max  == 80
+                stats.mean =~ 37.5, 6  
+
+                // Median / percentiles (locks percentile behavior)
+                stats.median =~ 30
+                stats.p10    =~ 10
+                stats.p50    =~ 30
+                stats.p90    =~ 80
+
+                // Population std check
+                stats.std =~ Math.sqrt(718.75)

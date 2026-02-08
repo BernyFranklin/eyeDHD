@@ -264,18 +264,159 @@ describe('Saccade Metrics', () => {
             expect(s2.ratePerSec).toBeCloseTo(0.5, 6);  // 1 / 2
         });
 
-        it('D2)', () => {});
+        it('D2) Assigns by startTime with [start, end) boundaries and tracks unassigned', () => {
+            const input = [
+                // Boundary case: exactly at seg1 end -> should fall into seg2
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },    // Seg 2
+                // Outside all segments -> unassigned
+                { startTime: 4500, endTime: 4550, amplitudeDeg: 5 },    // Unassigned
+            ];
 
-        it('D3)', () => {});
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+            // Both are plausible, so both should remain in perSaccade
+            expect(result.perSaccade.length).toBe(2);
 
-        it('D4)', () => {});
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
 
+            expect(seg1.count).toBe(0);
+            expect(seg2.count).toBe(1);
+
+            expect(seg2.ratePerSec).toBeCloseTo(0.5, 6);  // 1 saccade in 2s segment
+
+            expect(result.unassigned.count).toBe(1);      // Unassigned tracking
+        });
+
+        it('D3) Computes segment ratePerMin when includeRatePerMin is true', () => {
+            const input = [
+                // Segment 1: [0, 2000) => 2 seconds
+                { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },
+                { startTime: 1100, endTime: 1150, amplitudeDeg: 5 },
+                // Segment 2: [2000, 4000) => 2 seconds
+                { startTime: 2100, endTime: 2150, amplitudeDeg: 5 },
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                includeRatePerMin: true,
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            // Segment 1: 2 events / 2s = 1/sec => 60/min
+            expect(seg1.ratePerSec).toBeCloseTo(1, 6);
+            expect(seg1.ratePerMin).toBeCloseTo(60, 6);
+            // Segment2: 1 event / 2s = 0.5/sec => 30/min
+            expect(seg2.ratePerSec).toBeCloseTo(0.5, 6);
+            expect(seg2.ratePerMin).toBeCloseTo(30, 6);
+        });
+
+        it('D4) Omits segment ratePerMin when includeRatePerMin is not enabled', () => {
+            const input = [
+                { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },  // seg1
+                { startTime: 2100, endTime: 2150, amplitudeDeg: 5 },  // seg2
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            expect(seg1.ratePerMin).toBeUndefined();
+            expect(seg2.ratePerMin).toBeUndefined();
+        });
     });
 
     describe('E) Distribution Stats', () => {
-        it('E1)', () => {});
+        it('E1) Computes amplitude distribution stats (mean/median/p10/p50/p90/min/max/std)', () => {
+            const input = [
+                { startTime: 0, endTime: 50, amplitudeDeg: 10 },        // min
+                { startTime: 100, endTime: 150, amplitudeDeg: 20 },
+                { startTime: 200, endTime: 250, amplitudeDeg: 30 },
+                { startTime: 300, endTime: 350, amplitudeDeg: 40 },
+                { startTime: 400, endTime: 450, amplitudeDeg: 50 },     // max
+            ];
 
-        it('E2)', () => {});
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+
+            const stats = result.session.distributions.amplitudeDeg;
+
+            expect(stats.min).toBe(10);
+            expect(stats.max).toBe(50);
+            expect(stats.mean).toBeCloseTo(30, 6);
+            expect(stats.median).toBeCloseTo(30, 6);
+
+            expect(stats.p10).toBeCloseTo(10, 6);
+            expect(stats.p50).toBeCloseTo(30, 6);
+            expect(stats.p90).toBeCloseTo(50, 6);
+
+            // Lock in exact std definition in E2
+            expect(Number.isFinite(stats.std)).toBe(true);
+            expect(stats.std).toBeGreaterThan(0);
+        });
+
+        it('E2) Uses deterministic percentile coalculation and population standard deviation', () => {
+                const input = [
+                    { startTime: 0,   endTime: 50,  amplitudeDeg: 10 },
+                    { startTime: 100, endTime: 150, amplitudeDeg: 20 },
+                    { startTime: 200, endTime: 250, amplitudeDeg: 40 },
+                    { startTime: 300, endTime: 350, amplitudeDeg: 80 },
+                ];
+
+                const result = computeSaccadeMetrics(input, {
+                    plausibleBounds: {
+                        amplitudeDeg: { min: 0, max: 100 },
+                        durationMs: { min: 1, max: 250 },
+                    },
+                });
+
+                const stats = result.session.distributions.amplitudeDeg;
+
+                // Basic distribution checks
+                expect(stats.min).toBe(10);
+                expect(stats.max).toBe(80);
+                expect(stats.mean).toBeCloseTo(37.5, 6);
+
+                // Median / percentiles (locks percentile behavior)
+                expect(stats.median).toBeCloseTo(30, 6);
+                expect(stats.p10).toBeCloseTo(10, 6);
+                expect(stats.p50).toBeCloseTo(30, 6);
+                expect(stats.p90).toBeCloseTo(80, 6);
+
+                // Population std check
+                expect(stats.std).toBeCloseTo(Math.sqrt(718.75), 6);
+        });
 
         it('E3)', () => {});
 
