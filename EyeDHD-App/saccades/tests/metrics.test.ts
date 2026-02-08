@@ -296,7 +296,37 @@ describe('Saccade Metrics', () => {
             expect(result.unassigned.count).toBe(1);      // Unassigned tracking
         });
     
-        it('D3)', () => {});
+        it('D3) Computes segment ratePerMin when includeRatePerMin is true', () => {
+            const input = [
+                // Segment 1: [0, 2000) => 2 seconds
+                { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },
+                { startTime: 1100, endTime: 1150, amplitudeDeg: 5 },
+                // Segment 2: [2000, 4000) => 2 seconds
+                { startTime: 2100, endTime: 2150, amplitudeDeg: 5 },
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                includeRatePerMin: true,
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            // Segment 1: 2 events / 2s = 1/sec => 60/min
+            expect(seg1.ratePerSec).toBeCloseTo(1, 6);
+            expect(seg1.ratePerMin).toBeCloseTo(60, 6);
+            // Segment2: 1 event / 2s = 0.5/sec => 30/min
+            expect(seg2.ratePerSec).toBeCloseTo(0.5, 6);
+            expect(seg2.ratePerMin).toBeCloseTo(30, 6);
+        });
     
         it('D4)', () => {});
 

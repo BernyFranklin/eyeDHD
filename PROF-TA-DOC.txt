@@ -410,3 +410,33 @@ Assigns by startTime with [start, end) boundarties and tracks unassigned
 
             seg2.ratePerSec         =~ 0.5    // 1 saccade in 2s segment
             result.unassigned.count =~ 1      // Unassigned tracking
+
+Computes segment ratePerMin when includeRatePerMin is true
+    Purpose: Checks includeRatePerMin flag and rerturns value when called
+        Input
+            [
+                { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },    // Segment 1: [0, 2000) => 2 seconds
+                { startTime: 1100, endTime: 1150, amplitudeDeg: 5 },
+                { startTime: 2100, endTime: 2150, amplitudeDeg: 5 },    // Segment 2: [2000, 4000) => 2 seconds
+            ]
+            result = computeSaccadeMetrics(input, {
+                includeRatePerMin: true,
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+        Expected
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            // Segment 1: 2 events / 2s = 1/sec => 60/min
+            seg1.ratePerSec =~ 1
+            seg1.ratePerMin =~ 60
+            // Segment2: 1 event / 2s = 0.5/sec => 30/min
+            seg2.ratePerSec =~ 0.5
+            seg2.ratePerMin =~ 30
