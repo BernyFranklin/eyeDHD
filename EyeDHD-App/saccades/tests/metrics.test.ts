@@ -419,7 +419,38 @@ describe('Saccade Metrics', () => {
                 expect(stats.std).toBeCloseTo(Math.sqrt(718.75), 6);
         });
     
-        it('E3)', () => {});
+        it('E3) Handles single-value distributions safely (no NaN/Infinity)', () => {
+            const input = [
+                { startTime: 0, endTime: 50, amplitudeDeg: 42 }
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+
+            const stats = result.session.distributions.amplitudeDeg;
+            
+            // All central tendency + percentile stats collapse to the single value
+            expect(stats.min).toBe(42);
+            expect(stats.max).toBe(42);
+            expect(stats.mean).toBeCloseTo(42, 6);
+            expect(stats.median).toBeCloseTo(42, 6);
+            expect(stats.p10).toBeCloseTo(42, 6);
+            expect(stats.p50).toBeCloseTo(42, 6);
+            expect(stats.p90).toBeCloseTo(42, 6);
+
+            // No spread with a single value
+            expect(stats.std).toBeCloseTo(0, 6);
+
+            // Extra safety: never emit NaN/Infinity for any stat
+            for (const v of Object.values(stats)) {
+                expect(Number.isFinite(v as number)).toBe(true);
+                expect(Number.isNaN(v as number)).toBe(false);
+            }
+        });
 
     });
 

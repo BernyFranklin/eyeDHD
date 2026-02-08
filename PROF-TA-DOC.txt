@@ -531,3 +531,36 @@ Uses deterministic percentile coalculation and population standard deviation
 
                 // Population std check
                 stats.std =~ Math.sqrt(718.75)
+
+Handles single-value distributions safely (no NaN/Infinity)
+    Purpose: Ensures distribution stats behave safely for small sample sizes (single val) and don't produce NaN/Infinity
+        Input
+            [
+                { startTime: 0, endTime: 50, amplitudeDeg: 42 }
+            ]
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+        Expected
+            stats = result.session.distributions.amplitudeDeg;
+            
+            // All central tendency + percentile stats collapse to the single value
+            stats.min    == 42
+            stats.max    == 42
+            stats.mean   =~ 42
+            stats.median =~ 42
+            stats.p10    =~ 42
+            stats.p50    =~ 42
+            stats.p90    =~ 42
+
+            // No spread with a single value
+            stats.std =~ 0
+
+            // Extra safety: never emit NaN/Infinity for any stat
+            for (const v of Object.values(stats)) {
+                Number.isFinite(v as number) == true
+                Number.isNaN(v as number)    == false
+            }
