@@ -465,3 +465,69 @@ Omits segment ratePerMin when includeRatePerMin is not enabled
             // Come up empty handed
             seg1.ratePerMin == Undefined
             seg2.ratePerMin == Undefined
+
+// Distribution Stats
+//-----------------------------------------------------------
+Computes amplitude distribution stats (mean/median/p10/p50/p90/min/max/std)
+    Purpose: Start applying our distribution statistics for analysis
+        Input
+            [
+                { startTime: 0, endTime: 50, amplitudeDeg: 10 },        // min
+                { startTime: 100, endTime: 150, amplitudeDeg: 20 },
+                { startTime: 200, endTime: 250, amplitudeDeg: 30 },
+                { startTime: 300, endTime: 350, amplitudeDeg: 40 },
+                { startTime: 400, endTime: 450, amplitudeDeg: 50 },     // max
+            ]
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+        Expected
+            stats = result.session.distributions.amplitudeDeg;
+
+            stats.min    == 10
+            stats.max    == 50
+            stats.mean   =~ 30
+            stats.median =~ 30
+
+            stats.p10 =~ 10
+            stats.p50 =~ 30
+            stats.p90 =~ 50
+
+            // Lock in exact std definition in E2
+            Number.isFinite(stats.std) == true
+            stats.std                   > 0
+
+Uses deterministic percentile coalculation and population standard deviation
+    Purpose: Verifies distribution statistics use deterministic percentile method and a population std definition
+        Input
+                [
+                    { startTime: 0,   endTime: 50,  amplitudeDeg: 10 },
+                    { startTime: 100, endTime: 150, amplitudeDeg: 20 },
+                    { startTime: 200, endTime: 250, amplitudeDeg: 40 },
+                    { startTime: 300, endTime: 350, amplitudeDeg: 80 },
+                ];
+                result = computeSaccadeMetrics(input, {
+                    plausibleBounds: {
+                        amplitudeDeg: { min: 0, max: 100 },
+                        durationMs: { min: 1, max: 250 },
+                    },
+                });
+        Expected
+                const stats = result.session.distributions.amplitudeDeg;
+
+                // Basic distribution checks
+                stats.min  == 10
+                stats.max  == 80
+                stats.mean =~ 37.5, 6  
+
+                // Median / percentiles (locks percentile behavior)
+                stats.median =~ 30
+                stats.p10    =~ 10
+                stats.p50    =~ 30
+                stats.p90    =~ 80
+
+                // Population std check
+                stats.std =~ Math.sqrt(718.75)

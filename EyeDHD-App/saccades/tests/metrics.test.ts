@@ -355,9 +355,69 @@ describe('Saccade Metrics', () => {
     });
 
     describe('E) Distribution Stats', () => {
-        it('E1)', () => {});
+        it('E1) Computes amplitude distribution stats (mean/median/p10/p50/p90/min/max/std)', () => {
+            const input = [
+                { startTime: 0, endTime: 50, amplitudeDeg: 10 },        // min
+                { startTime: 100, endTime: 150, amplitudeDeg: 20 },
+                { startTime: 200, endTime: 250, amplitudeDeg: 30 },
+                { startTime: 300, endTime: 350, amplitudeDeg: 40 },
+                { startTime: 400, endTime: 450, amplitudeDeg: 50 },     // max
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+
+            const stats = result.session.distributions.amplitudeDeg;
+
+            expect(stats.min).toBe(10);
+            expect(stats.max).toBe(50);
+            expect(stats.mean).toBeCloseTo(30, 6);
+            expect(stats.median).toBeCloseTo(30, 6);
+
+            expect(stats.p10).toBeCloseTo(10, 6);
+            expect(stats.p50).toBeCloseTo(30, 6);
+            expect(stats.p90).toBeCloseTo(50, 6);
+
+            // Lock in exact std definition in E2
+            expect(Number.isFinite(stats.std)).toBe(true);
+            expect(stats.std).toBeGreaterThan(0);
+        });
     
-        it('E2)', () => {});
+        it('E2) Uses deterministic percentile coalculation and population standard deviation', () => {
+                const input = [
+                    { startTime: 0,   endTime: 50,  amplitudeDeg: 10 },
+                    { startTime: 100, endTime: 150, amplitudeDeg: 20 },
+                    { startTime: 200, endTime: 250, amplitudeDeg: 40 },
+                    { startTime: 300, endTime: 350, amplitudeDeg: 80 },
+                ];
+
+                const result = computeSaccadeMetrics(input, {
+                    plausibleBounds: {
+                        amplitudeDeg: { min: 0, max: 100 },
+                        durationMs: { min: 1, max: 250 },
+                    },
+                });
+
+                const stats = result.session.distributions.amplitudeDeg;
+
+                // Basic distribution checks
+                expect(stats.min).toBe(10);
+                expect(stats.max).toBe(80);
+                expect(stats.mean).toBeCloseTo(37.5, 6);
+
+                // Median / percentiles (locks percentile behavior)
+                expect(stats.median).toBeCloseTo(30, 6);
+                expect(stats.p10).toBeCloseTo(10, 6);
+                expect(stats.p50).toBeCloseTo(30, 6);
+                expect(stats.p90).toBeCloseTo(80, 6);
+
+                // Population std check
+                expect(stats.std).toBeCloseTo(Math.sqrt(718.75), 6);
+        });
     
         it('E3)', () => {});
 
