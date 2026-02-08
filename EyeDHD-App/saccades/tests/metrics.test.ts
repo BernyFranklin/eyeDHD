@@ -328,7 +328,29 @@ describe('Saccade Metrics', () => {
             expect(seg2.ratePerMin).toBeCloseTo(30, 6);
         });
     
-        it('D4)', () => {});
+        it('D4) Omits segment ratePerMin when includeRatePerMin is not enabled', () => {
+            const input = [
+                { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },  // seg1
+                { startTime: 2100, endTime: 2150, amplitudeDeg: 5 },  // seg2
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            expect(seg1.ratePerMin).toBeUndefined();
+            expect(seg2.ratePerMin).toBeUndefined();
+        });
 
     });
 
