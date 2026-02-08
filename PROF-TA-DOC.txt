@@ -379,3 +379,34 @@ Assigns saccades to segments and computes segment ratePerSec
             s1.ratePerSec =~ 1    // 2 / 2
             s2.ratePerSec =~ 0.5  // 1 / 2
 
+Assigns by startTime with [start, end) boundarties and tracks unassigned
+    Purpose: startTime === seg.endTime belongs to next segment, if no match, it's unassigned.
+        Input
+            [
+                // Boundary case: exactly at seg1 end -> should fall into seg2
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },    // Seg 2
+                // Outside all segments -> unassigned
+                { startTime: 4500, endTime: 4550, amplitudeDeg: 5 },    // Unassigned
+            ]
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            })
+        Expected
+            // Both are plausible, so both should remain in perSaccade
+            result.perSaccade.length == 2
+
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            seg1.count == 0
+            seg2.count == 1
+
+            seg2.ratePerSec         =~ 0.5    // 1 saccade in 2s segment
+            result.unassigned.count =~ 1      // Unassigned tracking

@@ -264,7 +264,37 @@ describe('Saccade Metrics', () => {
             expect(s2.ratePerSec).toBeCloseTo(0.5, 6);  // 1 / 2
         });
     
-        it('D2)', () => {});
+        it('D2) Assigns by startTime with [start, end) boundaries and tracks unassigned', () => {
+            const input = [
+                // Boundary case: exactly at seg1 end -> should fall into seg2
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },    // Seg 2
+                // Outside all segments -> unassigned
+                { startTime: 4500, endTime: 4550, amplitudeDeg: 5 },    // Unassigned
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+            });
+            // Both are plausible, so both should remain in perSaccade
+            expect(result.perSaccade.length).toBe(2);
+
+            const seg1 = result.segmentSummaries.find((s: any) => s.id === 'seg1');
+            const seg2 = result.segmentSummaries.find((s: any) => s.id === 'seg2');
+
+            expect(seg1.count).toBe(0);
+            expect(seg2.count).toBe(1);
+
+            expect(seg2.ratePerSec).toBeCloseTo(0.5, 6);  // 1 saccade in 2s segment
+
+            expect(result.unassigned.count).toBe(1);      // Unassigned tracking
+        });
     
         it('D3)', () => {});
     
