@@ -128,26 +128,11 @@ ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
  * @returns an array of rows, or null if the entire file has been read
  */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
-	return getBuffer(filename);
-});
-
-async function getBuffer(
-	filename: string,
-	request_size_override: number | null = null
-): Promise<CSVData[] | null> {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const metadata = dbmgr.metadata.read(filename);
 
-			let rows;
-			if (request_size_override !== null) {
-				rows = dbmgr.csv.read({
-					...metadata,
-					request_size: request_size_override
-				});
-			} else {
-				rows = dbmgr.csv.read(metadata);
-			}
+			const rows = dbmgr.csv.read(metadata);
 
 			if (rows === undefined) {
 				return reject(`Failed to read cleaned rows for file: ${filename}`);
@@ -163,7 +148,7 @@ async function getBuffer(
 			return reject(err);
 		}
 	});
-}
+});
 
 /**
  * Handles the csv-clean-data request. Initiates the data cleaning process for a file
