@@ -22,7 +22,6 @@ type MetadataActions = {
 	exists: (filename: string) => boolean;
 	read: (filename: string) => Metadata;
 	readAll: () => Metadata[];
-	update: (updates: Metadata) => void;
 	resetCleaning: (file: Metadata) => void;
 	resetReading: (file: Metadata) => void;
 	remove: (file: Metadata) => Metadata;
@@ -88,14 +87,8 @@ export default class DatabaseManager {
 			readAll: () => {
 				return metadataActions.readAll(this.db);
 			},
-			update: (updates: Metadata) => {
-				const ok = metadataActions.update(this.db, updates);
-				if (!ok) {
-					throw new Error(`Failed to update metadata for file: ${updates.name}`);
-				}
-			},
 			resetCleaning: (file: Metadata) => {
-				this.metadata.update({
+				this.updateMetadata({
 					...file,
 					requested: 0,
 					cleaned: 0,
@@ -105,7 +98,7 @@ export default class DatabaseManager {
 				});
 			},
 			resetReading: (file: Metadata) => {
-				this.metadata.update({ ...file, requested: 0 });
+				this.updateMetadata({ ...file, requested: 0 });
 			},
 			remove: (file: Metadata) => {
 				return metadataActions.remove(this.db, file);
@@ -125,7 +118,7 @@ export default class DatabaseManager {
 					throw new Error(`Failed to read cleaned rows for file: ${file.name}`);
 				}
 
-				this.metadata.update({
+				this.updateMetadata({
 					...file,
 					requested: file.requested + rows.length
 				});
@@ -173,7 +166,7 @@ export default class DatabaseManager {
 			const cleaner = this.getCleaner(metadata);
 
 			if (metadata.request_size != cleaner.buf_len) {
-				this.metadata.update({
+				this.updateMetadata({
 					...metadata,
 					request_size: cleaner.buf_len
 				})
@@ -198,7 +191,7 @@ export default class DatabaseManager {
 
 				// Only set the first frame number when cleaning is not in progress
 				if (metadata.cleaned === 0) {
-					this.metadata.update({
+					this.updateMetadata({
 						...metadata,
 						header: cleaner.header.join(',') + '\n',
 						first_frame: buffer?.[0].Frame
@@ -210,7 +203,7 @@ export default class DatabaseManager {
 				while (buffer) {
 					this.csv.store(metadata, buffer);
 
-					this.metadata.update({
+					this.updateMetadata({
 						...metadata,
 						last_frame: buffer[buffer.length - 1].Frame,
 						cleaned: (metadata.cleaned += buffer.length)
@@ -220,7 +213,7 @@ export default class DatabaseManager {
 					metadata = this.metadata.read(metadata.name);
 				}
 
-				this.metadata.update({ ...metadata, completed: 1 });
+				this.updateMetadata({ ...metadata, completed: 1 });
 				cleaner.close();
 
 				return resolve();
@@ -231,6 +224,17 @@ export default class DatabaseManager {
 	}
 
 	// Private helper functions
+
+
+	/**
+   *
+   */
+	private updateMetadata(updates: Metadata) {
+		const ok = metadataActions.update(this.db, updates);
+		if (!ok) {
+			throw new Error(`Failed to update metadata for file: ${updates.name}`);
+		}
+	}
 
 	/**
 	 * Creates a new data cleaner and stores in in the cleaners map
