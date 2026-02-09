@@ -1,5 +1,6 @@
 export default class DataStream<T> {
   buf: T[];
+  type: string;
 
   filename: string;
   totalRows: number;
@@ -9,8 +10,9 @@ export default class DataStream<T> {
     completed: boolean;
   };
 
-  constructor(filename: string, totalRows: number) {
+  constructor(type: string, filename: string, totalRows: number) {
     this.buf = [];
+    this.type = type;
 
     this.filename = filename;
     this.totalRows = totalRows;

@@ -4,7 +4,7 @@ import { test as action_test } from './action_test';
 import type { Database } from 'better-sqlite3';
 
 import DatabaseManager from '../Manager';
-import metadataActions, { type Metadata, createMetadataTable } from './metadata.ts';
+import metadataActions, { type Metadata, createMetadataTable } from './metadata';
 
 test.concurrent('files table create', async ({ expect }) => {
   const dbmgr = new DatabaseManager({
@@ -16,11 +16,9 @@ test.concurrent('files table create', async ({ expect }) => {
 
   // Check whether the files database was created
   const result = dbmgr.db
-    .prepare(
-      `
+    .prepare(`
       SELECT name FROM sqlite_master WHERE type='table' AND name='metadata';
-		`
-    )
+		`)
     .get();
 
   expect(result).toStrictEqual({ name: 'metadata' });
@@ -39,7 +37,7 @@ function compare(expect: any, result: Metadata, expected: Metadata) {
 // Test creating a file entry in the files table
 action_test.concurrent(
   'files create',
-  async ({ db, expect }: { db: Database; expect: any }) => {
+  async ({ db, expect }: { db: Database; expect: any } | any) => {
     const expected = {
       id: 4,
       name: 'newData.csv',
@@ -70,7 +68,7 @@ action_test.concurrent(
 // Test reading a file entry in the files table
 action_test.concurrent(
   'files read',
-  async ({ db, expect }: { db: Database; expect: any }) => {
+  async ({ db, expect }: { db: Database; expect: any } | any) => {
     const expected = {
       id: 2,
       name: 'test2.csv',

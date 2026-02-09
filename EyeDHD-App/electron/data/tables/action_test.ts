@@ -11,31 +11,22 @@ export const test = vitest.extend({
     const dbmgr = new DatabaseManager({ temporary: true, logging: true });
     createMetadataTable(dbmgr.db);
 
-    dbmgr
-      .prepare(
-        `
-			INSERT INTO metadata (name, path, request_size)
-			VALUES (?, ?, ?);
-		`
-      )
+    dbmgr.prepare(`
+    		INSERT INTO metadata (name, path, request_size)
+      	VALUES (?, ?, ?);
+			`)
       .run('test.csv', 'test.csv', 200);
 
-    dbmgr
-      .prepare(
-        `
-			INSERT INTO metadata (name, path, request_size)
-			VALUES (?, ?, ?);
-		`
-      )
+    dbmgr.prepare(`
+    		INSERT INTO metadata (name, path, request_size)
+				VALUES (?, ?, ?);
+			`)
       .run('test2.csv', 'test2.csv', 200);
 
-    dbmgr
-      .prepare(
-        `
-			INSERT INTO metadata (name, path, request_size)
-			VALUES (?, ?, ?);
-		`
-      )
+    dbmgr.prepare(`
+    		INSERT INTO metadata (name, path, request_size)
+				VALUES (?, ?, ?);
+			`)
       .run('test3.csv', 'test3.csv', 200);
 
     console.log('Setting up test database complete.');
