@@ -36,7 +36,7 @@ type SaccadeDataActions = {
 
 // Database manager
 export default class DatabaseManager {
-	db: Database;
+	private db: Database;
 	options: DBOptions;
 	metadata: MetadataActions;
 	csv: CSVActions;
@@ -93,6 +93,10 @@ export default class DatabaseManager {
 		};
 	}
 
+	close() {
+		this.db.close();
+	}
+
 	setDataCleaner(file: Metadata) {
 		this.cleaners.set(file.name, new DataCleaner({
 			dbmgr: this,
@@ -116,6 +120,10 @@ export default class DatabaseManager {
 
 	prepare(sql: string) {
 		return this.db.prepare(sql);
+	}
+
+	createMetadataTable() {
+		createMetadataTable(this.db);
 	}
 
 	createCSVTable(file: Metadata) {

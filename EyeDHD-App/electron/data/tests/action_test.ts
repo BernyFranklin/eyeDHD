@@ -1,13 +1,13 @@
 import { test as vitest } from 'vitest';
 
-import DatabaseManager from '../../Manager';
-import { createMetadataTable } from '../metadata';
+import DatabaseManager from '../Manager';
+import { createMetadataTable } from '../tables/metadata';
 
 // Adds a testing db with entries added to it for each test
 export const test = vitest.extend({
-  db: async ({}, use: any) => {
+  dbmgr: async ({}, use: any) => {
     const dbmgr = new DatabaseManager({ temporary: true, logging: false });
-    createMetadataTable(dbmgr.db);
+    dbmgr.createMetadataTable();
 
     dbmgr.prepare(`
     		INSERT INTO metadata (name, path, request_size)
@@ -27,8 +27,8 @@ export const test = vitest.extend({
 			`)
       .run('test3.csv', 'test3.csv', 200);
 
-    await use(dbmgr.db);
+    await use(dbmgr);
 
-    dbmgr.db.close();
+    dbmgr.close();
   }
 });
