@@ -3,6 +3,7 @@ import rl from 'readline';
 
 import DatabaseManager from './Manager';
 import { sleep } from '../utils';
+import { type CSVData } from './tables/csv';
 
 /**
 * Reads and cleans a CSV file at the given path. Cleans data lazyily,
@@ -15,7 +16,7 @@ export default class DataCleaner {
 	readline;
 	iter;
 	buf_len = 0;
-	buf: any[] = [];
+	buf: CSVData[] = [];
 	header: string[] = [];
 	status: {
 		reading: boolean;
@@ -128,13 +129,11 @@ export default class DataCleaner {
 	constructor({
 		dbmgr,
 		name,
-		path,
-		request_size
+		path
 	}: {
 		dbmgr: DatabaseManager;
 		name: string;
 		path: string;
-		request_size: number;
 	}) {
 		// Store the file path for later use
 		this.filePath = path;
@@ -166,7 +165,7 @@ export default class DataCleaner {
 		}
 
 		// Optimize buffer size based on available memory
-		const optimalBufferSize = this.calculateOptimalBufferSize(request_size);
+		const optimalBufferSize = this.calculateOptimalBufferSize(1000);
 		this.buf_len = optimalBufferSize;
 
 		// Open file as a stream with optimized buffer size
@@ -289,7 +288,7 @@ export default class DataCleaner {
 	* Cleans a row of CSV data, converting it from a string to JSON
 	* Implements proper CSV parsing with type conversion and validation
 	*/
-	cleanRow(raw: string): Record<string, any> {
+	cleanRow(raw: string): CSVData {
 		try {
 			const values = this.parseCsvLine(raw);
 			const cleaned: any = {};
@@ -385,7 +384,7 @@ export default class DataCleaner {
 	/**
 	* Validates and sanitizes eye tracking data
 	*/
-	validateRow(row: Record<string, any>) {
+	validateRow(row: Record<string, any>): CSVData {
 		// Validate eye tracking specific fields
 		const eyePositions = ['Left', 'Right'];
 		const coordinates = ['X', 'Y', 'Z'];
@@ -421,7 +420,7 @@ export default class DataCleaner {
 			row.Timestamp = this.sanitizeTimestamp(row.Timestamp);
 		}
 
-		return row;
+		return row as CSVData;
 	}
 
 	/**
@@ -510,7 +509,7 @@ export default class DataCleaner {
 	*
 	* @returns an array of rows, or null if the entire file has been read
 	*/
-	async getBuffer() {
+	async getBuffer(): Promise<CSVData[]> {
 		if (this.status.done) {
 			this.updatePerformanceMetrics();
 			return null;

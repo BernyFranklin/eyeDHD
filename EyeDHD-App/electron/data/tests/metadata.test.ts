@@ -1,21 +1,19 @@
-import { test } from 'vitest';
-import { test as action_test } from './action_test';
+import { ExpectStatic, test } from 'vitest';
+import { test as action_test, type Parameters } from './action_test';
 
-import type { Database } from 'better-sqlite3';
-
-import DatabaseManager from '../Manager';
-import metadataActions, { type Metadata } from '../tables/metadata';
+import { getDB } from '../Manager';
+import metadataActions, { createMetadataTable, type Metadata } from '../tables/metadata';
 
 test('files table create', async ({ expect }) => {
-  const dbmgr = new DatabaseManager({
+  const db = getDB({
     temporary: true,
     logging: false
   });
 
-  dbmgr.createMetadataTable();
+  createMetadataTable(db);
 
   // Check whether the files database was created
-  const result = dbmgr.prepare(`
+  const result = db.prepare(`
       SELECT name FROM sqlite_master WHERE type='table' AND name='metadata';
 		`)
     .get();
@@ -23,7 +21,7 @@ test('files table create', async ({ expect }) => {
   expect(result).toStrictEqual({ name: 'metadata' });
 });
 
-function compare(expect: any, result: Metadata, expected: Metadata) {
+function compare(expect: ExpectStatic, result: Metadata, expected: Metadata) {
   expect(result.id).toBe(expected.id);
   expect(result.name).toBe(expected.name);
   expect(result.path).toBe(expected.path);
@@ -36,7 +34,7 @@ function compare(expect: any, result: Metadata, expected: Metadata) {
 // Test creating a file entry in the files table
 action_test(
   'files create',
-  async ({ dbmgr, expect }: { dbmgr: DatabaseManager; expect: any } | any) => {
+  async ({ db, expect }: Parameters) => {
     const expected = {
       id: 4,
       name: 'newData.csv',
@@ -52,10 +50,10 @@ action_test(
       updated_at: ''
     };
 
-    const result = dbmgr.metadata.create(
+    const result = metadataActions.create(
+    	db,
       expected.name,
-      expected.path,
-      expected.request_size
+      expected.path
     );
     expect(result).not.toBeNull();
 
@@ -66,7 +64,7 @@ action_test(
 // Test reading a file entry in the files table
 action_test(
   'files read',
-  async ({ dbmgr, expect }: { dbmgr: DatabaseManager; expect: any } | any) => {
+  async ({ db, expect }: Parameters) => {
     const expected = {
       id: 2,
       name: 'test2.csv',
@@ -82,7 +80,7 @@ action_test(
       updated_at: ''
     };
 
-    const result = dbmgr.metadata.read('test2.csv');
+    const result = metadataActions.read(db, 'test2.csv');
     expect(result).not.toBeNull();
 
     compare(expect, result as Metadata, expected);
@@ -92,7 +90,7 @@ action_test(
 // Test updating a file entry in the files table
 // action_test(
 //   'files update',
-//   async ({ db, expect }: { db: Database; expect: any }) => {
+//   async ({ db, expect }: Parameters) => {
 //     const expected = {
 //       id: 2,
 //       name: 'test2.csv',
@@ -126,7 +124,7 @@ action_test(
 // );
 
 // // Test removing a file entry in the files table
-// action_test('files remove', async ({ db, expect }: { db: Database; expect: any }) => {
+// action_test('files remove', async ({ db, expect }: Parameters) => {
 //   const original = metadataActions.read(db, 'test2.csv');
 //   expect(original).not.toBeNull();
 

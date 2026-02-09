@@ -78,7 +78,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
     setIsCleaning(false);
 
     // Request backend to open a file selector, wait for filename
-    const file = await window.electron.csv.openFile(200).catch(handleError);
+    const file = await window.electron.csv.openFile().catch(handleError);
     if (error || !file) {
       setIsLoading(false);
       return;

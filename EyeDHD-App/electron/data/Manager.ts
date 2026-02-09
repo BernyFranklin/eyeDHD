@@ -2,7 +2,7 @@ import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
 import DataStream from './Stream';
-import csvActions, { type CSVData, createRowTable, deleteRowTable } from './tables/csv';
+import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
 import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
 import saccadeActions, { type SaccadeData } from './tables/saccade';
 import DataCleaner from './Cleaner';
@@ -15,23 +15,31 @@ type DBOptions = {
 };
 
 // Database action types defining the public-facing API for interacting with the database
+
+// Public functionality available for Metadata
 type MetadataActions = {
-	create: (filename: string, filepath: string, request_size: number) => Metadata | null;
-	read: (filename: string) => Metadata | null;
-	readAll: () => Metadata[] | null;
-	update: (updates: Metadata) => boolean;
-	remove: (file: Metadata) => Metadata | null;
+	create: (filename: string, filepath: string) => void;
+	exists: (filename: string) => boolean;
+	read: (filename: string) => Metadata;
+	readAll: () => Metadata[];
+	update: (updates: Metadata) => void;
+	resetCleaning: (file: Metadata) => void;
+	resetReading: (file: Metadata) => void;
+	remove: (file: Metadata) => Metadata;
 };
 
+// Public functionality available for CSV Data
 type CSVActions = {
-	create: (file: Metadata, rows: CSVData[]) => boolean;
-	read: (file: Metadata) => CSVData[] | undefined;
-	readAll: (file: Metadata) => CSVData[] | undefined;
-	firstAndLast: (file: Metadata) => { first: CSVData; last: CSVData } | undefined;
+	store: (file: Metadata, rows: CSVData[]) => void;
+	read: (file: Metadata) => CSVData[];
+	readAll: (file: Metadata) => CSVData[];
+	firstAndLast: (file: Metadata) => { first: CSVData; last: CSVData };
+	clear: (file: Metadata) => void;
 };
 
+// Public functionality available for Saccade Data
 type SaccadeDataActions = {
-	create: () => boolean;
+	create: () => void;
 };
 
 /**
@@ -54,14 +62,25 @@ export default class DatabaseManager {
 	constructor(options: DBOptions = { logging: false, temporary: false }) {
 		this.options = options;
 
-		this.db = this.getDB();
+		this.db = getDB(options);
 		this.createMetadataTable();
 
 		// Initialize the public API for interacting with the database
 
 		this.metadata = {
-			create: (filename: string, filepath: string, request_size: number) => {
-				return metadataActions.create(this.db, filename, filepath, request_size);
+			create: (filename: string, filepath: string) => {
+				const metadata = metadataActions.create(
+					this.db,
+					filename,
+					filepath
+				);
+
+				this.createCSVTable(metadata);
+				this.createSaccadeTable(metadata);
+				this.setCleaner(metadata);
+			},
+			exists: (filename: string) => {
+				return metadataActions.exists(this.db, filename);
 			},
 			read: (filename: string) => {
 				return metadataActions.read(this.db, filename);
@@ -70,7 +89,23 @@ export default class DatabaseManager {
 				return metadataActions.readAll(this.db);
 			},
 			update: (updates: Metadata) => {
-				return metadataActions.update(this.db, updates);
+				const ok = metadataActions.update(this.db, updates);
+				if (!ok) {
+					throw new Error(`Failed to update metadata for file: ${updates.name}`);
+				}
+			},
+			resetCleaning: (file: Metadata) => {
+				this.metadata.update({
+					...file,
+					requested: 0,
+					cleaned: 0,
+					completed: 0,
+					first_frame: 0,
+					last_frame: 0
+				});
+			},
+			resetReading: (file: Metadata) => {
+				this.metadata.update({ ...file, requested: 0 });
 			},
 			remove: (file: Metadata) => {
 				return metadataActions.remove(this.db, file);
@@ -78,118 +113,232 @@ export default class DatabaseManager {
 		};
 
 		this.csv = {
-			create: (file: Metadata, rows: CSVData[]) => {
-				return csvActions.create(this.db, file, rows);
+			store: (file: Metadata, rows: CSVData[]) => {
+				const ok = csvActions.create(this.db, file, rows);
+				if (!ok) {
+					throw new Error(`Failed to insert csv data for file: ${file.name}`);
+				}
 			},
 			read: (file: Metadata) => {
-				return csvActions.read(this.db, file);
+				const rows = csvActions.read(this.db, file);
+				if (rows === undefined) {
+					throw new Error(`Failed to read cleaned rows for file: ${file.name}`);
+				}
+
+				this.metadata.update({
+					...file,
+					requested: file.requested + rows.length
+				});
+
+				return rows;
 			},
 			readAll: (file: Metadata) => {
 				return csvActions.readAll(this.db, file);
 			},
 			firstAndLast: (file: Metadata) => {
 				return csvActions.firstAndLast(this.db, file);
+			},
+			clear: (file: Metadata) => {
+				this.deleteCSVTable(file);
+				this.createCSVTable(file);
 			}
 		};
 
 		this.saccade = {
 			create: () => {
-				return false;
+
 			}
 		};
 	}
 
-	// Closes the database connection
+	/**
+	 * Closes the database connection
+	 */
 	close() {
 		this.db.close();
 	}
 
-	// Creates a new data cleaner and stores in in the cleaners map
-	setDataCleaner(file: Metadata) {
-		this.cleaners.set(file.name, new DataCleaner({
-			dbmgr: this,
-			name: file.name,
-			path: file.path,
-			request_size: file.request_size
-		}));
+	/**
+   *
+   */
+	openFile(filename: string, filepath: string) {
+		if (this.metadata.exists(filename)) {
+			const metadata = this.metadata.read(filename);
+			if (!this.cleanerExists(metadata)) {
+				this.resetCleaner(metadata);
+			}
+		} else {
+			this.metadata.create(filename, filepath);
+			const metadata = this.metadata.read(filename);
+			const cleaner = this.getCleaner(metadata);
+
+			if (metadata.request_size != cleaner.buf_len) {
+				this.metadata.update({
+					...metadata,
+					request_size: cleaner.buf_len
+				})
+			}
+		}
 	}
 
-	// Checks whether a cleaner exists for a given file
-	cleanerExists(file: Metadata): boolean {
-		return this.cleaners.has(file.name);
-	}
+	/**
+   * TODO: update Cleaner and this function to clean whole file
+   */
+	async cleanFile(file: Metadata): Promise<void> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				let metadata = file;
 
-	// Gets the cleaner for a given file
-	getCleaner(file: Metadata): DataCleaner | undefined {
-		return this.cleaners.get(file.name);
-	}
+				const cleaner = this.getCleaner(metadata);
+				let buffer = await cleaner.getBuffer();
 
-	// Deletes the cleaner for a given file
-	deleteCleaner(file: Metadata): boolean {
-		return this.cleaners.delete(file.name);
-	}
+				if (cleaner.status.done) {
+					return;
+				}
 
-	// Prepares a SQL statement
-	prepare(sql: string) {
-		return this.db.prepare(sql);
-	}
+				// Only set the first frame number when cleaning is not in progress
+				if (metadata.cleaned === 0) {
+					this.metadata.update({
+						...metadata,
+						header: cleaner.header.join(',') + '\n',
+						first_frame: buffer?.[0].Frame
+					});
 
-	// Database table management functions
+					metadata = this.metadata.read(metadata.name);
+				}
 
-	// Creates the metadata table if it doesn't already exist
-	createMetadataTable() {
-		createMetadataTable(this.db);
-	}
+				while (buffer) {
+					this.csv.store(metadata, buffer);
 
-	// Creates a new table for storing csv data for a given file
-	createCSVTable(file: Metadata) {
-		createRowTable(this.db, file.name);
-	}
+					this.metadata.update({
+						...metadata,
+						last_frame: buffer[buffer.length - 1].Frame,
+						cleaned: (metadata.cleaned += buffer.length)
+					});
 
-	// Deletes the csv data table for a given file
-	deleteCSVTable(file: Metadata) {
-		deleteRowTable(this.db, file.name);
-	}
+					buffer = await cleaner.getBuffer();
+					metadata = this.metadata.read(metadata.name);
+				}
 
-	// Creates a new table for storing saccade data for a given file
-	createSaccadeTable(file: Metadata) {
+				this.metadata.update({ ...metadata, completed: 1 });
+				cleaner.close();
 
-	}
-
-	// Deletes the saccade data table for a given file
-	deleteSaccadeTable(file: Metadata) {
-
+				return resolve();
+			} catch (err) {
+				return reject(`Failed to clean file: ${err}`);
+			}
+		});
 	}
 
 	// Private helper functions
 
-	// Initializes the database connection based on the provided options
-	private getDB() {
+	/**
+	 * Creates a new data cleaner and stores in in the cleaners map
+	 */
+	private setCleaner(file: Metadata) {
+		this.cleaners.set(file.name, new DataCleaner({
+			dbmgr: this,
+			name: file.name,
+			path: file.path
+		}));
+	}
+
+	/**
+	 * Deletes the cleaner for a given file
+	 */
+	private deleteCleaner(file: Metadata): boolean {
+		return this.cleaners.delete(file.name);
+	}
+
+	/**
+	 * Resets the cleaner for a given file
+	 */
+	resetCleaner(file: Metadata) {
+		this.deleteCleaner(file);
+		this.setCleaner(file);
+	}
+
+	/**
+	 * Checks whether a cleaner exists for a given file
+	 */
+	cleanerExists(file: Metadata): boolean {
+		return this.cleaners.has(file.name);
+	}
+
+	/**
+	 * Gets the cleaner for a given file
+	 */
+	getCleaner(file: Metadata): DataCleaner {
+		return this.cleaners.get(file.name);
+	}
+
+	// Database table management functions
+
+	/**
+	 * Creates the metadata table if it doesn't already exist
+	 */
+	private createMetadataTable() {
+		createMetadataTable(this.db);
+	}
+
+	/**
+	 * Creates a new table for storing csv data for a given file
+	 */
+	private createCSVTable(file: Metadata) {
+		createCSVTable(this.db, file.name);
+	}
+
+	/**
+	 * Deletes the csv data table for a given file
+	 */
+	private deleteCSVTable(file: Metadata) {
+		deleteCSVTable(this.db, file.name);
+	}
+
+	/**
+	 * Creates a new table for storing saccade data for a given file
+	 */
+	private createSaccadeTable(file: Metadata) {
+
+	}
+
+	/**
+	 * Deletes the saccade data table for a given file
+	 */
+	private deleteSaccadeTable(file: Metadata) {
+
+	}
+}
+
+/**
+	* Initializes the database connection based on the provided options
+	*/
+export function getDB(options: DBOptions = { logging: false, temporary: false }) {
 		// Creates a temporary in memory database for testing
-		if (this.options.temporary) {
+		if (options.temporary) {
 			const db = new Sqlite3DB(
 				':memory:',
-				this.options.logging ? { verbose: console.log } : {}
+				options.logging ? { verbose: console.log } : {}
 			);
 
 			return db;
 		}
 
-		if (!this.options.path) {
+		if (!options.path) {
 			throw new Error('Database path not provided');
 		}
-		console.log(`Using database at ${this.options.path}`);
+		console.log(`Using database at ${options.path}`);
 
 		const db = new Sqlite3DB(
-			this.options.path,
-			this.options.logging ? { verbose: console.log } : {}
+			options.path,
+			options.logging ? { verbose: console.log } : {}
 		);
 
 		// Set for performance
 		db.pragma('journal_mode = WAL');
 		// Clean up wal file if it gets too big (> 500 mb)
 		setInterval(() => {
-			fs.stat(this.options.path + '-wal', (err, stat) => {
+			fs.stat(options.path + '-wal', (err, stat) => {
 				if (err) {
 					throw err;
 				} else if (stat.size > 500e6) {
@@ -200,4 +349,4 @@ export default class DatabaseManager {
 
 		return db;
 	}
-}
+
