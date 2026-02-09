@@ -18,26 +18,26 @@ type DBOptions = {
 
 // Public functionality available for Metadata
 type MetadataActions = {
-	create: (filename: string, filepath: string, request_size: number) => Metadata | null;
+	create: (filename: string, filepath: string, request_size: number) => void;
 	exists: (filename: string) => boolean;
-	read: (filename: string) => Metadata | null;
-	readAll: () => Metadata[] | null;
-	update: (updates: Metadata) => boolean;
-	remove: (file: Metadata) => Metadata | null;
+	read: (filename: string) => Metadata;
+	readAll: () => Metadata[];
+	update: (updates: Metadata) => void;
+	remove: (file: Metadata) => Metadata;
 };
 
 // Public functionality available for CSV Data
 type CSVActions = {
-	create: (file: Metadata, rows: CSVData[]) => boolean;
-	read: (file: Metadata) => CSVData[] | undefined;
-	readAll: (file: Metadata) => CSVData[] | undefined;
-	firstAndLast: (file: Metadata) => { first: CSVData; last: CSVData } | undefined;
+	create: (file: Metadata, rows: CSVData[]) => void;
+	read: (file: Metadata) => CSVData[];
+	readAll: (file: Metadata) => CSVData[];
+	firstAndLast: (file: Metadata) => { first: CSVData; last: CSVData };
 	clear: (file: Metadata) => void;
 };
 
 // Public functionality available for Saccade Data
 type SaccadeDataActions = {
-	create: () => boolean;
+	create: () => void;
 };
 
 /**
@@ -77,8 +77,6 @@ export default class DatabaseManager {
 				this.createCSVTable(metadata);
 				this.createSaccadeTable(metadata);
 				this.setDataCleaner(metadata);
-
-				return metadata;
 			},
 			exists: (filename: string) => {
 				return metadataActions.exists(this.db, filename);
@@ -90,7 +88,10 @@ export default class DatabaseManager {
 				return metadataActions.readAll(this.db);
 			},
 			update: (updates: Metadata) => {
-				return metadataActions.update(this.db, updates);
+				const ok = metadataActions.update(this.db, updates);
+				if (!ok) {
+					throw new Error(`Failed to update metadata for file: ${updates.name}`);
+				}
 			},
 			remove: (file: Metadata) => {
 				return metadataActions.remove(this.db, file);
@@ -99,7 +100,10 @@ export default class DatabaseManager {
 
 		this.csv = {
 			create: (file: Metadata, rows: CSVData[]) => {
-				return csvActions.create(this.db, file, rows);
+				const ok = csvActions.create(this.db, file, rows);
+				if (!ok) {
+					throw new Error(`Failed to insert csv data for file: ${file.name}`);
+				}
 			},
 			read: (file: Metadata) => {
 				return csvActions.read(this.db, file);
@@ -118,7 +122,7 @@ export default class DatabaseManager {
 
 		this.saccade = {
 			create: () => {
-				return false;
+
 			}
 		};
 	}

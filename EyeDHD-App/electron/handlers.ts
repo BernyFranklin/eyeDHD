@@ -42,181 +42,160 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
 		const filepath = filePaths[0];
 		const filename = path.basename(filepath);
 
-		// If file is already opened and cleaning, just return filename
-		let metadata = dbmgr.metadata.read(filename);
-		if (metadata) {
-			if (!dbmgr.cleanerExists(metadata)) {
-				dbmgr.setDataCleaner(metadata);
-			}
-
-			if (request_size != metadata.request_size) {
-				const ok = dbmgr.metadata.update({
-					...metadata,
-					request_size
-				});
-				if (!ok) {
-					return reject(`Failed to update metadata for file: ${metadata.name}`);
+		try {
+			// If file is already opened and cleaning, just return filename
+			if (dbmgr.metadata.exists(filename)) {
+				const metadata = dbmgr.metadata.read(filename);
+				if (!dbmgr.cleanerExists(metadata)) {
+					dbmgr.setDataCleaner(metadata);
 				}
+
+				if (request_size != metadata.request_size) {
+					dbmgr.metadata.update({
+						...metadata,
+						request_size
+					});
+				}
+				return resolve(filename);
 			}
+
+			dbmgr.metadata.create(filename, filepath, request_size);
+
 			return resolve(filename);
+		} catch (err) {
+			return reject(`Failed to open file: ${err}`);
 		}
-
-		metadata = dbmgr.metadata.create(filename, filepath, request_size);
-		if (!metadata) {
-			return reject(`Failed to create metadata for file: ${filename}`);
-		}
-
-		return resolve(filename);
 	});
 });
 
-function readMetadata(name: string): Metadata {
-	const metadata = dbmgr.metadata.read(name);
-	if (metadata === null) {
-		throw new Error(`File: ${name} has not been opened`);
-	}
-
-	return metadata;
-}
-
 function cleanFile(original: Metadata): Promise<void> {
 	return new Promise(async (resolve, reject) => {
-		let metadata = original;
+		try {
+			let metadata = original;
 
-		// fetch cleaner
-		const cleaner = dbmgr.getCleaner(metadata);
+			// fetch cleaner
+			const cleaner = dbmgr.getCleaner(metadata);
 
-		// Load first batch of rows then loop until file has been cleaned
-		let buffer = await cleaner.getBuffer();
+			// Load first batch of rows then loop until file has been cleaned
+			let buffer = await cleaner.getBuffer();
 
-		if (cleaner.status.done) {
-			return;
-		}
-
-		// Only set the first frame number when cleaning is not in progress
-		if (metadata.cleaned === 0) {
-			const ok = dbmgr.metadata.update({
-				...metadata,
-				header: cleaner.header.join(',') + '\n',
-				first_frame: buffer?.[0].Frame
-			});
-			if (!ok) {
-				return reject(`Failed to update metadata for file: ${metadata.name}`);
+			if (cleaner.status.done) {
+				return;
 			}
 
-			metadata = readMetadata(metadata.name);
-		}
+			// Only set the first frame number when cleaning is not in progress
+			if (metadata.cleaned === 0) {
+				dbmgr.metadata.update({
+					...metadata,
+					header: cleaner.header.join(',') + '\n',
+					first_frame: buffer?.[0].Frame
+				});
 
-		while (buffer) {
-			// Store rows
-			const stored = dbmgr.csv.create(metadata, buffer);
-			if (!stored) {
-				return reject(`Failed to store rows for file: ${metadata.name}`);
+				metadata = dbmgr.metadata.read(metadata.name);
 			}
 
-			// Update file metadata
-			const updated = dbmgr.metadata.update({
-				...metadata,
-				last_frame: buffer[buffer.length - 1].Frame,
-				cleaned: (metadata.cleaned += buffer.length)
-			});
-			if (!updated) {
-				return reject(`Failed to update metadata for file: ${metadata.name}`);
+			while (buffer) {
+				// Store rows
+				dbmgr.csv.create(metadata, buffer);
+
+				// Update file metadata
+				dbmgr.metadata.update({
+					...metadata,
+					last_frame: buffer[buffer.length - 1].Frame,
+					cleaned: (metadata.cleaned += buffer.length)
+				});
+
+				buffer = await cleaner.getBuffer();
+				metadata = dbmgr.metadata.read(metadata.name);
 			}
 
-			buffer = await cleaner.getBuffer();
+			// Update file metadata to show cleaning has completed
+			dbmgr.metadata.update({ ...metadata, completed: 1 });
 
-			metadata = readMetadata(metadata.name);
+			cleaner.close();
+			return resolve();
+		} catch (err) {
+			return reject(`Failed to clean file: ${err}`);
 		}
-
-		// Update file metadata to show cleaning has completed
-		const updated = dbmgr.metadata.update({ ...metadata, completed: 1 });
-		if (!updated) {
-			return reject(`Failed to update metadata for file: ${metadata.name}`);
-		}
-
-		cleaner.close();
-
-		return resolve();
 	});
 }
 
 ipcMain.handle('csv-get-metadata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
-		const metadata = dbmgr.metadata.read(filename);
-		if (!metadata) {
-			return reject(`File: ${filename} has not been opened`);
-		}
+		try {
+			const metadata = dbmgr.metadata.read(filename);
 
-		return resolve(metadata);
+			return resolve(metadata);
+		} catch (err) {
+
+			return reject(`Failed to get metadata for file: ${filename}. Error: ${err}`);
+		}
 	});
 });
 
 ipcMain.handle('csv-get-file-list', async (_) => {
-	return new Promise(async (resolve) => {
-		const files = dbmgr.metadata.readAll();
+	return new Promise(async (resolve, reject) => {
+		try {
+			const files = dbmgr.metadata.readAll();
 
-		if (!files) {
-			return resolve(null);
+			if (!files) {
+				return resolve(null);
+			}
+
+			return resolve(files);
+		} catch (err) {
+			return reject(`Failed to get file list. Error: ${err}`);
 		}
-
-		return resolve(files);
 	});
 });
 
 ipcMain.handle('csv-reset-reading-progress', async (_, filename) => {
 	return new Promise<void>(async (resolve, reject) => {
-		const metadata = dbmgr.metadata.read(filename);
-		if (!metadata) {
-			return reject(`File: ${filename} has not been opened`);
-		}
+		try {
+			const metadata = dbmgr.metadata.read(filename);
+			dbmgr.metadata.update({ ...metadata, requested: 0 });
 
-		const updated = dbmgr.metadata.update({ ...metadata, requested: 0 });
-		if (!updated) {
-			return reject(`Failed to reset reading progress for: ${filename}`);
+			return resolve();
+		} catch (err) {
+			return reject(`Failed to reset reading progress for file: ${filename}. Error: ${err}`);
 		}
-
-		return resolve();
 	});
 });
 
 ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
 	return new Promise<void>(async (resolve, reject) => {
-		const metadata = dbmgr.metadata.read(filename);
-		if (!metadata) {
-			return reject(`File: ${filename} has not been opened`);
+		try {
+			const metadata = dbmgr.metadata.read(filename);
+			dbmgr.metadata.update({
+				...metadata,
+				requested: 0,
+				cleaned: 0,
+				completed: 0,
+				first_frame: 0,
+				last_frame: 0
+			});
+
+			dbmgr.csv.clear(metadata);
+
+			const cleaner = dbmgr.getCleaner(metadata);
+			if (!cleaner) return resolve();
+
+			cleaner.close();
+			dbmgr.deleteCleaner(metadata);
+			dbmgr.setDataCleaner(metadata);
+
+			return resolve();
+		} catch (err) {
+			return reject(`Failed to reset cleaning progress for file: ${filename}. Error: ${err}`);
 		}
-
-		const updated = dbmgr.metadata.update({
-			...metadata,
-			requested: 0,
-			cleaned: 0,
-			completed: 0,
-			first_frame: 0,
-			last_frame: 0
-		});
-		if (!updated) {
-			return reject(`Failed to reset cleaning progress for: ${filename}`);
-		}
-
-		dbmgr.csv.clear(metadata);
-
-		const cleaner = dbmgr.getCleaner(metadata);
-		if (!cleaner) return resolve();
-
-		cleaner.close();
-		dbmgr.deleteCleaner(metadata);
-		dbmgr.setDataCleaner(metadata);
-
-		return resolve();
 	});
 });
 
 /**
-* Handles the csv-get-buffer request. Pulls the buffer from filename's cleaner
-*
-* @returns an array of rows, or null if the entire file has been read
-*/
+ * Handles the csv-get-buffer request. Pulls the buffer from filename's cleaner
+ *
+ * @returns an array of rows, or null if the entire file has been read
+ */
 ipcMain.handle('csv-get-buffer', async (_, filename) => {
 	return getBuffer(filename);
 });
@@ -228,10 +207,6 @@ async function getBuffer(
 	return new Promise(async (resolve, reject) => {
 		try {
 			const metadata = dbmgr.metadata.read(filename);
-
-			if (!metadata) {
-				return reject(`File: ${filename} has not been opened`);
-			}
 
 			let rows;
 			if (request_size_override !== null) {
@@ -247,115 +222,98 @@ async function getBuffer(
 				return reject(`Failed to read cleaned rows for file: ${filename}`);
 			}
 
-			const updated = dbmgr.metadata.update({
+			dbmgr.metadata.update({
 				...metadata,
 				requested: metadata.requested + rows.length
 			});
-			if (!updated) {
-				return reject(`Failed to update requested count for file: ${filename}`);
-			}
 
 			return resolve(rows);
 		} catch (err) {
-			console.log(err);
-			reject(err);
+			return reject(err);
 		}
 	});
 }
 
 /**
-* Handles the csv-clean-data request. Initiates the data cleaning process for a file
-*
-* @param filename - The name of the file to clean
-* @returns Promise that resolves when cleaning is initiated (not completed)
-*/
+ * Handles the csv-clean-data request. Initiates the data cleaning process for a file
+ *
+ * @param filename - The name of the file to clean
+ * @returns Promise that resolves when cleaning is initiated (not completed)
+ */
 ipcMain.handle('csv-clean-data', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const metadata = dbmgr.metadata.read(filename);
-			if (!metadata) {
-				return reject(`File: ${filename} has not been opened`);
-			}
-
 			// Start cleaning in background without blocking
 			cleanFile(metadata).catch((error) => {
 				console.error(`Background cleaning failed for ${filename}:`, error);
 			});
 
 			resolve({ success: true, message: 'Data cleaning initiated' });
-		} catch (error: any) {
-			reject(`Failed to start cleaning for file: ${filename}. Error: ${error.message}`);
+		} catch (err) {
+			return reject(`Failed to start cleaning for file: ${filename}. Error: ${err}`);
 		}
 	});
 });
 
 /**
-* Handles the csv-get-stats request. Gets current cleaning statistics for a file
-*
-* @param filename - The name of the file to get stats for
-* @returns Object containing cleaning statistics and performance metrics
-*/
+ * Handles the csv-get-stats request. Gets current cleaning statistics for a file
+ *
+ * @param filename - The name of the file to get stats for
+ * @returns Object containing cleaning statistics and performance metrics
+ */
 ipcMain.handle('csv-get-stats', async (_, filename: string) => {
 	return new Promise(async (resolve, reject) => {
-		const metadata = dbmgr.metadata.read(filename);
-		if (!metadata) {
-			return reject(`File: ${filename} has not been opened`);
-		}
-
-		const cleaner = dbmgr.getCleaner(metadata);
-		if (!cleaner) {
-			return reject(`File: ${filename} has not been opened`);
-		}
-
-		if (!cleaner.isActive()) {
-			// File finished cleaning
-			console.log(`File: ${filename} cleaning completed`);
-		}
-
 		try {
+			const metadata = dbmgr.metadata.read(filename);
+			const cleaner = dbmgr.getCleaner(metadata);
+			if (!cleaner) {
+				return reject(`File: ${filename} has not been opened`);
+			}
+
+			if (!cleaner.isActive()) {
+				// File finished cleaning
+				console.log(`File: ${filename} cleaning completed`);
+			}
+
 			const stats = cleaner.getStats();
 			const performanceData = cleaner.getPerformance();
 
-			resolve({
+			return resolve({
 				stats,
 				performance: performanceData,
 				status: cleaner.status
 			});
-		} catch (error: any) {
-			reject(`Failed to get stats for file: ${filename}. Error: ${error.message}`);
+		} catch (err) {
+			return reject(`Failed to get stats for file: ${filename}. Error: ${err}`);
 		}
 	});
 });
 
 /**
-* Handles the csv-get-progress request. Gets current cleaning progress for a file
-*
-* @param filename - The name of the file to get progress for
-* @returns Object containing progress information
-*/
+ * Handles the csv-get-progress request. Gets current cleaning progress for a file
+ *
+ * @param filename - The name of the file to get progress for
+ * @returns Object containing progress information
+ */
 ipcMain.handle('csv-get-progress', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
-
-		const metadata = dbmgr.metadata.read(filename);
-		if (!metadata) {
-			return reject(`File: ${filename} has not been opened`);
-		}
-
-		const cleaner = dbmgr.getCleaner(metadata);
-		if (!cleaner) {
-			return reject(`File: ${filename} has not been opened`);
-		}
-
-		if (!cleaner.isActive()) {
-			// File finished cleaning
-			console.log(`File: ${filename} cleaning completed`);
-		}
-
 		try {
+			const metadata = dbmgr.metadata.read(filename);
+			const cleaner = dbmgr.getCleaner(metadata);
+			if (!cleaner) {
+				return reject(`File: ${filename} has not been opened`);
+			}
+
+			if (!cleaner.isActive()) {
+				// File finished cleaning
+				console.log(`File: ${filename} cleaning completed`);
+			}
+
 			const progress = cleaner.getProgress();
-			resolve(progress);
-		} catch (error: any) {
-			reject(`Failed to get progress for file: ${filename}. Error: ${error.message}`);
+			return resolve(progress);
+		} catch (err) {
+			return reject(`Failed to get progress for file: ${filename}. Error: ${err}`);
 		}
 	});
 });
@@ -367,10 +325,6 @@ ipcMain.handle('csv-export-data', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const metadata = dbmgr.metadata.read(filename);
-			if (!metadata) {
-				return reject(`File: ${filename} has not been opened`);
-			}
-
 			if (!metadata.completed) {
 				return reject(`File: ${filename} hasn't been cleaned yet. Clean the file first.`);
 			}
@@ -388,9 +342,9 @@ ipcMain.handle('csv-export-data', async (_, filename) => {
 
 			// Export the cleaned data
 			const result = await exportToCSV(filename, filePath);
-			resolve(result);
-		} catch (error: any) {
-			reject(`Failed to export file: ${filename}. Error: ${error.message}`);
+			return resolve(result);
+		} catch (err) {
+			return reject(`Failed to export file: ${filename}. Error: ${err}`);
 		}
 	});
 });
@@ -427,13 +381,13 @@ ipcMain.handle('csv-save-file', async (_, options) => {
 			// Write the data to file
 			fs.writeFileSync(filePath, bufferData);
 
-			resolve({
+			return resolve({
 				success: true,
 				filePath: filePath,
 				message: `File saved to ${filePath}`
 			});
-		} catch (error: any) {
-			reject(`Failed to save file: ${error.message}`);
+		} catch (err) {
+			return reject(`Failed to save file: ${err}`);
 		}
 	});
 });
@@ -445,11 +399,7 @@ async function exportToCSV(filename: string, outputPath: string) {
 			let exportedRows = 0;
 
 			const stream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
-
 			const metadata = dbmgr.metadata.read(filename);
-			if (!metadata) {
-				return reject(`File: ${filename} has not been opened`);
-			}
 
 			// Add header row
 			csvContent += metadata.header;
@@ -499,17 +449,14 @@ async function exportToCSV(filename: string, outputPath: string) {
 
 ipcMain.handle('csv-get-first-and-last', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
-		const metadata = dbmgr.metadata.read(filename);
-		if (!metadata) {
-			return reject(`File: ${filename} has not been opened`);
-		}
+		try {
+			const metadata = dbmgr.metadata.read(filename);
+			const result = dbmgr.csv.firstAndLast(metadata);
 
-		const result = dbmgr.csv.firstAndLast(metadata);
-		if (!result) {
-			return reject(`Failed to read cleaned rows for file: ${filename}`);
+			return resolve(result);
+		} catch (err) {
+			return reject(`Failed to get first and last rows for file: ${filename}. Error: ${err}`);
 		}
-
-		return resolve(result);
 	});
 });
 
@@ -663,9 +610,9 @@ ipcMain.handle('animation-export-init', async (_, options) => {
 
 			exportSessions.set(sessionId, session);
 
-			resolve({ success: true, sessionId, outputPath: filePath });
-		} catch (error: any) {
-			reject(`Failed to initialize export: ${error.message}`);
+			return resolve({ success: true, sessionId, outputPath: filePath });
+		} catch (err) {
+			return reject(`Failed to initialize export: ${err}`);
 		}
 	});
 });
@@ -695,9 +642,9 @@ ipcMain.handle('animation-export-add-frame', async (_, sessionId, frameData) => 
 			session.processedFrames = session.frames.length;
 			session.status = 'collecting';
 
-			resolve({ success: true, frameCount: session.frames.length });
+			return resolve({ success: true, frameCount: session.frames.length });
 		} catch (error: any) {
-			reject(`Failed to add frame: ${error.message}`);
+			return reject(`Failed to add frame: ${error.message}`);
 		}
 	});
 });
@@ -740,14 +687,14 @@ ipcMain.handle('animation-export-finalize', async (_, sessionId) => {
 			// Cleanup session
 			exportSessions.delete(sessionId);
 
-			resolve(result);
-		} catch (error: any) {
+			return resolve(result);
+		} catch (err) {
 			const session = exportSessions.get(sessionId);
 			if (session) {
 				session.status = 'error';
-				session.error = error.message;
+				session.error = err.message;
 			}
-			reject(`Failed to finalize export: ${error.message}`);
+			return reject(`Failed to finalize export: ${err}`);
 		}
 	});
 });
@@ -762,7 +709,7 @@ ipcMain.handle('animation-export-progress', async (_, sessionId) => {
 			return resolve({ error: 'Session not found' });
 		}
 
-		resolve({
+		return resolve({
 			status: session.status,
 			processedFrames: session.processedFrames,
 			totalFrames: session.totalFrames,
@@ -784,7 +731,7 @@ ipcMain.handle('animation-export-cancel', async (_, sessionId) => {
 			session.status = 'cancelled';
 			exportSessions.delete(sessionId);
 		}
-		resolve({ success: true });
+		return resolve({ success: true });
 	});
 });
 
