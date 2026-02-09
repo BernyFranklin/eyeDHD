@@ -742,6 +742,3 @@ Computes ISI series and distributions per segment (segment comparison)
             // No unassigned ISIs in this scenario
             result.isiSegmentsMeta.unassignedIsiCount == 0
 
-!! When done with section F:!!
-git checkout master
-git merge ISI-tests 
