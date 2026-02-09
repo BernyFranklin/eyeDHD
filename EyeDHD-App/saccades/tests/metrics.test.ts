@@ -709,7 +709,64 @@ describe('Saccade Metrics', () => {
             }
         });
 
-        it('G3)', () => {});
+        it('G3) Emits CSV-ready session + segment summary rows with stable columns', () => {
+            const input = [
+                // seg1 [0,2000): two kept]
+                { startTime: 500,  endTime: 550,  amplitudeDeg: 5 },
+                { startTime: 1500, endTime: 1550, amplitudeDeg: 5 },
+                // seg2 [2000,4000): one filtered by amplitude ]
+                { startTime: 2500, endTime: 2550, amplitudeDeg: 999 },
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+                csv: {
+                    sessionSummaryRow: true,
+                    segmentSummaryRows: true,
+                },
+            });
+            
+            // Session CSV row exists and is flat
+            const sessionRow = result.csv.sessionSummaryRow;
+            expect( typeof sessionRow).toBe('object');
+            // Stable keys (minimum contract)
+            expect(sessionRow).toMatchObject({
+                sessionId: null,
+                keptCount: 2,
+                filteredCount: 1,
+            });
+            expect(sessionRow.durationMs).toBe(1050); // min start = 500, max end = 1550 (filtered excluded) -> 1550 - 500 = 1050
+            expect(sessionRow.durationSec).toBeCloseTo(1.05, 6);
+            expect(sessionRow.ratePerSec).toBeCloseTo(2 / 1.05, 6);
+            // ratePerMin omitted unless includeRatePerMin is enabled (locked in C3)
+            expect(sessionRow.ratePerMin).toBeUndefined();
+            // Segment CSV rows exist and are flat
+            const segRows = result.csv.segmentSummaryRows;
+            expect(Array.isArray(segRows)).toBe(true);
+            expect(segRows.length).toBe(2);
+
+            const seg1 = segRows.find((r: any) => r.segmentId === 'seg1');
+            const seg2 = segRows.find((r: any) => r.segmentId === 'seg2');
+            // Segment 1: duration 2000ms, kept 2 => rate 1/s
+            expect(seg1).toMatchObject({ segmentId: 'seg1', keptCount: 2 });
+            expect(seg1.durationMs).toBe(2000);
+            expect(seg1.durationSec).toBeCloseTo(2, 6);
+            expect(seg1.ratePerSec).toBeCloseTo(1, 6);
+            expect(seg1.ratePerMin).toBeUndefined();
+            // Segment 2: duration 2000ms, kept 0 => rate 0/s
+            expect(seg2).toMatchObject({ segmentId: 'seg2', keptCount: 0 });
+            expect(seg2.durationMs).toBe(2000);
+            expect(seg2.durationSec).toBeCloseTo(2, 6);
+            expect(seg2.ratePerSec).toBeCloseTo(0, 6);
+            expect(seg2.ratePerMin).toBeUndefined();
+    });
 
     });
 
