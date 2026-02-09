@@ -672,7 +672,42 @@ describe('Saccade Metrics', () => {
             expect(rows[1].segmentId).toBe('seg2');
         });
 
-        it('G2)', () => {});
+        it('G2) Emits plot-ready time series as ordered {x,y} points', () => {
+            const input = [
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 4 },   // rate = 4 / 0.05s = 80 deg/s
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 2 },   // rate = 2 / 0.05s = 40 deg/s
+                { startTime: 3000, endTime: 3100, amplitudeDeg: 3 },   // rate = 3 / 0.1s  = 30 deg/s
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                series: {
+                    saccadeRatePerSecOverTime: true,
+                    amplitudeDegOverTime: true,
+                },
+            });
+
+            const rateSeries = result.series.saccadeRatePerSecOverTime;
+            const ampSeries = result.series.amplitudeDegOverTime;
+
+            // Both series should exist and have one point per kept saccade
+            expect(rateSeries.length).toBe(3);
+            expect(ampSeries.length).toBe(3);
+            // Chronological ordering by x (startTime)
+            expect(rateSeries.map((p: any) => p.x)).toEqual([1000, 2000, 3000]);
+            expect(ampSeries.map((p: any) => p.x)).toEqual([1000, 2000, 3000]);
+            // Values should match expected derived metrics
+            expect(rateSeries.map((p: any) => p.y)).toEqual([40, 80, 30]);
+            expect(ampSeries.map((p: any) => p.y)).toEqual([2, 4, 3]);
+            // Shape guarantee: {x,y} are finite numbers
+            for (const p of [...rateSeries, ...ampSeries]) {
+                expect(Number.isFinite(p.x)).toBe(true);
+                expect(Number.isFinite(p.y)).toBe(true);
+            }
+        });
 
         it('G3)', () => {});
 
