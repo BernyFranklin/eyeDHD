@@ -13,7 +13,7 @@ Create tests:
 	index.js
   X velocity.js
   x detection.js
-	metrics.js
+	X metrics.js
 
 X Add a README for reference
 
@@ -38,39 +38,3 @@ peakVelocityDegPerSec
 (any other fields are allowed; metrics ignores what it doesn’t need)
 
 
-
-G) Plot/CSV-ready outputs
-
-Test G1 — perSaccadeRows contains computed fields
-Each output row includes:
-
-original identifiers if present (index at minimum)
-
-derived durationMs, midpointTsMs
-
-computed ISI field per row (isiToNextMs nullable) if you choose row-wise
-
-isFiltered boolean
-
-filterReason (single string or string array; choose and lock)
-
-Test G2 — series arrays are post-filter
-
-series.durationsMs, series.amplitudesDeg, series.peakVelocityDegPerSec, series.isiMs
-contain only included events (and included ISIs)
-
-Test G3 — optional raw series (if you include them)
-
-If options.includeRawSeries === true
-
-Provide rawSeries.* including filtered values
-
-Test both modes
-
-H) Ordering guarantees
-
-Test H1 — metrics sorts events by startTsMs
-
-If input is unsorted, metrics should sort before computing ISI and session duration
-
-Sorting must be stable and deterministic
