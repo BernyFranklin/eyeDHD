@@ -4,19 +4,18 @@ import { test as action_test } from './action_test';
 import type { Database } from 'better-sqlite3';
 
 import DatabaseManager from '../Manager';
-import metadataActions, { type Metadata, createMetadataTable } from './metadata';
+import metadataActions, { type Metadata } from '../tables/metadata';
 
-test.concurrent('files table create', async ({ expect }) => {
+test('files table create', async ({ expect }) => {
   const dbmgr = new DatabaseManager({
     temporary: true,
-    logging: true
+    logging: false
   });
 
-  createMetadataTable(dbmgr.db);
+  dbmgr.createMetadataTable();
 
   // Check whether the files database was created
-  const result = dbmgr.db
-    .prepare(`
+  const result = dbmgr.prepare(`
       SELECT name FROM sqlite_master WHERE type='table' AND name='metadata';
 		`)
     .get();
@@ -35,9 +34,9 @@ function compare(expect: any, result: Metadata, expected: Metadata) {
 }
 
 // Test creating a file entry in the files table
-action_test.concurrent(
+action_test(
   'files create',
-  async ({ db, expect }: { db: Database; expect: any } | any) => {
+  async ({ dbmgr, expect }: { dbmgr: DatabaseManager; expect: any } | any) => {
     const expected = {
       id: 4,
       name: 'newData.csv',
@@ -53,8 +52,7 @@ action_test.concurrent(
       updated_at: ''
     };
 
-    const result = metadataActions.create(
-      db,
+    const result = dbmgr.metadata.create(
       expected.name,
       expected.path,
       expected.request_size
@@ -66,9 +64,9 @@ action_test.concurrent(
 );
 
 // Test reading a file entry in the files table
-action_test.concurrent(
+action_test(
   'files read',
-  async ({ db, expect }: { db: Database; expect: any } | any) => {
+  async ({ dbmgr, expect }: { dbmgr: DatabaseManager; expect: any } | any) => {
     const expected = {
       id: 2,
       name: 'test2.csv',
@@ -84,7 +82,7 @@ action_test.concurrent(
       updated_at: ''
     };
 
-    const result = metadataActions.read(db, 'test2.csv');
+    const result = dbmgr.metadata.read('test2.csv');
     expect(result).not.toBeNull();
 
     compare(expect, result as Metadata, expected);
@@ -92,7 +90,7 @@ action_test.concurrent(
 );
 
 // Test updating a file entry in the files table
-// action_test.concurrent(
+// action_test(
 //   'files update',
 //   async ({ db, expect }: { db: Database; expect: any }) => {
 //     const expected = {
@@ -128,7 +126,7 @@ action_test.concurrent(
 // );
 
 // // Test removing a file entry in the files table
-// test.concurrent('files remove', async ({ db, expect }: { db: Database; expect: any }) => {
+// action_test('files remove', async ({ db, expect }: { db: Database; expect: any }) => {
 //   const original = metadataActions.read(db, 'test2.csv');
 //   expect(original).not.toBeNull();
 

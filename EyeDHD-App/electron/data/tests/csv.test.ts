@@ -2,26 +2,24 @@ import { test } from 'vitest';
 import { test as action_test } from './action_test';
 
 import DatabaseManager from '../Manager';
-import { createRowTable, toTableName } from './csv';
+import rowActions, { createRowTable, toTableName } from '../tables/csv';
+import metadataActions, { type Metadata } from '../tables/metadata';
+import saccadeActions from '../tables/saccade';
 
-import metadataActions from './metadata';
-import rowsActions from './csv';
-
-test.concurrent('csv table create', async ({ expect }) => {
+test('csv table create', async ({ expect }) => {
   const file = {
     name: 'test.csv'
-  };
+  } as Metadata;
 
   const dbmgr = new DatabaseManager({
     temporary: true,
-    logging: true
+    logging: false
   });
 
-  createRowTable(dbmgr.db, file.name);
+  dbmgr.createCSVTable(file);
 
   // Check whether csv data table is created
-  const table = dbmgr.db
-    .prepare(`
+  const table = dbmgr.prepare(`
       SELECT name FROM sqlite_master WHERE type='table' AND name=?;
     `)
     .get(toTableName(file.name));
@@ -29,10 +27,10 @@ test.concurrent('csv table create', async ({ expect }) => {
   expect(table).toStrictEqual({ name: toTableName(file.name) });
 });
 
-action_test.concurrent.todo('csv create', async ({ db, expect }) => {
+action_test.todo('csv create', async ({ dbmgr, expect }) => {
   expect(1 + 1).toBe(3);
 });
 
-action_test.concurrent.todo('csv read', async ({ db, expect }) => {
+action_test.todo('csv read', async ({ dbmgr, expect }) => {
   expect(1 + 1).toBe(3);
 });
