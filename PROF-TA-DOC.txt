@@ -698,6 +698,50 @@ Computes ISI histogram counts using fixed=width bins
             result.isiHistogram.bins[2]     == { startMs: 200, endMs: 300, count: 1 }    // ISI of 250 falls into [200, 300)
             result.isiHistogram.bins[3]     == { startMs: 300, endMs: 400, count: 1 }    // ISI of 350 falls into [300, 400)
 
+Computes ISI series and distributions per segment (segment comparison)
+    Purpose: Verifies ISI metrics can be computed per segment, using the segment assignment of the pair (current saccade's segment), with unassigned ISIs tracked separately
+        input   
+            [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },     // Seg1
+                { startTime: 1200, endTime: 1250, amplitudeDeg: 5 },     // Seg1
+                { startTime: 2300, endTime: 2350, amplitudeDeg: 5 },     // Seg2
+                { startTime: 2600, endTime: 2650, amplitudeDeg: 5 },     // Seg2
+            ];
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                isiPlausibleBounds: {
+                    isiMs: { min: 0, max: 10_000 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+                isiBySegment: true,
+            });
+        Expected 
+            // Overall ISI sanity check (consecutive kept saccades)
+            result.isiSeries == [150, 1050, 250]
+
+            // Contract: per-segment ISI breakdown exists when isiBySegment is true
+            seg1 = result.isiBysegment.find((s: any) => s.id === 'seg1');
+            seg2 = result.isiBysegment.find((s: any) => s.id === 'seg2');
+
+            seg1.isiSeries == [150, 1050]
+            seg2.isiSeries == [250]
+
+            // Quick distribution sanity checks
+            seg1.distributions.isiMs.min == 150
+            seg1.distributions.isiMs.max == 1050
+
+            seg2.distributions.isiMs.min == 250
+            seg2.distributions.isiMs.max == 250
+
+            // No unassigned ISIs in this scenario
+            result.isiSegmentsMeta.unassignedIsiCount == 0
+
 !! When done with section F:!!
 git checkout master
 git merge ISI-tests 

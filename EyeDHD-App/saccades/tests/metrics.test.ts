@@ -584,8 +584,49 @@ describe('Saccade Metrics', () => {
             expect(result.isiHistogram.bins[3]).toEqual({ startMs: 300, endMs: 400, count: 1 });    // ISI of 350 falls into [300, 400)
         });
 
-        it('F5)', () => {});
+        it('F5) Computes ISI series and distribution per segment (segment comparisons)', () => {
+            const input = [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },     // Seg1
+                { startTime: 1200, endTime: 1250, amplitudeDeg: 5 },     // Seg1
+                { startTime: 2300, endTime: 2350, amplitudeDeg: 5 },     // Seg2
+                { startTime: 2600, endTime: 2650, amplitudeDeg: 5 },     // Seg2
+            ];
 
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                isiPlausibleBounds: {
+                    isiMs: { min: 0, max: 10_000 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+                isiBySegment: true,
+            });
+
+            // Overall ISI sanity check (consecutive kept saccades)
+            expect(result.isiSeries).toEqual([150, 1050, 250]);
+
+            // Contract: per-segment ISI breakdown exists when isiBySegment is true
+            const seg1 = result.isiBysegment.find((s: any) => s.id === 'seg1');
+            const seg2 = result.isiBysegment.find((s: any) => s.id === 'seg2');
+
+            expect(seg1.isiSeries).toEqual([150, 1050]);
+            expect(seg2.isiSeries).toEqual([250]);
+
+            // Quick distribution sanity checks
+            expect(seg1.distributions.isiMs.min).toBe(150);
+            expect(seg1.distributions.isiMs.max).toBe(1050);
+
+            expect(seg2.distributions.isiMs.min).toBe(250);
+            expect(seg2.distributions.isiMs.max).toBe(250);
+
+            // No unassigned ISIs in this scenario
+            expect(result.isiSegmentsMeta.unassignedIsiCount).toBe(0);
+        });
     });
 
     describe('G) Plot/CSV-ready Outputs', () => {
