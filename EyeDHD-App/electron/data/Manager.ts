@@ -2,7 +2,7 @@ import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
 import DataStream from './Stream';
-import csvActions, { type CSVData, createRowTable, deleteRowTable } from './tables/csv';
+import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
 import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
 import saccadeActions, { type SaccadeData } from './tables/saccade';
 import DataCleaner from './Cleaner';
@@ -15,21 +15,27 @@ type DBOptions = {
 };
 
 // Database action types defining the public-facing API for interacting with the database
+
+// Public functionality available for Metadata
 type MetadataActions = {
 	create: (filename: string, filepath: string, request_size: number) => Metadata | null;
+	exists: (filename: string) => boolean;
 	read: (filename: string) => Metadata | null;
 	readAll: () => Metadata[] | null;
 	update: (updates: Metadata) => boolean;
 	remove: (file: Metadata) => Metadata | null;
 };
 
+// Public functionality available for CSV Data
 type CSVActions = {
 	create: (file: Metadata, rows: CSVData[]) => boolean;
 	read: (file: Metadata) => CSVData[] | undefined;
 	readAll: (file: Metadata) => CSVData[] | undefined;
 	firstAndLast: (file: Metadata) => { first: CSVData; last: CSVData } | undefined;
+	clear: (file: Metadata) => void;
 };
 
+// Public functionality available for Saccade Data
 type SaccadeDataActions = {
 	create: () => boolean;
 };
@@ -61,7 +67,21 @@ export default class DatabaseManager {
 
 		this.metadata = {
 			create: (filename: string, filepath: string, request_size: number) => {
-				return metadataActions.create(this.db, filename, filepath, request_size);
+				const metadata = metadataActions.create(
+					this.db,
+					filename,
+					filepath,
+					request_size
+				);
+
+				this.createCSVTable(metadata);
+				this.createSaccadeTable(metadata);
+				this.setDataCleaner(metadata);
+
+				return metadata;
+			},
+			exists: (filename: string) => {
+				return metadataActions.exists(this.db, filename);
 			},
 			read: (filename: string) => {
 				return metadataActions.read(this.db, filename);
@@ -89,6 +109,10 @@ export default class DatabaseManager {
 			},
 			firstAndLast: (file: Metadata) => {
 				return csvActions.firstAndLast(this.db, file);
+			},
+			clear: (file: Metadata) => {
+				this.deleteCSVTable(file);
+				this.createCSVTable(file);
 			}
 		};
 
@@ -99,71 +123,18 @@ export default class DatabaseManager {
 		};
 	}
 
-	// Closes the database connection
+	/**
+	 * Closes the database connection
+	 */
 	close() {
 		this.db.close();
 	}
 
-	// Creates a new data cleaner and stores in in the cleaners map
-	setDataCleaner(file: Metadata) {
-		this.cleaners.set(file.name, new DataCleaner({
-			dbmgr: this,
-			name: file.name,
-			path: file.path,
-			request_size: file.request_size
-		}));
-	}
-
-	// Checks whether a cleaner exists for a given file
-	cleanerExists(file: Metadata): boolean {
-		return this.cleaners.has(file.name);
-	}
-
-	// Gets the cleaner for a given file
-	getCleaner(file: Metadata): DataCleaner | undefined {
-		return this.cleaners.get(file.name);
-	}
-
-	// Deletes the cleaner for a given file
-	deleteCleaner(file: Metadata): boolean {
-		return this.cleaners.delete(file.name);
-	}
-
-	// Prepares a SQL statement
-	prepare(sql: string) {
-		return this.db.prepare(sql);
-	}
-
-	// Database table management functions
-
-	// Creates the metadata table if it doesn't already exist
-	createMetadataTable() {
-		createMetadataTable(this.db);
-	}
-
-	// Creates a new table for storing csv data for a given file
-	createCSVTable(file: Metadata) {
-		createRowTable(this.db, file.name);
-	}
-
-	// Deletes the csv data table for a given file
-	deleteCSVTable(file: Metadata) {
-		deleteRowTable(this.db, file.name);
-	}
-
-	// Creates a new table for storing saccade data for a given file
-	createSaccadeTable(file: Metadata) {
-
-	}
-
-	// Deletes the saccade data table for a given file
-	deleteSaccadeTable(file: Metadata) {
-
-	}
-
 	// Private helper functions
 
-	// Initializes the database connection based on the provided options
+	/**
+	 * Initializes the database connection based on the provided options
+	 */
 	private getDB() {
 		// Creates a temporary in memory database for testing
 		if (this.options.temporary) {
@@ -199,5 +170,75 @@ export default class DatabaseManager {
 		}, 5000).unref();
 
 		return db;
+	}
+
+	/**
+	 * Creates a new data cleaner and stores in in the cleaners map
+	 */
+	setDataCleaner(file: Metadata) {
+		this.cleaners.set(file.name, new DataCleaner({
+			dbmgr: this,
+			name: file.name,
+			path: file.path,
+			request_size: file.request_size
+		}));
+	}
+
+	/**
+	 * Checks whether a cleaner exists for a given file
+	 */
+	cleanerExists(file: Metadata): boolean {
+		return this.cleaners.has(file.name);
+	}
+
+	/**
+	 * Gets the cleaner for a given file
+	 */
+	getCleaner(file: Metadata): DataCleaner | undefined {
+		return this.cleaners.get(file.name);
+	}
+
+	/**
+	 * Deletes the cleaner for a given file
+	 */
+	deleteCleaner(file: Metadata): boolean {
+		return this.cleaners.delete(file.name);
+	}
+
+	// Database table management functions
+
+	/**
+	 * Creates the metadata table if it doesn't already exist
+	 */
+	private createMetadataTable() {
+		createMetadataTable(this.db);
+	}
+
+	/**
+	 * Creates a new table for storing csv data for a given file
+	 */
+	private createCSVTable(file: Metadata) {
+		createCSVTable(this.db, file.name);
+	}
+
+	/**
+	 * Deletes the csv data table for a given file
+	 */
+	private deleteCSVTable(file: Metadata) {
+		deleteCSVTable(this.db, file.name);
+	}
+
+	/**
+	 * Creates a new table for storing saccade data for a given file
+	 */
+	private createSaccadeTable(file: Metadata) {
+
+	}
+
+	/**
+	 * Deletes the saccade data table for a given file
+	 */
+	private deleteSaccadeTable(file: Metadata) {
+
 	}
 }

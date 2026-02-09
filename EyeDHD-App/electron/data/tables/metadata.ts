@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 
-export default { create, read, readAll, update, remove };
+export default { create, exists, read, readAll, update, remove };
 
 export type Metadata = {
   id: number;
@@ -98,18 +98,15 @@ function create(
   request_size: number
 ): Metadata | null {
   try {
-    const result = db
-      .prepare<[string, string, number], Metadata>(`
+    const result = db.prepare<[string, string, number], Metadata>(`
   			INSERT INTO metadata (name, path, request_size)
   			VALUES (?, ?, ?);
   		`)
       .run(filename, filepath, request_size);
 
-    const file = db
-      .prepare<[number | bigint], Metadata>(`
+    const file = db.prepare<[number | bigint], Metadata>(`
         SELECT * FROM metadata WHERE id = ?;
-			`
-      )
+			`)
       .get(result.lastInsertRowid);
 
     if (!file) {
@@ -126,8 +123,7 @@ function create(
 
 function read(db: Database, filename: string): Metadata | null {
   try {
-    const file = db
-      .prepare<string, Metadata>(`
+    const file = db.prepare<string, Metadata>(`
         SELECT * FROM metadata WHERE name = ?;
 			`)
       .get(filename);
@@ -144,10 +140,28 @@ function read(db: Database, filename: string): Metadata | null {
   }
 }
 
+function exists(db: Database, filename: string): boolean {
+	try {
+		const file = db.prepare<string, Metadata>(`
+				SELECT 1 FROM metadata WHERE name = ?;
+			`)
+			.get(filename);
+
+		if (!file) {
+			return false;
+		}
+
+		return true;
+	} catch (err) {
+		console.error(err);
+
+		return false;
+	}
+}
+
 function readAll(db: Database): Metadata[] | null {
   try {
-    const files = db
-      .prepare<[], Metadata>(`
+    const files = db.prepare<[], Metadata>(`
         SELECT * FROM metadata;
 			`)
       .all();
@@ -162,8 +176,7 @@ function readAll(db: Database): Metadata[] | null {
 
 function update(db: Database, file: Metadata): boolean {
   try {
-    const result = db
-      .prepare(`
+    const result = db.prepare(`
         UPDATE metadata
 			  SET
 					request_size = @request_size,
@@ -197,8 +210,7 @@ function remove(db: Database, file: Metadata): Metadata | null {
       throw new Error(`File entry not found for deletion: ${file.name}`);
     }
 
-    const result = db
-      .prepare(`
+    const result = db.prepare(`
         DELETE FROM metadata
 			  WHERE id = ?
 			`)

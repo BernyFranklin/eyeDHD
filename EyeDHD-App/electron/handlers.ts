@@ -66,9 +66,6 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
 			return reject(`Failed to create metadata for file: ${filename}`);
 		}
 
-		dbmgr.createCSVTable(metadata);
-		dbmgr.setDataCleaner(metadata);
-
 		return resolve(filename);
 	});
 });
@@ -202,8 +199,7 @@ ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
 			return reject(`Failed to reset cleaning progress for: ${filename}`);
 		}
 
-		dbmgr.deleteCSVTable(metadata);
-		dbmgr.createCSVTable(metadata);
+		dbmgr.csv.clear(metadata);
 
 		const cleaner = dbmgr.getCleaner(metadata);
 		if (!cleaner) return resolve();

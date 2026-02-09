@@ -56,14 +56,14 @@ export type CSVData = {
   FocusStability: number;
 };
 
-export function deleteRowTable(db: Database, filename: string) {
+export function deleteCSVTable(db: Database, filename: string) {
   db.prepare(`
     DROP TABLE IF EXISTS ${toTableName(filename)};
   `).run();
 }
 
 // Creates a new table for storing cleaned CSV data
-export function createRowTable(db: Database, filename: string) {
+export function createCSVTable(db: Database, filename: string) {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
       Frame INTEGER PRIMARY KEY NOT NULL,
@@ -237,8 +237,7 @@ function create(db: Database, file: Metadata, rows: CSVData[]) {
 function read(db: Database, file: Metadata): CSVData[] | undefined {
   try {
     const table = toTableName(file.name);
-    const rows = db
-      .prepare<[number, number], CSVData>(`
+    const rows = db.prepare<[number, number], CSVData>(`
         SELECT * FROM ${table}
 			  LIMIT ? OFFSET ?;
 			`)
@@ -255,8 +254,7 @@ function read(db: Database, file: Metadata): CSVData[] | undefined {
 function readAll(db: Database, file: Metadata): CSVData[] | undefined {
   try {
     const table = toTableName(file.name);
-    const rows = db
-      .prepare<[], CSVData>(`
+    const rows = db.prepare<[], CSVData>(`
         SELECT * FROM ${table};
       `)
       .all();
@@ -276,15 +274,13 @@ function firstAndLast(
   try {
     const table = toTableName(file.name);
 
-    const first = db
-      .prepare<[number], CSVData>(`
+    const first = db.prepare<[number], CSVData>(`
         SELECT * FROM ${table}
         WHERE frame = ?;
       `)
       .get(file.first_frame) as CSVData;
 
-    const last = db
-      .prepare<[number], CSVData>(`
+    const last = db.prepare<[number], CSVData>(`
         SELECT * FROM ${table}
 			  WHERE frame = ?;
 			`)

@@ -1,14 +1,13 @@
 import { test } from 'vitest';
-import { test as action_test } from './action_test';
+import { test as action_test, type Parameters } from './action_test';
 
 import DatabaseManager from '../Manager';
-import rowActions, { createRowTable, toTableName } from '../tables/csv';
-import metadataActions, { type Metadata } from '../tables/metadata';
-import saccadeActions from '../tables/saccade';
+import csvActions, { createCSVTable, toTableName } from '../tables/csv';
+import { type Metadata } from '../tables/metadata';
 
 test('csv table create', async ({ expect }) => {
   const file = {
-    name: 'test.csv'
+    name: 'testa.csv'
   } as Metadata;
 
   const dbmgr = new DatabaseManager({
@@ -16,10 +15,12 @@ test('csv table create', async ({ expect }) => {
     logging: false
   });
 
-  dbmgr.createCSVTable(file);
+  const db = dbmgr['db'];
+
+  createCSVTable(db, file.name);
 
   // Check whether csv data table is created
-  const table = dbmgr.prepare(`
+  const table = db.prepare(`
       SELECT name FROM sqlite_master WHERE type='table' AND name=?;
     `)
     .get(toTableName(file.name));
@@ -27,10 +28,14 @@ test('csv table create', async ({ expect }) => {
   expect(table).toStrictEqual({ name: toTableName(file.name) });
 });
 
-action_test.todo('csv create', async ({ dbmgr, expect }) => {
+action_test.todo('csv create', async ({ dbmgr, expect }: Parameters) => {
+	const db = dbmgr['db'];
+
   expect(1 + 1).toBe(3);
 });
 
-action_test.todo('csv read', async ({ dbmgr, expect }) => {
+action_test.todo('csv read', async ({ dbmgr, expect }: Parameters) => {
+	const db = dbmgr['db'];
+
   expect(1 + 1).toBe(3);
 });
