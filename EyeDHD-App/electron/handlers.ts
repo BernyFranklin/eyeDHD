@@ -85,7 +85,7 @@ ipcMain.handle('csv-reset-reading-progress', async (_, filename) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
 			const metadata = dbmgr.metadata.read(filename);
-			dbmgr.metadata.update({ ...metadata, requested: 0 });
+			dbmgr.metadata.resetReading(metadata);
 
 			return resolve();
 		} catch (err) {
@@ -98,15 +98,7 @@ ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
 			const metadata = dbmgr.metadata.read(filename);
-			dbmgr.metadata.update({
-				...metadata,
-				requested: 0,
-				cleaned: 0,
-				completed: 0,
-				first_frame: 0,
-				last_frame: 0
-			});
-
+			dbmgr.metadata.resetCleaning(metadata);
 			dbmgr.csv.clear(metadata);
 
 			const cleaner = dbmgr.getCleaner(metadata);
@@ -297,7 +289,7 @@ ipcMain.handle('csv-save-file', async (_, options) => {
 });
 
 async function exportToCSV(filename: string, outputPath: string) {
-	return new Promise(async (resolve, reject) => {
+	return new Promise(async (resolve) => {
 		try {
 			let csvContent = '';
 			let exportedRows = 0;
@@ -310,10 +302,6 @@ async function exportToCSV(filename: string, outputPath: string) {
 
 			let rows = dbmgr.csv.read(metadata);
 			while (rows !== null && rows.length > 0) {
-				if (rows === undefined) {
-					return reject(`Failed to read cleaned rows for file: ${filename}`);
-				}
-
 				for (const row of rows) {
 					Object.values(row).forEach((value) => {
 						csvContent += value + ',';
@@ -341,11 +329,11 @@ async function exportToCSV(filename: string, outputPath: string) {
 					fileSize: csvContent.length
 				}
 			});
-		} catch (error: any) {
+		} catch (err) {
 			return resolve({
 				success: false,
-				message: `Failed to export CSV: ${error.message}`,
-				error: error
+				message: `Failed to export CSV: ${err}`,
+				error: err
 			});
 		}
 	});

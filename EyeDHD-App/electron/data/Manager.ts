@@ -23,6 +23,8 @@ type MetadataActions = {
 	read: (filename: string) => Metadata;
 	readAll: () => Metadata[];
 	update: (updates: Metadata) => void;
+	resetCleaning: (file: Metadata) => void;
+	resetReading: (file: Metadata) => void;
 	remove: (file: Metadata) => Metadata;
 };
 
@@ -92,6 +94,19 @@ export default class DatabaseManager {
 				if (!ok) {
 					throw new Error(`Failed to update metadata for file: ${updates.name}`);
 				}
+			},
+			resetCleaning: (file: Metadata) => {
+				this.metadata.update({
+					...file,
+					requested: 0,
+					cleaned: 0,
+					completed: 0,
+					first_frame: 0,
+					last_frame: 0
+				});
+			},
+			resetReading: (file: Metadata) => {
+				this.metadata.update({ ...file, requested: 0 });
 			},
 			remove: (file: Metadata) => {
 				return metadataActions.remove(this.db, file);
