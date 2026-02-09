@@ -47,7 +47,7 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
 			if (dbmgr.metadata.exists(filename)) {
 				const metadata = dbmgr.metadata.read(filename);
 				if (!dbmgr.cleanerExists(metadata)) {
-					dbmgr.setDataCleaner(metadata);
+					dbmgr.resetCleaner(metadata);
 				}
 
 				if (request_size != metadata.request_size) {
@@ -73,10 +73,7 @@ function cleanFile(original: Metadata): Promise<void> {
 		try {
 			let metadata = original;
 
-			// fetch cleaner
 			const cleaner = dbmgr.getCleaner(metadata);
-
-			// Load first batch of rows then loop until file has been cleaned
 			let buffer = await cleaner.getBuffer();
 
 			if (cleaner.status.done) {
@@ -95,10 +92,8 @@ function cleanFile(original: Metadata): Promise<void> {
 			}
 
 			while (buffer) {
-				// Store rows
 				dbmgr.csv.create(metadata, buffer);
 
-				// Update file metadata
 				dbmgr.metadata.update({
 					...metadata,
 					last_frame: buffer[buffer.length - 1].Frame,
@@ -109,10 +104,9 @@ function cleanFile(original: Metadata): Promise<void> {
 				metadata = dbmgr.metadata.read(metadata.name);
 			}
 
-			// Update file metadata to show cleaning has completed
 			dbmgr.metadata.update({ ...metadata, completed: 1 });
-
 			cleaner.close();
+
 			return resolve();
 		} catch (err) {
 			return reject(`Failed to clean file: ${err}`);
@@ -181,8 +175,7 @@ ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
 			if (!cleaner) return resolve();
 
 			cleaner.close();
-			dbmgr.deleteCleaner(metadata);
-			dbmgr.setDataCleaner(metadata);
+			dbmgr.resetCleaner(metadata);
 
 			return resolve();
 		} catch (err) {

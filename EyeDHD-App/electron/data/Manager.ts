@@ -76,7 +76,7 @@ export default class DatabaseManager {
 
 				this.createCSVTable(metadata);
 				this.createSaccadeTable(metadata);
-				this.setDataCleaner(metadata);
+				this.setCleaner(metadata);
 			},
 			exists: (filename: string) => {
 				return metadataActions.exists(this.db, filename);
@@ -179,13 +179,28 @@ export default class DatabaseManager {
 	/**
 	 * Creates a new data cleaner and stores in in the cleaners map
 	 */
-	setDataCleaner(file: Metadata) {
+	private setCleaner(file: Metadata) {
 		this.cleaners.set(file.name, new DataCleaner({
 			dbmgr: this,
 			name: file.name,
 			path: file.path,
 			request_size: file.request_size
 		}));
+	}
+
+	/**
+	 * Deletes the cleaner for a given file
+	 */
+	private deleteCleaner(file: Metadata): boolean {
+		return this.cleaners.delete(file.name);
+	}
+
+	/**
+	 * Resets the cleaner for a given file
+	 */
+	resetCleaner(file: Metadata) {
+		this.deleteCleaner(file);
+		this.setCleaner(file);
 	}
 
 	/**
@@ -200,13 +215,6 @@ export default class DatabaseManager {
 	 */
 	getCleaner(file: Metadata): DataCleaner | undefined {
 		return this.cleaners.get(file.name);
-	}
-
-	/**
-	 * Deletes the cleaner for a given file
-	 */
-	deleteCleaner(file: Metadata): boolean {
-		return this.cleaners.delete(file.name);
 	}
 
 	// Database table management functions
