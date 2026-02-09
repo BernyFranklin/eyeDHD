@@ -43,23 +43,7 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
 		const filename = path.basename(filepath);
 
 		try {
-			// If file is already opened and cleaning, just return filename
-			if (dbmgr.metadata.exists(filename)) {
-				const metadata = dbmgr.metadata.read(filename);
-				if (!dbmgr.cleanerExists(metadata)) {
-					dbmgr.resetCleaner(metadata);
-				}
-
-				if (request_size != metadata.request_size) {
-					dbmgr.metadata.update({
-						...metadata,
-						request_size
-					});
-				}
-				return resolve(filename);
-			}
-
-			dbmgr.metadata.create(filename, filepath, request_size);
+			dbmgr.openFile(filename, filepath, request_size);
 
 			return resolve(filename);
 		} catch (err) {
@@ -67,52 +51,6 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
 		}
 	});
 });
-
-function cleanFile(original: Metadata): Promise<void> {
-	return new Promise(async (resolve, reject) => {
-		try {
-			let metadata = original;
-
-			const cleaner = dbmgr.getCleaner(metadata);
-			let buffer = await cleaner.getBuffer();
-
-			if (cleaner.status.done) {
-				return;
-			}
-
-			// Only set the first frame number when cleaning is not in progress
-			if (metadata.cleaned === 0) {
-				dbmgr.metadata.update({
-					...metadata,
-					header: cleaner.header.join(',') + '\n',
-					first_frame: buffer?.[0].Frame
-				});
-
-				metadata = dbmgr.metadata.read(metadata.name);
-			}
-
-			while (buffer) {
-				dbmgr.csv.store(metadata, buffer);
-
-				dbmgr.metadata.update({
-					...metadata,
-					last_frame: buffer[buffer.length - 1].Frame,
-					cleaned: (metadata.cleaned += buffer.length)
-				});
-
-				buffer = await cleaner.getBuffer();
-				metadata = dbmgr.metadata.read(metadata.name);
-			}
-
-			dbmgr.metadata.update({ ...metadata, completed: 1 });
-			cleaner.close();
-
-			return resolve();
-		} catch (err) {
-			return reject(`Failed to clean file: ${err}`);
-		}
-	});
-}
 
 ipcMain.handle('csv-get-metadata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
@@ -238,11 +176,9 @@ ipcMain.handle('csv-clean-data', async (_, filename) => {
 		try {
 			const metadata = dbmgr.metadata.read(filename);
 			// Start cleaning in background without blocking
-			cleanFile(metadata).catch((error) => {
-				console.error(`Background cleaning failed for ${filename}:`, error);
-			});
+			dbmgr.cleanFile(metadata);
 
-			resolve({ success: true, message: 'Data cleaning initiated' });
+			return resolve({ success: true, message: 'Data cleaning initiated' });
 		} catch (err) {
 			return reject(`Failed to start cleaning for file: ${filename}. Error: ${err}`);
 		}

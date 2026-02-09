@@ -134,6 +134,76 @@ export default class DatabaseManager {
 		this.db.close();
 	}
 
+	/**
+   *
+   */
+	openFile(filename: string, filepath: string, request_size: number) {
+		if (this.metadata.exists(filename)) {
+			const metadata = this.metadata.read(filename);
+			if (!this.cleanerExists(metadata)) {
+				this.resetCleaner(metadata);
+			}
+
+			if (request_size != metadata.request_size) {
+				this.metadata.update({
+					...metadata,
+					request_size
+				});
+			}
+		} else {
+			this.metadata.create(filename, filepath, request_size);
+		}
+	}
+
+	/**
+   * TODO: update Cleaner and this function to clean whole file
+   */
+	async cleanFile(file: Metadata): Promise<void> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				let metadata = file;
+
+				const cleaner = this.getCleaner(metadata);
+				let buffer = await cleaner.getBuffer();
+
+				if (cleaner.status.done) {
+					return;
+				}
+
+				// Only set the first frame number when cleaning is not in progress
+				if (metadata.cleaned === 0) {
+					this.metadata.update({
+						...metadata,
+						header: cleaner.header.join(',') + '\n',
+						first_frame: buffer?.[0].Frame
+					});
+
+					metadata = this.metadata.read(metadata.name);
+				}
+
+				while (buffer) {
+					this.csv.store(metadata, buffer);
+
+					this.metadata.update({
+						...metadata,
+						last_frame: buffer[buffer.length - 1].Frame,
+						cleaned: (metadata.cleaned += buffer.length)
+					});
+
+					buffer = await cleaner.getBuffer();
+					metadata = this.metadata.read(metadata.name);
+				}
+
+				this.metadata.update({ ...metadata, completed: 1 });
+				cleaner.close();
+
+				return resolve();
+			} catch (err) {
+				return reject(`Failed to clean file: ${err}`);
+			}
+		});
+	}
+
 	// Private helper functions
 
 	/**
