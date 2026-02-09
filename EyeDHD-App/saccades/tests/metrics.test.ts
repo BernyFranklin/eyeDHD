@@ -630,11 +630,143 @@ describe('Saccade Metrics', () => {
     });
 
     describe('G) Plot/CSV-ready Outputs', () => {
-        it('G1)', () => {});
+        it('G1) Emits plot/CSV-ready per-saccade rows with stable ordering', () => {
+            const input = [
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 4 },
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 2 },
+            ];
 
-        it('G2)', () => {});
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 1500 },
+                    { id: 'seg2', startTime: 1500, endTime: 3000 },
+                ],
+            });
 
-        it('G3)', () => {});
+            const rows = result.perSaccadeRows;
+
+            // One row per kept saccade
+            expect(rows.length).toBe(2);
+            // Rows must be ordered chronologically by startTime
+            expect(rows[0].startTime).toBe(1000);
+            expect(rows[1].startTime).toBe(2000);
+            // Index should be stable and sequential after ordering
+            expect(rows[0].index).toBe(0);
+            expect(rows[1].index).toBe(1);
+            // Field presence + correctness (row 0)
+            expect(rows[0]).toMatchObject({
+                startTime:      1000,
+                endTime:        1050,
+                durationMs:       50,
+                amplitudeDeg:      2,
+                segmentId:    'seg1',
+            });
+            // Derived values for sanity
+            expect(rows[0].durationSec).toBeCloseTo(0.05, 6);
+            expect(rows[0].ratePerSec).toBeCloseTo(40, 6);   // 2 deg / 0.05s = 40 deg/s
+            // Segment assignment sanity (row 1)
+            expect(rows[1].segmentId).toBe('seg2');
+        });
+
+        it('G2) Emits plot-ready time series as ordered {x,y} points', () => {
+            const input = [
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 4 },   // rate = 4 / 0.05s = 80 deg/s
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 2 },   // rate = 2 / 0.05s = 40 deg/s
+                { startTime: 3000, endTime: 3100, amplitudeDeg: 3 },   // rate = 3 / 0.1s  = 30 deg/s
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                series: {
+                    saccadeRatePerSecOverTime: true,
+                    amplitudeDegOverTime: true,
+                },
+            });
+
+            const rateSeries = result.series.saccadeRatePerSecOverTime;
+            const ampSeries = result.series.amplitudeDegOverTime;
+
+            // Both series should exist and have one point per kept saccade
+            expect(rateSeries.length).toBe(3);
+            expect(ampSeries.length).toBe(3);
+            // Chronological ordering by x (startTime)
+            expect(rateSeries.map((p: any) => p.x)).toEqual([1000, 2000, 3000]);
+            expect(ampSeries.map((p: any) => p.x)).toEqual([1000, 2000, 3000]);
+            // Values should match expected derived metrics
+            expect(rateSeries.map((p: any) => p.y)).toEqual([40, 80, 30]);
+            expect(ampSeries.map((p: any) => p.y)).toEqual([2, 4, 3]);
+            // Shape guarantee: {x,y} are finite numbers
+            for (const p of [...rateSeries, ...ampSeries]) {
+                expect(Number.isFinite(p.x)).toBe(true);
+                expect(Number.isFinite(p.y)).toBe(true);
+            }
+        });
+
+        it('G3) Emits CSV-ready session + segment summary rows with stable columns', () => {
+            const input = [
+                // seg1 [0,2000): two kept]
+                { startTime: 500,  endTime: 550,  amplitudeDeg: 5 },
+                { startTime: 1500, endTime: 1550, amplitudeDeg: 5 },
+                // seg2 [2000,4000): one filtered by amplitude ]
+                { startTime: 2500, endTime: 2550, amplitudeDeg: 999 },
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+                csv: {
+                    sessionSummaryRow: true,
+                    segmentSummaryRows: true,
+                },
+            });
+            
+            // Session CSV row exists and is flat
+            const sessionRow = result.csv.sessionSummaryRow;
+            expect( typeof sessionRow).toBe('object');
+            // Stable keys (minimum contract)
+            expect(sessionRow).toMatchObject({
+                sessionId: null,
+                keptCount: 2,
+                filteredCount: 1,
+            });
+            expect(sessionRow.durationMs).toBe(1050); // min start = 500, max end = 1550 (filtered excluded) -> 1550 - 500 = 1050
+            expect(sessionRow.durationSec).toBeCloseTo(1.05, 6);
+            expect(sessionRow.ratePerSec).toBeCloseTo(2 / 1.05, 6);
+            // ratePerMin omitted unless includeRatePerMin is enabled (locked in C3)
+            expect(sessionRow.ratePerMin).toBeUndefined();
+            // Segment CSV rows exist and are flat
+            const segRows = result.csv.segmentSummaryRows;
+            expect(Array.isArray(segRows)).toBe(true);
+            expect(segRows.length).toBe(2);
+
+            const seg1 = segRows.find((r: any) => r.segmentId === 'seg1');
+            const seg2 = segRows.find((r: any) => r.segmentId === 'seg2');
+            // Segment 1: duration 2000ms, kept 2 => rate 1/s
+            expect(seg1).toMatchObject({ segmentId: 'seg1', keptCount: 2 });
+            expect(seg1.durationMs).toBe(2000);
+            expect(seg1.durationSec).toBeCloseTo(2, 6);
+            expect(seg1.ratePerSec).toBeCloseTo(1, 6);
+            expect(seg1.ratePerMin).toBeUndefined();
+            // Segment 2: duration 2000ms, kept 0 => rate 0/s
+            expect(seg2).toMatchObject({ segmentId: 'seg2', keptCount: 0 });
+            expect(seg2.durationMs).toBe(2000);
+            expect(seg2.durationSec).toBeCloseTo(2, 6);
+            expect(seg2.ratePerSec).toBeCloseTo(0, 6);
+            expect(seg2.ratePerMin).toBeUndefined();
+    });
 
     });
 

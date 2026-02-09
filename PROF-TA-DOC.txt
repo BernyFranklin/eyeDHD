@@ -742,6 +742,152 @@ Computes ISI series and distributions per segment (segment comparison)
             // No unassigned ISIs in this scenario
             result.isiSegmentsMeta.unassignedIsiCount == 0
 
-!! When done with section F:!!
-git checkout master
-git merge ISI-tests 
+// Plot/CSV-ready Outputs
+//-----------------------------------------------------------
+Emits plot/CSV-ready per saccade rows with stable Ordering
+    Purpose: Verifies that the system emits a plot/CSV-ready per saccade table, with one row per kept saccade and stable, analysis friendly fields.
+        Input
+            [
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 4 },
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 2 },
+            ];
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 1500 },
+                    { id: 'seg2', startTime: 1500, endTime: 3000 },
+                ],
+            });
+        Expected
+            rows = result.perSaccadeRows;
+            // One row per kept saccade
+            rows.length == 2
+
+            // Rows must be ordered chronologically by startTime
+            rows[0].startTime == 1000
+            rows[1].startTime == 2000
+
+            // Index should be stable and sequential after ordering
+            rows[0].index == 0
+            rows[1].index == 1
+
+            // Field presence + correctness (row 0)
+            rows[0] == {
+                startTime:      1000,
+                endTime:        1050,
+                durationMs:       50,
+                amplitudeDeg:      2,
+                segmentId:    'seg1',
+            }
+
+            // Derived values for sanity
+            rows[0].durationSec =~ 0.05
+            rows[0].ratePerSec  =~ 40   // 2 deg / 0.05s = 40 deg/s
+
+            // Segment assignment sanity (row 1)
+            rows[1].segmentId   == 'seg2'
+Emits plot-ready time series as ordered {x, y} points
+    Purpose: Verifies that the system emits plot-ready series arrays (x,y pairs) for common charts, using stable chronological ordering
+        Input
+            [
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 4 },   // rate = 4 / 0.05s = 80 deg/s
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 2 },   // rate = 2 / 0.05s = 40 deg/s
+                { startTime: 3000, endTime: 3100, amplitudeDeg: 3 },   // rate = 3 / 0.1s  = 30 deg/s
+            ];
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                series: {
+                    saccadeRatePerSecOverTime: true,
+                    amplitudeDegOverTime: true,
+                },
+            });
+        Expected
+            rateSeries = result.series.saccadeRatePerSecOverTime;
+            ampSeries = result.series.amplitudeDegOverTime;
+
+            // Both series should exist and have one point per kept saccade
+            rateSeries.length == 3
+            ampSeries.length  == 3
+
+            // Chronological ordering by x (startTime)
+            rateSeries.map((p: any) => p.x) == [1000, 2000, 3000]
+            ampSeries.map((p: any) => p.x)  == [1000, 2000, 3000]
+
+            // Values should match expected derived metrics
+            rateSeries.map((p: any) => p.y) == [40, 80, 30]
+            ampSeries.map((p: any) => p.y)  == [2, 4, 3]
+
+            // Shape guarantee: {x,y} are finite numbers
+            for (const p of [...rateSeries, ...ampSeries]) {
+                Number.isFinite(p.x) == true
+                Number.isFinite(p.y) == true
+            }
+
+Emits CSV-ready session + segment summary rows with stable columns
+    Purpose: Verifies the system emits CSV-ready summary rows for session and segments with stable flat key/value columns
+        Input
+            [
+                // seg1 [0,2000): two kept]
+                { startTime: 500,  endTime: 550,  amplitudeDeg: 5 },
+                { startTime: 1500, endTime: 1550, amplitudeDeg: 5 },
+                // seg2 [2000,4000): one filtered by amplitude ]
+                { startTime: 2500, endTime: 2550, amplitudeDeg: 999 },
+            ]
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 2000 },
+                    { id: 'seg2', startTime: 2000, endTime: 4000 },
+                ],
+                csv: {
+                    sessionSummaryRow: true,
+                    segmentSummaryRows: true,
+                },
+            });
+        Expected
+            // Session CSV row exists and is flat
+            sessionRow = result.csv.sessionSummaryRow;
+            typeof sessionRow == 'object'
+
+            // Stable keys (minimum contract)
+            sessionRow == {
+                sessionId: null,
+                keptCount: 2,
+                filteredCount: 1,
+            }
+            sessionRow.durationMs  == 1050                    // min start = 500, max end = 1550 (filtered excluded) -> 1550 - 500 = 1050
+            sessionRow.durationSec =~ 1.05
+            sessionRow.ratePerSec  =~ (2 / 1.05)
+
+            // ratePerMin omitted unless includeRatePerMin is enabled (locked in C3)
+            sessionRow.ratePerMin == Undefined
+
+            // Segment CSV rows exist and are flat
+            segRows = result.csv.segmentSummaryRows;
+            Array.isArray(segRows) == true
+            segRows.length         == 2
+
+            seg1 = segRows.find((r: any) => r.segmentId === 'seg1');
+            seg2 = segRows.find((r: any) => r.segmentId === 'seg2');
+            // Segment 1: duration 2000ms, kept 2 => rate 1/s
+            seg1             == { segmentId: 'seg1', keptCount: 2 }
+            seg1.durationMs  == 2000
+            seg1.durationSec =~ 2
+            seg1.ratePerSec  =~ 1
+            seg1.ratePerMin  == Undefined
+
+            // Segment 2: duration 2000ms, kept 0 => rate 0/s
+            seg2             == { segmentId: 'seg2', keptCount: 0 }
+            seg2.durationMs  == 2000
+            seg2.durationSec =~ 2
+            seg2.ratePerSec  =~ 0
+            seg2.ratePerMin  == Undefined: 
