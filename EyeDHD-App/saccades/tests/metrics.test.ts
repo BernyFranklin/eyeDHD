@@ -190,7 +190,7 @@ describe('Saccade Metrics', () => {
                 includeRatePerMin: true,
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs: { min: 1, max: 250 },
+                    durationMs:   { min: 1, max: 250 },
                 },
             });
 
@@ -210,7 +210,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs: { min: 1, max: 250 },
+                    durationMs:   { min: 1, max: 250 },
                 },
             });
 
@@ -234,7 +234,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs: { min: 1, max: 250 },
+                    durationMs:   { min: 1, max: 250 },
                 },
                 segments: [
                     { id: 'seg1', startTime: 0,    endTime: 2000 },
@@ -274,7 +274,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs: { min: 1, max: 250 },
+                    durationMs:   { min: 1, max: 250 },
                 },
                 segments: [
                     { id: 'seg1', startTime: 0,    endTime: 2000 },
@@ -308,7 +308,7 @@ describe('Saccade Metrics', () => {
                 includeRatePerMin: true,
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs: { min: 1, max: 250 },
+                    durationMs:   { min: 1, max: 250 },
                 },
                 segments: [
                     { id: 'seg1', startTime: 0,    endTime: 2000 },
@@ -336,7 +336,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs: { min: 1, max: 250 },
+                    durationMs:   { min: 1, max: 250 },
                 },
                 segments: [
                     { id: 'seg1', startTime: 0,    endTime: 2000 },
@@ -365,7 +365,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs: { min: 1, max: 250 },
+                    durationMs:   { min: 1, max: 250 },
                 },
             });
 
@@ -396,7 +396,7 @@ describe('Saccade Metrics', () => {
                 const result = computeSaccadeMetrics(input, {
                     plausibleBounds: {
                         amplitudeDeg: { min: 0, max: 100 },
-                        durationMs: { min: 1, max: 250 },
+                        durationMs:   { min: 1, max: 250 },
                     },
                 });
 
@@ -425,7 +425,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs: { min: 1, max: 250 },
+                    durationMs:   { min: 1, max: 250 },
                 },
             });
 
@@ -463,7 +463,7 @@ describe('Saccade Metrics', () => {
             const result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
                     amplitudeDeg: { min: 0, max: 100 },
-                    durationMs: { min: 1, max: 250 },
+                    durationMs:   { min: 1, max: 250 },
                 },
             });
 
@@ -484,7 +484,36 @@ describe('Saccade Metrics', () => {
             }
         });
 
-        it('F2)', () => {});
+        it('F2) Filter invalid ISIs (negative/overlap) and reports ISI filtered counts by reason', () => {
+            const input = [
+                { startTime: 1000, endTime: 1100, amplitudeDeg: 5 },
+                { startTime: 1050, endTime: 1150, amplitudeDeg: 5 },   // Overlaps with previous -> ISI negative
+                { startTime: 1300, endTime: 1350, amplitudeDeg: 5 },
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                isiPlausibleBounds: {
+                    isiMs: { min: 0, max: 10_000 },
+                }
+            });
+
+            // Saccades are still kept (ISI filtering is separate from saccade filtering)
+            expect(result.perSaccade.length).toBe(3);
+
+            // Only the valid ISI remains 
+            expect(result.isiSeries.length).toBe(1);
+            expect(result.isiSeries[0]).toBe(150);
+
+            // Transparency for ISI filtering
+            expect(result.isiFiltered.totalFiltered).toBe(1);
+            expect(result.isiFiltered.byReason).toEqual({
+                isi_negative_or_overlap: 1,
+            });
+        });
 
         it('F3)', () => {});
 

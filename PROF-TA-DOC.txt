@@ -597,3 +597,38 @@ Computes ISI(inter-saccadic interval) series between consecutive kept saccades
                 Number.isFinite(isi) == true
                 Number.isNaN(isi)    == false
             }
+
+Filters invalid ISIs (negative/overlap) and reports ISI filtered counmts by reason
+    Purpose: Ensures ISI filtering removes invalid intervals and reports filtered ISI counts by reason without affecting saccade filtering 
+        Input
+            [
+                { startTime: 1000, endTime: 1100, amplitudeDeg: 5 },
+                { startTime: 1050, endTime: 1150, amplitudeDeg: 5 },   // Overlaps with previous -> ISI negative
+                { startTime: 1300, endTime: 1350, amplitudeDeg: 5 },
+            ]
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                isiPlausibleBounds: {
+                    isiMs: { min: 0, max: 10_000 },
+                }
+            });
+        Expected
+            // Saccades are still kept (ISI filtering is separate from saccade filtering)
+            result.perSaccade.length == 3
+
+            // Only the valid ISI remains 
+            result.isiSeries.length == 1
+            result.isiSeries[0]     == 150
+
+            // Transparency for ISI filtering
+            result.isiFiltered.totalFiltered == 1
+            result.isiFiltered.byReason      == {
+                isi_negative_or_overlap: 1,
+            }
+
+!! When done with section E:!!
+git checkout master
+git merge ISI-tests 
