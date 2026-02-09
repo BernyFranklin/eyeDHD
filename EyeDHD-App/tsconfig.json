@@ -13,7 +13,7 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx"
   },
-  "include": ["src/**/*", "."],
-  "files": ["src/global.d.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "electron/**/*", "saccades/**/*"],
+  "files": ["src/global.d.ts", "forge.env.d.ts"],
+  "exclude": ["node_modules", "dist", ".vite"]
 }

@@ -17,6 +17,9 @@
     "no-empty-pattern": "off",
     "no-async-promise-executor": "off",
     "no-empty-function": "off",
-    "@typescript-eslint/no-empty-function": "off"
+    "@typescript-eslint/no-empty-function": "off",
+    "no-mixed-spaces-and-tabs": "off",
+    "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
+    "no-unsafe-optional-chaining": "warn"
   }
 }

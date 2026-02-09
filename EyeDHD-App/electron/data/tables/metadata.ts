@@ -19,8 +19,7 @@ export type Metadata = {
 
 // Creates a new table for storing file metadata
 export function createMetadataTable(db: Database) {
-  db.prepare(
-    `
+  db.prepare(`
 		CREATE TABLE IF NOT EXISTS metadata (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT UNIQUE NOT NULL,
@@ -35,8 +34,7 @@ export function createMetadataTable(db: Database) {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
-	`
-  ).run();
+	`).run();
 
   // Migrate existing table by adding missing columns
   //migrateMetadataTable(db);
@@ -88,11 +86,9 @@ export function createMetadataTable(db: Database) {
 // }
 
 export function deleteMetadataTable(db: Database) {
-  db.prepare(
-    `
+  db.prepare(`
     DROP TABLE IF EXISTS metadata;
-  `
-  ).run();
+  `).run();
 }
 
 function create(
@@ -103,17 +99,14 @@ function create(
 ): Metadata | null {
   try {
     const result = db
-      .prepare<[string, string, number], Metadata>(
-        `
+      .prepare<[string, string, number], Metadata>(`
   			INSERT INTO metadata (name, path, request_size)
   			VALUES (?, ?, ?);
-  		`
-      )
+  		`)
       .run(filename, filepath, request_size);
 
     const file = db
-      .prepare<any, Metadata>(
-        `
+      .prepare<[number | bigint], Metadata>(`
         SELECT * FROM metadata WHERE id = ?;
 			`
       )
@@ -134,11 +127,9 @@ function create(
 function read(db: Database, filename: string): Metadata | null {
   try {
     const file = db
-      .prepare<string, Metadata>(
-        `
+      .prepare<string, Metadata>(`
         SELECT * FROM metadata WHERE name = ?;
-			`
-      )
+			`)
       .get(filename);
 
     if (!file) {
@@ -156,11 +147,9 @@ function read(db: Database, filename: string): Metadata | null {
 function readAll(db: Database): Metadata[] | null {
   try {
     const files = db
-      .prepare<[], Metadata>(
-        `
+      .prepare<[], Metadata>(`
         SELECT * FROM metadata;
-			`
-      )
+			`)
       .all();
 
     return files;
@@ -174,8 +163,7 @@ function readAll(db: Database): Metadata[] | null {
 function update(db: Database, file: Metadata): boolean {
   try {
     const result = db
-      .prepare(
-        `
+      .prepare(`
         UPDATE metadata
 			  SET
 					request_size = @request_size,
@@ -187,8 +175,7 @@ function update(db: Database, file: Metadata): boolean {
 				  last_frame = @last_frame,
 				  updated_at = CURRENT_TIMESTAMP
 				WHERE id = @id;
-			`
-      )
+			`)
       .run(file);
 
     if (!result.changes) {
@@ -211,12 +198,10 @@ function remove(db: Database, file: Metadata): Metadata | null {
     }
 
     const result = db
-      .prepare(
-        `
+      .prepare(`
         DELETE FROM metadata
 			  WHERE id = ?
-			`
-      )
+			`)
       .run(original.id);
 
     if (!result.changes) {

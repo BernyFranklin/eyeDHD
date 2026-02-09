@@ -1,5 +1,5 @@
 import type { Database } from 'better-sqlite3';
-import type { Metadata } from './metadata.ts';
+import type { Metadata } from './metadata';
 
 export default { create, read, readAll, firstAndLast };
 
@@ -57,17 +57,14 @@ export type CSVData = {
 };
 
 export function deleteRowTable(db: Database, filename: string) {
-  db.prepare(
-    `
+  db.prepare(`
     DROP TABLE IF EXISTS ${toTableName(filename)};
-  `
-  ).run();
+  `).run();
 }
 
 // Creates a new table for storing cleaned CSV data
 export function createRowTable(db: Database, filename: string) {
-  db.prepare(
-    `
+  db.prepare(`
     CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
       Frame INTEGER PRIMARY KEY NOT NULL,
       CaptureTime INTEGER DEFAULT 0,
@@ -112,8 +109,7 @@ export function createRowTable(db: Database, filename: string) {
       FocusDistance REAL DEFAULT 0,
       FocusStability REAL DEFAULT 0
     );
-  `
-  ).run();
+  `).run();
 }
 
 function create(db: Database, file: Metadata, rows: CSVData[]) {
@@ -214,9 +210,9 @@ function create(db: Database, file: Metadata, rows: CSVData[]) {
       for (const row of rows) {
         try {
           insert.run(row);
-        } catch (err) {
+        } catch (err: any) {
           // If error is that the Frame primary key already exists continue
-          if ((err as any).code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
+          if (err.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') {
             console.warn(
               `Frame ${row.Frame} already exists in table ${table}. Skipping insert.`
             );
@@ -242,12 +238,10 @@ function read(db: Database, file: Metadata): CSVData[] | undefined {
   try {
     const table = toTableName(file.name);
     const rows = db
-      .prepare<[number, number], CSVData>(
-        `
+      .prepare<[number, number], CSVData>(`
         SELECT * FROM ${table}
 			  LIMIT ? OFFSET ?;
-			`
-      )
+			`)
       .all(file.request_size, file.requested);
 
     return rows;
@@ -262,11 +256,9 @@ function readAll(db: Database, file: Metadata): CSVData[] | undefined {
   try {
     const table = toTableName(file.name);
     const rows = db
-      .prepare<[], CSVData>(
-        `
+      .prepare<[], CSVData>(`
         SELECT * FROM ${table};
-      `
-      )
+      `)
       .all();
 
     return rows;
@@ -285,21 +277,17 @@ function firstAndLast(
     const table = toTableName(file.name);
 
     const first = db
-      .prepare<[number], CSVData>(
-        `
+      .prepare<[number], CSVData>(`
         SELECT * FROM ${table}
         WHERE frame = ?;
-      `
-      )
+      `)
       .get(file.first_frame) as CSVData;
 
     const last = db
-      .prepare<[number], CSVData>(
-        `
+      .prepare<[number], CSVData>(`
         SELECT * FROM ${table}
 			  WHERE frame = ?;
-			`
-      )
+			`)
       .get(file.last_frame) as CSVData;
 
     return { first, last };
