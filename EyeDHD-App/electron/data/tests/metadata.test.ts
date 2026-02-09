@@ -39,7 +39,7 @@ action_test(
       id: 4,
       name: 'newData.csv',
       path: '../newData.csv',
-      request_size: 2000,
+      request_size: 1000,
       header: '',
       completed: 0,
       cleaned: 0,
