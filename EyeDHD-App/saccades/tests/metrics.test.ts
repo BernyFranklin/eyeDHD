@@ -550,7 +550,39 @@ describe('Saccade Metrics', () => {
             expect(stats.std).toBeCloseTo(50, 6);
         });
 
-        it('F4)', () => {});
+        it('F4) Computes ISI histogram counts using fixed-width bins', () => {
+            const input = [
+                { startTime: 0,    endTime: 50,   amplitudeDeg: 5 },    // ISI1 = 100  - 50  = 50
+                { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },    // ISI2 = 300  - 150 = 150
+                { startTime: 300,  endTime: 350,  amplitudeDeg: 5 },    // ISI3 = 600  - 350 = 250
+                { startTime: 600,  endTime: 650,  amplitudeDeg: 5 },    // ISI4 = 1000 - 650 = 350
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                isiPlausibleBounds: {
+                    isiMs: { min: 0, max: 10_000 },
+                },
+                isiHistogramBinWidthMs: {
+                    binSizeMs: 100,
+                    maxMs: 400,
+                }
+            });
+
+            // Sanity check: filtered ISIs should match what we engineered
+            expect(result.isiSeries).toEqual([50, 150, 250, 350]);
+            // Histogram contract
+            expect(result.isiHistogram.bins.length).toBe(4);
+
+            expect(result.isiHistogram.bins[0]).toEqual({ startMs: 0,   endMs: 100, count: 1 });    // ISI of 50  falls into [0, 100)
+            expect(result.isiHistogram.bins[1]).toEqual({ startMs: 100, endMs: 200, count: 1 });    // ISI of 150 falls into [100, 200)
+            expect(result.isiHistogram.bins[2]).toEqual({ startMs: 200, endMs: 300, count: 1 });    // ISI of 250 falls into [200, 300)
+            expect(result.isiHistogram.bins[3]).toEqual({ startMs: 300, endMs: 400, count: 1 });    // ISI of 350 falls into [300, 400)
+        });
 
         it('F5)', () => {});
 
