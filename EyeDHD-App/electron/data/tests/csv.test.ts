@@ -1,7 +1,7 @@
 import { test } from 'vitest';
 import { test as action_test, type Parameters } from './action_test';
 
-import DatabaseManager from '../Manager';
+import { getDB } from '../Manager';
 import csvActions, { createCSVTable, toTableName } from '../tables/csv';
 import { type Metadata } from '../tables/metadata';
 
@@ -10,12 +10,10 @@ test('csv table create', async ({ expect }) => {
     name: 'testa.csv'
   } as Metadata;
 
-  const dbmgr = new DatabaseManager({
+  const db = getDB({
     temporary: true,
     logging: false
   });
-
-  const db = dbmgr['db'];
 
   createCSVTable(db, file.name);
 
@@ -28,14 +26,10 @@ test('csv table create', async ({ expect }) => {
   expect(table).toStrictEqual({ name: toTableName(file.name) });
 });
 
-action_test.todo('csv create', async ({ dbmgr, expect }: Parameters) => {
-	const db = dbmgr['db'];
-
+action_test.todo('csv create', async ({ db, expect }: Parameters) => {
   expect(1 + 1).toBe(3);
 });
 
-action_test.todo('csv read', async ({ dbmgr, expect }: Parameters) => {
-	const db = dbmgr['db'];
-
+action_test.todo('csv read', async ({ db, expect }: Parameters) => {
   expect(1 + 1).toBe(3);
 });

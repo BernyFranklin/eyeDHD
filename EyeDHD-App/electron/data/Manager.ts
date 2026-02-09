@@ -60,7 +60,7 @@ export default class DatabaseManager {
 	constructor(options: DBOptions = { logging: false, temporary: false }) {
 		this.options = options;
 
-		this.db = this.getDB();
+		this.db = getDB(options);
 		this.createMetadataTable();
 
 		// Initialize the public API for interacting with the database
@@ -135,46 +135,6 @@ export default class DatabaseManager {
 	}
 
 	// Private helper functions
-
-	/**
-	 * Initializes the database connection based on the provided options
-	 */
-	private getDB() {
-		// Creates a temporary in memory database for testing
-		if (this.options.temporary) {
-			const db = new Sqlite3DB(
-				':memory:',
-				this.options.logging ? { verbose: console.log } : {}
-			);
-
-			return db;
-		}
-
-		if (!this.options.path) {
-			throw new Error('Database path not provided');
-		}
-		console.log(`Using database at ${this.options.path}`);
-
-		const db = new Sqlite3DB(
-			this.options.path,
-			this.options.logging ? { verbose: console.log } : {}
-		);
-
-		// Set for performance
-		db.pragma('journal_mode = WAL');
-		// Clean up wal file if it gets too big (> 500 mb)
-		setInterval(() => {
-			fs.stat(this.options.path + '-wal', (err, stat) => {
-				if (err) {
-					throw err;
-				} else if (stat.size > 500e6) {
-					db.pragma('wal_checkpoint(RESTART)');
-				}
-			});
-		}, 5000).unref();
-
-		return db;
-	}
 
 	/**
 	 * Creates a new data cleaner and stores in in the cleaners map
@@ -254,3 +214,44 @@ export default class DatabaseManager {
 
 	}
 }
+
+/**
+	* Initializes the database connection based on the provided options
+	*/
+export function getDB(options: DBOptions = { logging: false, temporary: false }) {
+		// Creates a temporary in memory database for testing
+		if (options.temporary) {
+			const db = new Sqlite3DB(
+				':memory:',
+				options.logging ? { verbose: console.log } : {}
+			);
+
+			return db;
+		}
+
+		if (!options.path) {
+			throw new Error('Database path not provided');
+		}
+		console.log(`Using database at ${options.path}`);
+
+		const db = new Sqlite3DB(
+			options.path,
+			options.logging ? { verbose: console.log } : {}
+		);
+
+		// Set for performance
+		db.pragma('journal_mode = WAL');
+		// Clean up wal file if it gets too big (> 500 mb)
+		setInterval(() => {
+			fs.stat(options.path + '-wal', (err, stat) => {
+				if (err) {
+					throw err;
+				} else if (stat.size > 500e6) {
+					db.pragma('wal_checkpoint(RESTART)');
+				}
+			});
+		}, 5000).unref();
+
+		return db;
+	}
+
