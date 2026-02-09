@@ -630,7 +630,47 @@ describe('Saccade Metrics', () => {
     });
 
     describe('G) Plot/CSV-ready Outputs', () => {
-        it('G1)', () => {});
+        it('G1) Emits plot/CSV-ready per-saccade rows with stable ordering', () => {
+            const input = [
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 4 },
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 2 },
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 1500 },
+                    { id: 'seg2', startTime: 1500, endTime: 3000 },
+                ],
+            });
+
+            const rows = result.perSaccadeRows;
+
+            // One row per kept saccade
+            expect(rows.length).toBe(2);
+            // Rows must be ordered chronologically by startTime
+            expect(rows[0].startTime).toBe(1000);
+            expect(rows[1].startTime).toBe(2000);
+            // Index should be stable and sequential after ordering
+            expect(rows[0].index).toBe(0);
+            expect(rows[1].index).toBe(1);
+            // Field presence + correctness (row 0)
+            expect(rows[0]).toMatchObject({
+                startTime:      1000,
+                endTime:        1050,
+                durationMs:       50,
+                amplitudeDeg:      2,
+                segmentId:    'seg1',
+            });
+            // Derived values for sanity
+            expect(rows[0].durationSec).toBeCloseTo(0.05, 6);
+            expect(rows[0].ratePerSec).toBeCloseTo(40, 6);   // 2 deg / 0.05s = 40 deg/s
+            // Segment assignment sanity (row 1)
+            expect(rows[1].segmentId).toBe('seg2');
+        });
 
         it('G2)', () => {});
 

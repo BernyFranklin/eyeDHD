@@ -742,3 +742,50 @@ Computes ISI series and distributions per segment (segment comparison)
             // No unassigned ISIs in this scenario
             result.isiSegmentsMeta.unassignedIsiCount == 0
 
+// Plot/CSV-ready Outputs
+//-----------------------------------------------------------
+Emits plot/CSV-ready per saccade rows with stable Ordering
+    Purpose: Verifies that the system emits a plot/CSV-ready per saccade table, with one row per kept saccade and stable, analysis friendly fields.
+        Input
+            [
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 4 },
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 2 },
+            ];
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                segments: [
+                    { id: 'seg1', startTime: 0,    endTime: 1500 },
+                    { id: 'seg2', startTime: 1500, endTime: 3000 },
+                ],
+            });
+        Expected
+            rows = result.perSaccadeRows;
+            // One row per kept saccade
+            rows.length == 2
+
+            // Rows must be ordered chronologically by startTime
+            rows[0].startTime == 1000
+            rows[1].startTime == 2000
+
+            // Index should be stable and sequential after ordering
+            rows[0].index == 0
+            rows[1].index == 1
+
+            // Field presence + correctness (row 0)
+            rows[0] == {
+                startTime:      1000,
+                endTime:        1050,
+                durationMs:       50,
+                amplitudeDeg:      2,
+                segmentId:    'seg1',
+            }
+
+            // Derived values for sanity
+            rows[0].durationSec =~ 0.05
+            rows[0].ratePerSec  =~ 40   // 2 deg / 0.05s = 40 deg/s
+            
+            // Segment assignment sanity (row 1)
+            rows[1].segmentId   == 'seg2'
