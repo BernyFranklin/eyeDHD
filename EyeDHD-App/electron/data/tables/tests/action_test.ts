@@ -1,14 +1,12 @@
 import { test as vitest } from 'vitest';
 
-import DatabaseManager from '../Manager';
-import { createMetadataTable } from './metadata';
+import DatabaseManager from '../../Manager';
+import { createMetadataTable } from '../metadata';
 
 // Adds a testing db with entries added to it for each test
 export const test = vitest.extend({
   db: async ({}, use: any) => {
-    console.log('Setting up test database...');
-
-    const dbmgr = new DatabaseManager({ temporary: true, logging: true });
+    const dbmgr = new DatabaseManager({ temporary: true, logging: false });
     createMetadataTable(dbmgr.db);
 
     dbmgr.prepare(`
@@ -28,8 +26,6 @@ export const test = vitest.extend({
 				VALUES (?, ?, ?);
 			`)
       .run('test3.csv', 'test3.csv', 200);
-
-    console.log('Setting up test database complete.');
 
     await use(dbmgr.db);
 

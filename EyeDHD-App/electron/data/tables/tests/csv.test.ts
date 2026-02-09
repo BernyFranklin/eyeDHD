@@ -1,20 +1,20 @@
 import { test } from 'vitest';
 import { test as action_test } from './action_test';
 
-import DatabaseManager from '../Manager';
-import { createRowTable, toTableName } from './csv';
+import DatabaseManager from '../../Manager';
+import { createRowTable, toTableName } from '../csv';
 
-import metadataActions from './metadata';
-import rowsActions from './csv';
+import metadataActions from '../metadata';
+import rowsActions from '../csv';
 
-test.concurrent('csv table create', async ({ expect }) => {
+test('csv table create', async ({ expect }) => {
   const file = {
     name: 'test.csv'
   };
 
   const dbmgr = new DatabaseManager({
     temporary: true,
-    logging: true
+    logging: false
   });
 
   createRowTable(dbmgr.db, file.name);
@@ -29,10 +29,10 @@ test.concurrent('csv table create', async ({ expect }) => {
   expect(table).toStrictEqual({ name: toTableName(file.name) });
 });
 
-action_test.concurrent.todo('csv create', async ({ db, expect }) => {
+action_test.todo('csv create', async ({ db, expect }) => {
   expect(1 + 1).toBe(3);
 });
 
-action_test.concurrent.todo('csv read', async ({ db, expect }) => {
+action_test.todo('csv read', async ({ db, expect }) => {
   expect(1 + 1).toBe(3);
 });
