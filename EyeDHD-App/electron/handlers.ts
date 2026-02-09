@@ -131,17 +131,7 @@ ipcMain.handle('csv-get-buffer', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const metadata = dbmgr.metadata.read(filename);
-
 			const rows = dbmgr.csv.read(metadata);
-
-			if (rows === undefined) {
-				return reject(`Failed to read cleaned rows for file: ${filename}`);
-			}
-
-			dbmgr.metadata.update({
-				...metadata,
-				requested: metadata.requested + rows.length
-			});
 
 			return resolve(rows);
 		} catch (err) {
@@ -318,7 +308,7 @@ async function exportToCSV(filename: string, outputPath: string) {
 			// Add header row
 			csvContent += metadata.header;
 
-			let rows = await getBuffer(metadata.name, 1000);
+			let rows = dbmgr.csv.read(metadata);
 			while (rows !== null && rows.length > 0) {
 				if (rows === undefined) {
 					return reject(`Failed to read cleaned rows for file: ${filename}`);
@@ -335,7 +325,7 @@ async function exportToCSV(filename: string, outputPath: string) {
 				stream.write(csvContent);
 				csvContent = '';
 
-				rows = await getBuffer(metadata.name, 1000);
+				rows = dbmgr.csv.read(metadata);
 			}
 
 			stream.end();

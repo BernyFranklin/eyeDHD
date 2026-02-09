@@ -106,7 +106,17 @@ export default class DatabaseManager {
 				}
 			},
 			read: (file: Metadata) => {
-				return csvActions.read(this.db, file);
+				const rows = csvActions.read(this.db, file);
+				if (rows === undefined) {
+					throw new Error(`Failed to read cleaned rows for file: ${file.name}`);
+				}
+
+				this.metadata.update({
+					...file,
+					requested: file.requested + rows.length
+				});
+
+				return rows;
 			},
 			readAll: (file: Metadata) => {
 				return csvActions.readAll(this.db, file);
