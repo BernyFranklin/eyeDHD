@@ -890,4 +890,4 @@ Emits CSV-ready session + segment summary rows with stable columns
             seg2.durationMs  == 2000
             seg2.durationSec =~ 2
             seg2.ratePerSec  =~ 0
-            seg2.ratePerMin  == Undefined
+            seg2.ratePerMin  == Undefined: 
