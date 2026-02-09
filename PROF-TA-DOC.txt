@@ -629,6 +629,41 @@ Filters invalid ISIs (negative/overlap) and reports ISI filtered counmts by reas
                 isi_negative_or_overlap: 1,
             }
 
+Computes ISI distribution stats from filtered ISI series
+    Purpose: Verifies ISI distribution statistics are computed from the filtered ISI series and include mean/median/p10/p50/p90/min/max/std.
+        Input
+            [
+                { startTime: 1000, endTime: 1100, amplitudeDeg: 5 },
+                { startTime: 1050, endTime: 1150, amplitudeDeg: 5},  // Overlap -> negative ISI
+                { startTime: 1300, endTime: 1350, amplitudeDeg: 5 },
+                { startTime: 1600, endTime: 1650, amplitudeDeg: 5 },
+            ];
+            result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                isiPlausibleBounds: {
+                    isiMs: { min: 0, max: 10_000 },
+                }
+            });
+        Expected 
+            // Filtered ISI series should contain only valid intervals
+            result.isiSeries == [150, 250]
+
+            const stats = result.isiDistributions.isiMs;
+
+            stats.min    == 150
+            stats.max    == 250
+            stats.mean   =~ 200
+            stats.median =~ 200, 6
+            stats.p10    =~ 150, 6
+            stats.p50    =~ 200
+            stats.p90    =~ 250
+
+            // Locks population standard deviation for ISI, consistent with section E
+            stats.std    =~ 50
+
 !! When done with section E:!!
 git checkout master
 git merge ISI-tests 

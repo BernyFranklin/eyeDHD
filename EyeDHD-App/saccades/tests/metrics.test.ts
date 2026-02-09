@@ -515,7 +515,40 @@ describe('Saccade Metrics', () => {
             });
         });
 
-        it('F3)', () => {});
+        it('F3) Computes ISI distribution stats from filtered ISI series', () => {
+            const input = [
+                { startTime: 1000, endTime: 1100, amplitudeDeg: 5 },
+                { startTime: 1050, endTime: 1150, amplitudeDeg: 5},  // Overlap -> negative ISI
+                { startTime: 1300, endTime: 1350, amplitudeDeg: 5 },
+                { startTime: 1600, endTime: 1650, amplitudeDeg: 5 },
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                isiPlausibleBounds: {
+                    isiMs: { min: 0, max: 10_000 },
+                }
+            });
+
+            // Filtered ISI series should contain only valid intervals
+            expect(result.isiSeries).toEqual([150, 250]);
+
+            const stats = result.isiDistributions.isiMs;
+
+            expect(stats.min).toBe(150);
+            expect(stats.max).toBe(250);
+            expect(stats.mean).toBeCloseTo(200, 6);
+            expect(stats.median).toBeCloseTo(200, 6);
+            expect(stats.p10).toBeCloseTo(150, 6);
+            expect(stats.p50).toBeCloseTo(200, 6);
+            expect(stats.p90).toBeCloseTo(250, 6);
+
+            // Locks population standard deviation for ISI, consistent with section E
+            expect(stats.std).toBeCloseTo(50, 6);
+        });
 
         it('F4)', () => {});
 
