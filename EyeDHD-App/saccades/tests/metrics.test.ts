@@ -453,7 +453,36 @@ describe('Saccade Metrics', () => {
     });
 
     describe('F) ISI (inter-saccadic interval) + comparisons', () => {
-        it('F1)', () => {});
+        it('F1) Computes ISI series between consecutive kept saccades', () => {
+            const input = [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   
+                { startTime: 1100, endTime: 1150, amplitudeDeg: 5 },   // ISI1 = 1100 - 1050 = 50ms
+                { startTime: 1300, endTime: 1350, amplitudeDeg: 5 },   // ISI2 = 1300 - 1150 = 150ms
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+
+            // Sanity check: all events are plausible and kept
+            expect(result.perSaccade.length).toBe(3);
+
+            // ISI series is defined between consecutive saccades => length us n - 1
+            expect(result.isiSeries.length).toBe(2);
+
+            // Verify ISI values precisely
+            expect(result.isiSeries[0]).toBe(50);
+            expect(result.isiSeries[1]).toBe(150);
+
+            // Safety: ISI values should never be Nan/Infinity
+            for (const isi of result.isiSeries) {
+                expect(Number.isFinite(isi)).toBe(true);
+                expect(Number.isNaN(isi)).toBe(false);
+            }
+        });
 
         it('F2)', () => {});
 

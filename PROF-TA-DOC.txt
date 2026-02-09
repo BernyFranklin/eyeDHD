@@ -564,3 +564,36 @@ Handles single-value distributions safely (no NaN/Infinity)
                 Number.isFinite(v as number) == true
                 Number.isNaN(v as number)    == false
             }
+
+// ISI (inter-saccadic interval) + comparisons
+//-----------------------------------------------------------
+Computes ISI(inter-saccadic interval) series between consecutive kept saccades
+    Purpose: Verifies ISI is computed correctly between consecutive kept saccades (next.startTime - current.endTime)
+        Input
+            [
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   
+                { startTime: 1100, endTime: 1150, amplitudeDeg: 5 },   // ISI1 = 1100 - 1050 = 50ms
+                { startTime: 1300, endTime: 1350, amplitudeDeg: 5 },   // ISI2 = 1300 - 1150 = 150ms
+            ];
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+            });
+        Expected
+            // Sanity check: all events are plausible and kept
+            result.perSaccade.length == 3
+
+            // ISI series is defined between consecutive saccades => length us n - 1
+            result.isiSeries.length  == 2
+
+            // Verify ISI values precisely
+            result.isiSeries[0]      == 50
+            result.isiSeries[1]      == 150
+
+            // Safety: ISI values should never be Nan/Infinity
+            for (const isi of result.isiSeries) {
+                Number.isFinite(isi) == true
+                Number.isNaN(isi)    == false
+            }
