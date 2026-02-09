@@ -2,20 +2,15 @@ import { app, dialog, ipcMain, Notification } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-
-import DatabaseManager from './data/Manager';
-import { type Metadata } from './data/tables/metadata';
-import { type CSVData } from './data/tables/csv';
-
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 
+import DatabaseManager from './data/Manager';
+
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
-/**
-	* Database setup
-	* Set testing to true to use a temporary db instead of a file
-	*/
+// Database setup
+// Set testing to true to use a temporary db instead of a file
 const appRoot = app.getAppPath();
 const dbmgr = new DatabaseManager({
 	path: path.join(appRoot, 'main.db'),
@@ -101,11 +96,9 @@ ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
 			dbmgr.metadata.resetCleaning(metadata);
 			dbmgr.csv.clear(metadata);
 
-			const cleaner = dbmgr.getCleaner(metadata);
-			if (!cleaner) return resolve();
-
-			cleaner.close();
-			dbmgr.resetCleaner(metadata);
+			if (dbmgr.cleanerExists(metadata)) {
+				dbmgr.resetCleaner(metadata);
+			}
 
 			return resolve();
 		} catch (err) {
