@@ -28,7 +28,7 @@ const dbmgr = new DatabaseManager({
 	*
 	* @returns filename if a file is selected, or null if none is selected
 	*/
-ipcMain.handle('csv-open-file', async (_, request_size) => {
+ipcMain.handle('csv-open-file', async (_) => {
 	return new Promise(async (resolve, reject) => {
 		const { canceled, filePaths } = await dialog.showOpenDialog({
 			properties: ['openFile'],
@@ -43,7 +43,7 @@ ipcMain.handle('csv-open-file', async (_, request_size) => {
 		const filename = path.basename(filepath);
 
 		try {
-			dbmgr.openFile(filename, filepath, request_size);
+			dbmgr.openFile(filename, filepath);
 
 			return resolve(filename);
 		} catch (err) {
@@ -295,12 +295,13 @@ async function exportToCSV(filename: string, outputPath: string) {
 			let exportedRows = 0;
 
 			const stream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
-			const metadata = dbmgr.metadata.read(filename);
+			let metadata = dbmgr.metadata.read(filename);
 
 			// Add header row
 			csvContent += metadata.header;
 
 			let rows = dbmgr.csv.read(metadata);
+			metadata = dbmgr.metadata.read(filename);
 			while (rows !== null && rows.length > 0) {
 				for (const row of rows) {
 					Object.values(row).forEach((value) => {
@@ -314,6 +315,7 @@ async function exportToCSV(filename: string, outputPath: string) {
 				csvContent = '';
 
 				rows = dbmgr.csv.read(metadata);
+				metadata = dbmgr.metadata.read(filename);
 			}
 
 			stream.end();

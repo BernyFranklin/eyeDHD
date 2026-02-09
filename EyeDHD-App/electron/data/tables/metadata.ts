@@ -46,14 +46,13 @@ export function deleteMetadataTable(db: Database) {
 function create(
   db: Database,
   filename: string,
-  filepath: string,
-  request_size: number
+  filepath: string
 ): Metadata {
   const result = db.prepare<[string, string, number], Metadata>(`
  			INSERT INTO metadata (name, path, request_size)
  			VALUES (?, ?, ?);
 		`)
-    .run(filename, filepath, request_size);
+    .run(filename, filepath, 1000);
 
   const file = db.prepare<[number | bigint], Metadata>(`
       SELECT * FROM metadata WHERE id = ?;

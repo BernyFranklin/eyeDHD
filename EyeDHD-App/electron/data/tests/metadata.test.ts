@@ -53,8 +53,7 @@ action_test(
     const result = metadataActions.create(
     	db,
       expected.name,
-      expected.path,
-      expected.request_size
+      expected.path
     );
     expect(result).not.toBeNull();
 

@@ -14,8 +14,8 @@ contextBridge.exposeInMainWorld('electron', {
 		*
 		* @returns filename of file opened or null if cancelled
 		*/
-		openFile: async (request_size: number): Promise<string> => {
-			return await ipcRenderer.invoke('csv-open-file', request_size);
+		openFile: async (): Promise<string> => {
+			return await ipcRenderer.invoke('csv-open-file');
 		},
 
 		resetReadingProgress: async (filename: string) => {

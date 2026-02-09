@@ -18,7 +18,7 @@ type DBOptions = {
 
 // Public functionality available for Metadata
 type MetadataActions = {
-	create: (filename: string, filepath: string, request_size: number) => void;
+	create: (filename: string, filepath: string) => void;
 	exists: (filename: string) => boolean;
 	read: (filename: string) => Metadata;
 	readAll: () => Metadata[];
@@ -68,12 +68,11 @@ export default class DatabaseManager {
 		// Initialize the public API for interacting with the database
 
 		this.metadata = {
-			create: (filename: string, filepath: string, request_size: number) => {
+			create: (filename: string, filepath: string) => {
 				const metadata = metadataActions.create(
 					this.db,
 					filename,
-					filepath,
-					request_size
+					filepath
 				);
 
 				this.createCSVTable(metadata);
@@ -162,21 +161,23 @@ export default class DatabaseManager {
 	/**
    *
    */
-	openFile(filename: string, filepath: string, request_size: number) {
+	openFile(filename: string, filepath: string) {
 		if (this.metadata.exists(filename)) {
 			const metadata = this.metadata.read(filename);
 			if (!this.cleanerExists(metadata)) {
 				this.resetCleaner(metadata);
 			}
+		} else {
+			this.metadata.create(filename, filepath);
+			const metadata = this.metadata.read(filename);
+			const cleaner = this.getCleaner(metadata);
 
-			if (request_size != metadata.request_size) {
+			if (metadata.request_size != cleaner.buf_len) {
 				this.metadata.update({
 					...metadata,
-					request_size
-				});
+					request_size: cleaner.buf_len
+				})
 			}
-		} else {
-			this.metadata.create(filename, filepath, request_size);
 		}
 	}
 
@@ -238,8 +239,7 @@ export default class DatabaseManager {
 		this.cleaners.set(file.name, new DataCleaner({
 			dbmgr: this,
 			name: file.name,
-			path: file.path,
-			request_size: file.request_size
+			path: file.path
 		}));
 	}
 
