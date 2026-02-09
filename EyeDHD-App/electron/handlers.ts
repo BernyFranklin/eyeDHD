@@ -92,7 +92,7 @@ function cleanFile(original: Metadata): Promise<void> {
 			}
 
 			while (buffer) {
-				dbmgr.csv.create(metadata, buffer);
+				dbmgr.csv.store(metadata, buffer);
 
 				dbmgr.metadata.update({
 					...metadata,

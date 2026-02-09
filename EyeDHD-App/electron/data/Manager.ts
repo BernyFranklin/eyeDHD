@@ -28,7 +28,7 @@ type MetadataActions = {
 
 // Public functionality available for CSV Data
 type CSVActions = {
-	create: (file: Metadata, rows: CSVData[]) => void;
+	store: (file: Metadata, rows: CSVData[]) => void;
 	read: (file: Metadata) => CSVData[];
 	readAll: (file: Metadata) => CSVData[];
 	firstAndLast: (file: Metadata) => { first: CSVData; last: CSVData };
@@ -99,7 +99,7 @@ export default class DatabaseManager {
 		};
 
 		this.csv = {
-			create: (file: Metadata, rows: CSVData[]) => {
+			store: (file: Metadata, rows: CSVData[]) => {
 				const ok = csvActions.create(this.db, file, rows);
 				if (!ok) {
 					throw new Error(`Failed to insert csv data for file: ${file.name}`);
@@ -213,7 +213,7 @@ export default class DatabaseManager {
 	/**
 	 * Gets the cleaner for a given file
 	 */
-	getCleaner(file: Metadata): DataCleaner | undefined {
+	getCleaner(file: Metadata): DataCleaner {
 		return this.cleaners.get(file.name);
 	}
 
