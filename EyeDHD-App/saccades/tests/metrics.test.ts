@@ -771,7 +771,56 @@ describe('Saccade Metrics', () => {
     });
 
     describe('H) Ordering guarantees', () => {
-        it('H1)', () => {});
+        it('H1) Enforces stable chronological ordering across rows and series', () => {
+            const input = [
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 4 },    // A
+                { startTime: 1000, endTime: 1070, amplitudeDeg: 2 },    // B
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 3 },    // C (same startTime as B, different endTime)
+            ];
+
+            const result = computeSaccadeMetrics(input, {
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs:   { min: 1, max: 250 },
+                },
+                // Enable series to ensure it follows the same order ontract
+                series: {
+                    amplitudeDegOverTime: true,
+                },
+                // Also compute ISI for ordered-consecutive correctness
+                isiPlausibleBounds: {
+                    isiMs: { min: 0, max: 10_000 },
+                }
+            });
+
+            // Expected sort order: C (1000, 1050), B: (1000, 1070), A: (2000, 2050)
+            // perSaccadeRows must follow the stable ordering guarantee
+            expect(result.perSaccadeRows.map((r: any) => [r.startTime, r.endTime])).toEqual([
+                [1000, 1050],   // C
+                [1000, 1070],   // B
+                [2000, 2050],   // A
+            ]);
+
+            // perSaccade (structured objects) should align with the same order
+            expect(result.perSaccade.map((s: any) => [s.startTime, s.endTime])).toEqual([
+                [1000, 1050],   // C
+                [1000, 1070],   // B
+                [2000, 2050],   // A
+            ]);
+            
+            // amplitudeDegOverTime series must align with chronological order
+            expect(result.series.amplitudeDegOverTime.map((p: any) => [p.x, p.y])).toEqual([
+                [1000, 3],   // C
+                [1000, 2],   // B
+                [2000, 4],   // A
+            ]);
+
+            // ISI computed on ordered saccades:
+            // ISI1 = B.start(1000) - C.end(1050) = -50 (negative, should be filtered out)
+            // ISI2 = A.start(2000) - B.end(1070) = 930 (valid)
+            expect(result.isiSeries).toEqual([930]);
+
+        });
 
     });
 });
