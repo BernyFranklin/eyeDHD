@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {computeSaccadeMetrics } from '../../saccades/metrics/metrics'
+import {computeSaccadeMetrics } from '../../saccades/metrics/metrics';
 
 describe('Saccade Metrics', () => {
     // Derived fields
@@ -77,7 +77,7 @@ describe('Saccade Metrics', () => {
         it('B1) Filters events outside plausible bounds and reports counts by reason', () => {
             const input = [
                 { startTime: 1000, endTime: 1050, amplitudeDeg: 5   },    // Keep: Plausible
-                { startTime: 2000, endTime: 2500, amplitudeDeg: 500 },    // Filter: amplitude too large
+                { startTime: 2000, endTime: 2050, amplitudeDeg: 500 },    // Filter: amplitude too large
                 { startTime: 3000, endTime: 5000, amplitudeDeg: 5   }     // Filter: duration too long
             ];
 
@@ -149,7 +149,7 @@ describe('Saccade Metrics', () => {
             expect(JSON.stringify(input)).toBe(orignalJson);
 
             // Returned kept saccade should not be the same object reference as the input item
-            expect(result.perSaccade[0].length).toBe(1);
+            expect(result.perSaccade.length).toBe(1);
             expect(result.perSaccade[0]).not.toBe(originalObj0Ref);
         });
 
