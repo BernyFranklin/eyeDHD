@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {computeSaccadeMetrics } from '../../saccades/metrics/metrics'
+import {computeSaccadeMetrics } from '../../saccades/metrics/metrics';
 
 describe('Saccade Metrics', () => {
     // Derived fields
