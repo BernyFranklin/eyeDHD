@@ -1,9 +1,8 @@
 import fs from 'fs';
 import rl from 'readline';
 
-import DatabaseManager from './DatabaseManager';
-import { sleep } from '../utils';
-import { type CSVData } from './tables/csv';
+import DatabaseManager from '../db/DatabaseManager';
+import { type CSVData } from '../db/tables/csv';
 
 /**
 * Reads and cleans a CSV file at the given path. Cleans data lazyily,
@@ -854,4 +853,8 @@ export default class DataCleaner {
 		const score = validRatio * 0.7 + (1 - errorRatio) * 0.2 + (1 - nullRatio) * 0.1;
 		return Math.round(score * 100);
 	}
-	}
+}
+
+function sleep(ms: number) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}

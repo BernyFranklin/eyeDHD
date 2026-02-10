@@ -5,7 +5,7 @@ import DataStream from './DataStream';
 import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
 import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
 import saccadeActions, { type SaccadeData } from './tables/saccade';
-import DataCleaner from './DataCleaner';
+import DataCleaner from '../analysis/DataCleaner';
 
 // Database configuration options
 type DBOptions = {
