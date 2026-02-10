@@ -149,7 +149,7 @@ describe('Saccade Metrics', () => {
             expect(JSON.stringify(input)).toBe(orignalJson);
 
             // Returned kept saccade should not be the same object reference as the input item
-            expect(result.perSaccade[0].length).toBe(1);
+            expect(result.perSaccade.length).toBe(1);
             expect(result.perSaccade[0]).not.toBe(originalObj0Ref);
         });
 
