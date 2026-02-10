@@ -3,7 +3,7 @@ import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
-import { type CSVData } from '../../electron/data/tables/csv';
+import { type CSVData } from '../../electron/db/tables/csv';
 
 type Props = {
   buttonsDisabled: boolean;

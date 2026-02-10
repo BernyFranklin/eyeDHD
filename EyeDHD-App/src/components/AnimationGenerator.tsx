@@ -5,8 +5,8 @@ import AnimationContainer from './AnimationContainer';
 import ExportManager from './ExportManager';
 import Button from './Button';
 
-import { type Metadata } from '../../electron/data/tables/metadata';
-import { type CSVData } from '../../electron/data/tables/csv';
+import { type Metadata } from '../../electron/db/tables/metadata';
+import { type CSVData } from '../../electron/db/tables/csv';
 
 export default function AnimationGenerator() {
   const [csvData, setCsvData] = useState<CSVData[]>([]);

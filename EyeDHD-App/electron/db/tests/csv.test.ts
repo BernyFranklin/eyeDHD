@@ -1,7 +1,7 @@
 import { test } from 'vitest';
 import { test as action_test, type Parameters } from './action_test';
 
-import { getDB } from '../Manager';
+import { getDB } from '../DatabaseManager';
 import csvActions, { createCSVTable, toTableName } from '../tables/csv';
 import { type Metadata } from '../tables/metadata';
 

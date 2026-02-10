@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import FrameExporter from './animation/FrameExporter';
 import Button from './Button';
 
-import { type CSVData } from '../../electron/data/tables/csv';
+import { type CSVData } from '../../electron/db/tables/csv';
 
 type Options = {
   csvData: CSVData[] | null;

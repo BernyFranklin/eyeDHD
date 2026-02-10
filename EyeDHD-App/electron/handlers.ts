@@ -5,7 +5,7 @@ import os from 'os';
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 
-import DatabaseManager from './data/Manager';
+import DatabaseManager from './db/DatabaseManager';
 
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 

@@ -1,5 +1,5 @@
-import { type CSVData } from '../electron/data/tables/csv';
-import { type Metadata } from '../electron/data/tables/metadata';
+import { type CSVData } from '../electron/db/tables/csv';
+import { type Metadata } from '../electron/db/tables/metadata';
 
 export {};
 

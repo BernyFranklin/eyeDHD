@@ -1,7 +1,7 @@
 import { test as vitest, type ExpectStatic } from 'vitest';
 import { type Database } from 'better-sqlite3';
 
-import { getDB } from '../Manager';
+import { getDB } from '../DatabaseManager';
 import { createMetadataTable } from '../tables/metadata';
 
 export type Parameters = {

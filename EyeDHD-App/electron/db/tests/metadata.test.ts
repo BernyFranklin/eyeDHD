@@ -1,7 +1,7 @@
 import { ExpectStatic, test } from 'vitest';
 import { test as action_test, type Parameters } from './action_test';
 
-import { getDB } from '../Manager';
+import { getDB } from '../DatabaseManager';
 import metadataActions, { createMetadataTable, type Metadata } from '../tables/metadata';
 
 test('files table create', async ({ expect }) => {

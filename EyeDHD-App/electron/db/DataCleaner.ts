@@ -1,7 +1,7 @@
 import fs from 'fs';
 import rl from 'readline';
 
-import DatabaseManager from './Manager';
+import DatabaseManager from './DatabaseManager';
 import { sleep } from '../utils';
 import { type CSVData } from './tables/csv';
 

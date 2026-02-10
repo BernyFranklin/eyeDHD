@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+import { type Metadata } from './db/tables/metadata';
+import { type CSVData } from './db/tables/csv';
+import { type SaccadeData } from './db/tables/saccade';
+import { type Progress } from './db/tables/progress';
+
 console.log('Preload script loaded, exposing API to renderer process');
 
 /**

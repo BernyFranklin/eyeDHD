@@ -6,7 +6,7 @@ import { Environment, OrbitControls, OrthographicCamera } from '@react-three/dre
 // Component to render and rotate the 3D eye model
 import RotatingModel from './ModelMovement';
 import { initializeCanvasRecording, stopCanvasRecording } from './RecorderHelper';
-import { type CSVData } from '../../../electron/data/tables/csv';
+import { type CSVData } from '../../../electron/db/tables/csv';
 
 type Props = {
   csvData: CSVData[];
