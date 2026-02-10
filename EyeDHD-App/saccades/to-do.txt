@@ -4,16 +4,23 @@ X = DONE
 X Make a directory for saccades
 
 Create and implement these files:
-	index.js     (API)
-  X velocity.js  (Angular Velocity Math)
-  X detection.js (Threshold and grouping logic)
-	metrics.js   (Amplitude, duration, peak velocity)
-	
-Create tests:
-	index.js
-  X velocity.js
-  x detection.js
-	X metrics.js
+Up to date structure 
+saccades/
+  index.ts (API) 
+  detection.ts (Threshold and grouping logic) (Done)
+  schema.ts                                   (Done)
+  velocities.ts (Angular Velocity Math)       (Done)
+  metrics/
+    index.ts
+    metrics.ts
+    types.ts
+    stats.ts
+    filtering.ts
+  test/
+    metrics.test.ts                           (Done)
+    detection.test.ts                         (Done)
+    velocity.test.ts                          (Done)  
+  
 
 X Add a README for reference
 
@@ -36,5 +43,4 @@ amplitudeDeg
 peakVelocityDegPerSec
 
 (any other fields are allowed; metrics ignores what it doesn’t need)
-
 
