@@ -55,7 +55,7 @@ export type StreamKey = {
 export default class DatabaseManager {
 	private db: Database;
 	private cleaners = new Map<string, DataCleaner>();
-	private streams = new Map<StreamKey, AsyncIterator<DataType>>();
+	private streams = new Map<number, AsyncIterator<DataType>>();
 
 	// These fields contain the public API for interacting with the database
 	metadata: MetadataActions;
@@ -332,17 +332,17 @@ export default class DatabaseManager {
 	async startStream(type: StreamType, file?: Metadata): Promise<StreamKey> {
 		const iterator = this.createIterator(type, file);
 		const key = { id: Date.now(), type };
-		this.streams.set(key, iterator);
+		this.streams.set(key.id, iterator);
 
 		return key;
 	}
 
 	private getStream(key: StreamKey): AsyncIterator<DataType> {
-		return this.streams.get(key);
+		return this.streams.get(key.id);
 	}
 
 	private deleteStream(key: StreamKey) {
-		this.streams.delete(key);
+		this.streams.delete(key.id);
 	}
 
 	async pullStream(

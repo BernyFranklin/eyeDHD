@@ -14,7 +14,7 @@ const styles = {
 };
 
 type Props = {
-  csvData: RemoteStream;
+  csvData: RemoteStream | null;
   loadMoreRows: any;
   isPlaying: boolean;
   setIsPlaying: any;

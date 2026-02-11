@@ -10,7 +10,7 @@ import { type CSVData } from '../../electron/db/tables/csv';
 import RemoteStream from '../data/RemoteStream';
 
 export default function AnimationGenerator() {
-  const [csvData, setCsvData] = useState<RemoteStream>();
+  const [csvData, setCsvData] = useState<RemoteStream | null>(null);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
@@ -86,15 +86,14 @@ export default function AnimationGenerator() {
     setIsLoading(false);
   };
 
-  const loadMoreRows = async (name: string | null = null) => {
-    const filename = name ? name : fileName;
-    if (!filename) {
+  const loadMoreRows = async () => {
+    if (!fileName) {
       sendError('No file loaded');
       return;
     }
 
-    const file = await window.electron.csv.getMetadata(filename);
-    setCsvData(new RemoteStream("CSVData", { file }));
+    const file = await window.electron.csv.getMetadata(fileName);
+    setCsvData(await RemoteStream.create("CSVData", { file }));
   };
 
   const sendAlert = (message: string) => {
@@ -129,10 +128,8 @@ export default function AnimationGenerator() {
     if (selected_file === 'none') return;
 
     try {
-      await window.electron.csv.resetReadingProgress(selected_file as string);
-
       setFileName(selected_file as string);
-      await loadMoreRows(selected_file as string);
+      await loadMoreRows();
     } catch (err) {
       handleError(err);
     }
@@ -143,7 +140,6 @@ export default function AnimationGenerator() {
     setIsHidden(true);
 
     // Set form select back to 'none'
-    const form = e.target;
     const select: HTMLSelectElement | null = document.querySelector(
       'select[name="fileSelect"]'
     );
@@ -151,13 +147,12 @@ export default function AnimationGenerator() {
 
     // Reset reading progress if we have a filename
     if (fileName) {
-      await window.electron.csv.resetReadingProgress(fileName).catch(handleError);
       csvData?.cancel();
     }
 
     // Reset all state
     setFileName('');
-    setCsvData(undefined);
+    setCsvData(null);
     setIsPlaying(false);
   };
 

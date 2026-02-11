@@ -10,11 +10,10 @@ import { type CSVData } from '../../../electron/db/tables/csv';
 import RemoteStream from '../../data/RemoteStream';
 
 type Props = {
-  csvData: RemoteStream;
+  csvData: RemoteStream | null;
   loadMoreRows: () => void;
   isPlaying: boolean;
   shouldRecord?: boolean;
-  onIndexChange?: (index: number) => void;
 };
 
 // Main animation window component
@@ -22,8 +21,7 @@ export default function AnimationWindow({
   csvData,
   loadMoreRows,
   isPlaying,
-  shouldRecord = false,
-  onIndexChange
+  shouldRecord = false
 }: Props) {
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
@@ -33,7 +31,7 @@ export default function AnimationWindow({
   // Monitor current index and load more rows if needed
   useEffect(() => {
     // If not playing or no data, skip
-    if (!isPlaying || !csvData) {
+    if (!isPlaying || !csvData || csvData.isDone()) {
       // End has been reached
       setEndReached(true);
       return;

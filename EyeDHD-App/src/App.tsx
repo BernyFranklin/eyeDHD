@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css';
 import HomePage from './components/HomePage';
 import CsvFileImport from './components/CsvFileImport';
@@ -7,12 +7,54 @@ import { Visualization } from './components/visualization';
 import LoadingOverlay from './components/LoadingOverlay';
 import Navbar from './components/Navbar';
 import SidebySide from './components/SidebySide';
+import RemoteStream from './data/RemoteStream';
+import { CSVData } from '../electron/db/tables/csv';
+
+function TestData() {
+	const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
+	const [csvData, setCsvData] = useState<string>("");
+
+	const filename = "part_aa.csv";
+
+	const startStream = async () => {
+		const file = await window.electron.csv.getMetadata(filename);
+    setCsvStream(await RemoteStream.create("CSVData", { file }));
+	}
+
+	useEffect(() => {
+		if (csvStream === null) return;
+
+		const loadData = async () => {
+			const data = [] as CSVData[];
+			for await (const row of csvStream) {
+				if (data.length > 10) return;
+
+				data.push(row as CSVData);
+			}
+
+			setCsvData(JSON.stringify(data, null, '\n'));
+		}
+
+		loadData();
+	}, [csvStream]);
+
+	return (
+		<>
+			I'm testing data
+
+			<label htmlFor="csvFile">part_aa.csv preview:</label>
+			<textarea id="csvFile" value={csvData}></textarea>
+			<button onClick={startStream}>load</button>
+		</>
+	);
+}
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [current, setCurrent] = useState(0);
   const [buttonsDisabled, setButtonsDisabled] = useState(false);
   const content = [
+  	<TestData />,
     <HomePage setCurrent={setCurrent} />,
     <CsvFileImport
       buttonsDisabled={buttonsDisabled}

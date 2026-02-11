@@ -15,7 +15,7 @@ import { type CSVData } from '../../../electron/db/tables/csv';
 import RemoteStream from '../../data/RemoteStream';
 
 type Props = {
-  csvData: RemoteStream;
+  csvData: RemoteStream | null;
   eyePosition: 'Left' | 'Right';
   position?: [number, number, number];
   isPlaying: boolean;
@@ -57,7 +57,7 @@ export default function RotatingModel({
   // Update target rotation based on CSV data
   useEffect(() => {
     // If no data or not playing, skip
-    if (!isPlaying || csvData.isDone()) return;
+    if (!isPlaying || !csvData || csvData.isDone()) return;
 
     const run = async () => {
 	    for await (const e of csvData) {

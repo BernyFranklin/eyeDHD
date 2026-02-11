@@ -39,15 +39,23 @@ declare interface Electron {
 
   stream: {
   	start(type: StreamType, file?: Metadata): Promise<StreamKey>;
-   	pull(key: StreamKey, count: number): Promise<{ done: boolean }>;
+   	pull(key: StreamKey, count: number): Promise<void>;
    	cancel(key: StreamKey): void;
   }
 
   notify(message: string): void;
 }
 
+declare interface Renderer {
+	stream: {
+		onData(callback: (key: StreamKey, rows: DataType[]) => void): void;
+		onEnd(callback: (key: StreamKey) => void): void;
+	}
+}
+
 declare global {
   interface Window {
     electron: Electron;
+    renderer: Renderer;
   }
 }

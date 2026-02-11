@@ -1,5 +1,3 @@
-import { ipcRenderer } from "electron";
-
 import { type DataType, type StreamKey, type StreamType } from "../../electron/db/DatabaseManager";
 import { Metadata } from "../../electron/db/tables/metadata";
 
@@ -9,26 +7,29 @@ export default class RemoteStream {
 	private key: StreamKey;
 	type: StreamType;
 
-	constructor(type: StreamType, args: { filename?: string, file?: Metadata }) {
-		let key: StreamKey;
+	static async create(type: StreamType, args: { filename?: string, file?: Metadata }): Promise<RemoteStream> {
+		let key;
 		if (type === "Metadata") {
-			window.electron.stream.start(type, args.file).then(value => key = value);
+			key = await window.electron.stream.start(type);
 		} else {
-			let metadata: Metadata;
-			window.electron.csv.getMetadata(args.filename).then(value => metadata = value);
-			window.electron.stream.start(type, metadata).then(value => key = value);
+			key = await window.electron.stream.start(type, args.file);
 		}
+		const stream = new RemoteStream(key);
 
-		this.key = key;
+		return stream;
+	}
+
+	constructor(key: StreamKey) {
 		this.type = key.type;
+		this.key = key;
 
-		ipcRenderer.on('stream:data', (_, { key, rows }: { key: StreamKey, rows: DataType[] }) => {
+		window.renderer.stream.onData((key: StreamKey, rows: DataType[]) => {
 			if (key === this.key) {
 				this.buf.push(...rows);
 			}
 		});
 
-		ipcRenderer.on('stream:done', (_, { key }: { key: StreamKey }) => {
+		window.renderer.stream.onEnd((key: StreamKey) => {
 			if (key === this.key) {
 				this.done = true;
 			}
@@ -40,9 +41,15 @@ export default class RemoteStream {
 	}
 
 	async read(): Promise<DataType | null> {
-		while (this.buf.length === 0 && !this.done) {
+		if (this.key === undefined) {
+			throw new Error("Stream not initialized");
+		}
+
+		if (this.buf.length === 0 && !this.done) {
 			await window.electron.stream.pull(this.key, 50);
 		}
+
+		console.log(this.buf);
 
 		return this.buf.shift() ?? null;
 	}
@@ -60,5 +67,6 @@ export default class RemoteStream {
 
 	cancel() {
 		window.electron.stream.cancel(this.key);
+		this.done = true;
 	}
 }

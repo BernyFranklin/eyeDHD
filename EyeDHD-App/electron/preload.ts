@@ -178,14 +178,29 @@ contextBridge.exposeInMainWorld('electron', {
 		start: async (type: StreamType, file?: Metadata): Promise<StreamKey> => {
 			return await ipcRenderer.invoke('stream:start', { type, file })
 		},
-		pull: async (key: StreamKey, count: number): Promise<{ done: boolean }> => {
+		pull: async (key: StreamKey, count: number): Promise<void> => {
 			return await ipcRenderer.invoke('stream:pull', { key, count });
 		},
 		cancel: (key: StreamKey) => {
-			return ipcRenderer.send('stream:cancel', { key });
+			ipcRenderer.send('stream:cancel', { key });
 		}
 	},
 	notify: (message: string) => {
 		ipcRenderer.send('notify', message);
+	}
+});
+
+contextBridge.exposeInMainWorld('renderer', {
+	stream: {
+		onData: (callback: (key: StreamKey, rows: DataType[]) => void) => {
+			ipcRenderer.on('stream:data', (_, args: { key: StreamKey, rows: DataType[] }) => {
+				callback(args.key, args.rows);
+			});
+		},
+		onEnd: (callback: (key: StreamKey) => void) => {
+			ipcRenderer.on('stream:end', (_, { key }) => {
+				callback(key);
+			});
+		}
 	}
 });

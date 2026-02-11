@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, Notification } from 'electron';
+import { app, dialog, ipcMain, ipcRenderer, Notification } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -664,11 +664,14 @@ ipcMain.handle('stream:start', async (_, { type, file }: StartArgs): StartRet =>
 })
 
 type PullArgs = { key: StreamKey, count: number };
-type PullRet = Promise<{ done: boolean }>;
-ipcMain.handle('stream:pull', async (e, { key, count }: PullArgs): PullRet => {
-	return dbmgr.pullStream(key, count, (rows) => {
+ipcMain.handle('stream:pull', async (e, { key, count }: PullArgs) => {
+	const { done } = await dbmgr.pullStream(key, count, (rows) => {
 		e.sender.send('stream:data', { key, rows });
 	});
+
+	if (done) {
+		e.sender.send('stream:end', { key });
+	}
 });
 
 ipcMain.on('stream:cancel', (_, { key }: { key: StreamKey }) => {
