@@ -1,48 +1,50 @@
 //===========================================================
-// Test Cases for our Saccade Detection feature 
+// Test Cases for our Saccade Detection feature
 //===========================================================
+
+Link to Google Sheets: https://docs.google.com/spreadsheets/d/16C_4vb_WjSYdpQtnMvQpkAB7O51acZFwC2ZsP3M7mp0/edit?usp=sharing
 
 //-----------------------------------------------------------
 // Summary
 //-----------------------------------------------------------
-Saccades are rapid, ballistic eye movements that occur when 
-the visual system shifts focus from one point of interest to 
-another. 
-	 
-In this project, saccades are extracted from processed 
-eye-tracking data using a velocity-based detection approach 
-grounded in standard eye-movement research. 
-	 
-Gaze direction is represented as a sequence of normalized 3D 
-vectors, and saccadic motion is identified by computing the 
-angular change between consecutive gaze samples. 
-	 
-This angular displacement is converted into angular velocity 
-(degrees per second) using the known sampling rate of the 
-eye-tracking system. 
-	 
-Samples exceeding a configurable velocity threshold are 
-classified as saccadic, while lower-velocity samples are 
-treated as fixations. 
-	 
-Consecutive saccadic samples are grouped into individual 
-saccade events, from which metrics such as duration, peak 
-velocity, and movement amplitude are derived. 
-	 
-Threshold values are intentionally parameterized to allow 
-tuning based on experimental context, with an initial default 
-of approximately 40 degrees per second, which is commonly 
-used in VR eye-tracking studies to balance sensitivity and 
+Saccades are rapid, ballistic eye movements that occur when
+the visual system shifts focus from one point of interest to
+another.
+
+In this project, saccades are extracted from processed
+eye-tracking data using a velocity-based detection approach
+grounded in standard eye-movement research.
+
+Gaze direction is represented as a sequence of normalized 3D
+vectors, and saccadic motion is identified by computing the
+angular change between consecutive gaze samples.
+
+This angular displacement is converted into angular velocity
+(degrees per second) using the known sampling rate of the
+eye-tracking system.
+
+Samples exceeding a configurable velocity threshold are
+classified as saccadic, while lower-velocity samples are
+treated as fixations.
+
+Consecutive saccadic samples are grouped into individual
+saccade events, from which metrics such as duration, peak
+velocity, and movement amplitude are derived.
+
+Threshold values are intentionally parameterized to allow
+tuning based on experimental context, with an initial default
+of approximately 40 degrees per second, which is commonly
+used in VR eye-tracking studies to balance sensitivity and
 noise rejection.
 
 //-----------------------------------------------------------
 // Step 1 Calculating velocities
 //-----------------------------------------------------------
-First we need to create a module for calculating angular 
-velocities (velocities.ts) and the following tests 
+First we need to create a module for calculating angular
+velocities (velocities.ts) and the following tests
 (velocity.test.ts):
 
-Zero movement => 0 deg/sec 
+Zero movement => 0 deg/sec
     Purpose: Baseline
         Input vectors
             v0 = (1,0,0)
@@ -59,13 +61,13 @@ Known 90 deg change in one frame => 18,000 deg/sec at 200hz
             v1 = (0,1,0)
             Dot = 0 -> angle = 90 deg
         Expected
-            velocity = 90 / 0.005 = 18000 deg/sec 
+            velocity = 90 / 0.005 = 18000 deg/sec
         Assertion: close to 18000
-Known 60 deg change => 12,000 deg/sec 
+Known 60 deg change => 12,000 deg/sec
     Purpose: another known angle
         Input
             v0 = (1,0,0)
-            v1 = (0.5, sqrt(3)/2, 0)    // 60 deg 
+            v1 = (0.5, sqrt(3)/2, 0)    // 60 deg
             Dot = 0.5 -> angle = 60
         Expected
             velocity = 60/0.005 = 12000 deg/sec
@@ -74,11 +76,11 @@ Tiny change (micro movement) => small but non-zero velocity
         Input
             v0 = (1,0,0)
             v1 = (cos(1 deg), sin(1 deg), 0)
-            Angle = 1 deg 
+            Angle = 1 deg
         Expected
             velocity = 1 / 0.005 = 200 deg/sec
         Assertion: close to 200 with epsilon (+- 0.5)
-        
+
 Multi-sample output length + first element convention
     Purpose: define output shape
         Input
@@ -89,7 +91,7 @@ Multi-sample output length + first element convention
             length = samples length -1 (velocities between samples)
 Constant rotation each frame => constant velocity
     Purpose: validates consistent computation across list.
-        Input 
+        Input
             0 deg, 1 deg, 2 deg, 3 deg, rotations in XY plane (each step is 1 deg)
         Expected
             each step velocity = 200 deg/sec
@@ -102,28 +104,28 @@ Saccade schema and interfaces for detection (schema.ts)
 Saccade detection logic (detextion.ts)
 Test file (detection.test.ts)
 
-Returning Array with expected length 
+Returning Array with expected length
     Purpose: Ensures result array is same length as original
         Input
             vectors[]
         Expected
-            result.length == vectors.length 
+            result.length == vectors.length
 
 No saccades when velocities stay below threshold
     Purpose: make sure we only detect saccades above threshold.
         Input
             vectors[] = [
                 vectors with 0.1-0.4 degree values
-                each jump is less than our threshold 
+                each jump is less than our threshold
             ]
-        Expected 
+        Expected
             result.length == 0
 
 Detects a single saccade burst above threshold and compute metrics
     Purpose: Make sure we detect a saccade and log the data accordingly
         Input
             vectors[] = [
-                vectors with a few jumps above the minimum threshold 
+                vectors with a few jumps above the minimum threshold
             ]
         Expected
             result.length == 1
@@ -138,7 +140,7 @@ Detects a single saccade burst above threshold and compute metrics
             result.saccadesExtened[0].endVector == true
 
 Rejects events shorter than minDurationMs
-    Purpose: Doesn't log insignificant values 
+    Purpose: Doesn't log insignificant values
         Input
             vectors[] = [
                 vectors with minimal movements
@@ -161,8 +163,8 @@ includeExtended: false returns no extended data
     Purpose: Return data that was requested => base no extensions
         Input
             vectors[]
-            includeExtended flag set to false 
-        Expected    
+            includeExtended flag set to false
+        Expected
             result.saccades.length == 1
             result.saccadesExtended.length = 0
 
@@ -173,10 +175,10 @@ includeExtended: false returns no extended data
 // Derived Fields
 //-----------------------------------------------------------
 Computes derived per-saccade fields
-    Purpose: Given raw saccade events, derives metrics 
+    Purpose: Given raw saccade events, derives metrics
         Input
             [{ startTime: 1000, endTime: 1050, amplitudeDeg: 5 }]
-        Expected 
+        Expected
             result.perSaccade.length == 1
             saccade.durationMs       == 50
             saccade.durationsSec     =~ 0.05
@@ -213,7 +215,7 @@ Handles zero or negative durations without Infinity/NaN
             ]
         Expected
             result.perSaccade.length == 2
-            
+
             zeroResult.durationMs                     == 0
             zeroResult.durationSec                    == 0
             Number.isFinite(zeroResult.ratePerSec     == true
@@ -236,10 +238,10 @@ Filters events outside plausible bounds and reports counts by reason
                 { startTime: 2000, endTime: 2500, amplitudeDeg: 500 },    // Filter: amplitude too large
                 { startTime: 3000, endTime: 5000, amplitudeDeg: 5   }     // Filter: duration too long
             ]
-        Expected 
+        Expected
             result.perSaccade.length      == 1
             result.filtered.totalFiltered == 2
-            result.filtered.byReason      == { amplitude_out_of_bounds: 1, duration_out_of_bounds: 1 } 
+            result.filtered.byReason      == { amplitude_out_of_bounds: 1, duration_out_of_bounds: 1 }
 
 Counts all applicable filter reasons while totalFiltered counts unique events
     Purpose: We want to filter out bad samples, but account for every reason the event was filtered
@@ -265,7 +267,7 @@ Filtering does not mutate inputs
             const originalObj0Ref = input[0];
             const originalObj1Ref = input[1];
             const orignalJson = JSON.stringify(input);
-        Expected 
+        Expected
             // Input array and objects unchanged
             input[0]                     == originalObj0Ref
             input                        == originalArrayRef
@@ -281,7 +283,7 @@ Filtering does not mutate inputs
 //-----------------------------------------------------------
 Computes session ratePerSec from kept saccades over session duration
     Purpose: Filtering applied first so only valid events compute, duration based on time span of the session, not sum of saccade durations.
-        Input 
+        Input
             [
                 { startTime: 1000, endTime: 1050, amplitudeDeg: 5   },   // Keep
                 { startTime: 2000, endTime: 2050, amplitudeDeg: 5   },   // Keep
@@ -300,7 +302,7 @@ Computes session ratePerSec from kept saccades over session duration
 
 Computes session ratePerMin when includeRatePerMin is true
     Purpose: Rate per minute computed correctly when called
-        Input 
+        Input
             [
                 { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   // Keep
                 { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },   // Keep
@@ -321,9 +323,9 @@ Computes session ratePerMin when includeRatePerMin is true
 
 Omits session ratePerMin when includeRatePerMin is not enabled
     Purpose: Making sure the ratePerMin flag works as advertised
-        Input 
+        Input
             [
-                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },
                 { startTime: 2000, endTime: 2050, amplitudeDeg: 5 },
             ]
             result = computeSaccadeMetrics(input, {
@@ -332,14 +334,14 @@ Omits session ratePerMin when includeRatePerMin is not enabled
                     durationMs: { min: 1, max: 250 },
                 },
             });
-        Expected 
+        Expected
             typeOf(result.session.ratePerSec) == 'number'
             typeOf(result.session.ratePerMin) == Undefined
 
 // Segment-Level Metrics
 //-----------------------------------------------------------
 Assigns saccades to segments and computes segment ratePerSec
-    Purpose: Assign saccades to segments and pull metrics 
+    Purpose: Assign saccades to segments and pull metrics
         Input
             [
                 // Segment 1: [0, 2000)
@@ -442,7 +444,7 @@ Computes segment ratePerMin when includeRatePerMin is true
             seg2.ratePerMin =~ 30
 
 Omits segment ratePerMin when includeRatePerMin is not enabled
-    Purpose: Checks includeRatePerMin flag and returns undefined when not called 
+    Purpose: Checks includeRatePerMin flag and returns undefined when not called
         Input
             [
                 { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },  // seg1
@@ -521,7 +523,7 @@ Uses deterministic percentile coalculation and population standard deviation
                 // Basic distribution checks
                 stats.min  == 10
                 stats.max  == 80
-                stats.mean =~ 37.5, 6  
+                stats.mean =~ 37.5, 6
 
                 // Median / percentiles (locks percentile behavior)
                 stats.median =~ 30
@@ -546,7 +548,7 @@ Handles single-value distributions safely (no NaN/Infinity)
             });
         Expected
             stats = result.session.distributions.amplitudeDeg;
-            
+
             // All central tendency + percentile stats collapse to the single value
             stats.min    == 42
             stats.max    == 42
@@ -571,7 +573,7 @@ Computes ISI(inter-saccadic interval) series between consecutive kept saccades
     Purpose: Verifies ISI is computed correctly between consecutive kept saccades (next.startTime - current.endTime)
         Input
             [
-                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },
                 { startTime: 1100, endTime: 1150, amplitudeDeg: 5 },   // ISI1 = 1100 - 1050 = 50ms
                 { startTime: 1300, endTime: 1350, amplitudeDeg: 5 },   // ISI2 = 1300 - 1150 = 150ms
             ];
@@ -599,7 +601,7 @@ Computes ISI(inter-saccadic interval) series between consecutive kept saccades
             }
 
 Filters invalid ISIs (negative/overlap) and reports ISI filtered counmts by reason
-    Purpose: Ensures ISI filtering removes invalid intervals and reports filtered ISI counts by reason without affecting saccade filtering 
+    Purpose: Ensures ISI filtering removes invalid intervals and reports filtered ISI counts by reason without affecting saccade filtering
         Input
             [
                 { startTime: 1000, endTime: 1100, amplitudeDeg: 5 },
@@ -619,7 +621,7 @@ Filters invalid ISIs (negative/overlap) and reports ISI filtered counmts by reas
             // Saccades are still kept (ISI filtering is separate from saccade filtering)
             result.perSaccade.length == 3
 
-            // Only the valid ISI remains 
+            // Only the valid ISI remains
             result.isiSeries.length == 1
             result.isiSeries[0]     == 150
 
@@ -647,7 +649,7 @@ Computes ISI distribution stats from filtered ISI series
                     isiMs: { min: 0, max: 10_000 },
                 }
             });
-        Expected 
+        Expected
             // Filtered ISI series should contain only valid intervals
             result.isiSeries == [150, 250]
 
@@ -664,15 +666,15 @@ Computes ISI distribution stats from filtered ISI series
             // Locks population standard deviation for ISI, consistent with section E
             stats.std    =~ 50
 
-Computes ISI histogram counts using fixed=width bins 
-    Purpose: Verifies ISI histogram binning produces correct bucket counts from the filtered ISI series 
+Computes ISI histogram counts using fixed=width bins
+    Purpose: Verifies ISI histogram binning produces correct bucket counts from the filtered ISI series
         Input
             [
                 { startTime: 0,    endTime: 50,   amplitudeDeg: 5 },    // ISI1 = 100  - 50  = 50
                 { startTime: 100,  endTime: 150,  amplitudeDeg: 5 },    // ISI2 = 300  - 150 = 150
                 { startTime: 300,  endTime: 350,  amplitudeDeg: 5 },    // ISI3 = 600  - 350 = 250
                 { startTime: 600,  endTime: 650,  amplitudeDeg: 5 },    // ISI4 = 1000 - 650 = 350
-                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },   
+                { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },
             ];
             result = computeSaccadeMetrics(input, {
                 plausibleBounds: {
@@ -700,7 +702,7 @@ Computes ISI histogram counts using fixed=width bins
 
 Computes ISI series and distributions per segment (segment comparison)
     Purpose: Verifies ISI metrics can be computed per segment, using the segment assignment of the pair (current saccade's segment), with unassigned ISIs tracked separately
-        input   
+        input
             [
                 { startTime: 1000, endTime: 1050, amplitudeDeg: 5 },     // Seg1
                 { startTime: 1200, endTime: 1250, amplitudeDeg: 5 },     // Seg1
@@ -721,7 +723,7 @@ Computes ISI series and distributions per segment (segment comparison)
                 ],
                 isiBySegment: true,
             });
-        Expected 
+        Expected
             // Overall ISI sanity check (consecutive kept saccades)
             result.isiSeries == [150, 1050, 250]
 
@@ -890,12 +892,12 @@ Emits CSV-ready session + segment summary rows with stable columns
             seg2.durationMs  == 2000
             seg2.durationSec =~ 2
             seg2.ratePerSec  =~ 0
-            seg2.ratePerMin  == Undefined: 
+            seg2.ratePerMin  == Undefined:
 
 // Ordering Guarantees
 //-----------------------------------------------------------
 Enforces stable chronological ordering across rows and series
-    Purpose: Guarantees deterministic ordering across all "series/rows" outputs: per-saccade rows are sorted by 
+    Purpose: Guarantees deterministic ordering across all "series/rows" outputs: per-saccade rows are sorted by
     startTime (tie-break at endTime), and all derived series reflect that same order.
         Input
             [
@@ -932,7 +934,7 @@ Enforces stable chronological ordering across rows and series
                 [1000, 1070],   // B
                 [2000, 2050],   // A
             ]
-            
+
             // amplitudeDegOverTime series must align with chronological order
             result.series.amplitudeDegOverTime.map((p: any) => [p.x, p.y]) == [
                 [1000, 3],   // C
