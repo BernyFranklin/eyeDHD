@@ -45,7 +45,11 @@ export default class RemoteStream {
 			throw new Error("Stream not initialized");
 		}
 
-		if (this.buf.length === 0 && !this.done) {
+		if (this.done) {
+			return null;
+		}
+
+		if (this.buf.length === 0) {
 			await window.electron.stream.pull(this.key, 1000);
 		}
 
@@ -61,6 +65,15 @@ export default class RemoteStream {
 
 			yield value;
 		}
+	}
+
+	async next(): Promise<IteratorResult<DataType>> {
+		const value = await this.read();
+		if (value === null) {
+			return { done: true, value: null };
+		}
+
+		return { done: false, value };
 	}
 
 	cancel() {

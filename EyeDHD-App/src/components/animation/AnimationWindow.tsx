@@ -44,14 +44,14 @@ export default function AnimationWindow({
 
   useEffect(() => {
     // If not playing or no data, skip
-    if (!isPlaying || !csvStream) return;
+    if (!isPlaying || !csvStream || !csvData) return;
 
     // Playback speed settings
     const targetFps = 200; // Desired playback frequency in Hz
 
     // Add interval to update current index; For timing
     const interval = setInterval(() => {
-    	csvStream[Symbol.asyncIterator]().next().then(({ value, done }) => {
+    	csvStream.next().then(({ value, done }) => {
      		if (done) {
        		csvStream.cancel();
          	setEndReached(true);
@@ -82,7 +82,7 @@ export default function AnimationWindow({
     if (!recorder || !canvasReady) return;
 
     // Start when shouldRecord is true and we have data, and recorder is inactive
-    if (shouldRecord && isPlaying && csvStream && recorder.state === 'inactive') {
+    if (shouldRecord && isPlaying && csvStream && csvData && recorder.state === 'inactive') {
       chunksRef.current = [];
       recorder.start();
       console.log('Recording started after inactive.');
@@ -90,18 +90,9 @@ export default function AnimationWindow({
     }
 
     // Stop when shouldRecord is false or when we hit the end
-    if ((!shouldRecord || !isPlaying || endReached) && recorder.state === 'recording') {
+    if ((!shouldRecord || !isPlaying || endReached) && csvData && recorder.state === 'recording') {
       recorder.stop();
       console.log('Recording stopped due to playback end or stop.');
-      // Log isPlaying and endReached states separately
-      // console.log(
-      //   'isPlaying:',
-      //   isPlaying,
-      //   'endReached:',
-      //   endReached,
-      //   'csvLength',
-      //   csvData ? csvData.length : 'no data'
-      // );
       setFinishedRecording(true);
     }
   }, [shouldRecord, isPlaying, csvStream, csvData, endReached, canvasReady]);
@@ -111,7 +102,7 @@ export default function AnimationWindow({
     const recorder = mediaRecorderRef.current;
     if (!recorder || !canvasReady) return;
 
-    if (hasNewData && shouldRecord && isPlaying && csvStream) {
+    if (hasNewData && shouldRecord && isPlaying && csvStream && csvData) {
       if (recorder.state === 'recording') {
         recorder.stop();
       }
