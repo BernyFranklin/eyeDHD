@@ -24,13 +24,13 @@ export default class RemoteStream {
 		this.key = key;
 
 		window.renderer.stream.onData((key: StreamKey, rows: DataType[]) => {
-			if (key === this.key) {
+			if (key.id === this.key.id) {
 				this.buf.push(...rows);
 			}
 		});
 
 		window.renderer.stream.onEnd((key: StreamKey) => {
-			if (key === this.key) {
+			if (key.id === this.key.id) {
 				this.done = true;
 			}
 		});
@@ -49,8 +49,6 @@ export default class RemoteStream {
 			await window.electron.stream.pull(this.key, 50);
 		}
 
-		console.log(this.buf);
-
 		return this.buf.shift() ?? null;
 	}
 
@@ -60,6 +58,8 @@ export default class RemoteStream {
 			if (value === null) {
 				break;
 			}
+
+			console.log("Yielding value:", value);
 
 			yield value;
 		}
