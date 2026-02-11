@@ -23,11 +23,11 @@ export interface PlausibleBounds {
 
 // Needed for Section B
 export interface SaccadeMetricsOptions {
-    plausibleBounds?: PlausibleBounds;
+    plausibleBounds?:   PlausibleBounds;
     // Needed for Section C, optional toggle
     includeRatePerMin?: boolean;
     // Needed for Section D
-    segments?: SegmentDefinition[];
+    segments?:          SegmentDefinition[];
 }
 
 // Needed for Section B
@@ -36,27 +36,29 @@ export type FilterReason = "amplitude_out_of_bounds" | "duration_out_of_bounds";
 // Needed for Section B
 export interface FilterTransparency {
     totalFiltered: number;
-    byReason: Record<FilterReason, number>;
+    byReason:      Record<FilterReason, number>;
 }
 
 // Needed for Section C: session metrics shape
 export interface SessionRateMetrics {
-    durationMs:  number;
-    durationSec: number;
-    ratePerSec:  number;
-    ratePerMin?: number;
+    durationMs:    number;
+    durationSec:   number;
+    ratePerSec:    number;
+    ratePerMin?:   number;
+    // Needed for Section E
+    distributions: SessionDistributions;
 }
 
 // Needed for Section A
 export interface SaccadeMetricResult {
-    perSaccade: PerSaccadeDerived[];
+    perSaccade:       PerSaccadeDerived[];
     // Needed for Section B
-    filtered: FilterTransparency;
+    filtered:         FilterTransparency;
     // Needed for Section C
-    session: SessionRateMetrics;
+    session:          SessionRateMetrics;
     // Needed for Section D
     segmentSummaries: SegmentSummary[];
-    unassigned: UnassignedSummary;
+    unassigned:       UnassignedSummary;
 }
 
 // Needed for Section D
@@ -78,7 +80,24 @@ export interface SegmentSummary {
     ratePerMin?: number;
 }
 
-// Needed for section D
+// Needed for Section D
 export interface UnassignedSummary {
     count: number;
+}
+
+// Needed for Section E
+export interface DistributionStats {
+    min:    number;
+    max:    number;
+    mean:   number;
+    median: number;
+    p10:    number;
+    p50:    number;
+    p90:    number;
+    std:    number;    // Population Standard Deviation
+}
+
+// Needed for Section E
+export interface SessionDistributions {
+    amplitudeDeg: DistributionStats;
 }

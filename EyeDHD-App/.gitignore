@@ -118,3 +118,6 @@ dist
 dist-electron
 dist-ssr
 *.local
+
+# ignore this node_module
+./saccades/tests/node_modules*
