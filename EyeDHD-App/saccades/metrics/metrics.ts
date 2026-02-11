@@ -3,7 +3,8 @@ import type {
     PerSaccadeDerived, 
     SaccadeMetricResult,
     SaccadeMetricsOptions,
-    FilterReason } from "./types";
+    FilterReason 
+} from "./types";
 
 // Needed for Section B
 function inRange(value: number, min: number, max: number): boolean {
@@ -47,39 +48,72 @@ export function computeSaccadeMetrics(
     });
     // Needed for Section B
     // If no plausible bounds requested, keep all events
-    if (!bounds) {
-        return { perSaccade: derived, filtered };
-    }
-
     const kept: PerSaccadeDerived[] = [];
 
-    for (const s of derived) {
-        const reasons: FilterReason[] = [];
-        if (bounds.amplitudeDeg) {
-            const { min, max } = bounds.amplitudeDeg;
-            if (!inRange(s.amplitudeDeg, min, max)) {
-                reasons.push("amplitude_out_of_bounds");
+    if (!bounds) {
+        kept.push(...derived);
+    }
+    else {
+        for (const s of derived) {
+            const reasons: FilterReason[] = [];
+            if (bounds.amplitudeDeg) {
+                const { min, max } = bounds.amplitudeDeg;
+                if (!inRange(s.amplitudeDeg, min, max)) {
+                    reasons.push("amplitude_out_of_bounds");
+                }
             }
-        }
-
-        if (bounds.durationMs) {
-            const { min, max } = bounds.durationMs;
-            if (!inRange(s.durationMs, min, max)) {
-                reasons.push("duration_out_of_bounds");
+    
+            if (bounds.durationMs) {
+                const { min, max } = bounds.durationMs;
+                if (!inRange(s.durationMs, min, max)) {
+                    reasons.push("duration_out_of_bounds");
+                }
             }
-        }
-
-        if (reasons.length === 0) {
-            kept.push(s);
-            continue;
-        }
-
-        filtered.totalFiltered += 1;
-        for (const r of reasons) {
-            filtered.byReason[r] += 1;
+    
+            if (reasons.length === 0) {
+                kept.push(s);
+                continue;
+            }
+    
+            filtered.totalFiltered += 1;
+            for (const r of reasons) {
+                filtered.byReason[r] += 1;
+            }
         }
     }
 
-    return { perSaccade: kept, filtered };
+    // Needed for Section C: compute session duration from kept saccades only
+    let sessionDurationMs = 0;
+
+    if (kept.length > 0) {
+        let minStart = kept[0].startTime;
+        let maxEnd = kept[0].endTime;
+
+        for (const s of kept) {
+            if (s.startTime < minStart) minStart = s.startTime;
+            if (s.endTime > maxEnd) maxEnd = s.endTime;
+        }
+        // Clamp to 0 for safety
+        sessionDurationMs = Math.max(0, maxEnd - minStart);
+    }
+
+    // Needed for Section C: compute durationSec + ratePerSec
+    const sessionDurationSec = sessionDurationMs / 1000;
+    const sessionRatePerSec = 
+        Number.isFinite(sessionDurationSec) && sessionDurationSec > 0
+            ? kept.length / sessionDurationSec
+            : 0;
+    // Needed for Section C: build session object
+    const session: SaccadeMetricResult["session"] = {
+        durationMs: sessionDurationMs,
+        durationSec: sessionDurationSec,
+        ratePerSec: sessionRatePerSec,
+
+        ...(options.includeRatePerMin
+            ? { ratePerMin: sessionRatePerSec * 60 }
+            : {}),
+    };
+
+    return { perSaccade: kept, filtered, session };
 }
     
