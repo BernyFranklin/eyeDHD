@@ -44,7 +44,7 @@ export default function AnimationWindow({
 
   useEffect(() => {
     // If not playing or no data, skip
-    if (!isPlaying || !csvStream || !csvData) return;
+    if (!isPlaying || !csvStream) return;
 
     // Playback speed settings
     const targetFps = 200; // Desired playback frequency in Hz
