@@ -3,11 +3,73 @@ import type {
     PerSaccadeDerived, 
     SaccadeMetricResult,
     SaccadeMetricsOptions,
-    FilterReason } from "./types";
+    FilterReason,
+    SegmentSummary,
+    SegmentDefinition, 
+    DistributionStats
+} from "./types";
 
 // Needed for Section B
 function inRange(value: number, min: number, max: number): boolean {
     return Number.isFinite(value) && value >= min && value <= max;
+}
+
+// Needed for Section E
+// Deterministic percentile: index = round(p*(n-1)), clamped
+function percentileRounded(sorted: number[], p: number): number {
+    const n = sorted.length;                            // Assume sorted input for efficiency; caller must ensure this
+    if (n === 0) return 0;                              // Guard against empty input
+    if (n === 1) return sorted[0];                      // Single value case
+
+    const idx = Math.round(p * (n - 1));                // 0-based index
+    const clamped = Math.min(n - 1, Math.max(0, idx));  // Clamp to valid range
+    return sorted[clamped];
+}
+
+function medianSorted(sorted: number[]): number {
+    const n = sorted.length;                        // Assume sorted input for efficiency; caller must ensure this
+    if (n === 0) return 0;                          // Guard against empty input
+    const mid = Math.floor(n / 2);                  // 0-based index of middle
+    if (n % 2 === 1) return sorted[mid];            // Odd length, return middle value
+    return (sorted[mid - 1] + sorted[mid]) / 2;     // Even length, average two middle values
+
+}
+
+function populationStd(values: number[], mean: number): number {
+    const n = values.length;
+    if (n <= 1) return 0;           // Guard against empty input and single value (std=0)
+    let sumSq = 0;                  // Sum of squared deviations from mean
+    for (const x of values) {
+        const d = x -mean;          // Deviation from mean
+        sumSq += d*d;               // Accumulate squared deviation
+    }
+    return Math.sqrt(sumSq / n);    // Population std uses n in denominator
+}
+
+function computeDistributionStats(values: number[]): DistributionStats {
+    const finite = values.filter(Number.isFinite);          // Focus on finite numbers for stats, ignore NaN and infinities
+    const n = finite.length;                                // Count of valid numbers
+
+    if (n === 0) {                                          // Guard against empty or all non-finite input, return zeros.
+        return { min: 0, max: 0, mean: 0, median: 0, p10: 0, p50: 0, p90: 0, std: 0 };
+    }
+
+    const sorted = [...finite].sort((a, b) => a - b);       // Sort finite values for percentile and median calculations
+    const min = sorted[0];                                  // Minimum is first element in sorted array
+    const max = sorted[n - 1];                              // Maximum is last element in sorted array
+
+    let sum = 0;                                            // Init sum for mean calculation
+    for (const x of sorted) sum += x;                       // Accumulate sum for mean
+    const mean = sum / n;                                   // Compute mean as total sum divided by count
+
+    const median = medianSorted(sorted);                    // Compute median using helper function for clarity
+    const p10 = percentileRounded(sorted, 0.10);            // Compute 10th percentile
+    const p50 = median;                                     // 50th percentile is the median
+    const p90 = percentileRounded(sorted, 0.90);            // Compute 90th percentile
+
+    const std = populationStd(sorted, mean);                // Compute population standard deviation 
+
+    return { min, max, mean, median, p10, p50, p90, std };  // Return all computed stats in a structured object
 }
 
 // Needed for Section A
@@ -16,9 +78,9 @@ export function computeSaccadeMetrics(
     options: SaccadeMetricsOptions = {}
 ): SaccadeMetricResult {
     // Needed for Section B
-    const bounds = options.plausibleBounds;
+    const bounds = options.plausibleBounds;                         // Bounds for filtering, if provided. If undefined, no filtering will be applied.
     // Needed for Section B
-    const filtered = {
+    const filtered = {                                              // Init filter transparency object to track how many saccades are filtered out and for what reasons
         totalFiltered: 0,
         byReason: {
             amplitude_out_of_bounds: 0,
@@ -29,13 +91,13 @@ export function computeSaccadeMetrics(
     // Needed for Section B
     // Derive per-saccade fields WITHOUT mutating inputs
     const derived: PerSaccadeDerived[] = input.map(saccade => {
-        const durationMs = saccade.endTime - saccade.startTime;
-        const durationSec = durationMs / 1000;
+        const durationMs = saccade.endTime - saccade.startTime;     // Duration in milliseconds is endTime - startTime
+        const durationSec = durationMs / 1000;                      // Convert duration to seconds for rate calculation
         // Lock in A3
-        const ratePerSec = 
+        const ratePerSec =                                          // Compute rate as amplitude divided by duration in seconds, with safety checks for non-positive durations
             Number.isFinite(durationSec) && durationSec > 0
                 ? saccade.amplitudeDeg / durationSec
-                : 0; // Handle non-positive durations gracefully
+                : 0;                                                // Handle non-positive durations gracefully
 
         // Return new object without mutating inputs
         return {
@@ -47,39 +109,136 @@ export function computeSaccadeMetrics(
     });
     // Needed for Section B
     // If no plausible bounds requested, keep all events
-    if (!bounds) {
-        return { perSaccade: derived, filtered };
-    }
-
     const kept: PerSaccadeDerived[] = [];
 
-    for (const s of derived) {
-        const reasons: FilterReason[] = [];
-        if (bounds.amplitudeDeg) {
-            const { min, max } = bounds.amplitudeDeg;
-            if (!inRange(s.amplitudeDeg, min, max)) {
-                reasons.push("amplitude_out_of_bounds");
+    if (!bounds) {                                                  // No bounds provided, keep all derived saccades
+        kept.push(...derived);
+    }
+    else {
+        for (const s of derived) {                                  // For each derived saccade, check against bounds and categorize reasons for filtering if applicable
+            const reasons: FilterReason[] = [];                     // Init reasons for filtering this saccade, if any. Multiple reasons possible per saccade.
+            if (bounds.amplitudeDeg) {                              // Check amplitude bounds if provided
+                const { min, max } = bounds.amplitudeDeg;           // Destructure min and max for amplitude bounds
+                if (!inRange(s.amplitudeDeg, min, max)) {           // If amplitude is out of bounds, add reason for filtering
+                    reasons.push("amplitude_out_of_bounds");
+                }
             }
-        }
-
-        if (bounds.durationMs) {
-            const { min, max } = bounds.durationMs;
-            if (!inRange(s.durationMs, min, max)) {
-                reasons.push("duration_out_of_bounds");
+    
+            if (bounds.durationMs) {                                // Check duration bounds if provided
+                const { min, max } = bounds.durationMs;             // Destructure min and max for duration bounds
+                if (!inRange(s.durationMs, min, max)) {             // If duration is out of bounds, add reason for filtering
+                    reasons.push("duration_out_of_bounds");
+                }
             }
-        }
-
-        if (reasons.length === 0) {
-            kept.push(s);
-            continue;
-        }
-
-        filtered.totalFiltered += 1;
-        for (const r of reasons) {
-            filtered.byReason[r] += 1;
+    
+            if (reasons.length === 0) {                             // If no reasons for filtering, keep this saccade   
+                kept.push(s);
+                continue;
+            }
+    
+            filtered.totalFiltered += 1;                            // Increment total filtered count
+            for (const r of reasons) {                              // Increment count for each reason this saccade was filtered out
+                filtered.byReason[r] += 1;
+            }
         }
     }
 
-    return { perSaccade: kept, filtered };
+    // Needed for Section C: compute session duration from kept saccades only
+    let sessionDurationMs = 0;                                      // Init session duration to 0
+
+    if (kept.length > 0) {                                          // If we have kept saccades, compute session duration as the span from earliest startTime to latest endTime among kept saccades
+        let minStart = kept[0].startTime;                           // Initialize minStart to startTime of first kept saccade
+        let maxEnd = kept[0].endTime;                               // Initialize maxEnd to endTime of first kept saccade
+
+        for (const s of kept) {
+            if (s.startTime < minStart) minStart = s.startTime;     // Update minStart if this saccade starts earlier
+            if (s.endTime > maxEnd) maxEnd = s.endTime;             // Update maxEnd if this saccade ends later
+        }
+        
+        sessionDurationMs = Math.max(0, maxEnd - minStart);         // Clamp to zero for safety
+    }
+
+    // Needed for Section C: compute durationSec + ratePerSec
+    const sessionDurationSec = sessionDurationMs / 1000;            // Convert session duration to seconds for rate calculation
+    const sessionRatePerSec =                                       // Compute session-level rate, with safety checks to prevent division by zero or invalid values
+        Number.isFinite(sessionDurationSec) && sessionDurationSec > 0
+            ? kept.length / sessionDurationSec
+            : 0;
+    
+    // Needed for Section E: distributions of kept events
+    const amplitudeValues = kept.map(s => s.amplitudeDeg);              // Extract amplitude values from kept saccades for distribution stats
+    const amplitudeStats = computeDistributionStats(amplitudeValues);   // Compute distribution stats for amplitude using helper function
+
+    // Needed for Section C: build session object
+    const session: SaccadeMetricResult["session"] = {
+        durationMs: sessionDurationMs,
+        durationSec: sessionDurationSec,
+        ratePerSec: sessionRatePerSec,
+
+        ...(options.includeRatePerMin
+            ? { ratePerMin: sessionRatePerSec * 60 }
+            : {}),
+
+        distributions: {
+            amplitudeDeg: amplitudeStats
+        },
+    };
+
+    // Needed for Section D: segment level summaries
+    const segments: SegmentDefinition[] = options.segments ?? [];           // Get segment definitions from options, default to empty array if not provided
+    const segmentSummaries: SegmentSummary[] = [];                          // Init array to hold summaries for each segment
+    const unassigned = {count: 0};                                          // Init count of unassigned saccades that don't fall into any segment
+
+    if (segments.length > 0) {                                              // If we have segment definitions, we need to assign kept saccades to segments and compute segment-level metrics
+        // Initialize summaries for every segment
+        for (const seg of segments) {                                       // For each segment definition, compute its duration and initialize a summary object with count and rates set to zero. 
+            const durationMs = Math.max(0, seg.endTime - seg.startTime);    // Clamp to zero for safety
+            const durationSec = durationMs / 1000;                          // Convert duration to seconds for rate calculation
+            segmentSummaries.push({                                         // Push new summary object for this segment into the segmentSummaries array
+                id: seg.id,
+                startTime: seg.startTime,
+                endTime: seg.endTime,
+                durationMs,
+                durationSec,
+                count: 0,
+                ratePerSec: 0, 
+                ...(options.includeRatePerMin ? { ratePerMin: 0 } : {}),
+            });
+        }
+        
+        for (const s of kept) {                                                             // Assign each kept saccade by startTime using [start, end) 
+            const t = s.startTime;                                                          // Init variable t to the startTime of this saccade for segment assignment 
+            const idx = segments.findIndex(seg => t >= seg.startTime && t < seg.endTime);   // Find index of the first segment that this saccade falls into based on its startTime. 
+
+            if (idx === -1) {                                                               // If no segment was found that contains this saccade's startTime, increment the unassigned count.
+                unassigned.count += 1;
+                continue;
+            }
+
+            segmentSummaries[idx].count += 1;                                               // If a segment was found, increment the count of saccades for that segment. 
+        }
+
+        
+        for (const summary of segmentSummaries) {                   // Compute rates for each segment
+            const denomSec = summary.durationSec;                   // Denominator for rate calculation is the duration of the segment in seconds
+            summary.ratePerSec =                                    // Compute rate per second for this segment, with safety checks to prevent division by zero or invalid values
+                Number.isFinite(denomSec) && denomSec > 0
+                    ? summary.count / denomSec
+                    : 0;
+
+            if (options.includeRatePerMin) {                        // If the option to include rate per minute is enabled, compute it as rate per second multiplied by 60
+                summary.ratePerMin = summary.ratePerSec * 60;
+            }
+            else {
+                delete (summary as any).ratePerMin;                 // Ensure ratePerMin is not included if the option is not enabled, for consistent output shape
+            }
+        }
+    }
+    return {                                                        // Return SaccadeMetricResult object containing all computed metrics and summaries
+        perSaccade: kept, 
+        filtered, 
+        session,
+        segmentSummaries,
+        unassigned };
 }
     
