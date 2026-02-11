@@ -175,14 +175,14 @@ contextBridge.exposeInMainWorld('electron', {
 		}
 	},
 	stream: {
-		start: async (type: StreamType, file: Metadata): Promise<StreamKey> => {
+		start: async (type: StreamType, file?: Metadata): Promise<StreamKey> => {
 			return await ipcRenderer.invoke('stream:start', { type, file })
 		},
-		pull: async (key: StreamKey): Promise<{ key: StreamKey, rows: DataType[]}> => {
-			return await ipcRenderer.invoke('stream:pull', { key });
+		pull: async (key: StreamKey, count: number): Promise<{ done: boolean }> => {
+			return await ipcRenderer.invoke('stream:pull', { key, count });
 		},
-		cancel: async (key: StreamKey) => {
-			return await ipcRenderer.invoke('stream:cancel', { key});
+		cancel: (key: StreamKey) => {
+			return ipcRenderer.send('stream:cancel', { key });
 		}
 	},
 	notify: (message: string) => {

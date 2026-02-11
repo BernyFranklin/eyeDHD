@@ -1,5 +1,8 @@
+import { type DataType, type StreamType, type StreamKey } from '../electron/db/DatabaseManager';
 import { type CSVData } from '../electron/db/tables/csv';
 import { type Metadata } from '../electron/db/tables/metadata';
+import { type SaccadeData } from '../electron/db/tables/saccade';
+import { type Progress } from '../electron/db/tables/progress';
 
 export {};
 
@@ -35,9 +38,9 @@ declare interface Electron {
   };
 
   stream: {
-  	start(): void;
-   	pull(): void;
-   	cancel(): void;
+  	start(type: StreamType, file?: Metadata): Promise<StreamKey>;
+   	pull(key: StreamKey, count: number): Promise<{ done: boolean }>;
+   	cancel(key: StreamKey): void;
   }
 
   notify(message: string): void;

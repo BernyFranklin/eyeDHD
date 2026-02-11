@@ -7,9 +7,10 @@ import { Environment, OrbitControls, OrthographicCamera } from '@react-three/dre
 import RotatingModel from './ModelMovement';
 import { initializeCanvasRecording, stopCanvasRecording } from './RecorderHelper';
 import { type CSVData } from '../../../electron/db/tables/csv';
+import RemoteStream from '../../data/RemoteStream';
 
 type Props = {
-  csvData: CSVData[];
+  csvData: RemoteStream;
   loadMoreRows: () => void;
   isPlaying: boolean;
   shouldRecord?: boolean;
@@ -24,18 +25,10 @@ export default function AnimationWindow({
   shouldRecord = false,
   onIndexChange
 }: Props) {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [finishedRecording, setFinishedRecording] = useState(false);
   const [canvasReady, setCanvasReady] = useState(false);
   const [endReached, setEndReached] = useState(false);
   const [hasNewData, setHasNewData] = useState(false);
-
-  // Notify parent of current index changes
-  useEffect(() => {
-    if (onIndexChange) {
-      onIndexChange(currentIndex);
-    }
-  }, [currentIndex, onIndexChange]);
 
   // Monitor current index and load more rows if needed
   useEffect(() => {
@@ -48,36 +41,31 @@ export default function AnimationWindow({
 
     // Reset end reached when playing
     setEndReached(false);
+  }, [csvData, isPlaying, loadMoreRows]);
 
-    if (currentIndex >= csvData.length - 1) {
-      loadMoreRows();
-      setCurrentIndex(0); // Reset to start after loading more data
-    }
-  }, [currentIndex, csvData, isPlaying, loadMoreRows]);
+  // useEffect(() => {
+  //   // If not playing or no data, skip
+  //   if (!isPlaying || !csvData) return;
 
-  useEffect(() => {
-    // If not playing or no data, skip
-    if (!isPlaying || !csvData) return;
+  //   // Playback speed settings
+  //   const sourceHz = 200; // Original data frequency in Hz
+  //   const targetFps = 200; // Desired playback frequency in Hz
+  //   const frameSkip = Math.round(sourceHz / targetFps); // For skipping frames if needed to convert to new playback speed
 
-    // Playback speed settings
-    const sourceHz = 200; // Original data frequency in Hz
-    const targetFps = 200; // Desired playback frequency in Hz
-    const frameSkip = Math.round(sourceHz / targetFps); // For skipping frames if needed to convert to new playback speed
+  //   // Add interval to update current index; For timing
+  //   // const interval = setInterval(() => {
+  //   //   // Update the current index based on frame skip
+  //   //   setCurrentIndex((prevIndex) => {
+  //   //     // Skip frames to maintain proper playback speed
+  //   //     const nextIndex = prevIndex + frameSkip;
 
-    // Add interval to update current index; For timing
-    const interval = setInterval(() => {
-      // Update the current index based on frame skip
-      setCurrentIndex((prevIndex) => {
-        // Skip frames to maintain proper playback speed
-        const nextIndex = prevIndex + frameSkip;
+  //   //     return nextIndex;
+  //   //   });
+  //   // }, 1000 / targetFps); // Read data at fps target
 
-        return nextIndex;
-      });
-    }, 1000 / targetFps); // Read data at fps target
-
-    // Cleanup on unmount or when dependencies change
-    return () => clearInterval(interval);
-  }, [csvData, isPlaying]);
+  //   // Cleanup on unmount or when dependencies change
+  //   return () => clearInterval(interval);
+  // }, [csvData, isPlaying]);
 
   // Recording setup
   const mediaRecorderRef = useRef<MediaRecorder>(null);
@@ -86,13 +74,6 @@ export default function AnimationWindow({
   // Helpers are defined at module scope: initializeCanvasRecording, stopCanvasRecording
 
   // Manage recording strictly via effects; avoid side effects in render.
-
-  // Detect new CSV data loaded
-  useEffect(() => {
-    if (csvData && endReached) {
-      setHasNewData(true);
-    }
-  }, [csvData, endReached]);
 
   // Start/stop recording based on shouldRecord prop and canvas readiness
   useEffect(() => {
@@ -112,14 +93,14 @@ export default function AnimationWindow({
       recorder.stop();
       console.log('Recording stopped due to playback end or stop.');
       // Log isPlaying and endReached states separately
-      console.log(
-        'isPlaying:',
-        isPlaying,
-        'endReached:',
-        endReached,
-        'csvLength',
-        csvData ? csvData.length : 'no data'
-      );
+      // console.log(
+      //   'isPlaying:',
+      //   isPlaying,
+      //   'endReached:',
+      //   endReached,
+      //   'csvLength',
+      //   csvData ? csvData.length : 'no data'
+      // );
       setFinishedRecording(true);
     }
   }, [shouldRecord, isPlaying, csvData, endReached, canvasReady]);
@@ -161,7 +142,6 @@ export default function AnimationWindow({
         {/* Left Eye */}
         <RotatingModel
           csvData={csvData}
-          currentIndex={currentIndex}
           eyePosition="Left"
           position={[-2, 0, 0]} // Shift left eye to the left
           isPlaying={isPlaying}
@@ -170,7 +150,6 @@ export default function AnimationWindow({
         {/* Right Eye */}
         <RotatingModel
           csvData={csvData}
-          currentIndex={currentIndex}
           eyePosition="Right"
           position={[2, 0, 0]} // Shift right eye to the right
           isPlaying={isPlaying}

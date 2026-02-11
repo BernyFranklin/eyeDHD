@@ -5,7 +5,8 @@ import os from 'os';
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 
-import DatabaseManager from './db/DatabaseManager';
+import DatabaseManager, { DataType, StreamKey, StreamType } from './db/DatabaseManager';
+import { Metadata } from './db/tables/metadata';
 
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
@@ -655,6 +656,24 @@ async function exportUsingMediaRecorder(session: any) {
 	// For now, fall back to image sequence if WebM was requested
 	await exportImageSequence(session);
 }
+
+type StartArgs = { type: StreamType, file: Metadata };
+type StartRet = Promise<StreamKey>;
+ipcMain.handle('stream:start', async (_, { type, file }: StartArgs): StartRet => {
+	return await dbmgr.startStream(type, file);
+})
+
+type PullArgs = { key: StreamKey, count: number };
+type PullRet = Promise<{ done: boolean }>;
+ipcMain.handle('stream:pull', async (e, { key, count }: PullArgs): PullRet => {
+	return dbmgr.pullStream(key, count, (rows) => {
+		e.sender.send('stream:data', { key, rows });
+	});
+});
+
+ipcMain.on('stream:cancel', (_, { key }: { key: StreamKey }) => {
+	dbmgr.cancelStream(key);
+})
 
 /**
 * Handles the notify request. Creates an OS notification with the given message

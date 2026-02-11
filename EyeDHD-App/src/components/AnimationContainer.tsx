@@ -4,6 +4,7 @@ import AnimationWindow from './animation/AnimationWindow';
 import Button from './Button';
 
 import { type CSVData } from '../../electron/db/tables/csv';
+import RemoteStream from '../data/RemoteStream';
 
 const styles = {
   container: {
@@ -13,7 +14,7 @@ const styles = {
 };
 
 type Props = {
-  csvData: CSVData[];
+  csvData: RemoteStream;
   loadMoreRows: any;
   isPlaying: boolean;
   setIsPlaying: any;

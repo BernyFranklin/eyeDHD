@@ -329,9 +329,12 @@ export default class DatabaseManager {
 
 	}
 
-	async startStream(type: StreamType, file: Metadata) {
+	async startStream(type: StreamType, file?: Metadata): Promise<StreamKey> {
 		const iterator = this.createIterator(type, file);
-		this.streams.set({ id: Date.now(), type }, iterator);
+		const key = { id: Date.now(), type };
+		this.streams.set(key, iterator);
+
+		return key;
 	}
 
 	private getStream(key: StreamKey): AsyncIterator<DataType> {

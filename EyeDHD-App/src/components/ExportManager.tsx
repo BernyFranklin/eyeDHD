@@ -3,9 +3,10 @@ import FrameExporter from './animation/FrameExporter';
 import Button from './Button';
 
 import { type CSVData } from '../../electron/db/tables/csv';
+import RemoteStream from '../data/RemoteStream';
 
 type Options = {
-  csvData: CSVData[] | null;
+  csvData: RemoteStream | null;
   fileName: string;
   onExportComplete: any;
 };
@@ -88,27 +89,17 @@ export default function ExportManager({ csvData, fileName, onExportComplete }: O
       // Reset reading progress to start from beginning
       await window.electron.csv.resetReadingProgress(fileName);
 
-      let allData: CSVData[] = [];
-      let batch;
-      let batchCount = 0;
+      const allData: CSVData[] = [];
 
-      do {
-        // Load data in larger chunks for export
-        batch = await window.electron.csv.getBuffer(fileName);
-        if (batch && batch.length > 0) {
-          allData = [...allData, ...batch];
-          batchCount++;
-          setExportStatus(
-            `Loading dataset... ${allData.length.toLocaleString()} rows loaded`
-          );
-        }
-      } while (batch && batch.length > 0);
+      for await (const row of csvData) {
+      	allData.push(row as CSVData);
+      }
 
       console.log(`Loaded complete dataset: ${allData.length} total rows`);
       setFullCsvData(allData);
       setIsLoadingData(false);
       return allData;
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to load complete dataset:', error);
       setExportStatus(`Failed to load data: ${error.message}`);
       setIsLoadingData(false);
@@ -117,7 +108,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }: O
   };
 
   const startExport = async () => {
-    if (!csvData || csvData.length === 0) {
+    if (!csvData || csvData.isDone()) {
       setExportStatus('No data available for export');
       return;
     }
@@ -253,7 +244,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }: O
       <div style={styles.buttonRow}>
         <Button
           onClick={startExport}
-          disabled={isExporting || isLoadingData || !csvData || csvData.length === 0}
+          disabled={isExporting || isLoadingData || !csvData || csvData.isDone()}
           className="btn"
           buttonText={
             isLoadingData

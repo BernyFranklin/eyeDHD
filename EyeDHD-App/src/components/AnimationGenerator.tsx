@@ -7,9 +7,10 @@ import Button from './Button';
 
 import { type Metadata } from '../../electron/db/tables/metadata';
 import { type CSVData } from '../../electron/db/tables/csv';
+import RemoteStream from '../data/RemoteStream';
 
 export default function AnimationGenerator() {
-  const [csvData, setCsvData] = useState<CSVData[]>([]);
+  const [csvData, setCsvData] = useState<RemoteStream>();
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
@@ -92,21 +93,8 @@ export default function AnimationGenerator() {
       return;
     }
 
-    // Request 200 more rows from the backend
-    try {
-      const rows = await window.electron.csv.getBuffer(filename);
-      if (error) return;
-
-      if (rows.length === 0) {
-        setCsvData([]);
-        setIsPlaying(false);
-        sendAlert(`End of "${filename}" reached!`);
-      }
-
-      setCsvData(rows);
-    } catch (err) {
-      handleError(err);
-    }
+    const file = await window.electron.csv.getMetadata(filename);
+    setCsvData(new RemoteStream("CSVData", { file }));
   };
 
   const sendAlert = (message: string) => {
@@ -164,11 +152,12 @@ export default function AnimationGenerator() {
     // Reset reading progress if we have a filename
     if (fileName) {
       await window.electron.csv.resetReadingProgress(fileName).catch(handleError);
+      csvData?.cancel();
     }
 
     // Reset all state
     setFileName('');
-    setCsvData([]);
+    setCsvData(undefined);
     setIsPlaying(false);
   };
 

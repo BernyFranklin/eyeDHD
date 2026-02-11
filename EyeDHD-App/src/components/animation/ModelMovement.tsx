@@ -12,10 +12,10 @@ import {
 } from '../../utils/animationUtil.js';
 
 import { type CSVData } from '../../../electron/db/tables/csv';
+import RemoteStream from '../../data/RemoteStream';
 
 type Props = {
-  csvData: CSVData[] | null;
-  currentIndex: number;
+  csvData: RemoteStream;
   eyePosition: 'Left' | 'Right';
   position?: [number, number, number];
   isPlaying: boolean;
@@ -24,7 +24,6 @@ type Props = {
 // Component for a rotating 3D model representing an eye
 export default function RotatingModel({
   csvData,
-  currentIndex,
   eyePosition,
   position = [0, 0, 0],
   isPlaying
@@ -58,29 +57,34 @@ export default function RotatingModel({
   // Update target rotation based on CSV data
   useEffect(() => {
     // If no data or not playing, skip
-    if (!isPlaying || !csvData || currentIndex >= csvData.length) return;
+    if (!isPlaying || csvData.isDone()) return;
 
-    const row = csvData[currentIndex];
+    const run = async () => {
+	    for await (const e of csvData) {
+				const row = e as CSVData;
+				// Get the forward vector components - note uppercase first letter
+				const forwardX = row[`${eyePosition}EyeForwardX`];
+				const forwardY = row[`${eyePosition}EyeForwardY`];
+				const forwardZ = row[`${eyePosition}EyeForwardZ`];
 
-    // Get the forward vector components - note uppercase first letter
-    const forwardX = row[`${eyePosition}EyeForwardX`];
-    const forwardY = row[`${eyePosition}EyeForwardY`];
-    const forwardZ = row[`${eyePosition}EyeForwardZ`];
+				// Convert to pitch and yaw using your utility functions
+				const pitch = GetPitch(forwardX, forwardY, forwardZ);
+				const yaw = GetYaw(forwardX, forwardY, forwardZ);
 
-    // Convert to pitch and yaw using your utility functions
-    const pitch = GetPitch(forwardX, forwardY, forwardZ);
-    const yaw = GetYaw(forwardX, forwardY, forwardZ);
-
-    // Update target rotation if eye status is VALID
-    if (row[`${eyePosition}EyeStatus`] === 'VALID' && isPlaying) {
-      if (CheckDataValidity(pitch, row) && CheckDataValidity(yaw, row)) {
-        targetRotation.current = { x: pitch, y: yaw, z: 0 };
-        targetPupilDilation.current = NormalizePupilDilation(
-          row[`${eyePosition}PupilDiameterInMM`]
-        );
-      }
+				// Update target rotation if eye status is VALID
+				if (row[`${eyePosition}EyeStatus`] === 'VALID' && isPlaying) {
+					if (CheckDataValidity(pitch, row) && CheckDataValidity(yaw, row)) {
+						targetRotation.current = { x: pitch, y: yaw, z: 0 };
+						targetPupilDilation.current = NormalizePupilDilation(
+							row[`${eyePosition}PupilDiameterInMM`]
+						);
+					}
+				}
+	    }
     }
-  }, [csvData, currentIndex, eyePosition, isPlaying]);
+
+    run();
+  }, [csvData, eyePosition, isPlaying]);
 
   // Smoothly interpolate current rotation towards target rotation
   useFrame(() => {
