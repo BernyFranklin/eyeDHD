@@ -54,12 +54,8 @@ export type StreamKey = {
  */
 export default class DatabaseManager {
 	private db: Database;
-	private options: DBOptions;
 	private cleaners = new Map<string, DataCleaner>();
 	private streams = new Map<StreamKey, AsyncIterator<DataType>>();
-	//private metadataStreams = new Map<StreamKey, AsyncIterator<Metadata>>();
-	//private csvStreams = new Map<StreamKey, AsyncIterator<CSVData>>();
-	//private saccadeStreams = new Map<StreamKey, AsyncIterator<SaccadeData>>();
 
 	// These fields contain the public API for interacting with the database
 	metadata: MetadataActions;
@@ -67,8 +63,6 @@ export default class DatabaseManager {
 	saccade: SaccadeDataActions;
 
 	constructor(options: DBOptions = { logging: false, temporary: false }) {
-		this.options = options;
-
 		this.db = getDB(options);
 		this.createMetadataTable();
 
@@ -321,15 +315,26 @@ export default class DatabaseManager {
 
 	}
 
-	async startStream(type: StreamType, file: Metadata) {
-		const iterator = this.createIterator(type, file);
-		this.streams.set(
-			{ id: Date.now(), type },
-			iterator as AsyncGenerator<Metadata>
-		);
+	/**
+	 * Creates a new table for storing progress data for a given file
+	 */
+	private createProgressTable(file: Metadata) {
+
 	}
 
-	private getStream(key: StreamKey) {
+	/**
+	 * Deletes the progress data table for a given file
+	 */
+	private deleteProgressTable(file: Metadata) {
+
+	}
+
+	async startStream(type: StreamType, file: Metadata) {
+		const iterator = this.createIterator(type, file);
+		this.streams.set({ id: Date.now(), type }, iterator);
+	}
+
+	private getStream(key: StreamKey): AsyncIterator<DataType> {
 		return this.streams.get(key);
 	}
 
@@ -337,13 +342,17 @@ export default class DatabaseManager {
 		this.streams.delete(key);
 	}
 
-	async pullStream(key: StreamKey, count: number, send: (rows: Metadata | CSVData[]) => void) {
+	async pullStream(
+		key: StreamKey,
+		count: number,
+		send: (rows: DataType[]) => void
+	): Promise<{ done: boolean }> {
 		const iterator = this.getStream(key);
 		if (!iterator) {
 			throw new Error(`No stream found for key: ${key.id}`);
 		}
 
-		const rows: Metadata | CSVData[] = [];
+		const rows: DataType[] = [];
 
 		for (let i = 0; i < count; i++) {
 			const { value, done } = await iterator.next();
@@ -364,7 +373,10 @@ export default class DatabaseManager {
 		this.deleteStream(key);
 	}
 
-	private async *createIterator(type: StreamType, file?: Metadata) {
+	private async *createIterator(
+		type: StreamType,
+		file?: Metadata
+	): AsyncIterator<DataType> {
     switch (type) {
 			case "Metadata": {
 				const sql = metadataActions.iterate();
