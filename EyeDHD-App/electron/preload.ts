@@ -4,7 +4,7 @@ import { type Metadata } from './db/tables/metadata';
 import { type CSVData } from './db/tables/csv';
 import { type SaccadeData } from './db/tables/saccade';
 import { type Progress } from './db/tables/progress';
-import DataStream from './db/DataStream';
+import { DataType, type StreamKey, type StreamType } from './db/DatabaseManager';
 
 console.log('Preload script loaded, exposing API to renderer process');
 
@@ -174,7 +174,17 @@ contextBridge.exposeInMainWorld('electron', {
 			return await ipcRenderer.invoke('animation-export-cancel', sessionId);
 		}
 	},
-
+	stream: {
+		start: async (type: StreamType, file: Metadata): Promise<StreamKey> => {
+			return await ipcRenderer.invoke('stream:start', { type, file })
+		},
+		pull: async (key: StreamKey): Promise<{ key: StreamKey, rows: DataType[]}> => {
+			return await ipcRenderer.invoke('stream:pull', { key });
+		},
+		cancel: async (key: StreamKey) => {
+			return await ipcRenderer.invoke('stream:cancel', { key});
+		}
+	},
 	notify: (message: string) => {
 		ipcRenderer.send('notify', message);
 	}

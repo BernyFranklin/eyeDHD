@@ -1,10 +1,10 @@
 import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
-import DataStream from './DataStream';
 import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
 import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
 import saccadeActions, { type SaccadeData } from './tables/saccade';
+import { type Progress } from './tables/progress';
 import DataCleaner from '../analysis/DataCleaner';
 
 // Database configuration options
@@ -41,6 +41,13 @@ type SaccadeDataActions = {
 	create: () => void;
 };
 
+export type DataType = Metadata | CSVData | SaccadeData | Progress;
+export type StreamType = "Metadata" | "CSVData" | "SaccadeData" | "Progress";
+export type StreamKey = {
+	id: number,
+	type: StreamType
+}
+
 /**
  * Database Manager responsible for handling all database requests
  * and managing data streams sent to the frontend
@@ -49,9 +56,10 @@ export default class DatabaseManager {
 	private db: Database;
 	private options: DBOptions;
 	private cleaners = new Map<string, DataCleaner>();
-	private metadataStreams = new Map<string, DataStream<Metadata>>();
-	private csvStreams = new Map<string, DataStream<CSVData>>();
-	private saccadeStreams = new Map<string, DataStream<SaccadeData>>();
+	private streams = new Map<StreamKey, AsyncIterator<DataType>>();
+	//private metadataStreams = new Map<StreamKey, AsyncIterator<Metadata>>();
+	//private csvStreams = new Map<StreamKey, AsyncIterator<CSVData>>();
+	//private saccadeStreams = new Map<StreamKey, AsyncIterator<SaccadeData>>();
 
 	// These fields contain the public API for interacting with the database
 	metadata: MetadataActions;
@@ -312,6 +320,80 @@ export default class DatabaseManager {
 	private deleteSaccadeTable(file: Metadata) {
 
 	}
+
+	async startStream(type: StreamType, file: Metadata) {
+		const iterator = this.createIterator(type, file);
+		this.streams.set(
+			{ id: Date.now(), type },
+			iterator as AsyncGenerator<Metadata>
+		);
+	}
+
+	private getStream(key: StreamKey) {
+		return this.streams.get(key);
+	}
+
+	private deleteStream(key: StreamKey) {
+		this.streams.delete(key);
+	}
+
+	async pullStream(key: StreamKey, count: number, send: (rows: Metadata | CSVData[]) => void) {
+		const iterator = this.getStream(key);
+		if (!iterator) {
+			throw new Error(`No stream found for key: ${key.id}`);
+		}
+
+		const rows: Metadata | CSVData[] = [];
+
+		for (let i = 0; i < count; i++) {
+			const { value, done } = await iterator.next();
+			if (done) {
+				this.deleteStream(key);
+				send(rows);
+				return { done: true };
+			}
+
+			rows.push(value);
+		}
+
+		send(rows);
+		return { done: false };
+	}
+
+	cancelStream(key: StreamKey) {
+		this.deleteStream(key);
+	}
+
+	private async *createIterator(type: StreamType, file?: Metadata) {
+    switch (type) {
+			case "Metadata": {
+				const sql = metadataActions.iterate();
+		    const stmt = this.db.prepare<[], Metadata>(sql);
+
+		    for (const row of stmt.iterate()) {
+		      yield row;
+		    }
+				break;
+			}
+			case "CSVData": {
+				const sql = csvActions.iterate(file);
+		    const stmt = this.db.prepare<[], CSVData>(sql);
+
+		    for (const row of stmt.iterate()) {
+		      yield row;
+		    }
+				break;
+			}
+			case "SaccadeData": {
+				throw new Error("SaccadeData streaming not implemented yet");
+				break;
+			}
+			case "Progress": {
+				throw new Error("Progress streaming not implemented yet");
+				break;
+			}
+		}
+  }
 }
 
 /**

@@ -34,6 +34,12 @@ declare interface Electron {
     exportCancel(sessionId: string): Promise<any>;
   };
 
+  stream: {
+  	start(): void;
+   	pull(): void;
+   	cancel(): void;
+  }
+
   notify(message: string): void;
 }
 

@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import type { Metadata } from './metadata';
 
-export default { create, read, readAll, firstAndLast };
+export default { create, read, readAll, firstAndLast, iterate };
 
 // Converts filename into table name
 // ID.011.csv -> ID_011_csv_rows
@@ -268,4 +268,10 @@ function firstAndLast(
     .get(file.last_frame) as CSVData;
 
   return { first, last };
+}
+
+function iterate(file: Metadata) {
+	return `
+		SELECT * FROM ${toTableName(file.name)};
+	`;
 }

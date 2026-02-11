@@ -1,6 +1,6 @@
 import type { Database } from 'better-sqlite3';
 
-export default { create, exists, read, readAll, update, remove };
+export default { create, exists, read, readAll, iterate, update, remove };
 
 export type Metadata = {
   id: number;
@@ -90,6 +90,12 @@ function exists(db: Database, filename: string): boolean {
 	}
 
 	return true;
+}
+
+function iterate() {
+	return `
+		SELECT * FROM metadata;
+	`;
 }
 
 function readAll(db: Database): Metadata[] {
