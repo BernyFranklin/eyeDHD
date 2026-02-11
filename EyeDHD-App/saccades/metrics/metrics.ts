@@ -3,7 +3,9 @@ import type {
     PerSaccadeDerived, 
     SaccadeMetricResult,
     SaccadeMetricsOptions,
-    FilterReason 
+    FilterReason,
+    SegmentSummary,
+    SegmentDefinition, 
 } from "./types";
 
 // Needed for Section B
@@ -114,6 +116,61 @@ export function computeSaccadeMetrics(
             : {}),
     };
 
-    return { perSaccade: kept, filtered, session };
+    // Needed for Section D: segment level summaries
+    const segments: SegmentDefinition[] = options.segments ?? [];
+    const segmentSummaries: SegmentSummary[] = [];
+    const unassigned = {count: 0};
+
+    if (segments.length > 0) {
+        // Initialize summaries for every segment
+        for (const seg of segments) {
+            const durationMs = Math.max(0, seg.endTime - seg.startTime);
+            const durationSec = durationMs / 1000;
+            segmentSummaries.push({
+                id: seg.id,
+                startTime: seg.startTime,
+                endTime: seg.endTime,
+                durationMs,
+                durationSec,
+                count: 0,
+                ratePerSec: 0, 
+                ...(options.includeRatePerMin ? { ratePerMin: 0 } : {}),
+            });
+        }
+        // Assign each kept saccade by startTime using [start, end) 
+        for (const s of kept) {
+            const t = s.startTime;
+            const idx = segments.findIndex(seg => t >= seg.startTime && t < seg.endTime);
+
+            if (idx === -1) {
+                unassigned.count += 1;
+                continue;
+            }
+
+            segmentSummaries[idx].count += 1;
+        }
+
+        // Compute rates per segment
+        for (const summary of segmentSummaries) {
+            const denomSec = summary.durationSec;
+            summary.ratePerSec = 
+                Number.isFinite(denomSec) && denomSec > 0
+                    ? summary.count / denomSec
+                    : 0;
+
+            if (options.includeRatePerMin) {
+                summary.ratePerMin = summary.ratePerSec * 60;
+            }
+            else {
+                delete (summary as any).ratePerMin;
+            }
+        }
+    }
+    return { 
+        perSaccade: kept, 
+        filtered, 
+        session,
+        segmentSummaries,
+        unassigned };
 }
     

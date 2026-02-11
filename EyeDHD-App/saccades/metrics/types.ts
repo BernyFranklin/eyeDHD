@@ -26,6 +26,8 @@ export interface SaccadeMetricsOptions {
     plausibleBounds?: PlausibleBounds;
     // Needed for Section C, optional toggle
     includeRatePerMin?: boolean;
+    // Needed for Section D
+    segments?: SegmentDefinition[];
 }
 
 // Needed for Section B
@@ -52,4 +54,31 @@ export interface SaccadeMetricResult {
     filtered: FilterTransparency;
     // Needed for Section C
     session: SessionRateMetrics;
+    // Needed for Section D
+    segmentSummaries: SegmentSummary[];
+    unassigned: UnassignedSummary;
+}
+
+// Needed for Section D
+export interface SegmentDefinition {
+    id:        string;
+    startTime: number;
+    endTime:   number;
+}
+
+// Needed for Section D
+export interface SegmentSummary {
+    id: string;
+    startTime:   number;
+    endTime:     number;
+    durationMs:  number;
+    durationSec: number;
+    count:       number;
+    ratePerSec:  number;
+    ratePerMin?: number;
+}
+
+// Needed for section D
+export interface UnassignedSummary {
+    count: number;
 }
