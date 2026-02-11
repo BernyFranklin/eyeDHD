@@ -10,7 +10,7 @@ import { type CSVData } from '../../electron/db/tables/csv';
 import RemoteStream from '../data/RemoteStream';
 
 export default function AnimationGenerator() {
-  const [csvData, setCsvData] = useState<RemoteStream | null>(null);
+  const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
@@ -86,14 +86,14 @@ export default function AnimationGenerator() {
     setIsLoading(false);
   };
 
-  const loadMoreRows = async () => {
-    if (!fileName) {
+  const loadMoreRows = async (filename: string | null) => {
+    if (!filename) {
       sendError('No file loaded');
       return;
     }
 
-    const file = await window.electron.csv.getMetadata(fileName);
-    setCsvData(await RemoteStream.create("CSVData", { file }));
+    const file = await window.electron.csv.getMetadata(filename);
+    setCsvStream(await RemoteStream.create("CSVData", { file }));
   };
 
   const sendAlert = (message: string) => {
@@ -129,7 +129,7 @@ export default function AnimationGenerator() {
 
     try {
       setFileName(selected_file as string);
-      await loadMoreRows();
+      await loadMoreRows(selected_file as string);
     } catch (err) {
       handleError(err);
     }
@@ -147,18 +147,26 @@ export default function AnimationGenerator() {
 
     // Reset reading progress if we have a filename
     if (fileName) {
-      csvData?.cancel();
+      csvStream?.cancel();
     }
 
     // Reset all state
     setFileName('');
-    setCsvData(null);
+    setCsvStream(null);
     setIsPlaying(false);
   };
 
   useEffect(() => {
     getFilesList();
   }, []);
+
+  useEffect(() => {
+  	if (csvStream === null) return;
+  	if (csvStream.isDone()) {
+   		setCsvStream(null);
+    	setIsPlaying(false);
+   	}
+  }, [csvStream]);
 
   return (
     <>
@@ -234,7 +242,7 @@ export default function AnimationGenerator() {
           {/*Conditionally render the AnimationContainer*/}
           {fileName !== '' && (
             <AnimationContainer
-              csvData={csvData}
+              csvStream={csvStream}
               loadMoreRows={loadMoreRows}
               isPlaying={isPlaying}
               setIsPlaying={setIsPlaying}
@@ -248,7 +256,7 @@ export default function AnimationGenerator() {
           {/* Export functionality */}
           {fileName !== '' && (
             <ExportManager
-              csvData={csvData}
+              csvStream={csvStream}
               fileName={fileName}
               onExportComplete={(result: any) => {
                 if (result.success) {

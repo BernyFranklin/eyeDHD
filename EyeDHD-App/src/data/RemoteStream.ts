@@ -46,7 +46,7 @@ export default class RemoteStream {
 		}
 
 		if (this.buf.length === 0 && !this.done) {
-			await window.electron.stream.pull(this.key, 50);
+			await window.electron.stream.pull(this.key, 1000);
 		}
 
 		return this.buf.shift() ?? null;
@@ -58,8 +58,6 @@ export default class RemoteStream {
 			if (value === null) {
 				break;
 			}
-
-			console.log("Yielding value:", value);
 
 			yield value;
 		}

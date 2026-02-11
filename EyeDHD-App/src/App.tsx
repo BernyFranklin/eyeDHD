@@ -31,7 +31,6 @@ function TestData() {
 				data.push(row as CSVData);
 			}
 
-			console.log(data);
 			setCsvData(data);
 		}
 
@@ -61,7 +60,6 @@ function App() {
   const [current, setCurrent] = useState(0);
   const [buttonsDisabled, setButtonsDisabled] = useState(false);
   const content = [
-  	<TestData />,
     <HomePage setCurrent={setCurrent} />,
     <CsvFileImport
       buttonsDisabled={buttonsDisabled}

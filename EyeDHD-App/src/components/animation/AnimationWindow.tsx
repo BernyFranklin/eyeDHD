@@ -10,7 +10,7 @@ import { type CSVData } from '../../../electron/db/tables/csv';
 import RemoteStream from '../../data/RemoteStream';
 
 type Props = {
-  csvData: RemoteStream | null;
+  csvStream: RemoteStream | null;
   loadMoreRows: () => void;
   isPlaying: boolean;
   shouldRecord?: boolean;
@@ -18,7 +18,7 @@ type Props = {
 
 // Main animation window component
 export default function AnimationWindow({
-  csvData,
+  csvStream,
   loadMoreRows,
   isPlaying,
   shouldRecord = false
@@ -27,11 +27,12 @@ export default function AnimationWindow({
   const [canvasReady, setCanvasReady] = useState(false);
   const [endReached, setEndReached] = useState(false);
   const [hasNewData, setHasNewData] = useState(false);
+  const [csvData, setCSVData] = useState<CSVData | null>(null);
 
   // Monitor current index and load more rows if needed
   useEffect(() => {
     // If not playing or no data, skip
-    if (!isPlaying || !csvData || csvData.isDone()) {
+    if (!isPlaying || !csvStream || csvStream.isDone()) {
       // End has been reached
       setEndReached(true);
       return;
@@ -39,31 +40,33 @@ export default function AnimationWindow({
 
     // Reset end reached when playing
     setEndReached(false);
-  }, [csvData, isPlaying, loadMoreRows]);
+  }, [csvStream, isPlaying, loadMoreRows]);
 
-  // useEffect(() => {
-  //   // If not playing or no data, skip
-  //   if (!isPlaying || !csvData) return;
+  useEffect(() => {
+    // If not playing or no data, skip
+    if (!isPlaying || !csvStream) return;
 
-  //   // Playback speed settings
-  //   const sourceHz = 200; // Original data frequency in Hz
-  //   const targetFps = 200; // Desired playback frequency in Hz
-  //   const frameSkip = Math.round(sourceHz / targetFps); // For skipping frames if needed to convert to new playback speed
+    // Playback speed settings
+    const targetFps = 200; // Desired playback frequency in Hz
 
-  //   // Add interval to update current index; For timing
-  //   // const interval = setInterval(() => {
-  //   //   // Update the current index based on frame skip
-  //   //   setCurrentIndex((prevIndex) => {
-  //   //     // Skip frames to maintain proper playback speed
-  //   //     const nextIndex = prevIndex + frameSkip;
+    // Add interval to update current index; For timing
+    const interval = setInterval(() => {
+    	csvStream[Symbol.asyncIterator]().next().then(({ value, done }) => {
+     		if (done) {
+       		csvStream.cancel();
+         	setEndReached(true);
+          setCSVData(null);
 
-  //   //     return nextIndex;
-  //   //   });
-  //   // }, 1000 / targetFps); // Read data at fps target
+          return;
+       	}
 
-  //   // Cleanup on unmount or when dependencies change
-  //   return () => clearInterval(interval);
-  // }, [csvData, isPlaying]);
+       	setCSVData(value as CSVData);
+     	});
+    }, 1000 / targetFps); // Read data at fps target
+
+    // Cleanup on unmount or when dependencies change
+    return () => clearInterval(interval);
+  }, [csvStream, isPlaying]);
 
   // Recording setup
   const mediaRecorderRef = useRef<MediaRecorder>(null);
@@ -79,7 +82,7 @@ export default function AnimationWindow({
     if (!recorder || !canvasReady) return;
 
     // Start when shouldRecord is true and we have data, and recorder is inactive
-    if (shouldRecord && isPlaying && csvData && recorder.state === 'inactive') {
+    if (shouldRecord && isPlaying && csvStream && recorder.state === 'inactive') {
       chunksRef.current = [];
       recorder.start();
       console.log('Recording started after inactive.');
@@ -101,14 +104,14 @@ export default function AnimationWindow({
       // );
       setFinishedRecording(true);
     }
-  }, [shouldRecord, isPlaying, csvData, endReached, canvasReady]);
+  }, [shouldRecord, isPlaying, csvStream, csvData, endReached, canvasReady]);
 
   // Handle new data arrival: if recording and playing, restart cleanly once.
   useEffect(() => {
     const recorder = mediaRecorderRef.current;
     if (!recorder || !canvasReady) return;
 
-    if (hasNewData && shouldRecord && isPlaying && csvData) {
+    if (hasNewData && shouldRecord && isPlaying && csvStream) {
       if (recorder.state === 'recording') {
         recorder.stop();
       }
@@ -118,7 +121,7 @@ export default function AnimationWindow({
       setHasNewData(false);
       setFinishedRecording(false);
     }
-  }, [hasNewData, shouldRecord, isPlaying, csvData, canvasReady]);
+  }, [hasNewData, shouldRecord, isPlaying, csvStream, csvData, canvasReady]);
 
   return (
     <Canvas

@@ -6,7 +6,7 @@ import { type CSVData } from '../../electron/db/tables/csv';
 import RemoteStream from '../data/RemoteStream';
 
 type Options = {
-  csvData: RemoteStream | null;
+  csvStream: RemoteStream | null;
   fileName: string;
   onExportComplete: any;
 };
@@ -14,7 +14,7 @@ type Options = {
 /**
  * ExportManager - Handles the animation export process using MediaRecorder
  */
-export default function ExportManager({ csvData, fileName, onExportComplete }: Options) {
+export default function ExportManager({ csvStream, fileName, onExportComplete }: Options) {
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStatus, setExportStatus] = useState('');
@@ -91,7 +91,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }: O
 
       const allData: CSVData[] = [];
 
-      for await (const row of csvData) {
+      for await (const row of csvStream) {
       	allData.push(row as CSVData);
       }
 
@@ -108,7 +108,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }: O
   };
 
   const startExport = async () => {
-    if (!csvData || csvData.isDone()) {
+    if (!csvStream || csvStream.isDone()) {
       setExportStatus('No data available for export');
       return;
     }
@@ -244,7 +244,7 @@ export default function ExportManager({ csvData, fileName, onExportComplete }: O
       <div style={styles.buttonRow}>
         <Button
           onClick={startExport}
-          disabled={isExporting || isLoadingData || !csvData || csvData.isDone()}
+          disabled={isExporting || isLoadingData || !csvStream || csvStream.isDone()}
           className="btn"
           buttonText={
             isLoadingData

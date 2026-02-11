@@ -14,14 +14,14 @@ const styles = {
 };
 
 type Props = {
-  csvData: RemoteStream | null;
+  csvStream: RemoteStream | null;
   loadMoreRows: any;
   isPlaying: boolean;
   setIsPlaying: any;
 };
 
 export default function AnimationContainer({
-  csvData,
+  csvStream,
   loadMoreRows,
   isPlaying,
   setIsPlaying
@@ -37,7 +37,7 @@ export default function AnimationContainer({
         animation, use the export options provided.
       </p>
       <AnimationWindow
-        csvData={csvData}
+        csvStream={csvStream}
         loadMoreRows={loadMoreRows}
         isPlaying={isPlaying}
       />
