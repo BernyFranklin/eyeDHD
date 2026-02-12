@@ -5,8 +5,7 @@ import AnimationContainer from './AnimationContainer';
 import ExportManager from './ExportManager';
 import Button from './Button';
 
-import { type Metadata } from '../../electron/db/tables/metadata';
-import { type CSVData } from '../../electron/db/tables/csv';
+import { type CSVData, type Metadata } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
 export default function AnimationGenerator() {

@@ -11,7 +11,7 @@ import {
   CheckDataValidity
 } from '../../utils/animationUtil.js';
 
-import { type CSVData } from '../../../electron/db/tables/csv';
+import { type CSVData } from '../../types';
 
 type Props = {
   csvData: CSVData | null;

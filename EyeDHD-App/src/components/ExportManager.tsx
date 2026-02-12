@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import FrameExporter from './animation/FrameExporter';
 import Button from './Button';
 
-import { type CSVData } from '../../electron/db/tables/csv';
+import { type CSVData } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
 type Options = {

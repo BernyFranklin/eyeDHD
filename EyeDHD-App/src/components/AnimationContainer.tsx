@@ -3,7 +3,7 @@ import React from 'react';
 import AnimationWindow from './animation/AnimationWindow';
 import Button from './Button';
 
-import { type CSVData } from '../../electron/db/tables/csv';
+import { type CSVData } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
 const styles = {

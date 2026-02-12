@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { CSVData } from '../../electron/db/tables/csv';
+
+import { type CSVData } from '../types';
 
 type Props = {
   fileName: string;

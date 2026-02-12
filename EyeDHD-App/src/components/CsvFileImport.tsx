@@ -3,7 +3,7 @@ import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
-import { type CSVData } from '../../electron/db/tables/csv';
+import { type Error, type CSVData } from '../types';
 
 type Props = {
   buttonsDisabled: boolean;
@@ -98,7 +98,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 
         setCsvData(rows);
       }
-    } catch (err: any) {
+    } catch (err) {
       handleError(err);
     }
 
@@ -128,7 +128,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
       setShowCleaningResults(true);
 
       // Start the cleaning process
-      const result = await window.electron.csv.cleanData(fileName);
+      await window.electron.csv.cleanData(fileName);
 
       // Get initial progress immediately
       try {
@@ -184,7 +184,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
           }
         }
       }, 50); // Check every 50ms for more responsive updates
-    } catch (err: any) {
+    } catch (err) {
       setButtonsDisabled(false);
       //clearInterval(progressInterval);
       setIsCleaning(false);
@@ -217,7 +217,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
       } else {
         sendError(result.message || 'Export failed');
       }
-    } catch (err: any) {
+    } catch (err) {
       sendError(err.message || 'Failed to export data');
     } finally {
       setIsLoading(false);
@@ -252,7 +252,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
     }, 4000);
   };
 
-  const handleError = (err: any) => {
+  const handleError = (err: Error) => {
     sendError(err.message);
   };
 

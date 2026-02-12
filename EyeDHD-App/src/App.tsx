@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+
 import './App.css';
 import HomePage from './components/HomePage';
 import CsvFileImport from './components/CsvFileImport';
@@ -8,7 +9,7 @@ import LoadingOverlay from './components/LoadingOverlay';
 import Navbar from './components/Navbar';
 import SidebySide from './components/SidebySide';
 import RemoteStream from './data/RemoteStream';
-import { CSVData } from '../electron/db/tables/csv';
+import { type CSVData } from "./types";
 
 function TestData() {
 	const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);

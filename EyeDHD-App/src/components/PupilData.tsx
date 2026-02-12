@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CSVData } from '../../electron/db/tables/csv';
+
+import { type CSVData } from '../types';
 
 type Props = {
   csvData: CSVData[];

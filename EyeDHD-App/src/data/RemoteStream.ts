@@ -1,5 +1,5 @@
 import { type DataType, type StreamKey, type StreamType } from "../../electron/db/DatabaseManager";
-import { Metadata } from "../../electron/db/tables/metadata";
+import { type Metadata } from '../types';
 
 export default class RemoteStream {
 	private buf: DataType[] = [];
