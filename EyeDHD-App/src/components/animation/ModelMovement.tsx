@@ -9,7 +9,7 @@ import {
   GetYaw,
   NormalizePupilDilation,
   CheckDataValidity
-} from '../../utils/animationUtil.js';
+} from '../../utils/animationUtil';
 
 import { type CSVData } from '../../types';
 

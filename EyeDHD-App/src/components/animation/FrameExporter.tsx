@@ -5,9 +5,10 @@ import { Environment, OrthographicCamera } from '@react-three/drei';
 
 // Component to render the 3D eye model
 import RotatingModel from './ModelMovement';
+import { CSVData } from '../../types';
 
 type Props = {
-  csvData: Array<any>; // CSV data array
+  csvData: CSVData; // CSV data
   onProgress: (progress: number, currentFrame: number, totalFrames: number) => void; // Progress callback
   onExportComplete: (result: {
     success: boolean;
@@ -255,7 +256,6 @@ export default function FrameExporter({
           {/* Left Eye */}
           <RotatingModel
             csvData={csvData}
-            currentIndex={Math.min(currentIndex, csvData.length - 1)}
             eyePosition="Left"
             position={[-2, 0, 0]}
             isPlaying={isExporting}
@@ -264,7 +264,6 @@ export default function FrameExporter({
           {/* Right Eye */}
           <RotatingModel
             csvData={csvData}
-            currentIndex={Math.min(currentIndex, csvData.length - 1)}
             eyePosition="Right"
             position={[2, 0, 0]}
             isPlaying={isExporting}

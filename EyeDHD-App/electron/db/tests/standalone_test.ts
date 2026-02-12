@@ -16,7 +16,7 @@ const sampleDataRows = [
 
 // ===== DATA CLEANING FUNCTIONS (from DataCleaner.js) =====
 
-function parseCsvLine(line) {
+function parseCsvLine(line: string) {
   const result = [];
   const str = String(line).replace(/\r$/, '');
   let field = '';
@@ -49,7 +49,7 @@ function parseCsvLine(line) {
   return result;
 }
 
-function parseNumeric(value) {
+function parseNumeric(value: string) {
   if (!/^-?\d*\.?\d+([eE][+-]?\d+)?$/.test(value)) {
     return null;
   }
@@ -62,7 +62,7 @@ function parseNumeric(value) {
   return Number.isInteger(num) ? parseInt(value, 10) : num;
 }
 
-function cleanValue(value) {
+function cleanValue(value: string) {
   if (value === undefined || value === null) {
     return null;
   }
@@ -112,7 +112,7 @@ function cleanValue(value) {
   return trimmed;
 }
 
-function sanitizeEyeCoordinate(value) {
+function sanitizeEyeCoordinate(value: string | number) {
   if (value === null || value === undefined) return null;
 
   if (typeof value === 'number') {
@@ -135,7 +135,7 @@ function sanitizeEyeCoordinate(value) {
   return null;
 }
 
-function sanitizeEyeStatus(value) {
+function sanitizeEyeStatus(value: string | number) {
   if (value === null || value === undefined) return null;
 
   const stringValue = String(value).toUpperCase().trim();
@@ -154,15 +154,15 @@ function sanitizeEyeStatus(value) {
     GOOD: 'VALID',
     BAD: 'INVALID',
     ERROR: 'INVALID'
-  };
+  } as Record<string, string>;
 
   return statusMapping[stringValue] || 'INVALID';
 }
 
-function cleanRow(rawLine, headers) {
+function cleanRow(rawLine: string, headers: string[]) {
   try {
     const values = parseCsvLine(rawLine);
-    const cleaned = {};
+    const cleaned = {} as Record<string, any>;
 
     headers.forEach((column, index) => {
       if (index < values.length) {
@@ -175,7 +175,7 @@ function cleanRow(rawLine, headers) {
     return validateRow(cleaned);
   } catch (error) {
     console.warn(`   ERROR cleaning row: ${error.message}`);
-    const errorRow = {};
+    const errorRow = {} as Record<string, any>;
     headers.forEach((column) => {
       errorRow[column] = null;
     });
@@ -184,7 +184,7 @@ function cleanRow(rawLine, headers) {
   }
 }
 
-function validateRow(row) {
+function validateRow(row: Record<string, string | number>) {
   const eyePositions = ['Left', 'Right'];
   const coordinates = ['X', 'Y', 'Z'];
 

@@ -1,11 +1,13 @@
+import { CSVData } from "../types";
+
 // Calculate pitch angle from forward vector
-export function GetPitch(x, y, z) { return Math.atan2(-y, Math.sqrt(x * x + z * z)); }
+export function GetPitch(x: number, y: number, z: number) { return Math.atan2(-y, Math.sqrt(x * x + z * z)); }
 
 // Calculate yaw angle from forward vector
-export function GetYaw(x, y, z) { return Math.atan2(x, z); }
+export function GetYaw(x: number, y: number, z: number) { return Math.atan2(x, z); }
 
 // Normalizes pupil dilation from mm to 0-1 range
-export function NormalizePupilDilation(dilationInMM, minMM = 1, maxMM = 8) {
+export function NormalizePupilDilation(dilationInMM: number, minMM = 1, maxMM = 8) {
     if (typeof dilationInMM !== 'number' || Number.isNaN(dilationInMM) || !Number.isFinite(dilationInMM)) {
         return 0; // Return 0 for invalid input
     }
@@ -18,7 +20,7 @@ export function NormalizePupilDilation(dilationInMM, minMM = 1, maxMM = 8) {
 }
 
 // Check data validity for angle and required fields
-export function CheckDataValidity(angle, row) {
+export function CheckDataValidity(angle: number, row: CSVData) {
     let isValid = true;
 
     // Validate angle
@@ -33,11 +35,13 @@ export function CheckDataValidity(angle, row) {
     // Check all required fields
     for(const pos of positions) {
         for(const ax of axis) {
-            let key = `${pos}EyeForward${ax}`;
+            const key = `${pos}EyeForward${ax}`;
 
             // Check if the field is missing or empty
-            if(row[key] === undefined || row[key] === null) { 
-                isValid = false; 
+            if(
+            	(row as any)[key] === undefined || (row as any)[key] === null
+            ) {
+                isValid = false;
                 break;
             }
         }
