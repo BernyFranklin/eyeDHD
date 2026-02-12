@@ -6,7 +6,11 @@ import type {
     FilterReason,
     SegmentSummary,
     SegmentDefinition, 
-    DistributionStats
+    DistributionStats,
+    IsiFilterReason,
+    IsiFilterTransparency,
+    IsiHistogramBin,
+    IsiSegmentSummary,
 } from "./types";
 
 // Needed for Section B
@@ -70,6 +74,15 @@ function computeDistributionStats(values: number[]): DistributionStats {
     const std = populationStd(sorted, mean);                // Compute population standard deviation 
 
     return { min, max, mean, median, p10, p50, p90, std };  // Return all computed stats in a structured object
+}
+
+// Needed for Section E
+// Small helper to increment Partial<Record<...>> without forcing zero keys into object
+function incPartialCount<K extends string>(
+    map: Partial<Record<K, number>>,
+    key: K
+) {
+    map[key] = (map[key] ?? 0) + 1;                         // Increment count for this key, initializing to 0 if it doesn't exist
 }
 
 // Needed for Section A
@@ -234,11 +247,148 @@ export function computeSaccadeMetrics(
             }
         }
     }
+
+    // Needed for Section F
+    // 1.) Compute raw ISI series between KEPT saccades
+    const isiSeriesRaw: number[] = [];                              // Init array to hold Inter-Saccadic Intervals
+    for (let i = 0; i < kept.length -1; i++) {
+        const prev = kept[i];                                       // Previous saccade in the kept array
+        const next = kept[i + 1];                                   // Next saccade in the kept array
+
+        // ISI definition: time between end of previous and start of next
+        const isi = next.startTime - prev.endTime;                  // Compute ISI as the time between the end of the previous saccade and the start of the next saccade
+        isiSeriesRaw.push(isi);                                     // Add the computed ISI to the isiSeriesRaw array
+    }
+    // 2.) Filter ISIs
+    const isiFiltered: IsiFilterTransparency = {                    // Init ISI filter transparency object to track how many ISIs are filtered out and for what reasons
+        totalFiltered: 0,
+        byReason: {},                                               // We will populate this object with counts for each ISI filter reason as we process the ISI series  
+    };
+
+    const isiBounds = options.isiPlausibleBounds?.isiMs;            // Get ISI plausible bounds from options, if provided
+    const isiSeries: number[] = [];                                 // Init array to hold filtered ISI values that are considered plausible based on provided bounds
+
+    for (const isi of isiSeriesRaw) {                               // For each ISI in the raw series, check against plausible bounds and categorize reasons for filtering if applicable
+        const reasons: IsiFilterReason[] = [];                      // Init reasons for filtering this ISI, if any. Multiple reasons possible per ISI.
+        
+        // Negative ISI means overlap (next starts before prev ends)
+        // Also treat non-finite as invalid for safety
+        if (!Number.isFinite(isi) || isi < 0) {                    // Check if ISI is negative or non-finite, which indicates an overlap or invalid value. If so, add reason for filtering.
+            reasons.push("isi_negative_or_overlap");
+        }
+        // Optional plausibility bounds for ISI
+        if (reasons.length === 0 && isiBounds && Number.isFinite(isi)) {                   // If ISI bounds provided and a finite number, check if it falls within the plausible range. If not, add reason for filtering.
+            const { min, max } = isiBounds;                        // Destructure min and max for ISI bounds
+            if (!inRange(isi, min, max)) {
+                reasons.push("isi_out_of_bounds");
+            }
+        }
+
+        if (reasons.length === 0) {                                // If no reasons for filtering, keep this ISI   
+            isiSeries.push(isi);
+            continue;
+        }
+
+        isiFiltered.totalFiltered += 1;                            // Increment total filtered count for ISIs
+        for (const r of reasons) {                                 // Increment count for each reason this ISI was filtered out
+            incPartialCount(isiFiltered.byReason, r);
+        }
+    }
+
+    // 3.) ISI distribution stats
+    const isiStats = computeDistributionStats(isiSeries);          // Compute distribution stats for the filtered ISI series using the helper function
+
+    // 4.) ISI histogram
+    const isiHistogramBins: IsiHistogramBin[] = [];                // Init array to hold histogram bins for ISI distribution
+    const histCfg = options.isiHistogramBinWidthMs;                // Get histogram configuration from options, if provided
+
+    if (histCfg && histCfg.binSizeMs > 0 && histCfg.maxMs > 0) {   // If histogram configuration provided and valid, compute histogram bins
+        const binSize = histCfg.binSizeMs;                         // Bin size in milliseconds from configuration
+        const maxMs =   histCfg.maxMs;                             // Maximum ISI in milliseconds to consider for histogram from configuration
+
+        const binCount = Math.floor(maxMs / binSize);              // Compute the number of bins based on max ISI and bin size
+        for (let i = 0; i < binCount; i++) {                       // For each bin index, compute the range of ISI values that fall into this bin and count how many ISIs in the series fall in range
+            isiHistogramBins.push({
+                startMs: i * binSize,                              // Start of bin range in milliseconds
+                endMs: (i + 1) * binSize,                          // End of bin range in milliseconds
+                count: 0,
+            });
+        }
+
+        // Bin rule: [startMs, endMs)
+        for (const isi of isiSeries) {
+            if (!Number.isFinite(isi)) continue;                   // Skip non-finite ISI values for histogram counting
+            if (isi < 0 || isi >= maxMs) continue;                 // Skip ISI values that are out of bounds for the histogram
+
+            const idx = Math.floor(isi / binSize);                 // Compute the bin index for this ISI value based on its magnitude and the configured bin size
+            if (idx >= 0 && idx < isiHistogramBins.length) {       // If the computed bin index is valid, increment the count for that bin
+                isiHistogramBins[idx].count += 1;
+            }
+        }
+    }
+
+    // 5.) ISI per segment
+    const isiBySegment: IsiSegmentSummary[] = [];                  // Init array to hold ISI summaries for each segment
+    const isiSegmentsMeta = { unassignedIsiCount: 0 };                // Init metadata object to track how many ISIs are unassigned to any segment
+
+    if (options.isiBySegment && segments.length > 0) {
+        // Initialize empty segment buckets for all segments
+        for (const seg of segments) {
+            isiBySegment.push({
+                id: seg.id,
+                isiSeries: [],
+                distributions: {
+                    isiMs: { min: 0, max: 0, mean: 0, median: 0, p10: 0, p50: 0, p90: 0, std: 0 },
+                },
+            });
+        }
+        // Assign ISIs using the previous saccade's start time
+        for (let i = 0; i < kept.length -1; i++) {
+            const prev = kept[i];
+            const isi = isiSeriesRaw[i];
+
+            let valid = true;
+
+            if (!Number.isFinite(isi) || isi < 0) valid = false;
+            if (valid && isiBounds) {
+                const { min, max } = isiBounds;
+                if (!inRange(isi, min, max)) valid = false;
+            }
+
+            if (!valid) continue;
+
+            const t = prev.startTime;                              // Use the start time of the previous saccade to determine segment assignment for this ISI
+            const segIdx = segments.findIndex(seg => t >= seg.startTime && t < seg.endTime);  
+
+            if (segIdx === -1) {
+                isiSegmentsMeta.unassignedIsiCount += 1;              // If no segment was found that contains this ISI's reference time, increment the unassigned count in the metadata
+                continue; 
+            }
+            isiBySegment[segIdx].isiSeries.push(isi);              // If a segment was found, add this ISI to the isiSeries array for that segment
+        }
+
+        // Compute ISI distributions for each segment
+        for (const seg of isiBySegment) {
+            seg.distributions.isiMs = computeDistributionStats(seg.isiSeries);   // Compute distribution stats for the ISI series of this segment using the helper function
+        }
+    }
+
     return {                                                        // Return SaccadeMetricResult object containing all computed metrics and summaries
         perSaccade: kept, 
         filtered, 
         session,
         segmentSummaries,
-        unassigned };
-}
+        unassigned,
     
+        isiSeries,
+        isiFiltered,
+        isiDistributions: {
+            isiMs: isiStats,
+        },
+        isiHistogram: {
+            bins: isiHistogramBins,
+        },
+        isiBySegment,
+        isiSegmentsMeta,
+    };
+}

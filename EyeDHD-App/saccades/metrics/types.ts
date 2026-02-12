@@ -23,11 +23,15 @@ export interface PlausibleBounds {
 
 // Needed for Section B
 export interface SaccadeMetricsOptions {
-    plausibleBounds?:   PlausibleBounds;
+    plausibleBounds?:        PlausibleBounds;
     // Needed for Section C, optional toggle
-    includeRatePerMin?: boolean;
+    includeRatePerMin?:      boolean;
     // Needed for Section D
-    segments?:          SegmentDefinition[];
+    segments?:               SegmentDefinition[];
+    // Needed for Section F
+    isiPlausibleBounds?:     IsiPlausibleBounds;
+    isiHistogramBinWidthMs?: IsiHistogramBinWidthMs;
+    isiBySegment?:           boolean; 
 }
 
 // Needed for Section B
@@ -59,7 +63,16 @@ export interface SaccadeMetricResult {
     // Needed for Section D
     segmentSummaries: SegmentSummary[];
     unassigned:       UnassignedSummary;
-}
+    // Needed for Section F
+    isiSeries:        number[];
+    isiFiltered:      IsiFilterTransparency;
+    isiDistributions:  {
+        isiMs:        DistributionStats;
+    };
+    isiHistogram:     IsiHistogram;
+    isiBySegment:     IsiSegmentSummary[];
+    isiSegmentsMeta:  IsiSegmentsMeta;
+} 
 
 // Needed for Section D
 export interface SegmentDefinition {
@@ -100,4 +113,50 @@ export interface DistributionStats {
 // Needed for Section E
 export interface SessionDistributions {
     amplitudeDeg: DistributionStats;
+}
+
+// Needed for Section F
+export type IsiFilterReason = "isi_negative_or_overlap" | "isi_out_of_bounds";
+
+// Transparency for ISI filtering
+export interface IsiFilterTransparency {
+    totalFiltered: number;
+    byReason:      Partial<Record<IsiFilterReason, number>>;
+}
+
+// Bounds for ISI plausibility checks
+export interface IsiPlausibleBounds {
+    isiMs?: PlausibleRange;
+}
+
+// Histogram options for ISI (fixed-width bins)
+export interface IsiHistogramBinWidthMs {
+    binSizeMs: number;
+    maxMs:     number;
+}
+
+// Histogram output bin shape
+export interface IsiHistogramBin {
+    startMs: number;
+    endMs:   number;
+    count:   number;
+}
+
+// Histogram output shape
+export interface IsiHistogram {
+    bins: IsiHistogramBin[];
+}
+
+// Segment level ISI summary shape
+export interface IsiSegmentSummary {
+    id:            string;
+    isiSeries:     number[];
+    distributions: {
+        isiMs:     DistributionStats;
+    };
+}
+
+// Metadata about ISI segment assignment
+export interface IsiSegmentsMeta {
+    unassignedIsiCount: number;
 }
