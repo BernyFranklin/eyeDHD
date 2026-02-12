@@ -657,14 +657,11 @@ async function exportUsingMediaRecorder(session: any) {
 	await exportImageSequence(session);
 }
 
-type StartArgs = { type: StreamType, file: Metadata };
-type StartRet = Promise<StreamKey>;
-ipcMain.handle('stream:start', async (_, { type, file }: StartArgs): StartRet => {
+ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => {
 	return await dbmgr.startStream(type, file);
 })
 
-type PullArgs = { key: StreamKey, count: number };
-ipcMain.handle('stream:pull', async (e, { key, count }: PullArgs) => {
+ipcMain.handle('stream:pull', async (e, { key, count }) => {
 	const { done } = await dbmgr.pullStream(key, count, (rows) => {
 		e.sender.send('stream:data', { key, rows });
 	});
@@ -674,7 +671,7 @@ ipcMain.handle('stream:pull', async (e, { key, count }: PullArgs) => {
 	}
 });
 
-ipcMain.on('stream:cancel', (_, { key }: { key: StreamKey }) => {
+ipcMain.on('stream:cancel', (_, { key }) => {
 	dbmgr.cancelStream(key);
 })
 
