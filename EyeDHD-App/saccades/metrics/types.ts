@@ -115,7 +115,7 @@ export interface SessionDistributions {
     amplitudeDeg: DistributionStats;
 }
 
-// Needed for Section E
+// Needed for Section F
 export type IsiFilterReason = "isi_negative_or_overlap" | "isi_out_of_bounds";
 
 // Transparency for ISI filtering
