@@ -611,8 +611,8 @@ describe('Saccade Metrics', () => {
             expect(result.isiSeries).toEqual([150, 1050, 250]);
 
             // Contract: per-segment ISI breakdown exists when isiBySegment is true
-            const seg1 = result.isiBysegment.find((s: any) => s.id === 'seg1');
-            const seg2 = result.isiBysegment.find((s: any) => s.id === 'seg2');
+            const seg1 = result.isiBySegment.find((s: any) => s.id === 'seg1');
+            const seg2 = result.isiBySegment.find((s: any) => s.id === 'seg2');
 
             expect(seg1.isiSeries).toEqual([150, 1050]);
             expect(seg2.isiSeries).toEqual([250]);
