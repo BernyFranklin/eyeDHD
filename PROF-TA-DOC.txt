@@ -2,8 +2,6 @@
 // Test Cases for our Saccade Detection feature
 //===========================================================
 
-Link to Google Sheets: https://docs.google.com/spreadsheets/d/16C_4vb_WjSYdpQtnMvQpkAB7O51acZFwC2ZsP3M7mp0/edit?usp=sharing
-
 //-----------------------------------------------------------
 // Summary
 //-----------------------------------------------------------
