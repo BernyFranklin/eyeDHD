@@ -15,7 +15,6 @@ export default function AnimationGenerator() {
   const [alertMessage, setAlertMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isHidden, setIsHidden] = useState(true);
 
   const [files, setFiles] = useState<string[]>([]);
@@ -152,7 +151,6 @@ export default function AnimationGenerator() {
     // Reset all state
     setFileName('');
     setCsvStream(null);
-    setIsPlaying(false);
   };
 
   useEffect(() => {
@@ -163,7 +161,6 @@ export default function AnimationGenerator() {
   	if (csvStream === null) return;
   	if (csvStream.isDone()) {
    		setCsvStream(null);
-    	setIsPlaying(false);
    	}
   }, [csvStream]);
 
@@ -239,11 +236,9 @@ export default function AnimationGenerator() {
             </form>
           )}
           {/*Conditionally render the AnimationContainer*/}
-          {fileName !== '' && (
+          {fileName !== '' && csvStream && (
             <AnimationContainer
               csvStream={csvStream}
-              isPlaying={isPlaying}
-              setIsPlaying={setIsPlaying}
             />
           )}
         </div>

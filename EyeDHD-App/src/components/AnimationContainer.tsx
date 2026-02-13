@@ -15,14 +15,10 @@ const styles = {
 
 type Props = {
   csvStream: RemoteStream | null;
-  isPlaying: boolean;
-  setIsPlaying: any;
 };
 
 export default function AnimationContainer({
   csvStream,
-  isPlaying,
-  setIsPlaying
 }: Props) {
   return (
     <div
@@ -36,14 +32,8 @@ export default function AnimationContainer({
       </p>
       <AnimationWindow
         csvStream={csvStream}
-        isPlaying={isPlaying}
       />
       <div className="animation-controls">
-        <Button
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="btn"
-          buttonText={isPlaying ? 'Pause Animation' : 'Play Animation'}
-        />
       </div>
     </div>
   );

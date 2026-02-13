@@ -2,4 +2,6 @@
 - Work on eye dilation chart
 - Repurpose Animation Window for animation generation, potentially remove animation preview
 - Make saccade component
--
+- Merge AnimationGenerator and Export Manager and wrap three canvas with CanvasRecorder
+- Show animation "preview" while recording
+- Maybe add some sort of progress to data stream to simplify progress bars

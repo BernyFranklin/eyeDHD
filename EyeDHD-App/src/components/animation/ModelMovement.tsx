@@ -17,15 +17,13 @@ type Props = {
   csvData: CSVData | null;
   eyePosition: 'Left' | 'Right';
   position?: [number, number, number];
-  isPlaying: boolean;
 };
 
 // Component for a rotating 3D model representing an eye
 export default function RotatingModel({
   csvData,
   eyePosition,
-  position = [0, 0, 0],
-  isPlaying
+  position = [0, 0, 0]
 }: Props) {
   // Load the GLTF model
   const { scene } = useGLTF('/eye_model.glb');
@@ -56,7 +54,7 @@ export default function RotatingModel({
   // Update target rotation based on CSV data
   useEffect(() => {
     // If no data or not playing, skip
-    if (!isPlaying || !csvData) return;
+    if (!csvData) return;
 
 		const row = csvData;
 		// Get the forward vector components - note uppercase first letter
@@ -69,7 +67,7 @@ export default function RotatingModel({
 		const yaw = GetYaw(forwardX, forwardY, forwardZ);
 
 		// Update target rotation if eye status is VALID
-		if (row[`${eyePosition}EyeStatus`] === 'VALID' && isPlaying) {
+		if (row[`${eyePosition}EyeStatus`] === 'VALID') {
 			if (CheckDataValidity(pitch, row) && CheckDataValidity(yaw, row)) {
 				targetRotation.current = { x: pitch, y: yaw, z: 0 };
 				targetPupilDilation.current = NormalizePupilDilation(
@@ -77,7 +75,7 @@ export default function RotatingModel({
 				);
 			}
   	}
-  }, [csvData, eyePosition, isPlaying]);
+  }, [csvData, eyePosition]);
 
   // Smoothly interpolate current rotation towards target rotation
   useFrame(() => {

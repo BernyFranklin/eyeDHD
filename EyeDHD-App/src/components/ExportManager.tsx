@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import FrameExporter from './animation/FrameExporter';
 import Button from './Button';
 
 import { type CSVData } from '../types';
@@ -262,13 +261,7 @@ export default function ExportManager({ csvStream, fileName, onExportComplete }:
 
       {/* Hidden frame exporter component that uses MediaRecorder */}
       {isExporting && fullCsvData && (
-        <FrameExporter
-          csvData={fullCsvData}
-          fileName={fileName}
-          onProgress={handleProgress}
-          onExportComplete={handleExportComplete}
-          isExporting={isExporting}
-        />
+      	<></>
       )}
     </>
   );

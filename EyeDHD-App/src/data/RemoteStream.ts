@@ -68,7 +68,9 @@ export default class RemoteStream {
 	}
 
 	cancel() {
-		window.electron.stream.cancel(this.key);
-		this.done = true;
+		if (!this.done) {
+			window.electron.stream.cancel(this.key);
+			this.done = true;
+		}
 	}
 }
