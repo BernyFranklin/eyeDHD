@@ -385,6 +385,28 @@ export function computeSaccadeMetrics(
         }
     }
 
+    // Needed for Section G: per-saccade rows and series for plotting
+    const keptOrdered = stableChronoSort(kept);                     // Get a chronologically stable ordering of the kept saccades for consistent per-saccade output and plotting
+
+    const segDefs = options.segments ?? [];
+
+    function segmentIdForStart(t: number): string | null {
+        if (segDefs.length === 0) return null;
+        const seg = segDefs.find(s => t >= s.startTime && t < s.endTime);
+        return seg ? seg.id : null;
+    }
+
+    const perSaccadeRows = keptOrdered.map((s, idx) => ({
+        index: idx,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        durationMs: s.durationMs,
+        durationSec: s.durationSec,
+        amplitudeDeg: s.amplitudeDeg,
+        ratePerSec: s.ratePerSec,
+        segmentId: segmentIdForStart(s.startTime),
+    }));
+
     return {                                                        // Return SaccadeMetricResult object containing all computed metrics and summaries
         perSaccade: kept, 
         filtered, 
@@ -402,5 +424,16 @@ export function computeSaccadeMetrics(
         },
         isiBySegment,
         isiSegmentsMeta,
+
+        // Section G
+        perSaccadeRows,
+        series: {
+            saccadeRatePerSecOverTime: [],
+            amplitudeDegOverTime: [],
+        },
+        csv: {
+            sessionSummaryRow: null,
+            segmentSummaryRows: [],
+        },
     };
 }
