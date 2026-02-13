@@ -1,6 +1,6 @@
 // React and Three.js imports
 import { Canvas } from '@react-three/fiber';
-import React, { Suspense, useRef, useEffect, useState } from 'react';
+import React, { Suspense, forwardRef, useEffect, useState, SetStateAction, type Dispatch } from 'react';
 import { Environment, OrbitControls, OrthographicCamera } from '@react-three/drei';
 
 // Component to render and rotate the 3D eye model
@@ -9,17 +9,19 @@ import { type CSVData } from '../../types';
 import RemoteStream from '../../data/RemoteStream';
 
 type Props = {
-	csvStream: RemoteStream | null;
+	csvStream: RemoteStream;
+	isRecording: boolean;
+	finished: boolean;
+	setFinished: Dispatch<SetStateAction<boolean>>
 };
 
 // Main animation window component
-export default function AnimationWindow({ csvStream }: Props) {
-	const [endReached, setEndReached] = useState(false);
+export const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({ csvStream, isRecording, finished, setFinished }: Props, ref) => {
 	const [csvData, setCSVData] = useState<CSVData | null>(null);
 
 	useEffect(() => {
 		// If not playing or no data, skip
-		if (!csvStream) return;
+		if (!isRecording || finished) return;
 
 		// Playback speed settings
 		const targetFps = 200; // Desired playback frequency in Hz
@@ -28,9 +30,8 @@ export default function AnimationWindow({ csvStream }: Props) {
 		const interval = setInterval(() => {
 			csvStream.next().then(({ value, done }) => {
 				if (done) {
-					setEndReached(true);
+					setFinished(true);
 					setCSVData(null);
-					csvStream = null;
 
 					return;
 				}
@@ -41,7 +42,7 @@ export default function AnimationWindow({ csvStream }: Props) {
 
 		// Cleanup on unmount or when dependencies change
 		return () => clearInterval(interval);
-	}, [csvStream]);
+	}, [finished]);
 
 	return (
 		<Canvas
@@ -49,6 +50,7 @@ export default function AnimationWindow({ csvStream }: Props) {
 			onCreated={({ gl }) => {
 
 			}}
+			ref={ref}
 		>
 			<OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
 			<OrbitControls enablePan={true} enableZoom={true} />
@@ -71,4 +73,4 @@ export default function AnimationWindow({ csvStream }: Props) {
 			</Suspense>
 		</Canvas>
 	);
-}
+});
