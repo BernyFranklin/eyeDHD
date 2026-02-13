@@ -766,8 +766,7 @@ describe('Saccade Metrics', () => {
             expect(seg2.durationSec).toBeCloseTo(2, 6);
             expect(seg2.ratePerSec).toBeCloseTo(0, 6);
             expect(seg2.ratePerMin).toBeUndefined();
-    });
-
+        });
     });
 
     describe('H) Ordering guarantees', () => {
