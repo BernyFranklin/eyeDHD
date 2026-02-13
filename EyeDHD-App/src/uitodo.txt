@@ -1,0 +1,5 @@
+- Finish converting Animation and file export to use RemoteStream
+- Work on eye dilation chart
+- Repurpose Animation Window for animation generation, potentially remove animation preview
+- Make saccade component
+-

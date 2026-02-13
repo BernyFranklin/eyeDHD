@@ -1,11 +1,6 @@
 # eyeDHD
 This is the eye tracking tool to be used for the Psych Department in diagnosing ADHD with objective data.
 
-<h2>For Lab Instructor:</h2>
-<p>
-	Link to Google Sheets for <a href="https://docs.google.com/spreadsheets/d/16C_4vb_WjSYdpQtnMvQpkAB7O51acZFwC2ZsP3M7mp0/edit?usp=sharing">Test Cases</a>
-</p>
-
 <h2>Overview</h2>
 <p>
   The Psychology Department at Fresno State has been conducting a study utilizing a mixed reality simulation to find a way to diagnose ADHD using objective data, as opposed to subjective data.

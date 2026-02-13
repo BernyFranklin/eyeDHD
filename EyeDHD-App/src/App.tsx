@@ -27,7 +27,7 @@ function TestData() {
 		const loadData = async () => {
 			const data = [] as CSVData[];
 			for await (const row of csvStream) {
-				if (data.length > 10) break;
+				//if (data.length > 10) break;
 
 				data.push(row as CSVData);
 			}
@@ -36,7 +36,7 @@ function TestData() {
 		}
 
 		loadData().then(() => {
-			csvStream.cancel();
+			//csvStream.cancel();
 			setCsvStream(null);
 		});
 	}, [csvStream]);

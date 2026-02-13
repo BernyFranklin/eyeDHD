@@ -10,143 +10,140 @@ import { type CSVData } from '../../types';
 import RemoteStream from '../../data/RemoteStream';
 
 type Props = {
-  csvStream: RemoteStream | null;
-  loadMoreRows: () => void;
-  isPlaying: boolean;
-  shouldRecord?: boolean;
+	csvStream: RemoteStream | null;
+	isPlaying: boolean;
+	shouldRecord?: boolean;
 };
 
 // Main animation window component
 export default function AnimationWindow({
-  csvStream,
-  loadMoreRows,
-  isPlaying,
-  shouldRecord = false
+	csvStream,
+	isPlaying,
+	shouldRecord = false
 }: Props) {
-  const [finishedRecording, setFinishedRecording] = useState(false);
-  const [canvasReady, setCanvasReady] = useState(false);
-  const [endReached, setEndReached] = useState(false);
-  const [hasNewData, setHasNewData] = useState(false);
-  const [csvData, setCSVData] = useState<CSVData | null>(null);
+	const [finishedRecording, setFinishedRecording] = useState(false);
+	const [canvasReady, setCanvasReady] = useState(false);
+	const [endReached, setEndReached] = useState(false);
+	const [hasNewData, setHasNewData] = useState(false);
+	const [csvData, setCSVData] = useState<CSVData | null>(null);
 
-  // Monitor current index and load more rows if needed
-  useEffect(() => {
-    // If not playing or no data, skip
-    if (!isPlaying || !csvStream || csvStream.isDone()) {
-      // End has been reached
-      setEndReached(true);
-      return;
-    }
+	// Monitor current index and load more rows if needed
+	useEffect(() => {
+		// If not playing or no data, skip
+		if (!isPlaying || !csvStream || csvStream.isDone()) {
+			// End has been reached
+			setEndReached(true);
+			return;
+		}
 
-    // Reset end reached when playing
-    setEndReached(false);
-  }, [csvStream, isPlaying, loadMoreRows]);
+		// Reset end reached when playing
+		setEndReached(false);
+	}, [csvStream, isPlaying]);
 
-  useEffect(() => {
-    // If not playing or no data, skip
-    if (!isPlaying || !csvStream) return;
+	useEffect(() => {
+		// If not playing or no data, skip
+		if (!isPlaying || !csvStream) return;
 
-    // Playback speed settings
-    const targetFps = 200; // Desired playback frequency in Hz
+		// Playback speed settings
+		const targetFps = 200; // Desired playback frequency in Hz
 
-    // Add interval to update current index; For timing
-    const interval = setInterval(() => {
-    	csvStream.next().then(({ value, done }) => {
-     		if (done) {
-       		csvStream.cancel();
-         	setEndReached(true);
-          setCSVData(null);
+		// Add interval to update current index; For timing
+		const interval = setInterval(() => {
+			csvStream.next().then(({ value, done }) => {
+				if (done) {
+					setEndReached(true);
+					setCSVData(null);
 
-          return;
-       	}
+					return;
+				}
 
-       	setCSVData(value as CSVData);
-     	});
-    }, 1000 / targetFps); // Read data at fps target
+				setCSVData(value as CSVData);
+			});
+		}, 1000 / targetFps); // Read data at fps target
 
-    // Cleanup on unmount or when dependencies change
-    return () => clearInterval(interval);
-  }, [csvStream, isPlaying]);
+		// Cleanup on unmount or when dependencies change
+		return () => clearInterval(interval);
+	}, [csvStream, isPlaying]);
 
-  // Recording setup
-  const mediaRecorderRef = useRef<MediaRecorder>(null);
-  const chunksRef = useRef([]);
+	// Recording setup
+	const mediaRecorderRef = useRef<MediaRecorder>(null);
+	const chunksRef = useRef([]);
 
-  // Helpers are defined at module scope: initializeCanvasRecording, stopCanvasRecording
+	// Helpers are defined at module scope: initializeCanvasRecording, stopCanvasRecording
 
-  // Manage recording strictly via effects; avoid side effects in render.
+	// Manage recording strictly via effects; avoid side effects in render.
 
-  // Start/stop recording based on shouldRecord prop and canvas readiness
-  useEffect(() => {
-    const recorder = mediaRecorderRef.current;
-    if (!recorder || !canvasReady) return;
+	// Start/stop recording based on shouldRecord prop and canvas readiness
+	useEffect(() => {
+		const recorder = mediaRecorderRef.current;
+		if (!recorder || !canvasReady) return;
 
-    // Start when shouldRecord is true and we have data, and recorder is inactive
-    if (shouldRecord && isPlaying && csvStream && csvData && recorder.state === 'inactive') {
-      chunksRef.current = [];
-      recorder.start();
-      console.log('Recording started after inactive.');
-      setFinishedRecording(false);
-    }
+		// Start when shouldRecord is true and we have data, and recorder is inactive
+		if (shouldRecord && isPlaying && csvStream && csvData && recorder.state === 'inactive') {
+			chunksRef.current = [];
+			recorder.start();
+			console.log('Recording started after inactive.');
+			setFinishedRecording(false);
+		}
 
-    // Stop when shouldRecord is false or when we hit the end
-    if ((!shouldRecord || !isPlaying || endReached) && csvData && recorder.state === 'recording') {
-      recorder.stop();
-      console.log('Recording stopped due to playback end or stop.');
-      setFinishedRecording(true);
-    }
-  }, [shouldRecord, isPlaying, csvStream, csvData, endReached, canvasReady]);
+		// Stop when shouldRecord is false or when we hit the end
+		if ((!shouldRecord || !isPlaying || endReached) && csvData && recorder.state === 'recording') {
+			recorder.stop();
+			console.log('Recording stopped due to playback end or stop.');
+			setFinishedRecording(true);
+		}
+	}, [shouldRecord, isPlaying, csvStream, csvData, endReached, canvasReady]);
 
-  // Handle new data arrival: if recording and playing, restart cleanly once.
-  useEffect(() => {
-    const recorder = mediaRecorderRef.current;
-    if (!recorder || !canvasReady) return;
+	// Handle new data arrival: if recording and playing, restart cleanly once.
+	useEffect(() => {
+		const recorder = mediaRecorderRef.current;
+		if (!recorder || !canvasReady) return;
 
-    if (hasNewData && shouldRecord && isPlaying && csvStream && csvData) {
-      if (recorder.state === 'recording') {
-        recorder.stop();
-      }
-      chunksRef.current = [];
-      recorder.start();
-      console.log('Recording restarted due to new data.');
-      setHasNewData(false);
-      setFinishedRecording(false);
-    }
-  }, [hasNewData, shouldRecord, isPlaying, csvStream, csvData, canvasReady]);
+		if (hasNewData && shouldRecord && isPlaying && csvStream && csvData) {
+			if (recorder.state === 'recording') {
+				recorder.stop();
+			}
+			chunksRef.current = [];
+			recorder.start();
+			console.log('Recording restarted due to new data.');
+			setHasNewData(false);
+			setFinishedRecording(false);
+		}
+	}, [hasNewData, shouldRecord, isPlaying, csvStream, csvData, canvasReady]);
 
-  return (
-    <Canvas
-      style={{ width: '100%', height: '200px' }}
-      onCreated={({ gl }) =>
-        initializeCanvasRecording(
-          gl.domElement,
-          setCanvasReady,
-          mediaRecorderRef,
-          chunksRef
-        )
-      }
-    >
-      <OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
-      <OrbitControls enablePan={true} enableZoom={true} />
-      <ambientLight intensity={2} color="white" />
-      <Environment preset="studio" /> {/* Lighting environment */}
-      <Suspense fallback={null}>
-        {/* Left Eye */}
-        <RotatingModel
-          csvData={csvData}
-          eyePosition="Left"
-          position={[-2, 0, 0]} // Shift left eye to the left
-          isPlaying={isPlaying}
-        />
+	return (
+		<Canvas
+			style={{ width: '100%', height: '200px' }}
+			onCreated={({ gl }) =>
+				initializeCanvasRecording(
+					gl.domElement,
+					setCanvasReady,
+					mediaRecorderRef,
+					chunksRef
+				)
+			}
+		>
+			<OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
+			<OrbitControls enablePan={true} enableZoom={true} />
+			<ambientLight intensity={2} color="white" />
+			<Environment preset="studio" /> {/* Lighting environment */}
+			<Suspense fallback={null}>
+				{/* Left Eye */}
+				<RotatingModel
+				csvData={csvData}
+				eyePosition="Left"
+				position={[-2, 0, 0]} // Shift left eye to the left
+				isPlaying={isPlaying}
+				/>
 
-        {/* Right Eye */}
-        <RotatingModel
-          csvData={csvData}
-          eyePosition="Right"
-          position={[2, 0, 0]} // Shift right eye to the right
-          isPlaying={isPlaying}
-        />
-      </Suspense>
-    </Canvas>
-  );
+				{/* Right Eye */}
+				<RotatingModel
+				csvData={csvData}
+				eyePosition="Right"
+				position={[2, 0, 0]} // Shift right eye to the right
+				isPlaying={isPlaying}
+				/>
+			</Suspense>
+		</Canvas>
+	);
 }

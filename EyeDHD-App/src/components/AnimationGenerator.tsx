@@ -5,7 +5,7 @@ import AnimationContainer from './AnimationContainer';
 import ExportManager from './ExportManager';
 import Button from './Button';
 
-import { type CSVData, type Metadata } from '../types';
+import { Error, type CSVData, type Metadata } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
 export default function AnimationGenerator() {
@@ -85,9 +85,9 @@ export default function AnimationGenerator() {
     setIsLoading(false);
   };
 
-  const loadMoreRows = async (filename: string | null) => {
+  const getStream = async (filename: string | null) => {
     if (!filename) {
-      sendError('No file loaded');
+      sendError({ message: 'No file loaded' });
       return;
     }
 
@@ -104,12 +104,12 @@ export default function AnimationGenerator() {
     }, 4000);
   };
 
-  const handleError = (err: any) => {
-    sendError(err.message);
+  const handleError = (err: Error) => {
+    sendError(err);
   };
 
-  const sendError = (message: string) => {
-    setError(message);
+  const sendError = (err: Error) => {
+    setError(err.message);
     setTimeout(() => {
       setError('');
     }, 4000);
@@ -128,7 +128,7 @@ export default function AnimationGenerator() {
 
     try {
       setFileName(selected_file as string);
-      await loadMoreRows(selected_file as string);
+      await getStream(selected_file as string);
     } catch (err) {
       handleError(err);
     }
@@ -242,7 +242,6 @@ export default function AnimationGenerator() {
           {fileName !== '' && (
             <AnimationContainer
               csvStream={csvStream}
-              loadMoreRows={loadMoreRows}
               isPlaying={isPlaying}
               setIsPlaying={setIsPlaying}
             />
