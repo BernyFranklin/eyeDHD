@@ -12,11 +12,16 @@ type Props = {
 	csvStream: RemoteStream;
 	isRecording: boolean;
 	finished: boolean;
-	setFinished: Dispatch<SetStateAction<boolean>>
+	setFinished: Dispatch<SetStateAction<boolean>>;
 };
 
 // Main animation window component
-export const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({ csvStream, isRecording, finished, setFinished }: Props, ref) => {
+export const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({
+	csvStream,
+	isRecording,
+	finished,
+	setFinished
+}: Props, ref) => {
 	const [csvData, setCSVData] = useState<CSVData | null>(null);
 
 	useEffect(() => {
@@ -42,18 +47,14 @@ export const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({ csvStream
 
 		// Cleanup on unmount or when dependencies change
 		return () => clearInterval(interval);
-	}, [finished]);
+	}, [finished, isRecording]);
 
 	return (
 		<Canvas
-			style={{ width: '100%', height: '200px' }}
-			onCreated={({ gl }) => {
-
-			}}
+			style={{ height: '50vh', aspectRatio:'16 / 9' }}
 			ref={ref}
 		>
 			<OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
-			<OrbitControls enablePan={true} enableZoom={true} />
 			<ambientLight intensity={2} color="white" />
 			<Environment preset="studio" /> {/* Lighting environment */}
 			<Suspense fallback={null}>

@@ -5,6 +5,7 @@ import RemoteStream from "../data/RemoteStream";
 
 type Props = {
 	csvStream: RemoteStream;
+	setCsvStream: React.Dispatch<React.SetStateAction<RemoteStream | null>>;
 };
 
 const SUPPORTED_MIME_TYPES = [
@@ -15,6 +16,8 @@ const SUPPORTED_MIME_TYPES = [
 ];
 
 const FPS = 30;
+const WIDTH = 1920;
+const HEIGHT = 1080;
 
 export default function CanvasRecorder(props: Props) {
 	const [finished, setFinished] = useState(false);
@@ -27,6 +30,9 @@ export default function CanvasRecorder(props: Props) {
 	const startRecording = useCallback(() => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
+
+		canvas.width = WIDTH;
+		canvas.height = HEIGHT;
 
 		const mimeType = SUPPORTED_MIME_TYPES.find(type => MediaRecorder.isTypeSupported(type));
 
@@ -64,6 +70,7 @@ export default function CanvasRecorder(props: Props) {
 		if (finished) {
 			mediaRecorderRef.current?.stop();
 			setIsRecording(false);
+			props.setCsvStream(null);
 		}
 
 		startRecording();

@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactEventHandler } from 'react';
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow from './AlertWindow';
-import AnimationContainer from './AnimationContainer';
-import ExportManager from './ExportManager';
 import Button from './Button';
+import CanvasRecorder from './CanvasRecorder';
 
-import { Error, type CSVData, type Metadata } from '../types';
+import { type Error, type CSVData, type Metadata } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
 export default function AnimationGenerator() {
@@ -15,7 +14,6 @@ export default function AnimationGenerator() {
   const [alertMessage, setAlertMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isHidden, setIsHidden] = useState(true);
 
   const [files, setFiles] = useState<string[]>([]);
 
@@ -25,12 +23,12 @@ export default function AnimationGenerator() {
       backgroundColor: '#fff',
       padding: '2rem',
       display: 'flex',
-      flexDirection: 'row',
-      width: '100%',
+      flexDirection: 'column',
+      width: '100vw',
       margin: '2rem auto',
       alignItems: 'stretch',
       justifyContent: 'center',
-      gap: '2rem'
+      gap: '2rem',
     },
     buttonContainer: {
       display: 'flex',
@@ -53,16 +51,6 @@ export default function AnimationGenerator() {
       alignItems: 'center'
     }
   } as any;
-
-  styles.leftPane = {
-    ...styles.singlePane,
-    backgroundColor: '#f8f9fa'
-  };
-
-  styles.rightPane = {
-    ...styles.singlePane,
-    backgroundColor: '#f1f3f4'
-  };
 
   // gets the list of cleaned files
   const getFilesList = async () => {
@@ -114,10 +102,9 @@ export default function AnimationGenerator() {
     }, 4000);
   };
 
-  const handleSubmit = async (e: Event) => {
+  const handleSubmit: ReactEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
     setFileName('');
-    setIsHidden(false);
 
     const form: HTMLFormElement | undefined = e.target as HTMLFormElement;
     const data = new FormData(form);
@@ -133,9 +120,8 @@ export default function AnimationGenerator() {
     }
   };
 
-  const handleReset = async (e: Event) => {
+  const handleReset: ReactEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
-    setIsHidden(true);
 
     // Set form select back to 'none'
     const select: HTMLSelectElement | null = document.querySelector(
@@ -156,13 +142,6 @@ export default function AnimationGenerator() {
   useEffect(() => {
     getFilesList();
   }, []);
-
-  useEffect(() => {
-  	if (csvStream === null) return;
-  	if (csvStream.isDone()) {
-   		setCsvStream(null);
-   	}
-  }, [csvStream]);
 
   return (
     <>
@@ -188,79 +167,64 @@ export default function AnimationGenerator() {
           }}
         />
       )}
-      <div className="animation-generator-container" style={styles.container}>
-        {/*Used for when things take awhile to load*/}
-        <LoadingOverlay isLoading={isLoading} />
-        <div
-          className="left-pane"
-          style={isHidden ? { ...styles.leftPane, width: 'auto' } : styles.leftPane}
-        >
-          <h3>Generate Animation</h3>
-          {files && (
-            <form
-              method="post"
-              onSubmit={handleSubmit as any}
-              onReset={handleReset as any}
-            >
-              <label htmlFor="file-select">
-                Please select a file to generate an animation.
-              </label>
-              <div style={styles.buttonContainer}>
-                <select name="fileSelect" defaultValue="none">
-                  <option disabled value="none">
-                    none
-                  </option>
-                  {files.map((file, index) => {
-                    return (
-                      <option key={index} value={file}>
-                        {file}
-                      </option>
-                    );
-                  })}
-                </select>
-                <Button
-                  type="submit"
-                  onClick={undefined}
-                  className="btn"
-                  buttonText="Generate"
-                  style={styles.buttonInline as React.CSSProperties}
-                />
-                <Button
-                  type="reset"
-                  onClick={handleReset}
-                  className="btn"
-                  buttonText="Reset"
-                  style={styles.buttonInline as React.CSSProperties}
-                />
-              </div>
-            </form>
-          )}
-          {/*Conditionally render the AnimationContainer*/}
-          {fileName !== '' && csvStream && (
-            <AnimationContainer
-              csvStream={csvStream}
-            />
-          )}
-        </div>
-        <div
-          className="right-pane"
-          style={isHidden ? { display: 'none' } : styles.rightPane}
-        >
-          {/* Export functionality */}
-          {fileName !== '' && (
-            <ExportManager
-              csvStream={csvStream}
-              fileName={fileName}
-              onExportComplete={(result: any) => {
-                if (result.success) {
-                  sendAlert(
-                    `Animation exported successfully! ${result.frameCount} frames exported.`
-                  );
-                }
-              }}
-            />
-          )}
-        </div>
+      <div style={styles.container}>
+	      <div className="animation-generator-container" style={styles.singlePane}>
+	        {/*Used for when things take awhile to load*/}
+	        <LoadingOverlay isLoading={isLoading} />
+	        {files && (
+	          <form
+	            method="post"
+	            onSubmit={handleSubmit}
+	            onReset={handleReset}
+	          >
+	            <label htmlFor="file-select">
+	              Please select a file to generate an animation.
+	            </label>
+	            <div style={styles.buttonContainer}>
+	              <select name="fileSelect" defaultValue="none">
+	                <option disabled value="none">
+	                  none
+	                </option>
+	                {files.map((file, index) => {
+	                  return (
+	                    <option key={index} value={file}>
+	                      {file}
+	                    </option>
+	                  );
+	                })}
+	              </select>
+	              <Button
+	                type="submit"
+	                onClick={undefined}
+	                className="btn"
+	                buttonText="Generate"
+	                style={styles.buttonInline as React.CSSProperties}
+	              />
+	              <Button
+	                type="reset"
+	                onClick={undefined}
+	                className="btn"
+	                buttonText="Reset"
+	                style={styles.buttonInline as React.CSSProperties}
+	              />
+	            </div>
+	          </form>
+	        )}
+					{/*Conditionally render the AnimationContainer*/}
+	        {fileName !== '' && csvStream && (
+	        <>
+	        	<h3>Generating Animation...</h3>
+						<div>
+							{csvStream && (
+				        <CanvasRecorder
+				          csvStream={csvStream}
+									setCsvStream={setCsvStream}
+				        />
+							)}
+						</div>
+	        </>
+	        )}
+	      </div>
       </div>
     </>
   );
