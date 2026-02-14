@@ -85,11 +85,11 @@ export interface SaccadeMetricResult {
     perSaccadeRows: PerSaccadeRow[];
     series: {
         saccadeRatePerSecOverTime: XYPoint[];
-        amplitudeDegOverTime:      XYPoint[];
+        amplitudeDegOverTime:      { x: number; y: number }[];
     };
     csv: {
-        sessionSummaryRow: any | null;
-        segmentSummaryRows: any[];
+        sessionSummaryRow: SessionSummaryCsvRow | null;
+        segmentSummaryRows: SegmentSummaryCsvRow[];
     }
 } 
 
@@ -195,4 +195,23 @@ export interface PerSaccadeRow {
 export interface XYPoint {
     x: number;
     y: number;
+}
+
+export interface SessionSummaryCsvRow {
+    sessionId: string | null;
+    keptCount: number;
+    filteredCount: number;
+    durationMs: number;
+    durationSec: number;
+    ratePerSec: number;
+    ratePerMin?: number;
+}
+
+export interface SegmentSummaryCsvRow {
+    segmentId: string;
+    keptCount: number;
+    durationMs: number;
+    durationSec: number;
+    ratePerSec: number;
+    ratePerMin?: number;        
 }
