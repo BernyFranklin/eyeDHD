@@ -5,4 +5,4 @@
 	- Consider streaming the animation data to the backend and have the backend save the file, could do this for the cleaned csv as well
 		- User could specify the folder they want the exports to be sent to
 - Work on eye dilation chart
-- Make saccade component
+- Make saccade chart component
