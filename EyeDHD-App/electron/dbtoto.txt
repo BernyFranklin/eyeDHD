@@ -1,3 +1,4 @@
-- Convert handlers to use data streams
+- Convert handlers to use DataStreams
 - Decide how to handle data cleaning statistics
+- Add progress tracking to DataStreams
 - Add tests to google sheets
