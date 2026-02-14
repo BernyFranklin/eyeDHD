@@ -14,6 +14,7 @@ export type SaccadeData = {
 	filename: string;
 };
 
+
 export function createSaccadeTable(db: Database, filename: string) {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (

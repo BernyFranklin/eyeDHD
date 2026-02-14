@@ -5,6 +5,7 @@ import { type CSVData } from './db/tables/csv';
 import { type SaccadeData } from './db/tables/saccade';
 import { type DataType, type StreamKey, type StreamType } from './db/DatabaseManager';
 
+
 console.log('Preload script loaded, exposing API to renderer process');
 
 /**

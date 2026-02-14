@@ -6,6 +6,7 @@ export type StreamProgress = {
 	completed: boolean;
 };
 
+
 export type CleaningProgress = {
 	name: string;
 	cleaned: number;
