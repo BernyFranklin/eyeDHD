@@ -23,15 +23,24 @@ export interface PlausibleBounds {
 
 // Needed for Section B
 export interface SaccadeMetricsOptions {
-    plausibleBounds?:        PlausibleBounds;
+    plausibleBounds?:               PlausibleBounds;
     // Needed for Section C, optional toggle
-    includeRatePerMin?:      boolean;
+    includeRatePerMin?:             boolean;
     // Needed for Section D
-    segments?:               SegmentDefinition[];
+    segments?:                      SegmentDefinition[];
     // Needed for Section F
-    isiPlausibleBounds?:     IsiPlausibleBounds;
-    isiHistogramBinWidthMs?: IsiHistogramBinWidthMs;
-    isiBySegment?:           boolean; 
+    isiPlausibleBounds?:            IsiPlausibleBounds;
+    isiHistogramBinWidthMs?:        IsiHistogramBinWidthMs;
+    isiBySegment?:                  boolean; 
+    // Needed for Section G
+    series?: {
+        saccadeRatePerSecOverTime?: boolean;
+        amplitudeDegOverTime?:      boolean;
+    };
+    csv?: {
+        sessionSummaryRow?:         boolean;
+        segmentSummaryRows?:        boolean;
+    };
 }
 
 // Needed for Section B
@@ -72,6 +81,16 @@ export interface SaccadeMetricResult {
     isiHistogram:     IsiHistogram;
     isiBySegment:     IsiSegmentSummary[];
     isiSegmentsMeta:  IsiSegmentsMeta;
+    // Needed for Section G
+    perSaccadeRows: PerSaccadeRow[];
+    series: {
+        saccadeRatePerSecOverTime: XYPoint[];
+        amplitudeDegOverTime:      { x: number; y: number }[];
+    };
+    csv: {
+        sessionSummaryRow: SessionSummaryCsvRow | null;
+        segmentSummaryRows: SegmentSummaryCsvRow[];
+    }
 } 
 
 // Needed for Section D
@@ -159,4 +178,40 @@ export interface IsiSegmentSummary {
 // Metadata about ISI segment assignment
 export interface IsiSegmentsMeta {
     unassignedIsiCount: number;
+}
+
+// Needed for Section G
+export interface PerSaccadeRow {
+    index:        number;
+    startTime:    number;    // ms
+    endTime:      number;    // ms
+    durationMs:   number;
+    durationSec:  number;
+    amplitudeDeg: number;
+    ratePerSec:   number;
+    segmentId:    string | null;
+}
+
+export interface XYPoint {
+    x: number;
+    y: number;
+}
+
+export interface SessionSummaryCsvRow {
+    sessionId: string | null;
+    keptCount: number;
+    filteredCount: number;
+    durationMs: number;
+    durationSec: number;
+    ratePerSec: number;
+    ratePerMin?: number;
+}
+
+export interface SegmentSummaryCsvRow {
+    segmentId: string;
+    keptCount: number;
+    durationMs: number;
+    durationSec: number;
+    ratePerSec: number;
+    ratePerMin?: number;        
 }

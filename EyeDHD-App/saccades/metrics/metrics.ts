@@ -11,6 +11,7 @@ import type {
     IsiFilterTransparency,
     IsiHistogramBin,
     IsiSegmentSummary,
+    SessionSummaryCsvRow
 } from "./types";
 
 // Needed for Section B
@@ -85,6 +86,18 @@ function incPartialCount<K extends string>(
     map[key] = (map[key] ?? 0) + 1;                         // Increment count for this key, initializing to 0 if it doesn't exist
 }
 
+// Needed for Section G
+// Stable sort by startTime, then endTime, then original index to maintain input order for ties
+function stableChronoSort<T extends { startTime: number; endTime: number }>(items: T[]): T[] {
+    return items
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) => {
+        if (a.item.startTime !== b.item.startTime) return a.item.startTime - b.item.startTime;  // Primary sort by startTime
+        if (a.item.endTime !== b.item.endTime) return a.item.endTime - b.item.endTime;          // Secondary sort by endTime
+        return a.i - b.i;                                                                       // Maintain original order for stable sort
+    })
+    .map(x => x.item);
+}
 // Needed for Section A
 export function computeSaccadeMetrics(
     input: SaccadeMetricsInput[],
@@ -373,7 +386,68 @@ export function computeSaccadeMetrics(
         }
     }
 
-    return {                                                        // Return SaccadeMetricResult object containing all computed metrics and summaries
+    // Needed for Section G: per-saccade rows and series for plotting
+    const keptOrdered = stableChronoSort(kept);                     // Get a chronologically stable ordering of the kept saccades for consistent per-saccade output and plotting
+
+    const segDefs = options.segments ?? [];
+
+    function segmentIdForStart(t: number): string | null {
+        if (segDefs.length === 0) return null;
+        const seg = segDefs.find(s => t >= s.startTime && t < s.endTime);
+        return seg ? seg.id : null;
+    }
+
+    const perSaccadeRows = keptOrdered.map((s, idx) => ({
+        index: idx,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        durationMs: s.durationMs,
+        durationSec: s.durationSec,
+        amplitudeDeg: s.amplitudeDeg,
+        ratePerSec: s.ratePerSec,
+        segmentId: segmentIdForStart(s.startTime),
+    }));
+
+    // Needed for G2
+    // Plot-ready time series
+    const wantsRateSeries = options.series?.saccadeRatePerSecOverTime === true;    // Check if the option to include a time series enabled
+    const wantAmpSeries = options.series?.amplitudeDegOverTime === true;           // Check if the option to include an amplitude time series is enabled
+
+    const rateSeries = wantsRateSeries
+        ? keptOrdered.map(s => ({ x: s.startTime, y: s.ratePerSec }))
+        : [];
+
+        const ampSeries = wantAmpSeries
+        ? keptOrdered.map(s => ({ x: s.startTime, y: s.amplitudeDeg }))
+        : [];
+
+    const wantsSessionCsv = options.csv?.sessionSummaryRow === true;
+    const wantsSegmentCsv = options.csv?.segmentSummaryRows === true;
+
+    const sessionSummaryRow: SessionSummaryCsvRow | null = wantsSessionCsv
+        ? ({
+            sessionId: null,
+            keptCount: kept.length,
+            filteredCount: filtered.totalFiltered,
+            durationMs: session.durationMs,
+            durationSec: session.durationSec,
+            ratePerSec: session.ratePerSec,
+            ...(options.includeRatePerMin ? { ratePerMin: session.ratePerSec * 60 } : {}),
+        } as const)
+        : null;
+
+    const segmentSummaryRows = wantsSegmentCsv
+        ? segmentSummaries.map(seg => ({
+            segmentId: seg.id,
+            keptCount: seg.count,
+            durationMs: seg.durationMs,
+            durationSec: seg.durationSec,
+            ratePerSec: seg.ratePerSec,
+            ...(options.includeRatePerMin ? { ratePerMin: seg.ratePerSec * 60 } : {}),
+        }))
+        : [];
+
+    return {                                                                       // Return SaccadeMetricResult object containing all computed metrics and summaries
         perSaccade: kept, 
         filtered, 
         session,
@@ -390,5 +464,16 @@ export function computeSaccadeMetrics(
         },
         isiBySegment,
         isiSegmentsMeta,
+
+        // Section G
+        perSaccadeRows,
+        series: {
+            saccadeRatePerSecOverTime: rateSeries,
+            amplitudeDegOverTime: ampSeries,
+        },
+        csv: {
+            sessionSummaryRow,
+            segmentSummaryRows,
+        },
     };
 }
