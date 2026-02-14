@@ -56,12 +56,6 @@ export type CSVData = {
   FocusStability: number;
 };
 
-export function deleteCSVTable(db: Database, filename: string) {
-  db.prepare(`
-    DROP TABLE IF EXISTS ${toTableName(filename)};
-  `).run();
-}
-
 // Creates a new table for storing cleaned CSV data
 export function createCSVTable(db: Database, filename: string) {
   db.prepare(`
@@ -109,6 +103,12 @@ export function createCSVTable(db: Database, filename: string) {
       FocusDistance REAL DEFAULT 0,
       FocusStability REAL DEFAULT 0
     );
+  `).run();
+}
+
+export function deleteCSVTable(db: Database, filename: string) {
+  db.prepare(`
+    DROP TABLE IF EXISTS ${toTableName(filename)};
   `).run();
 }
 

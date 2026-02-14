@@ -1,11 +1,10 @@
 import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
-import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
-import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
-import saccadeActions, { type SaccadeData } from './tables/saccade';
-import { type Progress } from './tables/progress';
 import DataCleaner from '../analysis/DataCleaner';
+import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
+import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
+import saccadeActions, { type SaccadeData, createSaccadeTable, deleteSaccadeTable } from './tables/saccade';
 
 // Database configuration options
 type DBOptions = {
@@ -41,8 +40,8 @@ type SaccadeDataActions = {
 	create: () => void;
 };
 
-export type DataType = Metadata | CSVData | SaccadeData | Progress;
-export type StreamType = "Metadata" | "CSVData" | "SaccadeData" | "Progress";
+export type DataType = Metadata | CSVData | SaccadeData;
+export type StreamType = "Metadata" | "CSVData" | "SaccadeData";
 export type StreamKey = {
 	id: number,
 	type: StreamType
@@ -58,6 +57,7 @@ export default class DatabaseManager {
 	private streams = new Map<number, AsyncIterator<DataType>>();
 
 	// These fields contain the public API for interacting with the database
+	// TODO: make these private and use streams for getting data
 	metadata: MetadataActions;
 	csv: CSVActions;
 	saccade: SaccadeDataActions;
@@ -401,10 +401,6 @@ export default class DatabaseManager {
 			}
 			case "SaccadeData": {
 				throw new Error("SaccadeData streaming not implemented yet");
-				break;
-			}
-			case "Progress": {
-				throw new Error("Progress streaming not implemented yet");
 				break;
 			}
 		}

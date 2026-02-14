@@ -17,6 +17,8 @@ export type Metadata = {
   updated_at: string;
 };
 
+// TODO: remove first and last frame, replace cleaned with row count, get rid of requested as no longer needed and resuming in progress is not nessassary, cleaned and requested will be part of progress, get rid of request_size
+
 // Creates a new table for storing file metadata
 export function createMetadataTable(db: Database) {
   db.prepare(`

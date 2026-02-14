@@ -3,7 +3,6 @@ import { contextBridge, ipcRenderer } from 'electron';
 import { type Metadata } from './db/tables/metadata';
 import { type CSVData } from './db/tables/csv';
 import { type SaccadeData } from './db/tables/saccade';
-import { type Progress } from './db/tables/progress';
 import { type DataType, type StreamKey, type StreamType } from './db/DatabaseManager';
 
 console.log('Preload script loaded, exposing API to renderer process');

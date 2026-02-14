@@ -2,7 +2,7 @@ import { type DataType, type StreamType, type StreamKey } from '../electron/db/D
 import { type CSVData } from '../electron/db/tables/csv';
 import { type Metadata } from '../electron/db/tables/metadata';
 import { type SaccadeData } from '../electron/db/tables/saccade';
-import { type Progress } from '../electron/db/tables/progress';
+import { type Progress } from '../electron/db/progress';
 
 export {};
 
