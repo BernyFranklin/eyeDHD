@@ -1,7 +1,14 @@
 // React and Three.js imports
 import { Canvas } from '@react-three/fiber';
-import React, { Suspense, forwardRef, useEffect, useState, SetStateAction, type Dispatch } from 'react';
-import { Environment, OrbitControls, OrthographicCamera } from '@react-three/drei';
+import React, {
+	Suspense,
+	forwardRef,
+	useEffect,
+	useState,
+	type SetStateAction,
+	type Dispatch
+} from 'react';
+import { Environment, OrthographicCamera } from '@react-three/drei';
 
 // Component to render and rotate the 3D eye model
 import RotatingModel from './ModelMovement';
@@ -16,7 +23,7 @@ type Props = {
 };
 
 // Main animation window component
-export const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({
+const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({
 	csvStream,
 	isRecording,
 	finished,
@@ -75,3 +82,5 @@ export const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({
 		</Canvas>
 	);
 });
+
+export default AnimationWindow;

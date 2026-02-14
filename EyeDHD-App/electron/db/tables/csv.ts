@@ -106,7 +106,6 @@ export function createCSVTable(db: Database, filename: string) {
   `).run();
 }
 
-
 export function deleteCSVTable(db: Database, filename: string) {
   db.prepare(`
     DROP TABLE IF EXISTS ${toTableName(filename)};
@@ -276,4 +275,3 @@ function iterate(file: Metadata) {
 		SELECT * FROM ${toTableName(file.name)};
 	`;
 }
-

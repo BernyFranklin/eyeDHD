@@ -7,7 +7,10 @@ export default class RemoteStream {
 	private key: StreamKey;
 	type: StreamType;
 
-	static async create(type: StreamType, args: { filename?: string, file?: Metadata }): Promise<RemoteStream> {
+	static async create(
+		type: StreamType,
+		args: { filename?: string, file?: Metadata }
+	): Promise<RemoteStream> {
 		let key;
 		if (type === "Metadata") {
 			key = await window.electron.stream.start(type);

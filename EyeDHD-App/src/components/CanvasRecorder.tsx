@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import { AnimationWindow } from "./animation/AnimationWindow";
+import AnimationWindow from "./animation/AnimationWindow";
 import RemoteStream from "../data/RemoteStream";
 
 type Props = {

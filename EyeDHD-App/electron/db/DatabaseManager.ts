@@ -6,7 +6,6 @@ import metadataActions, { type Metadata, createMetadataTable } from './tables/me
 import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
 import saccadeActions, { type SaccadeData, createSaccadeTable, deleteSaccadeTable } from './tables/saccade';
 
-
 // Database configuration options
 type DBOptions = {
 	logging: boolean;
@@ -46,7 +45,6 @@ export type StreamType = "Metadata" | "CSVData" | "SaccadeData";
 export type StreamKey = {
 	id: number,
 	type: StreamType
-
 }
 
 /**
@@ -57,7 +55,6 @@ export default class DatabaseManager {
 	private db: Database;
 	private cleaners = new Map<string, DataCleaner>();
 	private streams = new Map<number, AsyncIterator<DataType>>();
-
 
 	// These fields contain the public API for interacting with the database
 	// TODO: make these private and use streams for getting data
@@ -229,7 +226,6 @@ export default class DatabaseManager {
 	}
 
 	// Private helper functions
-
 
 	/**
    *
@@ -450,4 +446,3 @@ export function getDB(options: DBOptions = { logging: false, temporary: false })
 
 		return db;
 	}
-
