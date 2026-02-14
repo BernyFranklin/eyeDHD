@@ -2,5 +2,7 @@
 	- Add progress tracking to RemoteStream
 	- Convert file import, export to use RemoteStream
 	- Convert file selector in Animation Generator to use Remote stream
+	- Consider streaming the animation data to the backend and have the backend save the file, could do this for the cleaned csv as well
+		- User could specify the folder they want the exports to be sent to
 - Work on eye dilation chart
 - Make saccade component
