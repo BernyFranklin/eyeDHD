@@ -49,6 +49,19 @@ export default function AnimationGenerator() {
       flexDirection: 'column',
       justifyContent: 'space-between',
       alignItems: 'center'
+    },
+    infoBox: {
+      backgroundColor: '#e3f2fd',
+      border: '1px solid #2196f3',
+      borderRadius: '4px',
+      padding: '1rem',
+      marginBottom: '1rem',
+      fontSize: '0.9rem',
+      color: '#0d47a1',
+      maxWidth: '80%',
+      wordWrap: 'break-word',
+      overflowWrap: 'break-word',
+      whiteSpace: 'normal'
     }
   } as any;
 
@@ -171,6 +184,17 @@ export default function AnimationGenerator() {
 	      <div className="animation-generator-container" style={styles.singlePane}>
 	        {/*Used for when things take awhile to load*/}
 	        <LoadingOverlay isLoading={isLoading} />
+					<div style={styles.infoBox as any}>
+						<strong>Real-time Video Recording</strong>
+						<br />
+						This export method records the animation in real-time as an MP4 video (or WebM if
+						MP4 isn't supported). The export will take approximately the same time as the
+						animation duration. For example, 20 minutes of data, will take approximately 20
+						minutes to export.
+						<br />
+						<br />
+						Ensure that the application remains open and active during the export process.
+					</div>
 	        {files && (
 	          <form
 	            method="post"
