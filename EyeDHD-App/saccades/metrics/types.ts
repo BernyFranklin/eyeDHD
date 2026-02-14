@@ -84,8 +84,8 @@ export interface SaccadeMetricResult {
     // Needed for Section G
     perSaccadeRows: PerSaccadeRow[];
     series: {
-        saccadeRatePerSecOverTime: { x: number; y: number }[];
-        amplitudeDegOverTime:      { x: number; y: number }[];
+        saccadeRatePerSecOverTime: XYPoint[];
+        amplitudeDegOverTime:      XYPoint[];
     };
     csv: {
         sessionSummaryRow: any | null;
@@ -190,4 +190,9 @@ export interface PerSaccadeRow {
     amplitudeDeg: number;
     ratePerSec:   number;
     segmentId:    string | null;
+}
+
+export interface XYPoint {
+    x: number;
+    y: number;
 }
