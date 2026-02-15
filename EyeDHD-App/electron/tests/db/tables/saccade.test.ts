@@ -1,10 +1,9 @@
 import { describe, type ExpectStatic, test } from 'vitest';
 import { type Database } from 'better-sqlite3';
 
-import DatabaseManager, { getDB } from '../DatabaseManager';
-import metadataActions, { createMetadataTable, type Metadata } from '../tables/metadata';
-import csvActions, { createCSVTable, toTableName } from '../tables/csv';
-import saccadeActions, { createSaccadeTable, type SaccadeData } from '../tables/saccade';
+import { getDB } from '../../../db/DatabaseManager';
+import saccadeActions, { createSaccadeTable, type SaccadeData } from '../../../db/tables/saccade';
+import { createMetadataTable, type Metadata } from '../../../db/tables/metadata';
 
 export type Parameters = {
 	db: Database;
@@ -12,12 +11,10 @@ export type Parameters = {
 } & any;
 
 // Adds a testing db with entries added to it for each test
-export const dbManagerTest = test.extend({
+export const saccadeTest = test.extend({
 	db: async ({}, use: (db: Database) => Promise<void>) => {
     const db = getDB({ temporary: true, logging: false});
     createMetadataTable(db);
-
-    // Set up DatabaseManager instance instead of db
 
     db.prepare(`
     		INSERT INTO metadata (name, path, request_size)
@@ -37,12 +34,14 @@ export const dbManagerTest = test.extend({
 			`)
       .run('test3.csv', 'test3.csv', 200);
 
+    // Insert test saccade data tables and entries relating to metadatas above
+
     await use(db);
 
     db.close();
   }
 });
 
-describe('', () => {
+describe('Database: Saccade Data', () => {
 
 });

@@ -1,8 +1,8 @@
 import { describe, type ExpectStatic, test } from 'vitest';
 import { type Database } from 'better-sqlite3';
 
-import { getDB } from '../DatabaseManager';
-import metadataActions, { createMetadataTable, type Metadata } from '../tables/metadata';
+import { getDB } from '../../../db/DatabaseManager';
+import metadataActions, { createMetadataTable, type Metadata } from '../../../db/tables/metadata';
 
 function compare(expect: ExpectStatic, result: Metadata, expected: Metadata) {
   expect(result.id).toBe(expected.id);
@@ -49,7 +49,7 @@ export const metadataTest = test.extend({
   }
 });
 
-describe('', () => {
+describe('Database: CSV Metadata', () => {
 	test('files table create', async ({ expect }) => {
 	  const db = getDB({
 	    temporary: true,

@@ -156,23 +156,28 @@ export default class DatabaseManager {
 	/**
    *
    */
-	openFile(filename: string, filepath: string) {
+	openFile(filename: string, filepath: string): Metadata {
 		if (this.metadata.exists(filename)) {
 			const metadata = this.metadata.read(filename);
 			if (!this.cleanerExists(metadata)) {
 				this.resetCleaner(metadata);
 			}
+
+			return metadata;
 		} else {
 			this.metadata.create(filename, filepath);
 			const metadata = this.metadata.read(filename);
 			const cleaner = this.getCleaner(metadata);
 
+			// I don't think this is needed anymore
 			if (metadata.request_size != cleaner.buf_len) {
 				this.updateMetadata({
 					...metadata,
 					request_size: cleaner.buf_len
 				})
 			}
+
+			return metadata;
 		}
 	}
 

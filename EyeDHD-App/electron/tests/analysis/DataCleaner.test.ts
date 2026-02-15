@@ -1,6 +1,6 @@
 import { describe, type ExpectStatic, test } from 'vitest';
 
-import DataCleaner from '../DataCleaner';
+import DataCleaner from '../../analysis/DataCleaner';
 
 export type Parameters = {
 	expect: ExpectStatic
@@ -14,6 +14,8 @@ export const dataCleanerTest = test.extend({
   }
 });
 
-describe('', () => {
+describe('Data Analysis: DataCleaner', () => {
+	test('', () => {
 
+	});
 });

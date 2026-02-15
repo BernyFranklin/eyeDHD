@@ -9,6 +9,7 @@ import RemoteStream from '../data/RemoteStream';
 
 export default function AnimationGenerator() {
   const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
+  // Replace filename with metadata objects for simplicity
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const [alertMessage, setAlertMessage] = useState('');

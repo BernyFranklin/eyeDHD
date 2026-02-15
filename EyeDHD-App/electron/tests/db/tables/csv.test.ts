@@ -1,9 +1,9 @@
 import { describe, type ExpectStatic, test } from 'vitest';
 import { type Database } from 'better-sqlite3';
 
-import { getDB } from '../DatabaseManager';
-import csvActions, { createCSVTable, toTableName } from '../tables/csv';
-import { createMetadataTable, type Metadata } from '../tables/metadata';
+import { getDB } from '../../../db/DatabaseManager';
+import csvActions, { createCSVTable, toTableName } from '../../../db/tables/csv';
+import { createMetadataTable, type Metadata } from '../../../db/tables/metadata';
 
 export type Parameters = {
 	db: Database;
@@ -42,7 +42,7 @@ export const csvTest = test.extend({
   }
 });
 
-describe('', () => {
+describe('Database: CSV Data', () => {
 	test('csv table create', async ({ expect }) => {
 	  const file = {
 	    name: 'testa.csv'

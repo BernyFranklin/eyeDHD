@@ -6,3 +6,4 @@
 		- User could specify the folder they want the exports to be sent to
 - Work on eye dilation chart
 - Make saccade chart component
+- Replace useStates storing filenames to store Metadata objects

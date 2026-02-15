@@ -39,9 +39,9 @@ ipcMain.handle('csv-open-file', async (_) => {
 		const filename = path.basename(filepath);
 
 		try {
-			dbmgr.openFile(filename, filepath);
+			const metadata = dbmgr.openFile(filename, filepath);
 
-			return resolve(filename);
+			return resolve(metadata);
 		} catch (err) {
 			return reject(`Failed to open file: ${err}`);
 		}

@@ -7,7 +7,7 @@ export {};
 
 declare interface Electron {
   csv: {
-    openFile(): Promise<string | null>;
+    openFile(): Promise<Metadata | null>;
 
     resetReadingProgress(filename: string): Promise<void>;
     resetCleaningProgress(filename: string): Promise<void>;
