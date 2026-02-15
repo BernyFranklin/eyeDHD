@@ -98,6 +98,16 @@ function stableChronoSort<T extends { startTime: number; endTime: number }>(item
     })
     .map(x => x.item);
 }
+
+function segmentIdForStart(
+    segments: SegmentDefinition[],
+    t: number
+): string | null {
+        if (segments.length === 0) return null;
+        const seg = segments.find(s => t >= s.startTime && t < s.endTime);
+        return seg ? seg.id : null;
+    }
+
 // Needed for Section A
 export function computeSaccadeMetrics(
     input: SaccadeMetricsInput[],
@@ -261,12 +271,15 @@ export function computeSaccadeMetrics(
         }
     }
 
+    // Needed for Section G: per-saccade rows and series for plotting
+    const keptOrdered = stableChronoSort(kept);                     // Get a chronologically stable ordering of the kept saccades for consistent per-saccade output and plotting
+
     // Needed for Section F
     // 1.) Compute raw ISI series between KEPT saccades
     const isiSeriesRaw: number[] = [];                              // Init array to hold Inter-Saccadic Intervals
-    for (let i = 0; i < kept.length -1; i++) {
-        const prev = kept[i];                                       // Previous saccade in the kept array
-        const next = kept[i + 1];                                   // Next saccade in the kept array
+    for (let i = 0; i < keptOrdered.length -1; i++) {
+        const prev = keptOrdered[i];                                       // Previous saccade in the kept array
+        const next = keptOrdered[i + 1];                                   // Next saccade in the kept array
 
         // ISI definition: time between end of previous and start of next
         const isi = next.startTime - prev.endTime;                  // Compute ISI as the time between the end of the previous saccade and the start of the next saccade
@@ -357,7 +370,7 @@ export function computeSaccadeMetrics(
         }
         // Assign ISIs using the previous saccade's start time
         for (let i = 0; i < kept.length -1; i++) {
-            const prev = kept[i];
+            const prev = keptOrdered[i];
             const isi = isiSeriesRaw[i];
 
             let valid = true;
@@ -386,17 +399,6 @@ export function computeSaccadeMetrics(
         }
     }
 
-    // Needed for Section G: per-saccade rows and series for plotting
-    const keptOrdered = stableChronoSort(kept);                     // Get a chronologically stable ordering of the kept saccades for consistent per-saccade output and plotting
-
-    const segDefs = options.segments ?? [];
-
-    function segmentIdForStart(t: number): string | null {
-        if (segDefs.length === 0) return null;
-        const seg = segDefs.find(s => t >= s.startTime && t < s.endTime);
-        return seg ? seg.id : null;
-    }
-
     const perSaccadeRows = keptOrdered.map((s, idx) => ({
         index: idx,
         startTime: s.startTime,
@@ -405,7 +407,7 @@ export function computeSaccadeMetrics(
         durationSec: s.durationSec,
         amplitudeDeg: s.amplitudeDeg,
         ratePerSec: s.ratePerSec,
-        segmentId: segmentIdForStart(s.startTime),
+        segmentId: segmentIdForStart(segments, s.startTime),
     }));
 
     // Needed for G2
@@ -447,8 +449,14 @@ export function computeSaccadeMetrics(
         }))
         : [];
 
+    const wantAnySeries =
+        options.series?.amplitudeDegOverTime === true ||
+        options.series?.saccadeRatePerSecOverTime === true;
+
+    const perSaccadeOut = wantAnySeries ? keptOrdered: kept;
+
     return {                                                                       // Return SaccadeMetricResult object containing all computed metrics and summaries
-        perSaccade: kept, 
+        perSaccade: perSaccadeOut, 
         filtered, 
         session,
         segmentSummaries,

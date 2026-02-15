@@ -44,3 +44,19 @@ peakVelocityDegPerSec
 
 (any other fields are allowed; metrics ignores what it doesn’t need)
 
+/saccades/
+  index.ts (API) 
+  detection.ts
+  schema.ts                          
+  velocities.ts
+  /metrics/
+    index.ts
+    metrics.ts
+    types.ts
+    stats.ts
+    filtering.ts
+  /test/
+    metrics.test.ts                       
+    detection.test.ts                      
+    velocity.test.ts             
+  
