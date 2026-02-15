@@ -98,6 +98,16 @@ function stableChronoSort<T extends { startTime: number; endTime: number }>(item
     })
     .map(x => x.item);
 }
+
+function segmentIdForStart(
+    segments: SegmentDefinition[],
+    t: number
+): string | null {
+        if (segments.length === 0) return null;
+        const seg = segments.find(s => t >= s.startTime && t < s.endTime);
+        return seg ? seg.id : null;
+    }
+
 // Needed for Section A
 export function computeSaccadeMetrics(
     input: SaccadeMetricsInput[],
@@ -389,14 +399,6 @@ export function computeSaccadeMetrics(
         }
     }
 
-    const segDefs = options.segments ?? [];
-
-    function segmentIdForStart(t: number): string | null {
-        if (segDefs.length === 0) return null;
-        const seg = segDefs.find(s => t >= s.startTime && t < s.endTime);
-        return seg ? seg.id : null;
-    }
-
     const perSaccadeRows = keptOrdered.map((s, idx) => ({
         index: idx,
         startTime: s.startTime,
@@ -405,7 +407,7 @@ export function computeSaccadeMetrics(
         durationSec: s.durationSec,
         amplitudeDeg: s.amplitudeDeg,
         ratePerSec: s.ratePerSec,
-        segmentId: segmentIdForStart(s.startTime),
+        segmentId: segmentIdForStart(segments, s.startTime),
     }));
 
     // Needed for G2
