@@ -15,10 +15,16 @@ const SUPPORTED_MIME_TYPES = [
 	'video/webm'
 ];
 
-const FPS = 30;
-const WIDTH = 1920;
-const HEIGHT = 1080;
+const CAPTURE_FPS = 30;
+const RENDER_RESOLUTION = {
+	width: 1920,
+	height: 1080
+};
 
+/**
+ * Records the canvas output from the AnimationWindow and prompts the user to save the
+ * file once complete. Captures the canvas at RENDER_RESOLUTION at CAPTURE_FPS
+ */
 export default function CanvasRecorder(props: Props) {
 	const [finished, setFinished] = useState(false);
 	const [isRecording, setIsRecording] = useState(false);
@@ -31,12 +37,12 @@ export default function CanvasRecorder(props: Props) {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 
-		canvas.width = WIDTH;
-		canvas.height = HEIGHT;
+		canvas.width = RENDER_RESOLUTION.width;
+		canvas.height = RENDER_RESOLUTION.height;
 
 		const mimeType = SUPPORTED_MIME_TYPES.find(type => MediaRecorder.isTypeSupported(type));
 
-		const stream = canvas.captureStream(FPS);
+		const stream = canvas.captureStream(CAPTURE_FPS);
 		const recorder = new MediaRecorder(stream, { mimeType });
 
 		chunksRef.current = [];
