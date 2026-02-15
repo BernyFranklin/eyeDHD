@@ -1,35 +1,74 @@
-import { test } from 'vitest';
-import { test as action_test, type Parameters } from './action_test';
+import { describe, type ExpectStatic, test } from 'vitest';
+import { type Database } from 'better-sqlite3';
 
 import { getDB } from '../DatabaseManager';
 import csvActions, { createCSVTable, toTableName } from '../tables/csv';
-import { type Metadata } from '../tables/metadata';
+import { createMetadataTable, type Metadata } from '../tables/metadata';
 
-test('csv table create', async ({ expect }) => {
-  const file = {
-    name: 'testa.csv'
-  } as Metadata;
+export type Parameters = {
+	db: Database;
+	expect: ExpectStatic
+} & any;
 
-  const db = getDB({
-    temporary: true,
-    logging: false
-  });
+// Adds a testing db with entries added to it for each test
+export const csvTest = test.extend({
+	db: async ({}, use: (db: Database) => Promise<void>) => {
+    const db = getDB({ temporary: true, logging: false});
+    createMetadataTable(db);
 
-  createCSVTable(db, file.name);
+    db.prepare(`
+    		INSERT INTO metadata (name, path, request_size)
+      	VALUES (?, ?, ?);
+			`)
+      .run('test.csv', 'test.csv', 200);
 
-  // Check whether csv data table is created
-  const table = db.prepare(`
-      SELECT name FROM sqlite_master WHERE type='table' AND name=?;
-    `)
-    .get(toTableName(file.name));
+    db.prepare(`
+    		INSERT INTO metadata (name, path, request_size)
+				VALUES (?, ?, ?);
+			`)
+      .run('test2.csv', 'test2.csv', 200);
 
-  expect(table).toStrictEqual({ name: toTableName(file.name) });
+    db.prepare(`
+    		INSERT INTO metadata (name, path, request_size)
+				VALUES (?, ?, ?);
+			`)
+      .run('test3.csv', 'test3.csv', 200);
+
+    // Insert test csv data tables and entries relating to metadatas above
+
+    await use(db);
+
+    db.close();
+  }
 });
 
-action_test.todo('csv create', async ({ db, expect }: Parameters) => {
-  expect(1 + 1).toBe(3);
-});
+describe('', () => {
+	test('csv table create', async ({ expect }) => {
+	  const file = {
+	    name: 'testa.csv'
+	  } as Metadata;
 
-action_test.todo('csv read', async ({ db, expect }: Parameters) => {
-  expect(1 + 1).toBe(3);
-});
+	  const db = getDB({
+	    temporary: true,
+	    logging: false
+	  });
+
+	  createCSVTable(db, file.name);
+
+	  // Check whether csv data table is created
+	  const table = db.prepare(`
+	      SELECT name FROM sqlite_master WHERE type='table' AND name=?;
+	    `)
+	    .get(toTableName(file.name));
+
+	  expect(table).toStrictEqual({ name: toTableName(file.name) });
+	});
+
+	csvTest.todo('csv create', async ({ db, expect }: Parameters) => {
+	  expect(1 + 1).toBe(3);
+	});
+
+	csvTest.todo('csv read', async ({ db, expect }: Parameters) => {
+	  expect(1 + 1).toBe(3);
+	});
+})

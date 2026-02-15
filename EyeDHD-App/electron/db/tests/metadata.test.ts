@@ -1,25 +1,8 @@
-import { ExpectStatic, test } from 'vitest';
-import { test as action_test, type Parameters } from './action_test';
+import { describe, type ExpectStatic, test } from 'vitest';
+import { type Database } from 'better-sqlite3';
 
 import { getDB } from '../DatabaseManager';
 import metadataActions, { createMetadataTable, type Metadata } from '../tables/metadata';
-
-test('files table create', async ({ expect }) => {
-  const db = getDB({
-    temporary: true,
-    logging: false
-  });
-
-  createMetadataTable(db);
-
-  // Check whether the files database was created
-  const result = db.prepare(`
-      SELECT name FROM sqlite_master WHERE type='table' AND name='metadata';
-		`)
-    .get();
-
-  expect(result).toStrictEqual({ name: 'metadata' });
-});
 
 function compare(expect: ExpectStatic, result: Metadata, expected: Metadata) {
   expect(result.id).toBe(expected.id);
@@ -31,108 +14,162 @@ function compare(expect: ExpectStatic, result: Metadata, expected: Metadata) {
   expect(result.requested).toBe(expected.requested);
 }
 
-// Test creating a file entry in the files table
-action_test(
-  'files create',
-  async ({ db, expect }: Parameters) => {
-    const expected = {
-      id: 4,
-      name: 'newData.csv',
-      path: '../newData.csv',
-      request_size: 1000,
-      header: '',
-      completed: 0,
-      cleaned: 0,
-      requested: 0,
-      first_frame: 0,
-      last_frame: 0,
-      created_at: '',
-      updated_at: ''
-    };
+export type Parameters = {
+	db: Database;
+	expect: ExpectStatic
+} & any;
 
-    const result = metadataActions.create(
-    	db,
-      expected.name,
-      expected.path
-    );
-    expect(result).not.toBeNull();
+// Adds a testing db with entries added to it for each test
+export const metadataTest = test.extend({
+	db: async ({}, use: (db: Database) => Promise<void>) => {
+    const db = getDB({ temporary: true, logging: false});
+    createMetadataTable(db);
 
-    compare(expect, result as Metadata, expected);
+    db.prepare(`
+    		INSERT INTO metadata (name, path, request_size)
+      	VALUES (?, ?, ?);
+			`)
+      .run('test.csv', 'test.csv', 200);
+
+    db.prepare(`
+    		INSERT INTO metadata (name, path, request_size)
+				VALUES (?, ?, ?);
+			`)
+      .run('test2.csv', 'test2.csv', 200);
+
+    db.prepare(`
+    		INSERT INTO metadata (name, path, request_size)
+				VALUES (?, ?, ?);
+			`)
+      .run('test3.csv', 'test3.csv', 200);
+
+    await use(db);
+
+    db.close();
   }
-);
+});
 
-// Test reading a file entry in the files table
-action_test(
-  'files read',
-  async ({ db, expect }: Parameters) => {
-    const expected = {
-      id: 2,
-      name: 'test2.csv',
-      path: 'test2.csv',
-      request_size: 200,
-      header: '',
-      completed: 0,
-      cleaned: 0,
-      requested: 0,
-      first_frame: 0,
-      last_frame: 0,
-      created_at: '',
-      updated_at: ''
-    };
+describe('', () => {
+	test('files table create', async ({ expect }) => {
+	  const db = getDB({
+	    temporary: true,
+	    logging: false
+	  });
 
-    const result = metadataActions.read(db, 'test2.csv');
-    expect(result).not.toBeNull();
+	  createMetadataTable(db);
 
-    compare(expect, result as Metadata, expected);
-  }
-);
+	  // Check whether the files database was created
+	  const result = db.prepare(`
+	      SELECT name FROM sqlite_master WHERE type='table' AND name='metadata';
+				`)
+	    .get();
 
-// Test updating a file entry in the files table
-// action_test(
-//   'files update',
-//   async ({ db, expect }: Parameters) => {
-//     const expected = {
-//       id: 2,
-//       name: 'test2.csv',
-//       path: 'test2.csv',
-//       request_size: 200,
-//       header: '',
-//       completed: 1,
-//       cleaned: 200,
-//       requested: 0,
-//       first_frame: 0,
-//       last_frame: 0,
-//       created_at: '',
-//       updated_at: ''
-//     };
+	  expect(result).toStrictEqual({ name: 'metadata' });
+	});
 
-//     const original = metadataActions.read(db, 'test2.csv');
-//     expect(original).not.toBeNull();
+	// Test creating a file entry in the files table
+	metadataTest(
+	  'files create',
+	  async ({ db, expect }: Parameters) => {
+	    const expected = {
+	      id: 4,
+	      name: 'newData.csv',
+	      path: '../newData.csv',
+	      request_size: 1000,
+	      header: '',
+	      completed: 0,
+	      cleaned: 0,
+	      requested: 0,
+	      first_frame: 0,
+	      last_frame: 0,
+	      created_at: '',
+	      updated_at: ''
+	    };
 
-//     const success = metadataActions.update(db, {
-//       ...original,
-//       cleaned: original.cleaned + 200,
-//       completed: 1
-//     });
-//     expect(success).toBe(true);
+	    const result = metadataActions.create(
+	    	db,
+	      expected.name,
+	      expected.path
+	    );
+	    expect(result).not.toBeNull();
 
-//     const updated = metadataActions.read(db, 'test2.csv');
-//     expect(updated).not.toBeNull();
+	    compare(expect, result as Metadata, expected);
+	  }
+	);
 
-//     compare(expect, updated, expected);
-//   }
-// );
+	// Test reading a file entry in the files table
+	metadataTest(
+	  'files read',
+	  async ({ db, expect }: Parameters) => {
+	    const expected = {
+	      id: 2,
+	      name: 'test2.csv',
+	      path: 'test2.csv',
+	      request_size: 200,
+	      header: '',
+	      completed: 0,
+	      cleaned: 0,
+	      requested: 0,
+	      first_frame: 0,
+	      last_frame: 0,
+	      created_at: '',
+	      updated_at: ''
+	    };
 
-// // Test removing a file entry in the files table
-// action_test('files remove', async ({ db, expect }: Parameters) => {
-//   const original = metadataActions.read(db, 'test2.csv');
-//   expect(original).not.toBeNull();
+	    const result = metadataActions.read(db, 'test2.csv');
+	    expect(result).not.toBeNull();
 
-//   const removed = metadataActions.remove(db, original);
-//   expect(removed).not.toBeNull();
+	    compare(expect, result as Metadata, expected);
+	  }
+	);
 
-//   compare(expect, removed, original);
+	// Test updating a file entry in the files table
+	metadataTest.todo(
+	  'files update',
+	  async ({ db, expect }: Parameters) => {
+	    const expected = {
+	      id: 2,
+	      name: 'test2.csv',
+	      path: 'test2.csv',
+	      request_size: 200,
+	      header: '',
+	      completed: 1,
+	      cleaned: 200,
+	      requested: 0,
+	      first_frame: 0,
+	      last_frame: 0,
+	      created_at: '',
+	      updated_at: ''
+	    };
 
-//   const file = metadataActions.read(db, 'test2.csv');
-//   expect(file).toBeNull();
-// });
+	    const original = metadataActions.read(db, 'test2.csv');
+	    expect(original).not.toBeNull();
+
+	    const success = metadataActions.update(db, {
+	      ...original,
+	      cleaned: original.cleaned + 200,
+	      completed: 1
+	    });
+	    expect(success).toBe(true);
+
+	    const updated = metadataActions.read(db, 'test2.csv');
+	    expect(updated).not.toBeNull();
+
+	    compare(expect, updated, expected);
+	  }
+	);
+
+	// Test removing a file entry in the files table
+	metadataTest.todo('files remove', async ({ db, expect }: Parameters) => {
+	  const original = metadataActions.read(db, 'test2.csv');
+	  expect(original).not.toBeNull();
+
+	  const removed = metadataActions.remove(db, original);
+	  expect(removed).not.toBeNull();
+
+	  compare(expect, removed, original);
+
+	  const file = metadataActions.read(db, 'test2.csv');
+	  expect(file).toBeNull();
+	});
+});
