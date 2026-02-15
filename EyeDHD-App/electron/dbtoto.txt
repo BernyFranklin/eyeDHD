@@ -1,3 +1,4 @@
 - Convert handlers to use DataStreams
 - Add progress tracking to DataStreams, not as database table
+- Make metadata immutable and have progress objects in DatabaseManager
 - Add tests to google sheets

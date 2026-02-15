@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, ipcRenderer, Notification } from 'electron';
+import { app, dialog, ipcMain, Notification } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -19,12 +19,12 @@ const dbmgr = new DatabaseManager({
 	logging: false
 });
 
-/**
-	* Handles the csv-open-file request. Opens a file selector
-	*
-	* @returns filename if a file is selected, or null if none is selected
-	*/
-ipcMain.handle('csv-open-file', async (_) => {
+/*
+ * CSV file / case handlers
+ */
+
+// Handles the csv-open-file request. Opens a file selector
+ipcMain.handle('csv:open-file', async (_) => {
 	return new Promise(async (resolve, reject) => {
 		const { canceled, filePaths } = await dialog.showOpenDialog({
 			properties: ['openFile'],
@@ -48,20 +48,8 @@ ipcMain.handle('csv-open-file', async (_) => {
 	});
 });
 
-ipcMain.handle('csv-get-metadata', async (_, filename) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const metadata = dbmgr.metadata.read(filename);
-
-			return resolve(metadata);
-		} catch (err) {
-
-			return reject(`Failed to get metadata for file: ${filename}. Error: ${err}`);
-		}
-	});
-});
-
-ipcMain.handle('csv-get-file-list', async (_) => {
+//
+ipcMain.handle('csv:get-file-list', async (_) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const files = dbmgr.metadata.readAll();
@@ -77,152 +65,67 @@ ipcMain.handle('csv-get-file-list', async (_) => {
 	});
 });
 
-ipcMain.handle('csv-reset-reading-progress', async (_, filename) => {
-	return new Promise<void>(async (resolve, reject) => {
+//
+ipcMain.handle('csv:get-cleaned-file-list', async (_) => {
+	return new Promise(async (resolve, reject) => {
 		try {
-			const metadata = dbmgr.metadata.read(filename);
-			dbmgr.metadata.resetReading(metadata);
+			const files = dbmgr.metadata.readAll();
 
-			return resolve();
-		} catch (err) {
-			return reject(`Failed to reset reading progress for file: ${filename}. Error: ${err}`);
-		}
-	});
-});
-
-ipcMain.handle('csv-reset-cleaning-progress', async (_, filename) => {
-	return new Promise<void>(async (resolve, reject) => {
-		try {
-			const metadata = dbmgr.metadata.read(filename);
-			dbmgr.metadata.resetCleaning(metadata);
-			dbmgr.csv.clear(metadata);
-
-			if (dbmgr.cleanerExists(metadata)) {
-				dbmgr.resetCleaner(metadata);
+			if (!files) {
+				return resolve(null);
 			}
 
+			const cleanedFiles = files.filter(file => file.cleaned);
+			if (cleanedFiles.length === 0) {
+				return resolve(null);
+			}
+
+			return resolve(cleanedFiles);
+		} catch (err) {
+			return reject(`Failed to get file list. Error: ${err}`);
+		}
+	});
+});
+
+//
+ipcMain.handle('csv:reset-reading-progress', async (_, file) => {
+	return new Promise<void>(async (resolve, reject) => {
+		try {
+			dbmgr.metadata.resetReading(file);
+
 			return resolve();
 		} catch (err) {
-			return reject(`Failed to reset cleaning progress for file: ${filename}. Error: ${err}`);
+			return reject(`Failed to reset reading progress for file: ${file.name}. Error: ${err}`);
 		}
 	});
 });
 
-/**
- * Handles the csv-get-buffer request. Pulls the buffer from filename's cleaner
- *
- * @returns an array of rows, or null if the entire file has been read
- */
-ipcMain.handle('csv-get-buffer', async (_, filename) => {
+// Handles the csv-clean-data request. Initiates the data cleaning process for a file
+ipcMain.handle('csv:clean-data', async (_, file: Metadata) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const metadata = dbmgr.metadata.read(filename);
-			const rows = dbmgr.csv.read(metadata);
-
-			return resolve(rows);
-		} catch (err) {
-			return reject(err);
-		}
-	});
-});
-
-/**
- * Handles the csv-clean-data request. Initiates the data cleaning process for a file
- *
- * @param filename - The name of the file to clean
- * @returns Promise that resolves when cleaning is initiated (not completed)
- */
-ipcMain.handle('csv-clean-data', async (_, filename) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const metadata = dbmgr.metadata.read(filename);
 			// Start cleaning in background without blocking
-			dbmgr.cleanFile(metadata);
+			dbmgr.cleanFile(file);
 
 			return resolve({ success: true, message: 'Data cleaning initiated' });
 		} catch (err) {
-			return reject(`Failed to start cleaning for file: ${filename}. Error: ${err}`);
+			return reject(`Failed to start cleaning for file: ${file.name}. Error: ${err}`);
 		}
 	});
 });
 
-/**
- * Handles the csv-get-stats request. Gets current cleaning statistics for a file
- *
- * @param filename - The name of the file to get stats for
- * @returns Object containing cleaning statistics and performance metrics
- */
-ipcMain.handle('csv-get-stats', async (_, filename: string) => {
+// Handles the csv-export-data request. Exports cleaned CSV data to a new file
+ipcMain.handle('csv:export-data', async (_, file: Metadata) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const metadata = dbmgr.metadata.read(filename);
-			const cleaner = dbmgr.getCleaner(metadata);
-			if (!cleaner) {
-				return reject(`File: ${filename} has not been opened`);
-			}
-
-			if (!cleaner.isActive()) {
-				// File finished cleaning
-				console.log(`File: ${filename} cleaning completed`);
-			}
-
-			const stats = cleaner.getStats();
-			const performanceData = cleaner.getPerformance();
-
-			return resolve({
-				stats,
-				performance: performanceData,
-				status: cleaner.status
-			});
-		} catch (err) {
-			return reject(`Failed to get stats for file: ${filename}. Error: ${err}`);
-		}
-	});
-});
-
-/**
- * Handles the csv-get-progress request. Gets current cleaning progress for a file
- *
- * @param filename - The name of the file to get progress for
- * @returns Object containing progress information
- */
-ipcMain.handle('csv-get-progress', async (_, filename) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const metadata = dbmgr.metadata.read(filename);
-			const cleaner = dbmgr.getCleaner(metadata);
-			if (!cleaner) {
-				return reject(`File: ${filename} has not been opened`);
-			}
-
-			if (!cleaner.isActive()) {
-				// File finished cleaning
-				console.log(`File: ${filename} cleaning completed`);
-			}
-
-			const progress = cleaner.getProgress();
-			return resolve(progress);
-		} catch (err) {
-			return reject(`Failed to get progress for file: ${filename}. Error: ${err}`);
-		}
-	});
-});
-
-/**
-* Handles the csv-export-data request. Exports cleaned CSV data to a new file
-*/
-ipcMain.handle('csv-export-data', async (_, filename) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const metadata = dbmgr.metadata.read(filename);
-			if (!metadata.completed) {
-				return reject(`File: ${filename} hasn't been cleaned yet. Clean the file first.`);
+			if (!file.completed) {
+				return reject(`File: ${file.name} hasn't been cleaned yet. Clean the file first.`);
 			}
 
 			// Show save dialog
 			const { canceled, filePath } = await dialog.showSaveDialog({
 				title: 'Export Cleaned CSV',
-				defaultPath: path.join(os.homedir(), `${path.parse(filename).name}_cleaned.csv`),
+				defaultPath: path.join(os.homedir(), `${path.parse(file.name).name}_cleaned.csv`),
 				filters: [{ name: 'CSV Files', extensions: ['csv'] }]
 			});
 
@@ -231,71 +134,29 @@ ipcMain.handle('csv-export-data', async (_, filename) => {
 			}
 
 			// Export the cleaned data
-			const result = await exportToCSV(filename, filePath);
+			const result = await exportToCSV(file, filePath);
 			return resolve(result);
 		} catch (err) {
-			return reject(`Failed to export file: ${filename}. Error: ${err}`);
+			return reject(`Failed to export file: ${file.name}. Error: ${err}`);
 		}
 	});
 });
 
-/**
-* Handles generic file save requests with binary data
-*/
-ipcMain.handle('csv-save-file', async (_, options) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const { defaultPath, filters, data } = options;
-
-			// Show save dialog
-			const { canceled, filePath } = await dialog.showSaveDialog({
-				title: 'Save File',
-				defaultPath: defaultPath || 'output.bin',
-				filters: filters || [{ name: 'All Files', extensions: ['*'] }]
-			});
-
-			if (canceled || !filePath) {
-				return resolve({ success: false, message: 'Save canceled' });
-			}
-
-			// Convert Uint8Array to Buffer if needed
-			let bufferData;
-			if (data instanceof Uint8Array) {
-				bufferData = Buffer.from(data);
-			} else if (Array.isArray(data)) {
-				bufferData = Buffer.from(data);
-			} else {
-				bufferData = data;
-			}
-
-			// Write the data to file
-			fs.writeFileSync(filePath, bufferData);
-
-			return resolve({
-				success: true,
-				filePath: filePath,
-				message: `File saved to ${filePath}`
-			});
-		} catch (err) {
-			return reject(`Failed to save file: ${err}`);
-		}
-	});
-});
-
-async function exportToCSV(filename: string, outputPath: string) {
+//
+async function exportToCSV(file: Metadata, outputPath: string) {
 	return new Promise(async (resolve) => {
 		try {
 			let csvContent = '';
 			let exportedRows = 0;
 
 			const stream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
-			let metadata = dbmgr.metadata.read(filename);
+			let metadata = dbmgr.metadata.read(file.name);
 
 			// Add header row
 			csvContent += metadata.header;
 
 			let rows = dbmgr.csv.read(metadata);
-			metadata = dbmgr.metadata.read(filename);
+			metadata = dbmgr.metadata.read(file.name);
 			while (rows !== null && rows.length > 0) {
 				for (const row of rows) {
 					Object.values(row).forEach((value) => {
@@ -309,7 +170,7 @@ async function exportToCSV(filename: string, outputPath: string) {
 				csvContent = '';
 
 				rows = dbmgr.csv.read(metadata);
-				metadata = dbmgr.metadata.read(filename);
+				metadata = dbmgr.metadata.read(file.name);
 			}
 
 			stream.end();
@@ -335,20 +196,13 @@ async function exportToCSV(filename: string, outputPath: string) {
 	});
 }
 
-ipcMain.handle('csv-get-first-and-last', async (_, filename) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const metadata = dbmgr.metadata.read(filename);
-			const result = dbmgr.csv.firstAndLast(metadata);
+/*
+ * VR video and Animation side-by-side handlers
+ */
 
-			return resolve(result);
-		} catch (err) {
-			return reject(`Failed to get first and last rows for file: ${filename}. Error: ${err}`);
-		}
-	});
-});
-
-ipcMain.handle('select-video-file', async () => {
+// Handles the select-video-file request. Opens a file selector for video files
+// and returns the selected file path
+ipcMain.handle('vr:select-video-file', async () => {
 	const result = await dialog.showOpenDialog({
 		properties: ['openFile'],
 		filters: [{ name: 'Videos', extensions: ['mp4', 'mov', 'mkv', 'webm'] }]
@@ -358,6 +212,8 @@ ipcMain.handle('select-video-file', async () => {
 	return result.filePaths[0];
 });
 
+// Used by the video-sync-vr request handler to stitch together the VR and
+// Animation videos using FFMPEG
 function SidebySide(vrFile: any, animFile: any, offsetSeconds: number) {
 	return new Promise((resolve, reject) => {
 		const offset = Number(offsetSeconds);
@@ -432,235 +288,27 @@ function SidebySide(vrFile: any, animFile: any, offsetSeconds: number) {
 	});
 }
 
-ipcMain.handle('video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }) => {
+// Handles the video-sync-vr request. Takes in the VR and Animation video file paths
+// and the offset, calls SidebySide to process them, and returns the path to
+// the synced output video
+ipcMain.handle('vr:video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }) => {
 	// check what main gets from preload
 	console.log('main handler got offsetSeconds =', offsetSeconds);
 	return await SidebySide(vrFile, animFile, offsetSeconds);
 });
 
-/**
-* Animation Export Handlers
-*/
+/*
+ * Data stream handlers
+ */
 
-// Store for managing export sessions
-const exportSessions = new Map();
-
-/**
-* Initialize a new export session
-*/
-ipcMain.handle('animation-export-init', async (_, options) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const sessionId = Date.now().toString();
-			const { fileName, exportFormat = 'webm', quality = 'high' } = options;
-
-			// Show save dialog
-			let fileExtension;
-			let filterName;
-
-			if (exportFormat === 'zip') {
-				fileExtension = 'zip';
-				filterName = 'Image Sequence';
-			} else if (exportFormat === 'webm') {
-				fileExtension = 'webm';
-				filterName = 'WebM Video';
-			} else {
-				fileExtension = 'webm'; // Default to WebM since it works without FFmpeg
-				filterName = 'WebM Video';
-			}
-
-			const { canceled, filePath } = await dialog.showSaveDialog({
-				title: 'Export Animation',
-				defaultPath: path.join(
-					os.homedir(),
-					`${path.parse(fileName).name}_animation.${fileExtension}`
-				),
-				filters: [{ name: filterName, extensions: [fileExtension] }]
-			});
-
-			if (canceled || !filePath) {
-				return resolve({ success: false, message: 'Export canceled' });
-			}
-
-			// Create export session
-			const session = {
-				id: sessionId,
-				fileName,
-				outputPath: filePath,
-				exportFormat: fileExtension,
-				quality,
-				frames: [] as any[],
-				status: 'initialized',
-				totalFrames: 0,
-				processedFrames: 0,
-				startTime: Date.now()
-			};
-
-			exportSessions.set(sessionId, session);
-
-			return resolve({ success: true, sessionId, outputPath: filePath });
-		} catch (err) {
-			return reject(`Failed to initialize export: ${err}`);
-		}
-	});
-});
-
-/**
-* Add frame data to export session
-*/
-ipcMain.handle('animation-export-add-frame', async (_, sessionId, frameData) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const session = exportSessions.get(sessionId);
-			if (!session) {
-				return reject(`Export session ${sessionId} not found`);
-			}
-
-			// Convert base64 data URL to buffer
-			const base64Data = frameData.frameData.replace(/^data:image\/png;base64,/, '');
-			const buffer = Buffer.from(base64Data, 'base64');
-
-			// Store frame data with proper timestamp
-			session.frames.push({
-				index: frameData.frameIndex,
-				timestamp: frameData.timestamp,
-				buffer: buffer
-			});
-
-			session.processedFrames = session.frames.length;
-			session.status = 'collecting';
-
-			return resolve({ success: true, frameCount: session.frames.length });
-		} catch (error: any) {
-			return reject(`Failed to add frame: ${error.message}`);
-		}
-	});
-});
-
-/**
-* Finalize export and create video/image sequence
-*/
-ipcMain.handle('animation-export-finalize', async (_, sessionId) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const session = exportSessions.get(sessionId);
-			if (!session) {
-				return reject(`Export session ${sessionId} not found`);
-			}
-
-			session.status = 'processing';
-			session.totalFrames = session.frames.length;
-
-			// Sort frames by index to ensure proper order
-			session.frames.sort((a: any, b: any) => a.index - b.index);
-
-			if (session.exportFormat === 'zip') {
-				// Export as image sequence
-				await exportImageSequence(session);
-			} else {
-				// Use MediaRecorder approach for video - create from canvas stream
-				await exportUsingMediaRecorder(session);
-			}
-
-			session.status = 'completed';
-			session.endTime = Date.now();
-
-			const result = {
-				success: true,
-				outputPath: session.outputPath,
-				frameCount: session.totalFrames,
-				duration: session.endTime - session.startTime
-			};
-
-			// Cleanup session
-			exportSessions.delete(sessionId);
-
-			return resolve(result);
-		} catch (err) {
-			const session = exportSessions.get(sessionId);
-			if (session) {
-				session.status = 'error';
-				session.error = err.message;
-			}
-			return reject(`Failed to finalize export: ${err}`);
-		}
-	});
-});
-
-/**
-* Get export session progress
-*/
-ipcMain.handle('animation-export-progress', async (_, sessionId) => {
-	return new Promise(async (resolve) => {
-		const session = exportSessions.get(sessionId);
-		if (!session) {
-			return resolve({ error: 'Session not found' });
-		}
-
-		return resolve({
-			status: session.status,
-			processedFrames: session.processedFrames,
-			totalFrames: session.totalFrames,
-			progress:
-			session.totalFrames > 0
-			? (session.processedFrames / session.totalFrames) * 100
-			: 0
-		});
-	});
-});
-
-/**
-* Cancel export session
-*/
-ipcMain.handle('animation-export-cancel', async (_, sessionId) => {
-	return new Promise(async (resolve) => {
-		const session = exportSessions.get(sessionId);
-		if (session) {
-			session.status = 'cancelled';
-			exportSessions.delete(sessionId);
-		}
-		return resolve({ success: true });
-	});
-});
-
-// Helper function to export as image sequence (ZIP)
-async function exportImageSequence(session: any) {
-	const JSZip = await import('jszip');
-	const zip = new JSZip.default();
-
-	// Add each frame as PNG to zip with proper naming
-	for (const frame of session.frames) {
-		const paddedIndex = frame.index.toString().padStart(8, '0');
-		zip.file(`frame_${paddedIndex}.png`, frame.buffer);
-	}
-
-	// Add metadata file
-	const metadata = {
-		frameCount: session.frames.length,
-		frameRate: 30,
-		duration: session.frames.length / 30,
-		exportDate: new Date().toISOString(),
-		sourceFile: session.fileName
-	};
-	zip.file('metadata.json', JSON.stringify(metadata, null, 2));
-
-	// Generate ZIP buffer and save
-	const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
-	fs.writeFileSync(session.outputPath, zipBuffer);
-}
-
-// Helper function to use browser MediaRecorder approach
-async function exportUsingMediaRecorder(session: any) {
-	// Since we can't easily recreate MediaRecorder on the backend,
-	// let's create a simple WebM file using the frames
-	// For now, fall back to image sequence if WebM was requested
-	await exportImageSequence(session);
-}
-
+// Starts a new stream for the given type and file (if applicable).
+// Returns a unique stream key to identify the stream in subsequent calls
 ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => {
 	return await dbmgr.startStream(type, file);
 })
 
+// Pulls the next chunk of data for a stream. The callback sends the data back
+// to the renderer in batches until the stream is done
 ipcMain.handle('stream:pull', async (e, { key, count }) => {
 	const { done } = await dbmgr.pullStream(key, count, (rows) => {
 		e.sender.send('stream:data', { key, rows });
@@ -671,13 +319,12 @@ ipcMain.handle('stream:pull', async (e, { key, count }) => {
 	}
 });
 
+// Cancels an active stream and cleans up resources
 ipcMain.on('stream:cancel', (_, { key }) => {
 	dbmgr.cancelStream(key);
 })
 
-/**
-* Handles the notify request. Creates an OS notification with the given message
-*/
+// Handles the notify request. Creates an OS notification with the given message
 ipcMain.on('notify', (_, message) => {
 	new Notification({ title: 'EyeDHD', body: message }).show();
 });
