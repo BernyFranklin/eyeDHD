@@ -15,20 +15,7 @@ import type {
 } from "./types";
 
 import { computeDistributionStats } from "./stats";
-
-// Needed for Section B
-function inRange(value: number, min: number, max: number): boolean {
-    return Number.isFinite(value) && value >= min && value <= max;
-}
-
-// Needed for Section E
-// Small helper to increment Partial<Record<...>> without forcing zero keys into object
-function incPartialCount<K extends string>(
-    map: Partial<Record<K, number>>,
-    key: K
-) {
-    map[key] = (map[key] ?? 0) + 1;                         // Increment count for this key, initializing to 0 if it doesn't exist
-}
+import { inRange, incPartialCount } from "./filtering";
 
 // Needed for Section G
 // Stable sort by startTime, then endTime, then original index to maintain input order for ties
