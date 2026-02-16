@@ -11,7 +11,7 @@ const ROWS = [
   '2,INVALID,0.4,0.5,0.6'
 ];
 
-describe('Data Analysis: DataCleaner', () => {
+describe('Data Analysis - DataCleaner', () => {
   let tempDir: string;
   let tempFile: string;
 
@@ -30,37 +30,41 @@ describe('Data Analysis: DataCleaner', () => {
     }
   });
 
-  it('1) yields cleaned rows and closes after completion', async () => {
-    const cleaner = new DataCleaner({ path: tempFile });
+  describe('A) Cleaning', () => {
+	  it('A1) yields cleaned rows and closes after completion', async () => {
+	    const cleaner = new DataCleaner({ path: tempFile });
 
-    const results: any[] = [];
-    for await (const row of cleaner) {
-      results.push(row);
-    }
+	    const results: any[] = [];
+	    for await (const row of cleaner) {
+	      results.push(row);
+	    }
 
-    expect(results.length).toBe(ROWS.length);
-    expect(cleaner.status.done).toBe(true);
-    cleaner.close();
-    expect(cleaner.status.closed).toBe(true);
+	    expect(results.length).toBe(ROWS.length);
+	    expect(cleaner.status.done).toBe(true);
+	    cleaner.close();
+	    expect(cleaner.status.closed).toBe(true);
 
-    // Basic sanity checks on cleaned fields
-    expect(results[0].Frame).toBe(1);
-    expect(results[0].LeftEyeStatus).toBe('VALID');
+	    // Basic sanity checks on cleaned fields
+	    expect(results[0].Frame).toBe(1);
+	    expect(results[0].LeftEyeStatus).toBe('VALID');
+	  });
   });
 
-  it('2) tracks byte progress and total file size', async () => {
-    const cleaner = new DataCleaner({ path: tempFile });
-    const fileSize = fs.statSync(tempFile).size;
+  describe('B) Progress and Stats', () => {
+	  it('B1) tracks byte progress and total file size', async () => {
+	    const cleaner = new DataCleaner({ path: tempFile });
+	    const fileSize = fs.statSync(tempFile).size;
 
-    for await (const _row of cleaner) {
-      // drain
-    }
+	    for await (const _row of cleaner) {
+	      // drain
+	    }
 
-    cleaner.close();
+	    cleaner.close();
 
-    expect(cleaner.progress.totalBytes).toBe(fileSize);
-    expect(cleaner.progress.bytesRead).toBeGreaterThan(0);
-    expect(cleaner.progress.bytesRead).toBeLessThanOrEqual(fileSize);
-    expect(cleaner.progress.currentRow).toBe(ROWS.length);
+	    expect(cleaner.progress.totalBytes).toBe(fileSize);
+	    expect(cleaner.progress.bytesRead).toBeGreaterThan(0);
+	    expect(cleaner.progress.bytesRead).toBeLessThanOrEqual(fileSize);
+	    expect(cleaner.progress.currentRow).toBe(ROWS.length);
+	  });
   });
 });
