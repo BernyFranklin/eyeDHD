@@ -1,4 +1,5 @@
-- Convert handlers to use DataStreams
-- Add progress tracking to DataStreams, not as database table
-- Make metadata immutable and have progress objects in DatabaseManager
-- Add tests to google sheets
+- Create saccade data schema to db
+- Analyze csv files and store them the results
+- Clean up DataCleaner
+- Add cleaning stats to data streams
+- COMMENT CODE
