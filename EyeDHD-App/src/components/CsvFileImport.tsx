@@ -3,7 +3,7 @@ import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
-import { type Error, type CSVData, Metadata, Progress } from '../types';
+import { type Error, type CSVData, Metadata } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
 type Props = {
@@ -11,10 +11,24 @@ type Props = {
   setButtonsDisabled: (disabled: boolean) => void;
 };
 
+type CleaningProgressState = {
+  progressPercent: number;
+  isComplete: boolean;
+  isReading: boolean;
+  rowsProcessed: number;
+};
+
+const DEFAULT_CLEANING_PROGRESS: CleaningProgressState = {
+  progressPercent: 0,
+  isComplete: false,
+  isReading: false,
+  rowsProcessed: 0
+};
+
 export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
   // Store data and handle the file load
   const [csvData, setCsvData] = useState<CSVData[]>([]);
-  const [file, setFile] = useState<Metadata | null>();
+  const [file, setFile] = useState<Metadata | null>(null);
   const [error, setError] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
@@ -22,8 +36,9 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 
   // Data cleaning state
   const [isCleaning, setIsCleaning] = useState(false);
-  const [cleaningProgress, setCleaningProgress] = useState<any>(null);
-  const [cleaningStats, setCleaningStats] = useState<any>(null);
+  const [cleaningProgress, setCleaningProgress] = useState<CleaningProgressState>(
+    DEFAULT_CLEANING_PROGRESS
+  );
   const [showCleaningResults, setShowCleaningResults] = useState(false);
 
   const styles = {
@@ -74,45 +89,46 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 
     setFile(null);
     setCsvData([]);
-    setCleaningProgress({
-    	progressPercent: 0,
- 			isComplete: false,
- 			isReading: false,
-			rowsProcessed: 0
-    });
-    setCleaningStats(null);
+    setCleaningProgress(DEFAULT_CLEANING_PROGRESS);
     setShowCleaningResults(false);
     setIsCleaning(false);
 
     // Request backend to open a file selector, wait for filename
     try {
-	    const file = await window.electron.csv.openFile();
-	    if (!file) {
-	      setIsLoading(false);
-	      return;
-	    }
-	    setFile(file);
+      const selectedFile = await window.electron.csv.openFile();
+      if (!selectedFile) {
+        setIsLoading(false);
+        return;
+      }
 
-      if (file.completed) {
-        setCleaningProgress({ ...cleaningProgress, isComplete: true });
+      setFile(selectedFile);
+
+      if (selectedFile.completed) {
+        setCleaningProgress({
+          progressPercent: 100,
+          isComplete: true,
+          isReading: false,
+          rowsProcessed: selectedFile.rows ?? 0
+        });
+
         // Get a stream, load 10 rows and cancel it
-        const stream = await RemoteStream.create("CSVData", { file });
+        const stream = await RemoteStream.create('CSVData', { file: selectedFile });
         const rows: CSVData[] = [];
         for await (const row of stream) {
-        	if (rows.length >= 10) {
-        		break;
-        	}
-  				rows.push(row as CSVData);
-				}
+          if (rows.length >= 10) {
+            break;
+          }
+          rows.push(row as CSVData);
+        }
+        stream.cancel();
 
-        setCleaningStats({ ...cleaningStats, stats: { totalRows: file.rows } });
         setCsvData(rows);
       }
     } catch (err) {
-      handleError(err);
+      handleError(err as Error);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   // Data cleaning functionality
@@ -129,43 +145,56 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
       setCleaningProgress({
         progressPercent: 0,
         isComplete: false,
-        isReading: false,
+        isReading: true,
         rowsProcessed: 0
       });
-      setCleaningStats(null);
       setShowCleaningResults(true);
 
       // Start the cleaning process
-      const stream = (await RemoteStream.create("Cleaning", { file }));
-      for await (const _ of stream) {
-       	cleaningProgress.rowsProcessed += stream.progress.rows;
-        cleaningProgress.progressPercent = cleaningProgress.rowsProcessed / 275_000 * 100;
-      }
-
-     	setCleaningProgress({
-    		...cleaningProgress,
-	      isComplete: true,
-	      isReading: false
-     	})
+      const stream = await RemoteStream.create('Cleaning', { file });
 
       const previewCSV: CSVData[] = [];
-      const preview = (await RemoteStream.create("CSVData", { file }));
-      for await (const row of preview) {
-       	if (previewCSV.length >= 10) {
-	        break;
+      for await (const row of stream) {
+        const { rows, bytesRead, totalBytes } = stream.progress;
+        const rowsProcessed = rows ?? 0;
+
+        if (previewCSV.length < 10) {
+        	previewCSV.push(row as CSVData);
         }
-       	previewCSV.push(row as CSVData);
+
+        let progressPercent = 0;
+        if (totalBytes && bytesRead) {
+          progressPercent = Math.min((bytesRead / totalBytes) * 100, 100);
+        } else {
+          const estimatedTotalRows = Math.max(file.rows || 0, rowsProcessed, 1);
+          progressPercent = Math.min((rowsProcessed / estimatedTotalRows) * 100, 100);
+        }
+
+        setCleaningProgress({
+          progressPercent,
+          isComplete: false,
+          isReading: true,
+          rowsProcessed
+        });
       }
+
+      setCleaningProgress((prev) => ({
+        ...prev,
+        progressPercent: 100,
+        isComplete: true,
+        isReading: false
+      }));
+
+      setFile({ ...file, completed: 1 });
       setCsvData(previewCSV);
-      preview.cancel();
 
       setIsCleaning(false);
       setButtonsDisabled(false);
       sendAlert('Data cleaning complete!');
-    } catch (err) {
+    } catch (err: unknown) {
       setButtonsDisabled(false);
       setIsCleaning(false);
-      sendError(err.message || 'Failed to start data cleaning');
+      sendError(err instanceof Error ? err.message : 'Failed to start data cleaning');
     }
   };
 
@@ -178,7 +207,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
     }
 
     // Check if cleaning is complete
-    if (!file.completed) {
+    if (!cleaningProgress.isComplete && !file.completed) {
       sendError('No cleaned data available. Please clean the data first.');
       return;
     }
@@ -187,17 +216,17 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
       setIsLoading(true);
       const result = await window.electron.csv.exportData(file);
 
-      // Set up this work just like the cleaning stream
-
       if (result.success) {
         sendAlert(
-          `Successfully exported ${result.stats.totalExported} rows to ${result.stats.filePath.split('\\').pop()}`
+          `Successfully exported ${result.stats.totalExported} rows to ${result.stats.filePath
+            .split('\\')
+            .pop()}`
         );
       } else {
         sendError(result.message || 'Export failed');
       }
-    } catch (err) {
-      sendError(err.message || 'Failed to export data');
+    } catch (err: unknown) {
+      sendError(err instanceof Error ? err.message : 'Failed to export data');
     } finally {
       setIsLoading(false);
     }
@@ -206,13 +235,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
   const clearFile = async () => {
     if (buttonsDisabled) return;
     setCsvData([]);
-    setCleaningProgress({
-      progressPercent: 0,
-      isComplete: false,
-      isReading: false,
-      rowsProcessed: 0
-    });
-    setCleaningStats(null);
+    setCleaningProgress(DEFAULT_CLEANING_PROGRESS);
     setShowCleaningResults(false);
     setIsCleaning(false);
 
@@ -271,27 +294,26 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
             <div style={styles.cleaningContainer}>
               <h3>Data Cleaning {isCleaning ? 'In Progress...' : 'Results'}</h3>
               {/* Cleaning progress  */}
-              {cleaningProgress && (
-                <div>
-                  <div style={styles.progressBar}>
-                    <div
-                      style={{
-                        ...styles.progressFill,
-                        width: `${cleaningProgress.progressPercent}%`
-                      }}
-                    />
-                  </div>
-                  <p>{cleaningProgress.progressPercent.toFixed(1)}% Complete</p>
-                  <p>
-                    Status:{' '}
-                    {cleaningProgress.isComplete
-                      ? 'Complete'
-                      : cleaningProgress.isReading
-                        ? 'Processing...'
-                        : 'Ready'}
-                  </p>
+              <div>
+                <div style={styles.progressBar}>
+                  <div
+                    style={{
+                      ...styles.progressFill,
+                      width: `${cleaningProgress.progressPercent}%`
+                    }}
+                  />
                 </div>
-              )}
+                <p>{cleaningProgress.progressPercent.toFixed(1)}% Complete</p>
+                <p>
+                  Status:{' '}
+                  {cleaningProgress.isComplete
+                    ? 'Complete'
+                    : cleaningProgress.isReading
+                      ? 'Processing...'
+                      : 'Ready'}
+                </p>
+              </div>
+
               {/* Cleaning stats */}
               {/* cleaningStats && cleaningStats.stats && (
                 <div style={styles.statsGrid as React.CSSProperties}>
@@ -307,9 +329,10 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
               )*/}
             </div>
           )}
+
           {/* File action buttons */}
           <div style={styles.buttonContainer as React.CSSProperties}>
-            {!cleaningProgress?.isComplete && (
+            {!cleaningProgress.isComplete && (
               <Button
                 onClick={isCleaning ? undefined : cleanData}
                 className={`btn${isCleaning ? ' disabled' : ''}`}
@@ -318,9 +341,9 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
             )}
             <Button
               onClick={exportCleanedData}
-              className={`btn${buttonsDisabled || !cleaningProgress?.isComplete ? ' disabled' : ''}`}
+              className={`btn${buttonsDisabled || !cleaningProgress.isComplete ? ' disabled' : ''}`}
               buttonText="Export Clean Data"
-              disabled={buttonsDisabled || !cleaningProgress?.isComplete}
+              disabled={buttonsDisabled || !cleaningProgress.isComplete}
             />
             <Button
               onClick={clearFile}
@@ -331,6 +354,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
           </div>
         </>
       )}
+
       {/* Alert window */}
       {showAlert && (
         <AlertWindow

@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { type Metadata } from './db/tables/metadata';
 import { type DataType, type StreamKey, type StreamType } from './db/DatabaseManager';
-import DataStream, { Progress } from './db/DataStream';
+import { type Progress } from './db/DataStream';
 
 export { Electron, Renderer };
 
@@ -36,7 +36,7 @@ declare interface Electron {
 
   stream: {
   	start(type: StreamType, file?: Metadata): Promise<StreamKey>;
-   	pull(key: StreamKey, count: number): Promise<void>;
+   	pull(key: StreamKey, batchCount: number): Promise<void>;
    	cancel(key: StreamKey): void;
   }
 
@@ -136,10 +136,10 @@ const electron: Electron = {
 			return await ipcRenderer.invoke('stream:start', { type, file })
 		},
 		/**
-			*
+			* Pulls the next N batches from the stream.
 			*/
-		pull: async (key: StreamKey, count: number): Promise<void> => {
-			await ipcRenderer.invoke('stream:pull', { key, count });
+		pull: async (key: StreamKey, batchCount: number): Promise<void> => {
+			await ipcRenderer.invoke('stream:pull', { key, count: batchCount });
 		},
 		/**
 			*

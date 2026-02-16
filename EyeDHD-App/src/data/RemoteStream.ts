@@ -65,7 +65,7 @@ export default class RemoteStream {
 		}
 
 		if (this.buf.length === 0 && !this.progress.done) {
-			await window.electron.stream.pull(this.key, 1000);
+			await window.electron.stream.pull(this.key, 1);
 		}
 
 		return this.buf.shift() ?? null;

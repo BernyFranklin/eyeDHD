@@ -3,38 +3,59 @@ import { DataType, StreamType } from "./DatabaseManager";
 export type Progress = {
 	done: boolean;
 	rows: number;
-}
+	bytesRead?: number;
+	totalBytes?: number;
+};
 
 /**
-	*
-	*/
+ * Wraps a batch iterator and tracks stream progress by batch size.
+ */
 export default class DataStream {
 	type: StreamType;
-	iterator: AsyncIterator<DataType>;
+	iterator: AsyncIterator<DataType[]>;
 	progress: Progress = {
 		done: false,
 		rows: 0
 	};
 
-	constructor(type: StreamType, iterator: AsyncIterator<DataType>) {
+	private wrappedIterator: AsyncIterator<DataType[]>;
+
+	constructor(type: StreamType, iterator: AsyncIterator<DataType[]>) {
 		this.type = type;
 		this.iterator = iterator;
+		this.wrappedIterator = this[Symbol.asyncIterator]();
 	}
 
-	async *[Symbol.asyncIterator]() {
+	async *[Symbol.asyncIterator](): AsyncIterator<DataType[]> {
 		while (true) {
 			const { done, value } = await this.iterator.next();
+
 			if (done) {
-				this.progress.done = true;
+				this.close();
 				break;
 			}
 
-			this.progress.rows++;
-			yield value;
+			const batch = value ?? [];
+			this.progress.rows += batch.length;
+			yield batch;
 		}
 	}
 
-	async next(): Promise<IteratorResult<DataType>> {
-		return await this.iterator.next();
+	close() {
+		if (this.progress.done) {
+			return;
+		}
+
+		this.progress.done = true;
+		const iteratorWithReturn = this.iterator as AsyncIterator<DataType[]> & {
+			return?: () => Promise<IteratorResult<DataType[]>>;
+		};
+		if (iteratorWithReturn.return) {
+			void iteratorWithReturn.return();
+		}
+	}
+
+	async next(): Promise<IteratorResult<DataType[]>> {
+		return await this.wrappedIterator.next();
 	}
 }

@@ -116,17 +116,20 @@ async function exportToCSV(file: Metadata, outputPath: string) {
 			const streamkey = await dbmgr.startStream("CSVData", file);
 			const data = dbmgr.getStream(streamkey);
 
-			for await (const row of data) {
-				Object.values(row).forEach((value) => {
-					csvContent += value + ',';
-				});
-				csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
-				exportedRows++;
+			for await (const batch of data) {
+				for (const row of batch) {
+					Object.values(row).forEach((value) => {
+						csvContent += value + ',';
+					});
+					csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
+					exportedRows++;
 
-				stream.write(csvContent);
-				csvContent = '';
+					stream.write(csvContent);
+					csvContent = '';
+				}
 			}
 
+			dbmgr.cancelStream(streamkey);
 			stream.end();
 
 			console.log('export complete.');
@@ -267,6 +270,10 @@ ipcMain.handle('stream:pull', async (event, { key, count }) => {
 	const _ = await dbmgr.pullStream(key, count, (rows, progress) => {
 		event.sender.send('stream:data', { key, rows, progress });
 	});
+});
+
+ipcMain.on('stream:cancel', (_, { key }) => {
+	dbmgr.cancelStream(key);
 });
 
 // Handles the notify request. Creates an OS notification with the given message

@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
 import type { Metadata } from './metadata';
 
-export default { create, read, readAll, firstAndLast, iterate };
+export default { create, iterate };
 
 // Converts filename into table name
 // ID.011.csv -> ID_011_csv_rows
@@ -226,48 +226,6 @@ function create(db: Database, file: Metadata, rows: CSVData[]): boolean {
   insertMany(rows);
 
   return true;
-}
-
-function read(db: Database, file: Metadata): CSVData[] {
-  const table = toTableName(file.name);
-  const rows = db.prepare<[number, number], CSVData>(`
-      SELECT * FROM ${table}
-		  LIMIT ? OFFSET ?;
-		`)
-    .all(file.request_size, file.requested);
-
-  return rows;
-}
-
-function readAll(db: Database, file: Metadata): CSVData[] {
-  const table = toTableName(file.name);
-  const rows = db.prepare<[], CSVData>(`
-      SELECT * FROM ${table};
-    `)
-    .all();
-
-  return rows;
-}
-
-function firstAndLast(
-  db: Database,
-  file: Metadata
-): { first: CSVData; last: CSVData } {
-  const table = toTableName(file.name);
-
-  const first = db.prepare<[number], CSVData>(`
-      SELECT * FROM ${table}
-      WHERE frame = ?;
-    `)
-    .get(file.first_frame) as CSVData;
-
-  const last = db.prepare<[number], CSVData>(`
-      SELECT * FROM ${table}
-		  WHERE frame = ?;
-		`)
-    .get(file.last_frame) as CSVData;
-
-  return { first, last };
 }
 
 function iterate(file: Metadata) {
