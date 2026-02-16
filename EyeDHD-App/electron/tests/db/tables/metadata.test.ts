@@ -42,7 +42,7 @@ function compareMetadata(result: Metadata, expected: Metadata) {
   expect(result.rows).toBe(expected.rows);
 }
 
-describe('Database: CSV Metadata', () => {
+describe('Database - Metadata', () => {
   describe('A) Table setup', () => {
     it('A1) Creates the metadata table', () => {
       const db = getDB({ temporary: true, logging: false });
@@ -102,8 +102,12 @@ describe('Database: CSV Metadata', () => {
       cleanup();
     });
 
-    it.todo('B3) Updates a metadata row');
+    it('B3) Updates a metadata row', () => {
+    	expect(true).toBe(false);
+    });
 
-    it.todo('B4) Removes a metadata row');
+    it('B4) Removes a metadata row', () => {
+    	expect(true).toBe(false);
+    });
   });
 });

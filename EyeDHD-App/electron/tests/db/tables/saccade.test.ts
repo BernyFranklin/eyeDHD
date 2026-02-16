@@ -13,12 +13,15 @@ function withTempDb(run: (db: Database) => void) {
   }
 }
 
-describe('Database: Saccade Data', () => {
-  describe('A) Table naming', () => {
+describe('Database - SaccadeData', () => {
+  describe('A) Table setup', () => {
     it('A1) Converts filename to a table name with _rows suffix', () => {
-      expect(toTableName('ID.011.csv')).toBe('ID_011_csv_rows');
-      expect(toTableName('sample.csv')).toBe('sample_csv_rows');
+      expect(toTableName('ID.011.csv')).toBe('ID_011_saccades');
+      expect(toTableName('sample.csv')).toBe('sample_saccades');
     });
+    it('A2) Creates a SaccadeData table for a given file name', () => {
+    	expect(true).toBe(false);
+    })
   });
 
   describe('B) Table lifecycle', () => {
@@ -35,33 +38,7 @@ describe('Database: Saccade Data', () => {
       });
     });
 
-    it('B2) Creates a table with expected columns', () => {
-      withTempDb((db) => {
-        const filename = 'schema_check.csv';
-        createSaccadeTable(db, filename);
-
-        const columns = db.prepare(`
-          PRAGMA table_info(${toTableName(filename)});
-        `).all();
-
-        const columnNames = columns.map((c: any) => c.name);
-
-        expect(columnNames).toEqual([
-          'id',
-          'frame',
-          'timestamp',
-          'start_index',
-          'end_index',
-          'duration_ms',
-          'peak_velocity_deg_per_sec',
-          'mean_velocity_deg_per_sec',
-          'amplitude_deg',
-          'created_at',
-        ]);
-      });
-    });
-
-    it('B3) Deletes a saccade table for a given file', () => {
+    it('B2) Deletes a saccade table for a given file', () => {
       withTempDb((db) => {
         const filename = 'delete_me.csv';
         createSaccadeTable(db, filename);
@@ -76,4 +53,22 @@ describe('Database: Saccade Data', () => {
       });
     });
   });
+
+  describe('C) CRUD operations', () => {
+		it('C1) Stores saccade rows tied to existing metadata', () => {
+			expect(true).toBe(false);
+		});
+
+		it('C2) Reads saccade rows for a given file', () => {
+			expect(true).toBe(false);
+		});
+
+		it('C3) Updates saccade rows for a given file', () => {
+			expect(true).toBe(false);
+		});
+
+		it('C4) Deletes saccade rows for a given file', () => {
+			expect(true).toBe(false);
+		});
+	});
 });

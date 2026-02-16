@@ -3,11 +3,11 @@ import type { Database } from 'better-sqlite3';
 export default {};
 
 // Converts filename into table name
-// ID.011.csv -> ID_011_csv_rows
+// ID.011.csv -> ID_011_saccades
 export function toTableName(filename: string) {
-  // Replace '.' with '_' in filename
-  const name = filename.replace(/\./g, '_');
-  return `${name}_rows`;
+  // Replace '.' with '_' in filename, and remove csv
+  const name = filename.replace(/\./g, '_').replace(/_csv$/, '');
+  return `${name}_saccades`;
 }
 
 export type SaccadeData = {

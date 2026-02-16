@@ -31,7 +31,7 @@ function createTempCsv(lines: string[]): { filePath: string; filename: string; r
   return { filePath, filename, rowCount: Math.max(lines.length - 1, 0) };
 }
 
-describe('DatabaseManager Streams', () => {
+describe('Database - Manager', () => {
   describe('A) Metadata streaming', () => {
     it('A1) Streams metadata in batches and reports row progress', async () => {
       const dbmgr = new DatabaseManager({ temporary: true, logging: false });
