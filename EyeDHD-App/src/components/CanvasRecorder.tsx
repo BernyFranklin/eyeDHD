@@ -63,7 +63,9 @@ export default function CanvasRecorder(props: Props) {
 			const url = URL.createObjectURL(blob);
 			const anchor = document.createElement('a');
 			anchor.href = url;
-			anchor.download = `${name}.mp4`;
+
+			// Generate filename based on name and mimeType used
+			anchor.download = `${name}.${mimeType.split('/')[1].split(';')[0]}`;
 
 			anchor.click();
 			URL.revokeObjectURL(url);
