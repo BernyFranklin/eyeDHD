@@ -1,18 +1,14 @@
 import type { Database } from 'better-sqlite3';
 
-export default { create, exists, read, readAll, iterate, update, remove };
+export default { create, exists, read, iterate, update, remove };
 
 export type Metadata = {
   id: number;
   name: string;
   path: string;
-  request_size: number;
   header: string;
   completed: number;
-  cleaned: number;
-  requested: number;
-  first_frame: number;
-  last_frame: number;
+  rows: number;
   created_at: string;
   updated_at: string;
 };
@@ -26,13 +22,9 @@ export function createMetadataTable(db: Database) {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT UNIQUE NOT NULL,
 			path TEXT NOT NULL,
-			request_size INTEGER NOT NULL,
 			header TEXT DEFAULT '',
 			completed BOOLEAN DEFAULT 0,
-			cleaned INTEGER DEFAULT 0,
-			requested INTEGER DEFAULT 0,
-			first_frame INTEGER DEFAULT 0,
-			last_frame INTEGER DEFAULT 0,
+			rows INTEGER DEFAULT 0,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
@@ -50,11 +42,11 @@ function create(
   filename: string,
   filepath: string
 ): Metadata {
-  const result = db.prepare<[string, string, number], Metadata>(`
- 			INSERT INTO metadata (name, path, request_size)
- 			VALUES (?, ?, ?);
+  const result = db.prepare<[string, string], Metadata>(`
+ 			INSERT INTO metadata (name, path)
+ 			VALUES (?, ?);
 		`)
-    .run(filename, filepath, 1000);
+    .run(filename, filepath);
 
   const file = db.prepare<[number | bigint], Metadata>(`
       SELECT * FROM metadata WHERE id = ?;
@@ -100,26 +92,13 @@ function iterate() {
 	`;
 }
 
-function readAll(db: Database): Metadata[] {
-  const files = db.prepare<[], Metadata>(`
-      SELECT * FROM metadata;
-		`)
-    .all();
-
-  return files;
-}
-
-function update(db: Database, file: Metadata): boolean {
+function update(db: Database, file: Metadata): Metadata {
   const result = db.prepare(`
       UPDATE metadata
 		  SET
-				request_size = @request_size,
 				header = @header,
 			  completed = @completed,
-			  cleaned = @cleaned,
-			  requested = @requested,
-			  first_frame = @first_frame,
-			  last_frame = @last_frame,
+			  rows = @rows,
 			  updated_at = CURRENT_TIMESTAMP
 			WHERE id = @id;
 		`)
@@ -129,7 +108,7 @@ function update(db: Database, file: Metadata): boolean {
     throw new Error(`Failed to update file entry for: ${file.name}`);
   }
 
-  return true;
+  return read(db, file.name);
 }
 
 function remove(db: Database, file: Metadata): Metadata {

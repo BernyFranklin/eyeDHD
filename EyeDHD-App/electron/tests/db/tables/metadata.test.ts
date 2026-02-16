@@ -8,10 +8,8 @@ function compare(expect: ExpectStatic, result: Metadata, expected: Metadata) {
   expect(result.id).toBe(expected.id);
   expect(result.name).toBe(expected.name);
   expect(result.path).toBe(expected.path);
-  expect(result.request_size).toBe(expected.request_size);
   expect(result.completed).toBe(expected.completed);
-  expect(result.cleaned).toBe(expected.cleaned);
-  expect(result.requested).toBe(expected.requested);
+  expect(result.rows).toBe(expected.rows);
 }
 
 export type Parameters = {
@@ -26,22 +24,22 @@ export const metadataTest = test.extend({
     createMetadataTable(db);
 
     db.prepare(`
-    		INSERT INTO metadata (name, path, request_size)
-      	VALUES (?, ?, ?);
+    		INSERT INTO metadata (name, path)
+      	VALUES (?, ?);
 			`)
-      .run('test.csv', 'test.csv', 200);
+      .run('test.csv', 'test.csv');
 
     db.prepare(`
-    		INSERT INTO metadata (name, path, request_size)
-				VALUES (?, ?, ?);
+    		INSERT INTO metadata (name, path)
+				VALUES (?, ?);
 			`)
-      .run('test2.csv', 'test2.csv', 200);
+      .run('test2.csv', 'test2.csv');
 
     db.prepare(`
-    		INSERT INTO metadata (name, path, request_size)
-				VALUES (?, ?, ?);
+    		INSERT INTO metadata (name, path)
+				VALUES (?, ?);
 			`)
-      .run('test3.csv', 'test3.csv', 200);
+      .run('test3.csv', 'test3.csv');
 
     await use(db);
 
@@ -75,13 +73,9 @@ describe('Database: CSV Metadata', () => {
 	      id: 4,
 	      name: 'newData.csv',
 	      path: '../newData.csv',
-	      request_size: 1000,
 	      header: '',
 	      completed: 0,
-	      cleaned: 0,
-	      requested: 0,
-	      first_frame: 0,
-	      last_frame: 0,
+	      rows: 0,
 	      created_at: '',
 	      updated_at: ''
 	    };
@@ -105,13 +99,9 @@ describe('Database: CSV Metadata', () => {
 	      id: 2,
 	      name: 'test2.csv',
 	      path: 'test2.csv',
-	      request_size: 200,
 	      header: '',
 	      completed: 0,
-	      cleaned: 0,
-	      requested: 0,
-	      first_frame: 0,
-	      last_frame: 0,
+	      rows: 0,
 	      created_at: '',
 	      updated_at: ''
 	    };
@@ -131,13 +121,9 @@ describe('Database: CSV Metadata', () => {
 	      id: 2,
 	      name: 'test2.csv',
 	      path: 'test2.csv',
-	      request_size: 200,
 	      header: '',
 	      completed: 1,
-	      cleaned: 200,
-	      requested: 0,
-	      first_frame: 0,
-	      last_frame: 0,
+	      rows: 200,
 	      created_at: '',
 	      updated_at: ''
 	    };
@@ -145,14 +131,11 @@ describe('Database: CSV Metadata', () => {
 	    const original = metadataActions.read(db, 'test2.csv');
 	    expect(original).not.toBeNull();
 
-	    const success = metadataActions.update(db, {
+	    const updated = metadataActions.update(db, {
 	      ...original,
-	      cleaned: original.cleaned + 200,
+	      rows: original.rows + 200,
 	      completed: 1
 	    });
-	    expect(success).toBe(true);
-
-	    const updated = metadataActions.read(db, 'test2.csv');
 	    expect(updated).not.toBeNull();
 
 	    compare(expect, updated, expected);
