@@ -89,6 +89,16 @@ export default class DatabaseManager {
 	}
 
 	close() {
+		for (const [key, stream] of this.streams.entries()) {
+			stream.close();
+			this.deleteStream({ id: key, type: stream.type });
+		}
+
+		for (const cleaner of this.cleaners.values()) {
+			cleaner.close();
+		}
+		this.cleaners.clear();
+
 		this.db.close();
 	}
 

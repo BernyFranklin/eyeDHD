@@ -1,87 +1,119 @@
-import { describe, type ExpectStatic, test } from 'vitest';
-import { type Database } from 'better-sqlite3';
+import { describe, it, expect } from 'vitest';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 
-import DatabaseManager, { getDB } from '../../db/DatabaseManager';
-import metadataActions, { createMetadataTable, type Metadata } from '../../db/tables/metadata';
-import csvActions, { createCSVTable, toTableName } from '../../db/tables/csv';
-import saccadeActions, { createSaccadeTable, type SaccadeData } from '../../db/tables/saccade';
+import DatabaseManager from '../../db/DatabaseManager';
 
-export type Parameters = {
-	db: Database;
-	expect: ExpectStatic
-} & any;
+import type { Progress } from '../../db/DataStream';
 
-// Adds a testing db with entries added to it for each test
-export const dbManagerTest = test.extend({
-	db: async ({}, use: (db: Database) => Promise<void>) => {
-    const db = getDB({ temporary: true, logging: false});
-    createMetadataTable(db);
+type PullResult = {
+  rows: any[];
+  progress: Progress;
+};
 
-    // Set up DatabaseManager instance instead of db
-    // and get db using const db = dbmgr['db'];
+async function pullOnce(
+  dbmgr: DatabaseManager,
+  key: { id: number; type: string },
+  count = 1
+): Promise<PullResult> {
+  return new Promise((resolve, reject) => {
+    dbmgr
+      .pullStream(key as any, count, (rows, progress) => resolve({ rows, progress }))
+      .catch(reject);
+  });
+}
 
-    db.prepare(`
-    		INSERT INTO metadata (name, path, request_size)
-      	VALUES (?, ?, ?);
-			`)
-      .run('test.csv', 'test.csv', 200);
+function createTempCsv(lines: string[]): { filePath: string; filename: string; rowCount: number } {
+  const filename = `test_${Date.now()}_${Math.random().toString(36).slice(2)}.csv`;
+  const filePath = path.join(os.tmpdir(), filename);
+  fs.writeFileSync(filePath, lines.join('\n') + '\n', 'utf8');
+  return { filePath, filename, rowCount: Math.max(lines.length - 1, 0) };
+}
 
-    db.prepare(`
-    		INSERT INTO metadata (name, path, request_size)
-				VALUES (?, ?, ?);
-			`)
-      .run('test2.csv', 'test2.csv', 200);
+describe('DatabaseManager streams', () => {
+  it('streams metadata in batches and reports row progress', async () => {
+    const dbmgr = new DatabaseManager({ temporary: true, logging: false });
+    const createdFiles: string[] = [];
 
-    db.prepare(`
-    		INSERT INTO metadata (name, path, request_size)
-				VALUES (?, ?, ?);
-			`)
-      .run('test3.csv', 'test3.csv', 200);
+    try {
+      const csv1 = createTempCsv(['a,b,c', '1,2,3']);
+      const csv2 = createTempCsv(['a,b,c', '4,5,6', '7,8,9']);
+      createdFiles.push(csv1.filePath, csv2.filePath);
 
-    await use(db);
+      const db = (dbmgr as any).db;
+      db.prepare(`
+        INSERT INTO metadata (name, path)
+        VALUES (?, ?);
+      `).run(csv1.filename, csv1.filePath);
 
-    db.close();
-  }
-});
+      db.prepare(`
+        INSERT INTO metadata (name, path)
+        VALUES (?, ?);
+      `).run(csv2.filename, csv2.filePath);
 
-describe('Database: DatabaseManager', () => {
-	test('1) initialization', ({ expect }) => {
+      const streamKey = await dbmgr.startStream('Metadata');
+      const { rows, progress } = await pullOnce(dbmgr, streamKey, 1);
 
-	});
+      expect(rows.length).toBeGreaterThanOrEqual(2);
+      expect(progress.rows).toBe(rows.length);
+      expect(progress.done).toBe(false);
 
-	dbManagerTest('2) openFile', async ({ db, expect }) => {
-		test('2a) new file metadata initialized properly', () => {
+      dbmgr.cancelStream(streamKey);
+    } finally {
+      dbmgr.close();
+      createdFiles.forEach((p) => {
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      });
+    }
+  });
 
-		});
+  it('streams cleaning batches and exposes byte-based progress', async () => {
+    const dbmgr = new DatabaseManager({ temporary: true, logging: false });
+    let createdFilePath = '';
 
-		test('2b) new file cleaner initalized properly', () => {
+    try {
+      const csv = createTempCsv([
+        'Frame,CaptureTime,LogTime,HMDPositionX,HMDPositionY,HMDPositionz,HMDRotationX,HMDRotationY,HMDRotationZ,HMDRotationHuh,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ,CombinedGazePositionX,CombinedGazePositionY,CombinedGazePositionZ,InterPupillaryDistanceInMM,LeftEyeStatus,LeftEyeForwardX,LeftEyeForwardY,LeftEyeForwardZ,LeftEyePositionX,LeftEyePositionY,LeftEyePositionZ,LeftPupilIrisDiameterRatio,LeftPupilDiameterInMM,LeftIrisDiameterInMM,LeftEyeOpenness,RightEyeStatus,RightEyeForwardX,RightEyeForwardY,RightEyeForwardZ,RightEyePositionX,RightEyePositionY,RightEyePositionZ,RightPupilIrisDiameterRatio,RightPupilDiameterInMM,RightIrisDiameterInMM,RightEyeOpenness,FocusDistance,FocusStability',
+        '1,100,200,0,0,0,0,0,0,0,VALID,0,0,1,0,0,0,60,VALID,0,0,1,0,0,0,0.5,4,6,1,VALID,0,0,1,0,0,0,0.5,4,6,1,1,0.9',
+        '2,101,201,0,0,0,0,0,0,0,VALID,0,0,1,0,0,0,60,VALID,0,0,1,0,0,0,0.5,4,6,1,VALID,0,0,1,0,0,0,0.5,4,6,1,1,0.9',
+        '3,102,202,0,0,0,0,0,0,0,VALID,0,0,1,0,0,0,60,VALID,0,0,1,0,0,0,0.5,4,6,1,VALID,0,0,1,0,0,0,0.5,4,6,1,1,0.9'
+      ]);
+      createdFilePath = csv.filePath;
 
-		});
-		
-		test('2a) old file metadata  properly', () => {
+      const metadata = dbmgr.openFile(csv.filename, csv.filePath);
+      const streamKey = await dbmgr.startStream('Cleaning', metadata);
 
-		});
+      let totalRows = 0;
+      let lastProgress: Progress | null = null;
 
-		test('2b) new file cleaner initalized properly', () => {
+      for (let i = 0; i < 20; i++) {
+        const { rows, progress } = await pullOnce(dbmgr, streamKey, 1);
+        totalRows += rows.length;
+        lastProgress = progress;
 
-		});
-	});
+        if (progress.done) {
+          break;
+        }
+      }
 
-	dbManagerTest('3) Metadata', ({ db, expect }) => {
-		test('3a) create', () => {
+      expect(lastProgress).not.toBeNull();
+      expect(lastProgress?.done).toBe(true);
+      expect(totalRows).toBe(csv.rowCount);
+      expect(lastProgress?.rows).toBe(csv.rowCount);
 
-		});
+      expect(lastProgress?.bytesRead).toBeDefined();
+      expect(lastProgress?.totalBytes).toBeDefined();
+      expect(lastProgress?.bytesRead).toBeGreaterThan(0);
+      expect(lastProgress?.totalBytes).toBeGreaterThan(0);
+      expect((lastProgress?.bytesRead ?? 0) <= (lastProgress?.totalBytes ?? 0)).toBe(true);
 
-		test('3a) read', () => {
-
-		});
-
-		test('3a) update', () => {
-
-		});
-
-		test('3a) remove', () => {
-
-		});
-	});
+      dbmgr.cancelStream(streamKey);
+    } finally {
+      dbmgr.close();
+      if (createdFilePath && fs.existsSync(createdFilePath)) {
+        fs.unlinkSync(createdFilePath);
+      }
+    }
+  });
 });

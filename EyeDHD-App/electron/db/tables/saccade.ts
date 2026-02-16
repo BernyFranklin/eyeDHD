@@ -17,7 +17,16 @@ export type SaccadeData = {
 export function createSaccadeTable(db: Database, filename: string) {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
-
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      frame INTEGER,
+      timestamp REAL,
+      start_index INTEGER,
+      end_index INTEGER,
+      duration_ms REAL,
+      peak_velocity_deg_per_sec REAL,
+      mean_velocity_deg_per_sec REAL,
+      amplitude_deg REAL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `).run();
 }
