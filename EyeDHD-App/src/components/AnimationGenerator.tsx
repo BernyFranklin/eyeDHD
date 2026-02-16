@@ -8,15 +8,14 @@ import { type Error, type CSVData, type Metadata } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
 export default function AnimationGenerator() {
+  const [files, setFiles] = useState<Metadata[]>([]);
+  const [file, setFile] = useState<Metadata | null>(null);
   const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
-  // Replace filename with metadata objects for simplicity
-  const [fileName, setFileName] = useState('');
+
   const [error, setError] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [showAlert, setShowAlert] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const [files, setFiles] = useState<string[]>([]);
 
   const styles = {
     container: {
@@ -70,29 +69,30 @@ export default function AnimationGenerator() {
   const getFilesList = async () => {
     setIsLoading(true);
 
-    try {
-      const files = await window.electron.csv.getFileList();
-      if (error) return;
+    if (files.length > 0) return;
 
-      const cleaned = files
-        .filter((metadata: Metadata) => metadata.completed)
-        .map((metadata: Metadata) => metadata.name);
+    // This is running twice for some reason,
+    // I believe its because of <StrictMode> in main.tsx
+    const stream = await RemoteStream.create("Metadata", {});
+    try {
+      const files = await stream.collect() as Metadata[];
+      const cleaned = files.filter((metadata: Metadata) => metadata.completed);
 
       setFiles(cleaned);
     } catch (err) {
+    	stream.cancel();
       handleError(err);
     }
 
     setIsLoading(false);
   };
 
-  const getStream = async (filename: string | null) => {
-    if (!filename) {
+  const getStream = async (file: Metadata | null) => {
+    if (!file) {
       sendError({ message: 'No file loaded' });
       return;
     }
 
-    const file = await window.electron.csv.getMetadata(filename);
     setCsvStream(await RemoteStream.create("CSVData", { file }));
   };
 
@@ -118,7 +118,7 @@ export default function AnimationGenerator() {
 
   const handleSubmit: ReactEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
-    setFileName('');
+    setFile(null);
 
     const form: HTMLFormElement | undefined = e.target as HTMLFormElement;
     const data = new FormData(form);
@@ -126,9 +126,11 @@ export default function AnimationGenerator() {
     const selected_file = data.get('fileSelect');
     if (selected_file === 'none') return;
 
+    const metadata = files.find((file) => file.name === selected_file);
+
     try {
-      setFileName(selected_file as string);
-      await getStream(selected_file as string);
+      setFile(metadata);
+      await getStream(metadata);
     } catch (err) {
       handleError(err);
     }
@@ -144,12 +146,12 @@ export default function AnimationGenerator() {
     if (select) select.value = 'none';
 
     // Reset reading progress if we have a filename
-    if (fileName) {
+    if (file) {
       csvStream?.cancel();
     }
 
     // Reset all state
-    setFileName('');
+    setFile(null);
     setCsvStream(null);
   };
 
@@ -212,8 +214,8 @@ export default function AnimationGenerator() {
 	                </option>
 	                {files.map((file, index) => {
 	                  return (
-	                    <option key={index} value={file}>
-	                      {file}
+	                    <option key={index} value={file.name}>
+	                      {file.name}
 	                    </option>
 	                  );
 	                })}
@@ -236,7 +238,7 @@ export default function AnimationGenerator() {
 	          </form>
 	        )}
 					{/*Conditionally render the AnimationContainer*/}
-	        {fileName !== '' && csvStream && (
+	        {file && csvStream && (
 	        <>
 	        	<h3>Generating Animation...</h3>
 						<div>

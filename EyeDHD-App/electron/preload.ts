@@ -2,24 +2,29 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { type Metadata } from './db/tables/metadata';
 import { type DataType, type StreamKey, type StreamType } from './db/DatabaseManager';
+import DataStream, { Progress } from './db/DataStream';
 
 export { Electron, Renderer };
 
 console.log('Preload script loaded, exposing API to renderer process');
 
 /**
- * Defines the API that the backend exposes to the frontend through the preload script
- *
- * Must make sure this matches API matched in backend
+ * Declares the API that the backend exposes to the frontend through the preload script
  */
 declare interface Electron {
   csv: {
     openFile(): Promise<Metadata | null>;
-    getFileList(): Promise<Metadata[] | null>;
-    getCleanedFileList(): Promise<Metadata[] | null>;
     resetCleaningProgress(file: Metadata): Promise<void>;
     cleanData(file: Metadata): Promise<void>;
-    exportData(file: Metadata): Promise<void>;
+    exportData(file: Metadata): Promise<{
+   	 	success: boolean,
+			message: string,
+			stats: {
+				totalExported: number,
+				filePath: string,
+				fileSize: number
+			}
+    }>;
   };
 
   video: {
@@ -38,20 +43,17 @@ declare interface Electron {
 }
 
 /**
- * Defines the API that the front uses to react to messages
+ * Declares the API that the front uses to react to messages
  * from the backend through the preload script
  */
 declare interface Renderer {
 	stream: {
-		onData(callback: (key: StreamKey, rows: DataType[]) => void): void;
-		onEnd(callback: (key: StreamKey) => void): void;
+		onData(callback: (key: StreamKey, rows: DataType[], progress: Progress) => void): void;
 	}
 }
 
 /**
-	* Defines requests that the frontend can send to the backend
-	*
-	* available as an object in the frontend called: electron
+	* Defines the Electron requests
 	*/
 const electron: Electron = {
 	csv: {
@@ -64,24 +66,11 @@ const electron: Electron = {
 			return await ipcRenderer.invoke('csv:open-file');
 		},
 		/**
-			* Resets the cleaning progress of a file, allowing it to be cleaned again from the start.
+			* Resets the cleaning progress of a file, allowing it to be cleaned
+			* again from the start.
 			*/
 		resetCleaningProgress: async (file: Metadata): Promise<void> => {
 			return await ipcRenderer.invoke('csv:reset-cleaning-progress', file);
-		},
-		/**
-			* Gets the list of all files that have been opened.
-			* @returns the list, or null if no files have been opened.
-			*/
-		getFileList: async (): Promise<Metadata[] | null> => {
-			return await ipcRenderer.invoke('csv:get-file-list');
-		},
-		/**
-			* Gets the list of all files that have been opened and cleaned.
-			* @returns the list, or null if no files have been opened.
-			*/
-		getCleanedFileList: async (): Promise<Metadata[] | null> => {
-			return await ipcRenderer.invoke('csv:get-cleaned-file-list');
 		},
 		/**
 			* Initiates data cleaning process for the specified file
@@ -142,7 +131,7 @@ const electron: Electron = {
 			*
 			*/
 		pull: async (key: StreamKey, count: number): Promise<void> => {
-			return await ipcRenderer.invoke('stream:pull', { key, count });
+			await ipcRenderer.invoke('stream:pull', { key, count });
 		},
 		/**
 			*
@@ -160,24 +149,20 @@ const electron: Electron = {
 };
 
 /**
-	* Exposes APIs for the backend to send data/events to the frontend
+	* Defines the Renderer handlers
 	*/
 const renderer: Renderer = {
 	stream: {
 		/**
-			*
+			* Attaches a callback to be called when new data is available for a stream.
 			*/
-		onData: (callback: (key: StreamKey, rows: DataType[]) => void) => {
-			ipcRenderer.on('stream:data', (_, args: { key: StreamKey, rows: DataType[] }) => {
-				callback(args.key, args.rows);
-			});
-		},
-		/**
-			*
-			*/
-		onEnd: (callback: (key: StreamKey) => void) => {
-			ipcRenderer.on('stream:end', (_, { key }) => {
-				callback(key);
+		onData: (callback) => {
+			ipcRenderer.on('stream:data', (_, args: {
+				key: StreamKey,
+				rows: DataType[],
+				progress: Progress
+			}) => {
+				callback(args.key, args.rows, args.progress);
 			});
 		}
 	}

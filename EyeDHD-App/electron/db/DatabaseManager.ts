@@ -2,6 +2,7 @@ import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
 import DataCleaner from '../analysis/DataCleaner';
+import DataStream, { type Progress } from './DataStream';
 import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
 import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
 import saccadeActions, { type SaccadeData, createSaccadeTable, deleteSaccadeTable } from './tables/saccade';
@@ -17,31 +18,25 @@ type DBOptions = {
 
 // Public functionality available for Metadata
 type MetadataActions = {
-	create: (filename: string, filepath: string) => void;
-	exists: (filename: string) => boolean;
 	read: (filename: string) => Metadata;
-	readAll: () => Metadata[];
+	exists: (filename: string) => boolean;
 	resetCleaning: (file: Metadata) => void;
-	resetReading: (file: Metadata) => void;
+	resetAnalysis: (file: Metadata) => void;
 	remove: (file: Metadata) => Metadata;
 };
 
 // Public functionality available for CSV Data
 type CSVActions = {
 	store: (file: Metadata, rows: CSVData[]) => void;
-	read: (file: Metadata) => CSVData[];
-	readAll: (file: Metadata) => CSVData[];
-	firstAndLast: (file: Metadata) => { first: CSVData; last: CSVData };
-	clear: (file: Metadata) => void;
 };
 
 // Public functionality available for Saccade Data
 type SaccadeDataActions = {
-	create: () => void;
+	store: () => void;
 };
 
 export type DataType = Metadata | CSVData | SaccadeData;
-export type StreamType = "Metadata" | "CSVData" | "SaccadeData";
+export type StreamType = "Metadata" | "CSVData" | "SaccadeData" | "Cleaning";
 export type StreamKey = {
 	id: number,
 	type: StreamType
@@ -54,7 +49,7 @@ export type StreamKey = {
 export default class DatabaseManager {
 	private db: Database;
 	private cleaners = new Map<string, DataCleaner>();
-	private streams = new Map<number, AsyncIterator<DataType>>();
+	private streams = new Map<number, DataStream>();
 
 	// These fields contain the public API for interacting with the database
 	// TODO: make these private and use streams for getting data
@@ -69,38 +64,26 @@ export default class DatabaseManager {
 		// Initialize the public API for interacting with the database
 
 		this.metadata = {
-			create: (filename: string, filepath: string) => {
-				const metadata = metadataActions.create(
-					this.db,
-					filename,
-					filepath
-				);
-
-				this.createCSVTable(metadata);
-				this.createSaccadeTable(metadata);
-				this.setCleaner(metadata);
-			},
 			exists: (filename: string) => {
 				return metadataActions.exists(this.db, filename);
 			},
 			read: (filename: string) => {
 				return metadataActions.read(this.db, filename);
 			},
-			readAll: () => {
-				return metadataActions.readAll(this.db);
-			},
 			resetCleaning: (file: Metadata) => {
+				this.resetCleaner(file);
+				this.deleteCSVTable(file);
+				this.createCSVTable(file);
+
 				this.updateMetadata({
 					...file,
-					requested: 0,
-					cleaned: 0,
 					completed: 0,
-					first_frame: 0,
-					last_frame: 0
+					rows: 0
 				});
 			},
-			resetReading: (file: Metadata) => {
-				this.updateMetadata({ ...file, requested: 0 });
+			resetAnalysis: (file: Metadata) => {
+				this.deleteSaccadeTable(file);
+				this.createSaccadeTable(file);
 			},
 			remove: (file: Metadata) => {
 				return metadataActions.remove(this.db, file);
@@ -113,34 +96,11 @@ export default class DatabaseManager {
 				if (!ok) {
 					throw new Error(`Failed to insert csv data for file: ${file.name}`);
 				}
-			},
-			read: (file: Metadata) => {
-				const rows = csvActions.read(this.db, file);
-				if (rows === undefined) {
-					throw new Error(`Failed to read cleaned rows for file: ${file.name}`);
-				}
-
-				this.updateMetadata({
-					...file,
-					requested: file.requested + rows.length
-				});
-
-				return rows;
-			},
-			readAll: (file: Metadata) => {
-				return csvActions.readAll(this.db, file);
-			},
-			firstAndLast: (file: Metadata) => {
-				return csvActions.firstAndLast(this.db, file);
-			},
-			clear: (file: Metadata) => {
-				this.deleteCSVTable(file);
-				this.createCSVTable(file);
 			}
 		};
 
 		this.saccade = {
-			create: () => {
+			store: () => {
 
 			}
 		};
@@ -158,76 +118,22 @@ export default class DatabaseManager {
    */
 	openFile(filename: string, filepath: string): Metadata {
 		if (this.metadata.exists(filename)) {
-			const metadata = this.metadata.read(filename);
-			if (!this.cleanerExists(metadata)) {
-				this.resetCleaner(metadata);
+			const metadata = metadataActions.read(this.db, filename);
+			if (!metadata.completed) {
+				this.metadata.resetCleaning(metadata);
 			}
+			this.createCleaner(metadata);
 
 			return metadata;
 		} else {
-			this.metadata.create(filename, filepath);
-			const metadata = this.metadata.read(filename);
-			const cleaner = this.getCleaner(metadata);
+			const metadata = metadataActions.create(this.db, filename, filepath);
 
-			// I don't think this is needed anymore
-			if (metadata.request_size != cleaner.buf_len) {
-				this.updateMetadata({
-					...metadata,
-					request_size: cleaner.buf_len
-				})
-			}
+			this.createCleaner(metadata);
+			this.createCSVTable(metadata);
+			this.createSaccadeTable(metadata);
 
 			return metadata;
 		}
-	}
-
-	/**
-   * TODO: update Cleaner and this function to clean whole file
-   */
-	async cleanFile(file: Metadata): Promise<void> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				let metadata = file;
-
-				const cleaner = this.getCleaner(metadata);
-				let buffer = await cleaner.getBuffer();
-
-				if (cleaner.status.done) {
-					return;
-				}
-
-				// Only set the first frame number when cleaning is not in progress
-				if (metadata.cleaned === 0) {
-					this.updateMetadata({
-						...metadata,
-						header: cleaner.header.join(',') + '\n',
-						first_frame: buffer?.[0].Frame
-					});
-
-					metadata = this.metadata.read(metadata.name);
-				}
-
-				while (buffer) {
-					this.csv.store(metadata, buffer);
-
-					this.updateMetadata({
-						...metadata,
-						last_frame: buffer[buffer.length - 1].Frame,
-						cleaned: (metadata.cleaned += buffer.length)
-					});
-
-					buffer = await cleaner.getBuffer();
-					metadata = this.metadata.read(metadata.name);
-				}
-
-				this.updateMetadata({ ...metadata, completed: 1 });
-				cleaner.close();
-
-				return resolve();
-			} catch (err) {
-				return reject(`Failed to clean file: ${err}`);
-			}
-		});
 	}
 
 	// Private helper functions
@@ -235,22 +141,21 @@ export default class DatabaseManager {
 	/**
    *
    */
-	private updateMetadata(updates: Metadata) {
-		const ok = metadataActions.update(this.db, updates);
-		if (!ok) {
-			throw new Error(`Failed to update metadata for file: ${updates.name}`);
-		}
+	private updateMetadata(updates: Metadata): Metadata {
+		return metadataActions.update(this.db, updates);
 	}
 
 	/**
 	 * Creates a new data cleaner and stores in in the cleaners map
 	 */
-	private setCleaner(file: Metadata) {
-		this.cleaners.set(file.name, new DataCleaner({
+	private createCleaner(file: Metadata) {
+		const cleaner = new DataCleaner({
 			dbmgr: this,
 			name: file.name,
 			path: file.path
-		}));
+		});
+
+		this.cleaners.set(file.name, cleaner);
 	}
 
 	/**
@@ -263,9 +168,9 @@ export default class DatabaseManager {
 	/**
 	 * Resets the cleaner for a given file
 	 */
-	resetCleaner(file: Metadata) {
+	private resetCleaner(file: Metadata) {
 		this.deleteCleaner(file);
-		this.setCleaner(file);
+		this.createCleaner(file);
 	}
 
 	/**
@@ -319,29 +224,15 @@ export default class DatabaseManager {
 
 	}
 
-	/**
-	 * Creates a new table for storing progress data for a given file
-	 */
-	private createProgressTable(file: Metadata) {
-
-	}
-
-	/**
-	 * Deletes the progress data table for a given file
-	 */
-	private deleteProgressTable(file: Metadata) {
-
-	}
-
 	async startStream(type: StreamType, file?: Metadata): Promise<StreamKey> {
 		const iterator = this.createIterator(type, file);
 		const key = { id: Date.now(), type };
-		this.streams.set(key.id, iterator);
+		this.streams.set(key.id, new DataStream(type, iterator));
 
 		return key;
 	}
 
-	private getStream(key: StreamKey): AsyncIterator<DataType> {
+	getStream(key: StreamKey): DataStream {
 		return this.streams.get(key.id);
 	}
 
@@ -352,28 +243,30 @@ export default class DatabaseManager {
 	async pullStream(
 		key: StreamKey,
 		count: number,
-		send: (rows: DataType[]) => void
-	): Promise<{ done: boolean }> {
-		const iterator = this.getStream(key);
-		if (!iterator) {
+		send: (rows: DataType[], progress: Progress) => void
+	): Promise<void> {
+		const stream = this.getStream(key);
+		if (!stream) {
 			throw new Error(`No stream found for key: ${key.id}`);
+		}
+
+		if (stream.progress.done) {
+			return;
 		}
 
 		const rows: DataType[] = [];
 
 		for (let i = 0; i < count; i++) {
-			const { value, done } = await iterator.next();
+			const { value, done } = await stream.next();
 			if (done) {
-				this.deleteStream(key);
-				send(rows);
-				return { done: true };
+				send(rows, stream.progress);
+				break;
 			}
 
 			rows.push(value);
 		}
 
-		send(rows);
-		return { done: false };
+		send(rows, stream.progress);
 	}
 
 	cancelStream(key: StreamKey) {
@@ -395,6 +288,10 @@ export default class DatabaseManager {
 				break;
 			}
 			case "CSVData": {
+				if (!file) {
+					throw new Error("File must be provided for CSVData streams");
+				}
+
 				const sql = csvActions.iterate(file);
 		    const stmt = this.db.prepare<[], CSVData>(sql);
 
@@ -405,9 +302,42 @@ export default class DatabaseManager {
 			}
 			case "SaccadeData": {
 				throw new Error("SaccadeData streaming not implemented yet");
+				if (!file) {
+					throw new Error("File must be provided for Saccade streams");
+				}
 				break;
 			}
+			case "Cleaning": {
+				let metadata = file;
+				const cleaner = this.getCleaner(metadata);
+				if (!cleaner) {
+					throw new Error(`No cleaner found for file: ${metadata.name}`);
+				}
 
+				if (cleaner.status.start) {
+					this.metadata.resetCleaning(metadata);
+					throw new Error(`Cleaner for file: ${metadata.name} hasn't been started yet`);
+				} else {
+					const header = cleaner.header.join(',') + '\n';
+					console.log(header);
+
+					metadata = this.updateMetadata({ ...metadata, header });
+				}
+
+				const iterator = cleaner[Symbol.asyncIterator]();
+				for await (const row of iterator) {
+					this.csv.store(file, [row]);
+					yield row;
+				}
+
+				cleaner.close();
+				this.updateMetadata({
+					...metadata,
+					rows: cleaner.progress.currentRow,
+					completed: 1
+				});
+				break;
+			}
 		}
   }
 }

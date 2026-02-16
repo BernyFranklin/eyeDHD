@@ -11,7 +11,6 @@ import { type Metadata } from './db/tables/metadata';
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
 // Database setup
-// Set testing to true to use a temporary db instead of a file
 const appRoot = app.getAppPath();
 const dbmgr = new DatabaseManager({
 	path: path.join(appRoot, 'main.db'),
@@ -49,67 +48,14 @@ ipcMain.handle('csv:open-file', async (_) => {
 });
 
 //
-ipcMain.handle('csv:get-file-list', async (_) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const files = dbmgr.metadata.readAll();
-
-			if (!files) {
-				return resolve(null);
-			}
-
-			return resolve(files);
-		} catch (err) {
-			return reject(`Failed to get file list. Error: ${err}`);
-		}
-	});
-});
-
-//
-ipcMain.handle('csv:get-cleaned-file-list', async (_) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			const files = dbmgr.metadata.readAll();
-
-			if (!files) {
-				return resolve(null);
-			}
-
-			const cleanedFiles = files.filter(file => file.cleaned);
-			if (cleanedFiles.length === 0) {
-				return resolve(null);
-			}
-
-			return resolve(cleanedFiles);
-		} catch (err) {
-			return reject(`Failed to get file list. Error: ${err}`);
-		}
-	});
-});
-
-//
-ipcMain.handle('csv:reset-reading-progress', async (_, file) => {
+ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
-			dbmgr.metadata.resetReading(file);
+			dbmgr.metadata.resetCleaning(file);
 
 			return resolve();
 		} catch (err) {
 			return reject(`Failed to reset reading progress for file: ${file.name}. Error: ${err}`);
-		}
-	});
-});
-
-// Handles the csv-clean-data request. Initiates the data cleaning process for a file
-ipcMain.handle('csv:clean-data', async (_, file: Metadata) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			// Start cleaning in background without blocking
-			dbmgr.cleanFile(file);
-
-			return resolve({ success: true, message: 'Data cleaning initiated' });
-		} catch (err) {
-			return reject(`Failed to start cleaning for file: ${file.name}. Error: ${err}`);
 		}
 	});
 });
@@ -150,27 +96,23 @@ async function exportToCSV(file: Metadata, outputPath: string) {
 			let exportedRows = 0;
 
 			const stream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
-			let metadata = dbmgr.metadata.read(file.name);
+			const metadata = dbmgr.metadata.read(file.name);
 
 			// Add header row
 			csvContent += metadata.header;
 
-			let rows = dbmgr.csv.read(metadata);
-			metadata = dbmgr.metadata.read(file.name);
-			while (rows !== null && rows.length > 0) {
-				for (const row of rows) {
-					Object.values(row).forEach((value) => {
-						csvContent += value + ',';
-					});
-					csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
-					exportedRows++;
-				}
+			const streamkey = await dbmgr.startStream("CSVData", file);
+			const data = dbmgr.getStream(streamkey);
+
+			for await (const row of data) {
+				Object.values(row).forEach((value) => {
+					csvContent += value + ',';
+				});
+				csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
+				exportedRows++;
 
 				stream.write(csvContent);
 				csvContent = '';
-
-				rows = dbmgr.csv.read(metadata);
-				metadata = dbmgr.metadata.read(file.name);
 			}
 
 			stream.end();
@@ -309,20 +251,11 @@ ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => 
 
 // Pulls the next chunk of data for a stream. The callback sends the data back
 // to the renderer in batches until the stream is done
-ipcMain.handle('stream:pull', async (e, { key, count }) => {
-	const { done } = await dbmgr.pullStream(key, count, (rows) => {
-		e.sender.send('stream:data', { key, rows });
+ipcMain.handle('stream:pull', async (event, { key, count }) => {
+	const _ = await dbmgr.pullStream(key, count, (rows, progress) => {
+		event.sender.send('stream:data', { key, rows, progress });
 	});
-
-	if (done) {
-		e.sender.send('stream:end', { key });
-	}
 });
-
-// Cancels an active stream and cleans up resources
-ipcMain.on('stream:cancel', (_, { key }) => {
-	dbmgr.cancelStream(key);
-})
 
 // Handles the notify request. Creates an OS notification with the given message
 ipcMain.on('notify', (_, message) => {

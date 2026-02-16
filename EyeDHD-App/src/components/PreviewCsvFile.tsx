@@ -14,7 +14,7 @@ export default function PreviewCsvFile({ fileName, csvData }: Props) {
     // If it's an array, show a readable preview (first 100 rows max)
     if (Array.isArray(csvData)) {
       if (csvData.length === 0) return 'Data not processed yet.';
-      const rows = csvData.slice(0, 5);
+      const rows = csvData;
 
       // If rows are objects (typical Papa.parse header:true), pretty-print JSON
       if (typeof rows[0] === 'object' && rows[0] !== null && !Array.isArray(rows[0])) {

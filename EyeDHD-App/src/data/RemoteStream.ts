@@ -1,11 +1,16 @@
-import { type DataType, type StreamKey, type StreamType } from "../../electron/db/DatabaseManager";
-import { type Metadata } from '../types';
+import {
+	type DataType,
+	type StreamKey,
+	type StreamType,
+	type Progress,
+	type Metadata
+} from '../types';
 
 export default class RemoteStream {
 	private buf: DataType[] = [];
-	private done = false;
 	private key: StreamKey;
 	type: StreamType;
+	progress: Progress;
 
 	static async create(
 		type: StreamType,
@@ -25,30 +30,41 @@ export default class RemoteStream {
 	constructor(key: StreamKey) {
 		this.type = key.type;
 		this.key = key;
+		this.progress = {
+			done: false,
+			rows: 0
+		};
 
-		window.renderer.stream.onData((key: StreamKey, rows: DataType[]) => {
+		window.renderer.stream.onData((key, rows, progress) => {
 			if (key.id === this.key.id) {
+				this.progress = progress;
+
+				if (this.progress.done) {
+					this.cancel();
+				}
+
 				this.buf.push(...rows);
 			}
 		});
+	}
 
-		window.renderer.stream.onEnd((key: StreamKey) => {
-			if (key.id === this.key.id) {
-				this.done = true;
-			}
-		});
+	cancel() {
+		if (!this.progress.done) {
+			window.electron.stream.cancel(this.key);
+			this.progress.done = true;
+		}
 	}
 
 	isDone() {
-		return this.done;
+		return this.progress.done;
 	}
 
-	async read(): Promise<DataType | null> {
+	private async read(): Promise<DataType | null> {
 		if (this.key === undefined) {
 			throw new Error("Stream not initialized");
 		}
 
-		if (this.buf.length === 0 && !this.done) {
+		if (this.buf.length === 0 && !this.progress.done) {
 			await window.electron.stream.pull(this.key, 1000);
 		}
 
@@ -70,10 +86,11 @@ export default class RemoteStream {
 		return this[Symbol.asyncIterator]().next();
 	}
 
-	cancel() {
-		if (!this.done) {
-			window.electron.stream.cancel(this.key);
-			this.done = true;
+	async collect(): Promise<DataType[]> {
+		const results: DataType[] = [];
+		for await (const row of this) {
+			results.push(row);
 		}
+		return results;
 	}
 }

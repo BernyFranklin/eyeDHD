@@ -151,18 +151,6 @@ export default class DataCleaner {
 
 		const metadata = dbmgr.metadata.read(name);
 
-		// If file has been cleaned set up progress and performance metrics to show it's finished
-		// to the front end
-		if (metadata?.completed) {
-			this.progress.bytesRead = this.progress.totalBytes;
-			this.progress.currentRow = metadata.cleaned;
-
-			this.updateStats([]);
-
-			this.close();
-			return;
-		}
-
 		// Optimize buffer size based on available memory
 		const optimalBufferSize = this.calculateOptimalBufferSize(1000);
 		this.buf_len = optimalBufferSize;
@@ -200,20 +188,6 @@ export default class DataCleaner {
 
 				this.performance.startTime = Date.now();
 
-				// If cleaning is already in progress, skip metadata.cleaned rows
-				if (metadata?.cleaned !== 0) {
-					this.status.reading = true;
-					for (let i = 0; i < metadata?.cleaned!; i++) {
-						this.iter?.next();
-						this.progress.bytesRead += Buffer.byteLength(value, 'utf8');
-						this.progress.currentRow++;
-
-						this.updateStats([]);
-					}
-
-					this.status.reading = false;
-				}
-
 				this.loadRows(this.buf_len)
 					.then()
 					.catch((err) => {
@@ -228,8 +202,8 @@ export default class DataCleaner {
 	}
 
 	/**
-	* Closes the file stream and readline interface
-	*/
+		* Closes the file stream and readline interface
+		*/
 	close() {
 		if (this.status.closed) {
 			return;
@@ -245,10 +219,29 @@ export default class DataCleaner {
 		this.status.start = true;
 	}
 
+	private async read(): Promise<CSVData | null> {
+		if (this.buf.length === 0 && !this.status.done) {
+			await this.loadRows(this.buf_len);
+		}
+
+		return this.buf.shift() ?? null;
+	}
+
+	async *[Symbol.asyncIterator]() {
+		while (true) {
+			const value = await this.read();
+			if (value === null) {
+				break;
+			}
+
+			yield value;
+		}
+	}
+
 	/**
-	* Loads request_size cleaned rows into the internal buffer
-	*/
-	async loadRows(count: number) {
+		* Loads request_size cleaned rows into the internal buffer
+		*/
+	private async loadRows(count: number) {
 		try {
 			const wasAlreadyReading = this.status.reading;
 			this.status.reading = true;
@@ -270,7 +263,7 @@ export default class DataCleaner {
 
 				const cleaned = this.cleanRow(value);
 				this.buf.push(cleaned);
-				this.updateStats(cleaned);
+				//this.updateStats(cleaned);
 			}
 
 			// Only set reading to false if we weren't already in a cleaning process
@@ -284,13 +277,13 @@ export default class DataCleaner {
 	}
 
 	/**
-	* Cleans a row of CSV data, converting it from a string to JSON
-	* Implements proper CSV parsing with type conversion and validation
-	*/
-	cleanRow(raw: string): CSVData {
+		* Cleans a row of CSV data, converting it from a string to JSON
+		* Implements proper CSV parsing with type conversion and validation
+		*/
+	private cleanRow(raw: string): CSVData {
 		try {
 			const values = this.parseCsvLine(raw);
-			const cleaned: any = {};
+			const cleaned: Record<string, string | number> = {};
 
 			this.header.forEach((column, index) => {
 				if (column === 'left Eye Openness') {
@@ -308,7 +301,7 @@ export default class DataCleaner {
 			this.validateEyeTrackingRow(validatedRow);
 
 			return validatedRow;
-		} catch (error: any) {
+		} catch (error) {
 			console.warn(`ERROR cleaning row: ${error.message}`);
 			// Return a minimal valid row structure to prevent crashes
 			const errorRow: any = {};
@@ -321,17 +314,17 @@ export default class DataCleaner {
 	}
 
 	/**
-	* Parses a CSV line handling quoted fields, escaped quotes, and commas within quotes
-	*/
-	parseCsvLine(line: string) {
+		* Parses a CSV line handling quoted fields, escaped quotes, and commas within quotes
+		*/
+	private parseCsvLine(line: string) {
 		const values = line.split(',');
 		return values;
 	}
 
 	/**
-	* Cleans and converts individual field values
-	*/
-	cleanValue(value: string) {
+		* Cleans and converts individual field values
+		*/
+	private cleanValue(value: string) {
 		if (value === undefined || value === null || value === '') {
 			return 0.0;
 		}
@@ -423,9 +416,9 @@ export default class DataCleaner {
 	}
 
 	/**
-	* Sanitizes eye coordinate values
-	*/
-	sanitizeEyeCoordinate(value: any) {
+		* Sanitizes eye coordinate values
+		*/
+	private sanitizeEyeCoordinate(value: any) {
 		if (value === null || value === undefined) return 0.0;
 
 		if (typeof value === 'number') {
@@ -451,7 +444,7 @@ export default class DataCleaner {
 	/**
 	* Sanitizes eye status values
 	*/
-	sanitizeEyeStatus(value: any) {
+	private sanitizeEyeStatus(value: any) {
 		if (value === null || value === undefined) return 'INVALID';
 
 		const stringValue = String(value).toUpperCase().trim();
@@ -479,7 +472,7 @@ export default class DataCleaner {
 	/**
 	* Sanitizes timestamp values
 	*/
-	sanitizeTimestamp(value: any) {
+	private sanitizeTimestamp(value: any) {
 		if (value === null || value === undefined) return 0;
 
 		// If it's already a number, assume it's a valid timestamp
@@ -508,39 +501,39 @@ export default class DataCleaner {
 	*
 	* @returns an array of rows, or null if the entire file has been read
 	*/
-	async getBuffer(): Promise<CSVData[]> {
-		if (this.status.done) {
-			this.updatePerformanceMetrics();
-			return null;
-		}
+	// async getBuffer(): Promise<CSVData[]> {
+	// 	if (this.status.done) {
+	// 		this.updatePerformanceMetrics();
+	// 		return null;
+	// 	}
 
-		while (this.buf.length === 0 || this.status.reading) {
-			if (this.status.done) {
-				const out = this.buf;
-				this.buf = [];
-				return out;
-			}
-			await sleep(10);
-		}
+	// 	while (this.buf.length === 0 || this.status.reading) {
+	// 		if (this.status.done) {
+	// 			const out = this.buf;
+	// 			this.buf = [];
+	// 			return out;
+	// 		}
+	// 		await sleep(10);
+	// 	}
 
-		const out = this.buf;
-		this.buf = [];
+	// 	const out = this.buf;
+	// 	this.buf = [];
 
-		// Only auto-refill if autoRefill is enabled and file is not done
-		if (!this.status.done) {
-			this.loadRows(this.buf_len).catch((err) => {
-				this.close();
-				throw err;
-			});
-		}
+	// 	// Only auto-refill if autoRefill is enabled and file is not done
+	// 	if (!this.status.done) {
+	// 		this.loadRows(this.buf_len).catch((err) => {
+	// 			this.close();
+	// 			throw err;
+	// 		});
+	// 	}
 
-		return out;
-	}
+	// 	return out;
+	// }
 
 	/**
-	* Calculates optimal buffer size based on available memory and data characteristics
-	*/
-	calculateOptimalBufferSize(requestedSize: number) {
+		* Calculates optimal buffer size based on available memory and data characteristics
+		*/
+	private calculateOptimalBufferSize(requestedSize: number) {
 		const availableMemory = process.memoryUsage().heapTotal;
 		const maxBufferMemory = availableMemory * 0.1; // Use max 10% of heap for buffer
 		const estimatedRowSize = 2048; // Estimated bytes per row for eye tracking data
@@ -551,9 +544,9 @@ export default class DataCleaner {
 	}
 
 	/**
-	* Enhanced data validation specifically for eye tracking data
-	*/
-	validateEyeTrackingRow(row: Record<string, any>) {
+		* Enhanced data validation specifically for eye tracking data
+		*/
+	private validateEyeTrackingRow(row: Record<string, any>) {
 		let isValid = true;
 		const issues: any[] = [];
 
@@ -598,83 +591,83 @@ export default class DataCleaner {
 		return isValid;
 	}
 
-	/**
-	* Updates statistics based on the cleaned row
-	*/
-	updateStats(row: Record<string, any>) {
-		this.stats.totalRows++;
+	// /**
+	// 	* Updates statistics based on the cleaned row
+	// 	*/
+	// private updateStats(row: Record<string, any>) {
+	// 	this.stats.totalRows++;
 
-		if (row._error) {
-			this.stats.errorRows++;
-		} else {
-			this.stats.validRows++;
-		}
+	// 	if (row._error) {
+	// 		this.stats.errorRows++;
+	// 	} else {
+	// 		this.stats.validRows++;
+	// 	}
 
-		// Count null values and type conversions
-		Object.values(row).forEach((value) => {
-			if (value === null) {
-				this.stats.nullValues++;
-			} else if (typeof value === 'number') {
-				this.stats.typeConversions.numbers++;
-			} else if (typeof value === 'boolean') {
-				this.stats.typeConversions.booleans++;
-			}
-		});
+	// 	// Count null values and type conversions
+	// 	Object.values(row).forEach((value) => {
+	// 		if (value === null) {
+	// 			this.stats.nullValues++;
+	// 		} else if (typeof value === 'number') {
+	// 			this.stats.typeConversions.numbers++;
+	// 		} else if (typeof value === 'boolean') {
+	// 			this.stats.typeConversions.booleans++;
+	// 		}
+	// 	});
 
-		// Update performance metrics periodically
-		if (this.stats.totalRows % 100 === 0) {
-			this.updatePerformanceMetrics();
-		}
-	}
+	// 	// Update performance metrics periodically
+	// 	if (this.stats.totalRows % 100 === 0) {
+	// 		this.updatePerformanceMetrics();
+	// 	}
+	// }
 
-	/**
-	* Logs current statistics to console
-	*/
-	logStats() {
-		// Statistics can be retrieved via getStats() if needed for logging
-		// Removed console.log statements for cleaner production code
-	}
+	// /**
+	// * Logs current statistics to console
+	// */
+	// private logStats() {
+	// 	// Statistics can be retrieved via getStats() if needed for logging
+	// 	// Removed console.log statements for cleaner production code
+	// }
 
-	/**
-	* Gets overall health status of the data cleaning process
-	*/
-	getHealthStatus() {
-		const stats = this.getStats();
-		const errorRate = stats.errorRate;
-		const eyeTrackingErrorRate = stats.eyeTrackingErrorRate;
-		const memoryUsage = this.performance.memoryUsage;
-		const maxMemory = process.memoryUsage().heapTotal * 0.8; // 80% threshold
+	// /**
+	// * Gets overall health status of the data cleaning process
+	// */
+	// private getHealthStatus() {
+	// 	const stats = this.getStats();
+	// 	const errorRate = stats.errorRate;
+	// 	const eyeTrackingErrorRate = stats.eyeTrackingErrorRate;
+	// 	const memoryUsage = this.performance.memoryUsage;
+	// 	const maxMemory = process.memoryUsage().heapTotal * 0.8; // 80% threshold
 
-		let status = 'HEALTHY';
-		const warnings = [];
+	// 	let status = 'HEALTHY';
+	// 	const warnings = [];
 
-		if (errorRate > 10) {
-			status = 'WARNING';
-			warnings.push(`High error rate: ${stats.errorRate}`);
-		}
+	// 	if (errorRate > 10) {
+	// 		status = 'WARNING';
+	// 		warnings.push(`High error rate: ${stats.errorRate}`);
+	// 	}
 
-		if (eyeTrackingErrorRate > 5) {
-			status = 'WARNING';
-			warnings.push(`High eye tracking error rate: ${stats.eyeTrackingErrorRate}`);
-		}
+	// 	if (eyeTrackingErrorRate > 5) {
+	// 		status = 'WARNING';
+	// 		warnings.push(`High eye tracking error rate: ${stats.eyeTrackingErrorRate}`);
+	// 	}
 
-		if (memoryUsage > maxMemory) {
-			status = 'CRITICAL';
-			warnings.push(`High memory usage: ${stats.performance.memoryUsageMB}`);
-		}
+	// 	if (memoryUsage > maxMemory) {
+	// 		status = 'CRITICAL';
+	// 		warnings.push(`High memory usage: ${stats.performance.memoryUsageMB}`);
+	// 	}
 
-		if (this.performance.rowsPerSecond < 10) {
-			status = status === 'CRITICAL' ? 'CRITICAL' : 'WARNING';
-			warnings.push(`Low processing speed: ${stats.performance.rowsPerSecond}`);
-		}
+	// 	if (this.performance.rowsPerSecond < 10) {
+	// 		status = status === 'CRITICAL' ? 'CRITICAL' : 'WARNING';
+	// 		warnings.push(`Low processing speed: ${stats.performance.rowsPerSecond}`);
+	// 	}
 
-		return {
-			status,
-			warnings,
-			timestamp: new Date().toISOString(),
-			summary: `${stats.totalRows} rows processed, ${stats.validRate} valid, ${stats.performance.rowsPerSecond} processing speed`
-		};
-	}
+	// 	return {
+	// 		status,
+	// 		warnings,
+	// 		timestamp: new Date().toISOString(),
+	// 		summary: `${stats.totalRows} rows processed, ${stats.validRate} valid, ${stats.performance.rowsPerSecond} processing speed`
+	// 	};
+	// }
 
 	/**
 	* Validates the header row contains expected eye tracking fields
@@ -715,107 +708,72 @@ export default class DataCleaner {
 		};
 	}
 
-	/**
-	* Gets current cleaning statistics
-	*
-	* @returns Object containing detailed statistics about the cleaning process
-	*/
-	getStats() {
-		return {
-			...this.stats,
-			qualityScore: this.calculateQualityScore(),
-			errorRate:
-			this.stats.totalRows > 0
-			? (this.stats.errorRows / this.stats.totalRows) * 100
-			: 0,
-			validationRate:
-			this.stats.totalRows > 0 ? (this.stats.validRows / this.stats.totalRows) * 100 : 0
-		};
-	}
-
-	/**
-	* Gets current cleaning statistics
-	*/
+	// /**
+	// * Gets current cleaning statistics
+	// *
+	// * @returns Object containing detailed statistics about the cleaning process
+	// */
 	// getStats() {
-	//   this.updatePerformanceMetrics(); // Ensure latest metrics
-
-	//   return {
-	//     ...this.stats,
-	//     errorRate:
-	//       this.stats.totalRows > 0
-	//         ? ((this.stats.errorRows / this.stats.totalRows) * 100).toFixed(2) + '%'
-	//         : '0%',
-	//     validRate:
-	//       this.stats.totalRows > 0
-	//         ? ((this.stats.validRows / this.stats.totalRows) * 100).toFixed(2) + '%'
-	//         : '0%',
-	//     eyeTrackingErrorRate:
-	//       this.stats.totalRows > 0
-	//         ? ((this.stats.eyeTrackingErrors / this.stats.totalRows) * 100).toFixed(2) + '%'
-	//         : '0%',
-	//     coordinateClampingRate:
-	//       this.stats.totalRows > 0
-	//         ? ((this.stats.coordinateClampings / this.stats.totalRows) * 100).toFixed(2) +
-	//           '%'
-	//         : '0%',
-	//     performance: {
-	//       ...this.performance,
-	//       memoryUsageMB: (this.performance.memoryUsage / 1024 / 1024).toFixed(2) + 'MB',
-	//       rowsPerSecond: this.performance.rowsPerSecond.toFixed(2) + '/sec',
-	//       bufferEfficiency:
-	//         ((this.performance.maxBufferSize / this.buf_len) * 100).toFixed(2) + '%'
-	//     }
-	//   };
+	// 	return {
+	// 		...this.stats,
+	// 		qualityScore: this.calculateQualityScore(),
+	// 		errorRate:
+	// 		this.stats.totalRows > 0
+	// 		? (this.stats.errorRows / this.stats.totalRows) * 100
+	// 		: 0,
+	// 		validationRate:
+	// 		this.stats.totalRows > 0 ? (this.stats.validRows / this.stats.totalRows) * 100 : 0
+	// 	};
 	// }
 
-	/**
-	* Gets current performance metrics
-	*
-	* @returns Object containing performance data
-	*/
-	getPerformance() {
-		this.updatePerformanceMetrics();
-		return { ...this.performance };
-	}
+	// /**
+	// * Gets current performance metrics
+	// *
+	// * @returns Object containing performance data
+	// */
+	// getPerformance() {
+	// 	this.updatePerformanceMetrics();
+	// 	return { ...this.performance };
+	// }
 
-	/**
-	* Gets current cleaning progress
-	*
-	* @returns Object containing progress information
-	*/
-	getProgress() {
-		let progressPercent = 0;
-		const MAX_EXPECTED_ROWS = 300000;
+	// /**
+	// * Gets current cleaning progress
+	// *
+	// * @returns Object containing progress information
+	// */
+	// getProgress() {
+	// 	let progressPercent = 0;
+	// 	const MAX_EXPECTED_ROWS = 300000;
 
-		if (this.status.done) {
-			// Always 100% when file is completely processed
-			progressPercent = 100;
-		} else if (this.stats.totalRows > 0) {
-			// Calculate progress based on rows processed vs expected maximum
-			if (this.stats.totalRows >= MAX_EXPECTED_ROWS) {
-				// If we exceed expected max, stay at 99% until file is actually done
-				progressPercent = 99;
-			} else {
-				// Normal progress calculation: (currentRows / maxExpected) * 100, but cap at 99%
-				progressPercent = Math.min(99, (this.stats.totalRows / MAX_EXPECTED_ROWS) * 100);
-			}
-		}
+	// 	if (this.status.done) {
+	// 		// Always 100% when file is completely processed
+	// 		progressPercent = 100;
+	// 	} else if (this.stats.totalRows > 0) {
+	// 		// Calculate progress based on rows processed vs expected maximum
+	// 		if (this.stats.totalRows >= MAX_EXPECTED_ROWS) {
+	// 			// If we exceed expected max, stay at 99% until file is actually done
+	// 			progressPercent = 99;
+	// 		} else {
+	// 			// Normal progress calculation: (currentRows / maxExpected) * 100, but cap at 99%
+	// 			progressPercent = Math.min(99, (this.stats.totalRows / MAX_EXPECTED_ROWS) * 100);
+	// 		}
+	// 	}
 
-		return {
-			isComplete: this.status.done,
-			isReading: this.status.reading,
-			isClosed: this.status.closed,
-			progressPercent: Math.round(progressPercent * 10) / 10, // Round to 1 decimal
-			currentBufferSize: this.buf.length,
-			maxBufferSize: this.buf_len,
-			rowsProcessed: this.stats.totalRows,
-			validRows: this.stats.validRows,
-			bytesRead: this.progress.bytesRead,
-			totalBytes: this.progress.totalBytes,
-			currentRow: this.progress.currentRow,
-			maxExpectedRows: MAX_EXPECTED_ROWS
-		};
-	}
+	// 	return {
+	// 		isComplete: this.status.done,
+	// 		isReading: this.status.reading,
+	// 		isClosed: this.status.closed,
+	// 		progressPercent: Math.round(progressPercent * 10) / 10, // Round to 1 decimal
+	// 		currentBufferSize: this.buf.length,
+	// 		maxBufferSize: this.buf_len,
+	// 		rowsProcessed: this.stats.totalRows,
+	// 		validRows: this.stats.validRows,
+	// 		bytesRead: this.progress.bytesRead,
+	// 		totalBytes: this.progress.totalBytes,
+	// 		currentRow: this.progress.currentRow,
+	// 		maxExpectedRows: MAX_EXPECTED_ROWS
+	// 	};
+	// }
 
 	/**
 	* Checks if the cleaner is still active and available
@@ -824,37 +782,37 @@ export default class DataCleaner {
 		return !this.status.closed;
 	}
 
-	/**
-	* Updates performance metrics
-	*/
-	updatePerformanceMetrics() {
-		if (this.performance.startTime) {
-			const elapsedTime = (Date.now() - this.performance.startTime) / 1000; // seconds
-			this.performance.rowsPerSecond = this.stats.totalRows / elapsedTime;
-			this.performance.memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024; // MB
-			this.performance.maxBufferSize = Math.max(
-				this.performance.maxBufferSize,
-				this.buf.length
-			);
-		}
-	}
+// 	/**
+// 	* Updates performance metrics
+// 	*/
+// 	updatePerformanceMetrics() {
+// 		if (this.performance.startTime) {
+// 			const elapsedTime = (Date.now() - this.performance.startTime) / 1000; // seconds
+// 			this.performance.rowsPerSecond = this.stats.totalRows / elapsedTime;
+// 			this.performance.memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024; // MB
+// 			this.performance.maxBufferSize = Math.max(
+// 				this.performance.maxBufferSize,
+// 				this.buf.length
+// 			);
+// 		}
+// 	}
 
-	/**
-	* Calculates a data quality score based on various metrics
-	*/
-	calculateQualityScore() {
-		if (this.stats.totalRows === 0) return 0;
+// 	/**
+// 	* Calculates a data quality score based on various metrics
+// 	*/
+// 	calculateQualityScore() {
+// 		if (this.stats.totalRows === 0) return 0;
 
-		const validRatio = this.stats.validRows / this.stats.totalRows;
-		const errorRatio = this.stats.errorRows / this.stats.totalRows;
-		const nullRatio = this.stats.nullValues / (this.stats.totalRows * this.header.length);
+// 		const validRatio = this.stats.validRows / this.stats.totalRows;
+// 		const errorRatio = this.stats.errorRows / this.stats.totalRows;
+// 		const nullRatio = this.stats.nullValues / (this.stats.totalRows * this.header.length);
 
-		// Score based on: 70% valid data, 20% low errors, 10% minimal nulls
-		const score = validRatio * 0.7 + (1 - errorRatio) * 0.2 + (1 - nullRatio) * 0.1;
-		return Math.round(score * 100);
-	}
-}
+// 		// Score based on: 70% valid data, 20% low errors, 10% minimal nulls
+// 		const score = validRatio * 0.7 + (1 - errorRatio) * 0.2 + (1 - nullRatio) * 0.1;
+// 		return Math.round(score * 100);
+// 	}
+// }
 
-function sleep(ms: number) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
+// function sleep(ms: number) {
+// 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
