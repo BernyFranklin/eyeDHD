@@ -14,6 +14,7 @@ console.log('Preload script loaded, exposing API to renderer process');
 declare interface Electron {
   csv: {
     openFile(): Promise<Metadata | null>;
+    readMetadata(filename: string): Promise<Metadata>;
     resetCleaningProgress(file: Metadata): Promise<void>;
     cleanData(file: Metadata): Promise<void>;
     exportData(file: Metadata): Promise<{
@@ -65,6 +66,13 @@ const electron: Electron = {
 		openFile: async (): Promise<Metadata | null> => {
 			return await ipcRenderer.invoke('csv:open-file');
 		},
+		/**
+		  *
+			*/
+		readMetadata: async (filename: string): Promise<Metadata> => {
+			return await ipcRenderer.invoke('csv:read-metadata', filename);
+		},
+
 		/**
 			* Resets the cleaning progress of a file, allowing it to be cleaned
 			* again from the start.

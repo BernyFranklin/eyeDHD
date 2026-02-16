@@ -149,11 +149,7 @@ export default class DatabaseManager {
 	 * Creates a new data cleaner and stores in in the cleaners map
 	 */
 	private createCleaner(file: Metadata) {
-		const cleaner = new DataCleaner({
-			dbmgr: this,
-			name: file.name,
-			path: file.path
-		});
+		const cleaner = new DataCleaner({ path: file.path });
 
 		this.cleaners.set(file.name, cleaner);
 	}
@@ -319,15 +315,13 @@ export default class DatabaseManager {
 					throw new Error(`Cleaner for file: ${metadata.name} hasn't been started yet`);
 				} else {
 					const header = cleaner.header.join(',') + '\n';
-					console.log(header);
 
 					metadata = this.updateMetadata({ ...metadata, header });
 				}
 
-				const iterator = cleaner[Symbol.asyncIterator]();
-				for await (const row of iterator) {
+				for await (const row of cleaner) {
 					this.csv.store(file, [row]);
-					yield row;
+					yield null;
 				}
 
 				cleaner.close();

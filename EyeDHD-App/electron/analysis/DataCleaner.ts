@@ -1,7 +1,6 @@
 import fs from 'fs';
 import rl from 'readline';
 
-import DatabaseManager from '../db/DatabaseManager';
 import { type CSVData } from '../db/tables/csv';
 
 /**
@@ -125,13 +124,7 @@ export default class DataCleaner {
 		validStatuses: ['VALID', 'INVALID', 'LOST', 'TRACKING', 'NOT_TRACKING']
 	};
 
-	constructor({
-		dbmgr,
-		name,
-		path
-	}: {
-		dbmgr: DatabaseManager;
-		name: string;
+	constructor({ path }: {
 		path: string;
 	}) {
 		// Store the file path for later use
@@ -148,8 +141,6 @@ export default class DataCleaner {
 			console.warn('Could not get file size:', err);
 			this.progress.totalBytes = 0;
 		}
-
-		const metadata = dbmgr.metadata.read(name);
 
 		// Optimize buffer size based on available memory
 		const optimalBufferSize = this.calculateOptimalBufferSize(1000);

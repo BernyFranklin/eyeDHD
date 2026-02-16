@@ -137,26 +137,28 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 
       // Start the cleaning process
       const stream = (await RemoteStream.create("Cleaning", { file }));
-      const previewCSV: CSVData[] = [];
-      for await (const row of stream) {
-       	if (previewCSV.length < 10) {
-	       	previewCSV.push(row as CSVData);
-        }
-      	setCleaningProgress({
-       		...cleaningProgress,
-         	rowsProcessed: stream.progress.rows,
-          progressPercent: stream.progress.rows / 275_000 * 100,
-          isComplete: stream.progress.done,
-          isReading: stream.progress.done
-       	})
+      for await (const _ of stream) {
+       	cleaningProgress.rowsProcessed += stream.progress.rows;
+        cleaningProgress.progressPercent = cleaningProgress.rowsProcessed / 275_000 * 100;
       }
 
-      setCsvData(previewCSV);
      	setCleaningProgress({
     		...cleaningProgress,
-	      isComplete: stream.progress.done,
-	      isReading: !stream.progress.done
+	      isComplete: true,
+	      isReading: false
      	})
+
+      const previewCSV: CSVData[] = [];
+      const preview = (await RemoteStream.create("CSVData", { file }));
+      for await (const row of preview) {
+       	if (previewCSV.length >= 10) {
+	        break;
+        }
+       	previewCSV.push(row as CSVData);
+      }
+      setCsvData(previewCSV);
+      preview.cancel();
+
       setIsCleaning(false);
       setButtonsDisabled(false);
       sendAlert('Data cleaning complete!');

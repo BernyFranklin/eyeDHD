@@ -48,6 +48,18 @@ ipcMain.handle('csv:open-file', async (_) => {
 });
 
 //
+ipcMain.handle('csv:read-metadata', async (_, filename) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const metadata = dbmgr.metadata.read(filename);
+			return resolve(metadata);
+		} catch (err) {
+			return reject(`Failed to read metadata for file: ${filename}. Error: ${err}`);
+		}
+	});
+});
+
+//
 ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
