@@ -244,6 +244,7 @@ export default function AnimationGenerator() {
 						<div>
 							{csvStream && (
 				        <CanvasRecorder
+									file={file}
 				          csvStream={csvStream}
 									setCsvStream={setCsvStream}
 				        />

@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import AnimationWindow from "./animation/AnimationWindow";
 import RemoteStream from "../data/RemoteStream";
+import { type Metadata } from "../types";
 
 type Props = {
+	file: Metadata;
 	csvStream: RemoteStream;
 	setCsvStream: React.Dispatch<React.SetStateAction<RemoteStream | null>>;
 };
@@ -56,7 +58,7 @@ export default function CanvasRecorder(props: Props) {
 		recorder.onstop = () => {
 			const blob = new Blob(chunksRef.current, { type: mimeType })
 
-			const name = "TODO";
+			const name = props.file.name;
 
 			const url = URL.createObjectURL(blob);
 			const anchor = document.createElement('a');
