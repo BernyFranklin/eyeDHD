@@ -63,7 +63,7 @@ export interface SessionRateMetrics {
 }
 
 // Needed for Section A
-export interface SaccadeMetricResult {
+export interface SaccadeMetricsResult {
     perSaccade:       PerSaccadeDerived[];
     // Needed for Section B
     filtered:         FilterTransparency;

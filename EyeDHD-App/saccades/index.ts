@@ -28,7 +28,7 @@ export { computeSaccadeMetrics } from "./metrics";
 export type {
     SaccadeMetricsInput,
     PerSaccadeDerived,
-    SaccadeMetricResult,
+    SaccadeMetricsResult,
     SaccadeMetricsOptions,
 
     PlausibleRange,
@@ -59,3 +59,37 @@ export type {
     SessionSummaryCsvRow,
     SegmentSummaryCsvRow,
 } from "./metrics";
+
+// Convenience wrapper for processing a full session of gaze data
+import type { Vec3 } from "./velocities";
+import type { SaccadeDetectionOptions } from "./schema";
+import type { SaccadeMetricsOptions, SaccadeMetricsInput, SaccadeMetricsResult } from "./metrics";
+
+import { detectSaccadesFromVectors } from "./detection";
+import { computeSaccadeMetrics } from "./metrics";
+
+export interface AnalyzeSaccadesResult {
+    detection: ReturnType<typeof detectSaccadesFromVectors>;
+    metrics: SaccadeMetricsResult;
+}
+
+// Runs full pipeline
+
+export function analyzeSaccadesFromVectors(
+    vectors: Vec3[],
+    detectionOptions?: Partial<SaccadeDetectionOptions>,
+    metricsOptions?: SaccadeMetricsOptions,
+): AnalyzeSaccadesResult {
+    const detection = detectSaccadesFromVectors(vectors, detectionOptions);
+
+    // Convert detected saccades into metrics input (ms-based times)
+    const metricsInput: SaccadeMetricsInput[] = detection.saccades.map(saccade => ({
+        startTime: saccade.startTimeSec * 1000,
+        endTime: saccade.endTimeSec * 1000,
+        amplitudeDeg: saccade.amplitudeDeg,
+    }));
+
+    const metrics = computeSaccadeMetrics(metricsInput, metricsOptions);
+
+    return { detection, metrics };
+}

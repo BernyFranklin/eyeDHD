@@ -1,7 +1,7 @@
 import type { 
     SaccadeMetricsInput, 
     PerSaccadeDerived, 
-    SaccadeMetricResult,
+    SaccadeMetricsResult,
     SaccadeMetricsOptions,
     FilterReason,
     SegmentSummary,
@@ -30,7 +30,7 @@ function segmentIdForStart(
 export function computeSaccadeMetrics(
     input: SaccadeMetricsInput[],
     options: SaccadeMetricsOptions = {}
-): SaccadeMetricResult {
+): SaccadeMetricsResult {
     // Needed for Section B
     const bounds = options.plausibleBounds;                         // Bounds for filtering, if provided. If undefined, no filtering will be applied.
     // Needed for Section B
@@ -124,7 +124,7 @@ export function computeSaccadeMetrics(
     const amplitudeStats = computeDistributionStats(amplitudeValues);   // Compute distribution stats for amplitude using helper function
 
     // Needed for Section C: build session object
-    const session: SaccadeMetricResult["session"] = {
+    const session: SaccadeMetricsResult["session"] = {
         durationMs: sessionDurationMs,
         durationSec: sessionDurationSec,
         ratePerSec: sessionRatePerSec,

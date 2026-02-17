@@ -4,7 +4,7 @@ export { computeSaccadeMetrics } from "./metrics";
 export type {
     SaccadeMetricsInput,
     PerSaccadeDerived,
-    SaccadeMetricResult,
+    SaccadeMetricsResult,
     SaccadeMetricsOptions,
 
     PlausibleRange,
