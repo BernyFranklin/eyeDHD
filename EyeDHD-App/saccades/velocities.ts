@@ -13,7 +13,7 @@ export interface Vec3 {
 }
 
 // Epsilon for floating point comparisons
-const EPS: number = 1e-12;
+const EPS = 1e-12;
 
 // Clamp a numeric value to a closed interval [min, max]
 // Protects against floating point drift.
