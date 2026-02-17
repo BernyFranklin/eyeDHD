@@ -1,3 +1,9 @@
+import type { Vec3 } from "./velocities";
+import type { SaccadeDetectionOptions } from "./schema";
+import type { SaccadeMetricsOptions, SaccadeMetricsInput, SaccadeMetricsResult } from "./metrics";
+
+import { detectSaccadesFromVectors } from "./detection";
+import { computeSaccadeMetrics } from "./metrics";
 
 // Public schema + defaults (events, options)
 export type {
@@ -61,13 +67,6 @@ export type {
 } from "./metrics";
 
 // Convenience wrapper for processing a full session of gaze data
-import type { Vec3 } from "./velocities";
-import type { SaccadeDetectionOptions } from "./schema";
-import type { SaccadeMetricsOptions, SaccadeMetricsInput, SaccadeMetricsResult } from "./metrics";
-
-import { detectSaccadesFromVectors } from "./detection";
-import { computeSaccadeMetrics } from "./metrics";
-
 export interface AnalyzeSaccadesResult {
     detection: ReturnType<typeof detectSaccadesFromVectors>;
     metrics: SaccadeMetricsResult;
