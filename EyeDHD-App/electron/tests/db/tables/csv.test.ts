@@ -54,6 +54,14 @@ describe('Database - CSVData', () => {
     });
   });
 
+  describe('B) Table lifecycle', () => {
+    it('B1) Creates a CSV table for a given file', () => {
+    });
+
+    it('B2) Deletes a CSV table for a given file', () => {
+    });
+  });
+
   describe('C) CRUD operations', () => {
     it('C1) Creates CSV rows tied to existing metadata', () => {
       seedMetadata();

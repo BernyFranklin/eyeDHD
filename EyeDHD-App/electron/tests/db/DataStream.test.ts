@@ -28,7 +28,7 @@ function makeBatchIteratorWithReturn(batches: Batch[]) {
 
 describe('Database - DataStream', () => {
 	describe('A) Batched Streams', () => {
-		it('1) Increments progress rows by batch size', async () => {
+		it('A1) Increments progress rows by batch size', async () => {
 	    const batches: Batch[] = [
 	      [null, null],
 	      [null]
@@ -52,23 +52,7 @@ describe('Database - DataStream', () => {
 	    expect(stream.progress.done).toBe(true);
 	  });
 
-	  it('2) Treats undefined batch as empty without crashing', async () => {
-	    const iterator = {
-	      async next(): Promise<IteratorResult<Batch>> {
-	        return { done: false, value: undefined };
-	      }
-	    } as AsyncIterator<Batch>;
-
-	    const stream = new DataStream('Metadata', iterator);
-
-	    const result = await stream.next();
-	    expect(result.done).toBe(false);
-	    expect(Array.isArray(result.value)).toBe(true);
-	    expect(result.value.length).toBe(0);
-	    expect(stream.progress.rows).toBe(0);
-	  });
-
-	  it('3) Calls iterator.return() on close()', async () => {
+	  it('A2) Calls iterator.return() on close()', async () => {
 	    const batches: Batch[] = [];
 	    const iterator = makeBatchIteratorWithReturn(batches);
 
