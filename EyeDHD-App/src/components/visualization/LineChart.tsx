@@ -93,19 +93,14 @@ export const Chart = () => {
 
   useEffect(() => {
     const chart = new ApexCharts(document.getElementById(id), {
-      chart: {
-        type: 'line',
-        height: 350
-      },
+      chart: { type: 'line', height: 350 },
       series: [
         {
           name: 'uv',
           data: data.map((entry) => entry.uv)
         }
       ],
-      xaxis: {
-        categories: data.map((entry) => entry.name)
-      }
+      xaxis: { categories: data.map((entry) => entry.name) }
     });
 
     chart.render();
