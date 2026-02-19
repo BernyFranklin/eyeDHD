@@ -55,6 +55,14 @@ export default class DataStream {
 		}
 	}
 
+	async collect() {
+		const allData: DataType[] = [];
+		for await (const batch of this) {
+			allData.push(...batch);
+		}
+		return allData;
+	}
+
 	async next(): Promise<IteratorResult<DataType[]>> {
 		return await this.wrappedIterator.next();
 	}
