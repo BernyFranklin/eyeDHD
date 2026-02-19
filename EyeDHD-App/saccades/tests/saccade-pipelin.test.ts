@@ -123,5 +123,89 @@ describe('Saccade Pipeline (Integration)', () => {
             expect(result.metrics.csv.sessionSummaryRow).toBeNull();
             expect(result.metrics.csv.segmentSummaryRows.length).toBe(0);
         });
+
+        it('A3) Multiple saccades propagate correctly and ISI is computed from kept events', () => {
+            /**
+             * Build two clear saccades separated by a fixed hold (so ISI is predictable).
+             * dt = 5ms (200 Hz).
+             *
+             * Saccade construction (same pattern as A1):
+             * - Step 0.6° per sample => 120°/s during movement (above 100°/s threshold)
+             * - Your detector convention yields ~45ms duration for this pattern.
+             *
+             * Plan:
+             * 1) Hold at 0°
+             * 2) Saccade 1: 0° -> 6°
+             * 3) Hold at 6° for N samples
+             * 4) Saccade 2: 6° -> 12°
+             * 5) Hold at 12°
+             *
+             * We assert:
+             * - At least 2 detected events (often more due to boundary artifacts)
+             * - At least 2 kept saccades
+             * - ISI series length == keptCount - 1
+             * - ISI value equals (start2 - end1) for the two largest-amplitude kept saccades in time order
+             * - Filtering is transparent and consistent: kept + filtered == detected
+             */
+            const vectors: Vec3[] = [];                                                     // Initialize empty dataset
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                       // 1. Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));                // 2. Saccade 1: 10 steps of 0.6° => 6.0°, (0.6...6.0)
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));                     // 3. Hold at 6° for 20 samples (100ms hold)
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));          // 4. Saccade 2: 10 steps of +0.6° => 12.0°, (6.6...12.0)
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));                    // 5. Hold at 12°
+            const result = analyzeSaccadesFromVectors(vectors);                             // Run the pipeline
+
+            // Detection sanity
+            expect(result.detection.saccades.length).toBeGreaterThanOrEqual(2);
+
+            // Filtering transparency + pipeline consistency
+            const filtered = result.metrics.filtered;                                       // Store filtered metrics for reuse in assertions
+            const sumReasons = Object.values(filtered.byReason).reduce((a, b) => a + b, 0); // Sum of filtered by reason
+            expect(sumReasons).toBe(filtered.totalFiltered);                                // Total events accounted for in filtering must match sum of reasons
+            expect(result.metrics.perSaccade.length + filtered.totalFiltered).toBe(         // Kept + filtered must equal total detected events
+                result.detection.saccades.length
+            ); 
+
+            // Kept Sanity
+            expect(result.metrics.perSaccade.length).toBeGreaterThanOrEqual(2);             // At least 2 kept saccades
+
+            // Ensure chronological ordering
+            // Note: perSaccade output is keptOrdered if any series flag is on, otherwise "kept"
+            // We won't rely on that toggle here
+            const keptChrono = [...result.metrics.perSaccade].sort((a, b) => {              // Sort by start time, then end time for tie-breaking
+                if (a.startTime !== b.startTime) return a.startTime - b.startTime;          // Primary sort by start time
+                if (a.endTime !== b.endTime) return a.endTime - b.endTime;                  // Secondary sort by end time for tie-breaking 
+                return 0;                                                                   // If start and end times are identical, maintain original order (stable sort)
+            });
+
+            // Select two biggest-amplitude events in chrono order:
+            const strong = keptChrono.filter(s => s.amplitudeDeg >= 5.0);                   // Filter for strong events (should be our two main saccades)
+            expect(strong.length).toBeGreaterThanOrEqual(2);                                // Sanity check that we have at least 2 strong events to analyze
+            const first = strong[0];                                                        // First strong event in chronological order (should correspond to Saccade 1)
+            const second = strong[1];                                                       // Second strong event in chronological order (should correspond to Saccade 2)
+
+            // Each strong saccade should be around 6° amplitude
+            expect(first.amplitudeDeg).toBeCloseTo(6.0, 2);                                 // First saccade amplitude should be ~6°
+            expect(second.amplitudeDeg).toBeCloseTo(6.0, 2);                                // Second saccade amplitude should be ~6°
+
+            // Durations should match the detector convention (45ms for this construction)
+            expect(first.durationMs).toBe(45);                                              // First saccade duration should be 45ms
+            expect(second.durationMs).toBe(45);                                             // Second saccade duration should be 45ms
+
+            // ISI correctness
+            // ISI series is computed from keptOrdered
+            expect(result.metrics.isiSeries.length).toBe(result.metrics.perSaccade.length - 1); // With 2 kept saccades, we should have exactly 1 ISI value
+
+            // Expected ISI for the two strong events
+            const expectedIsi = second.startTime - first.endTime;                           // ISI should be the time between the end of the first saccade and the start of the second saccade
+
+            // Find an ISI matching expectedIsi
+            const isiMatches = result.metrics.isiSeries.some(                               // Check if the expected ISI value is present in the isiSeries 
+                isi => Math.abs(isi - expectedIsi) < 1e-6);
+            expect(isiMatches).toBe(true);                                                  // We should find the expected ISI value in the series
+
+            // ISI values should never be negative after filtering
+            expect(result.metrics.isiSeries.every(isi => Number.isFinite(isi) && isi >= 0)).toBe(true); // All ISI values should be finite and non-negative
+        });
     });
 });
