@@ -198,6 +198,15 @@ input[type='file']::file-selector-button:hover {
   margin-top: 1rem;
 }
 
+.main-menu-button {
+  background:none;
+  border:none;
+}
+
+.main-menu-card {
+  box-shadow: rgba(0, 0, 0, 0.9) 0px 2px 2px;
+}
+
 .card-link:hover {
   cursor: pointer;
   transform: scale(1.05);
