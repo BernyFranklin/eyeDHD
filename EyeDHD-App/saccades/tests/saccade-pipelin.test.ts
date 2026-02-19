@@ -65,5 +65,63 @@ describe('Saccade Pipeline (Integration)', () => {
                 Math.max(0, result.metrics.perSaccade.length - 1)
             );
         });
-    })
+
+        it('A2) Handles no-saccade input without error', () => {
+            // Deterministic dataset designed to stay below default thresholds.
+            const vectors: Vec3[] = [];
+            const stepDeg = 0.2; // Small steps to avoid crossing amplitude threshold
+
+            // Gradual smooth motion for 60 samples
+            for (let i = 0; i < 60; i++) vectors.push(rotateYDeg(i * stepDeg));
+
+            const result = analyzeSaccadesFromVectors(vectors);
+
+            // Detection
+            expect(result.detection.saccades.length).toBe(0);
+            expect(result.detection.saccadesExtended.length).toBe(0);
+            // Metrics
+            expect(result.metrics.perSaccade.length).toBe(0);
+            // No filtering because theres no events to filter
+            expect(result.metrics.filtered.totalFiltered).toBe(0);
+            expect(result.metrics.filtered.byReason).toEqual({
+                amplitude_out_of_bounds: 0,
+                duration_out_of_bounds: 0,
+            });
+            // Session metrics should be the empty-session contract
+            expect(result.metrics.session.durationMs).toBe(0);
+            expect(result.metrics.session.durationSec).toBe(0);
+            expect(result.metrics.session.ratePerSec).toBe(0);
+            // Distributions for empty input return zeros
+            expect(result.metrics.session.distributions.amplitudeDeg).toEqual({
+                min:    0,
+                max:    0,
+                mean:   0,
+                median: 0,
+                p10:    0,
+                p50:    0,
+                p90:    0,
+                std:    0,
+            });
+            // ISI should be empty
+            expect(result.metrics.isiSeries.length).toBe(0);
+            expect(result.metrics.isiFiltered.totalFiltered).toBe(0);
+            expect(result.metrics.isiFiltered.byReason).toEqual({});
+            expect(result.metrics.isiDistributions.isiMs).toEqual({
+                min:    0,
+                max:    0,
+                mean:   0,
+                median: 0,
+                p10:    0,
+                p50:    0,
+                p90:    0,
+                std:    0,
+            });
+            // No series / csv outputs requested --> should be empty/null by default
+            expect(result.metrics.series.saccadeRatePerSecOverTime.length).toBe(0);
+            expect(result.metrics.series.amplitudeDegOverTime.length).toBe(0);
+            expect(result.metrics.perSaccadeRows.length).toBe(0);
+            expect(result.metrics.csv.sessionSummaryRow).toBeNull();
+            expect(result.metrics.csv.segmentSummaryRows.length).toBe(0);
+        });
+    });
 });
