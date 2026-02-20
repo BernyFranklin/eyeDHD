@@ -198,13 +198,13 @@ export interface XYPoint {
 }
 
 export interface SessionSummaryCsvRow {
-    sessionId: string | null;
-    keptCount: number;
+    sessionId:     string | null;
+    keptCount:     number;
     filteredCount: number;
-    durationMs: number;
-    durationSec: number;
-    ratePerSec: number;
-    ratePerMin?: number;
+    durationMs:    number;
+    durationSec:   number;
+    ratePerSec:    number;
+    ratePerMin?:   number;
 }
 
 export interface SegmentSummaryCsvRow {

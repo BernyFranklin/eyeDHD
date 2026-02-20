@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { analyzeSaccadesFromVectors } from '../index';
 import type { Vec3 } from '../index';
 
+// Helper function to create a Vec3 representing a rotation around the Y-axis by a given angle in degrees.
 function rotateYDeg(angleDeg: number): Vec3 {
     const rad = (angleDeg * Math.PI) / 180;
     return {
@@ -9,6 +10,18 @@ function rotateYDeg(angleDeg: number): Vec3 {
         y: 0,
         z: Math.cos(rad),
     };
+}
+
+// Helper function for stable sorting
+function stableChronoSortSec<T extends { startTimeSec: number, endTimeSec: number }>(items: T[]): T[] {
+    return items
+    .map((item, i) => ({ item, i}))
+    .sort((a, b) => {
+        if (a.item.startTimeSec !== b.item.startTimeSec) return a.item.startTimeSec - b.item.startTimeSec;
+        if (a.item.endTimeSec !== b.item.endTimeSec) return a.item.endTimeSec - b.item.endTimeSec;
+        return a.i - b.i;
+    })
+    .map(x => x.item);
 }
 
 describe('Saccade Pipeline (Integration)', () => {
@@ -206,6 +219,160 @@ describe('Saccade Pipeline (Integration)', () => {
 
             // ISI values should never be negative after filtering
             expect(result.metrics.isiSeries.every(isi => Number.isFinite(isi) && isi >= 0)).toBe(true); // All ISI values should be finite and non-negative
+        });
+    });
+
+    describe('B) Time Unit & Precision Guarantees', () => {
+        it('B1) Correct sec -> ms conversion from detection into metrics input', () => {
+            // Intentionally keeping plausible bounds undefined to avoid filtering so every detected saccade becomes a metrics input
+            const vectors: Vec3[] = []; // Initialize empty dataset
+            // A1 style dataset (will prodce >= 1 detected saccade)
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));         // Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));  // Saccade: 10 steps of 0.6° => 6.0°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));       // Hold at 6°
+            const result = analyzeSaccadesFromVectors(
+                vectors, undefined, { series: {amplitudeDegOverTime: true } }
+            );
+            // Sanity Check
+            expect(result.detection.saccades.length).toBeGreaterThanOrEqual(1); // We should have at least 1 detected saccade to validate the conversion
+            // No filtering when plausibleBounds are not provided
+            expect(result.metrics.filtered.totalFiltered).toBe(0); // With no plausible bounds, we expect no filtering to occur
+            // Every detected saccade should appear in perSaccade since nothing is filtered
+            expect(result.metrics.perSaccade.length).toBe(result.detection.saccades.length); // All detected saccades should be kept since no filtering occurs
+
+            const detOrdered = stableChronoSortSec(result.detection.saccades); // Sort detected saccades by start time to ensure chronological order
+            const metOrdered = result.metrics.perSaccade; // perSaccade should already be in chronological order 
+            // Core conversion guarantee: times are multiplied by 1000
+            for (let i = 0; i < detOrdered.length; i++) {
+                const d = detOrdered[i];
+                const m = metOrdered[i];
+
+                expect(m.startTime).toBeCloseTo(d.startTimeSec * 1000, 8); // startTime in ms should be startTimeSec * 1000
+                expect(m.endTime).toBeCloseTo(d.endTimeSec * 1000, 8);     // endTime in ms should be endTimeSec * 1000
+                // Validate the duration relationship survives conversion
+                const detDurationMsFromSec = (d.endTimeSec - d.startTimeSec) * 1000;  // Duration in ms should be (endTimeSec - startTimeSec) * 1000
+                expect(m.durationMs).toBeCloseTo(detDurationMsFromSec, 8); // durationMs should match the converted duration from detection
+                // Amplitude is passed through unchanged in wrapper
+                expect(m.amplitudeDeg).toBeCloseTo(d.amplitudeDeg, 10); // Amplitude should be unchanged by the conversion
+            }
+        });
+
+        it('B2) High-precision inputs do not create non-finite values, negative durations, or negative ISIs', () => {
+            // Precision stress:
+            // Long run of tiny sub-threshold inceremnents, then 2 clear saccades separated by a hold.
+            // Guarantees:
+            // No NaN/Infinity in detection velocities
+            // All kept saccades have finite numeric fields and non-negative durations
+            // ISI series contains only finite, non-negative values
+            // Ordering is non-decreasing by (startTime, endTime) for perSaccade output when series is enabled.
+            const vectors: Vec3[] = [];
+            // 1) Tiny drift
+            const tinyStep = 0.01;                                                            // Very small step to create a long sequence of sub-threshold movements
+            for (let i =0; i < 120; i++) vectors.push(rotateYDeg(i * tinyStep));              // 120 samples of tiny drift (1.2° total)
+            // 2) Saccade 1: +6° using 0.6° steps
+            const base1 = 120 * tinyStep;                                                     // Starting point for saccade 1
+            for (let k =1; k <= 10; k++) vectors.push(rotateYDeg(base1 + k * 0.6));           // Saccade 1: 10 steps of 0.6° => 6.0°
+            // 3) Hold
+            const hold1 = base1 + 6.0;                                                        // Hold at the end of saccade 1
+            for (let i = 0; i < 30; i++) vectors.push(rotateYDeg(hold1));                     // Hold for 30 samples (150ms)
+            // 4) More tiny drift
+            const driftBase = hold1;                                                          // Starting point for second drift
+            for (let i = 1; i <= 80; i++) vectors.push(rotateYDeg(driftBase + 1 * tinyStep)); // 80 samples of tiny drift (0.8° total) during hold
+            // 5) Saccade 2: + 6° using 0.6° steps
+            const base2 = driftBase + 80 * tinyStep;                                          // Starting point for saccade 2
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(base2 + k * 0.6));          // Saccade 2: 10 steps of 0.6° => 6.0°
+            // 6) Hold
+            const hold2 = base2 + 6.0;                                                        // Hold at the end of saccade 2
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(hold2));                     // Hold for 20 samples (100ms)
+
+            const result = analyzeSaccadesFromVectors(vectors, undefined, { series: { amplitudeDegOverTime: true } });
+
+            // Detection velocities must be finite
+            expect(result.detection.velocitiesDegPerSec.length).toBe(vectors.length);         // Velocity should be computed for each vector
+            expect(result.detection.velocitiesDegPerSec.every(Number.isFinite)).toBe(true);   // All velocity values should be finite numbers
+            // We should have atleast 2 detected saccades
+            expect(result.detection.saccades.length).toBeGreaterThanOrEqual(2);               // Detect our two distinct saccades
+            // No filtering (bounds not provided)
+            expect(result.metrics.filtered.totalFiltered).toBe(0);                            // With no plausible bounds, we expect no filtering to occur
+            // Per saccade derived fields must be finite and sane
+            expect(result.metrics.perSaccade.length).toBe(result.detection.saccades.length);  // All detected saccades should be kept since no filtering occurs
+
+            for (const s of result.metrics.perSaccade) {
+                expect(Number.isFinite(s.startTime)).toBe(true);                              // startTime should be a finite number
+                expect(Number.isFinite(s.endTime)).toBe(true);                                // endTime should be a finite number
+                expect(Number.isFinite(s.durationMs)).toBe(true);                             // durationMs should be a finite number
+                expect(Number.isFinite(s.durationSec)).toBe(true);                            // durationSec should be a finite number
+                expect(Number.isFinite(s.amplitudeDeg)).toBe(true);                           // amplitudeDeg should be a finite number
+                expect(Number.isFinite(s.ratePerSec)).toBe(true);                             // ratePerSec should be a finite number
+                expect(s.durationMs).toBeGreaterThanOrEqual(0);                               // durationMs should be non-negative
+                expect(s.durationSec).toBeGreaterThanOrEqual(0);                              // durationSec should be non-negative
+            }
+            // Ordering non-decreasing by (startTime, endTime)
+            for (let i = 1; i < result.metrics.perSaccade.length; i++) {
+                const prev = result.metrics.perSaccade[i - 1];                                // Previous saccade
+                const cur = result.metrics.perSaccade[i];                                     // Current saccade
+                const ok =                                                                    // If start times are equal, end time must be non-decreasing
+                    cur.startTime > prev.startTime ||
+                    (cur.startTime === prev.startTime && cur.endTime >= prev.endTime); 
+                // Each saccade should start after the previous one, or if they start at the same time, the end time should be non-decreasing
+                expect(ok).toBe(true);
+            }
+            // ISI sanity: finite and non-negative
+            expect(result.metrics.isiSeries.every(isi => Number.isFinite(isi) && isi >= 0)).toBe(true);      // All ISI values should be finite and non-negative
+            // Length contract
+            expect(result.metrics.isiSeries.length).toBe(Math.max(0, result.metrics.perSaccade.length - 1)); // ISI series length should be one less than the number of kept saccades
+        });
+    });
+
+    describe('C) Detection Option Propagation', () => {
+        it('C1) Custom velocity threshold alters detection outcome', () => {
+            // Dataset similar to A1
+            // Run 1: default threshold (100) => should detect >= 1 saccade
+            // Run 2: high threshold (1000) => should detect 0 saccades
+            const vectors: Vec3[] = [];                                                               // Initialize empty dataset
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                                 // Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));                          // Saccade: 10 steps of 0.6° => 6.0°, should yield ~120°/s velocity
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));                               // Hold at 6°
+            // Run 1: default detection options
+            const rDefault = analyzeSaccadesFromVectors(vectors);                                     //Default options should detect the saccade
+            expect(rDefault.detection.saccades.length).toBeGreaterThanOrEqual(1);                     // We should detect at least 1 saccade with default options
+            expect(rDefault.metrics.perSaccade.length).toBeGreaterThanOrEqual(1);                     // With default options, we should have at least 1 kept saccade
+            // Run 2: absurdly high threshold -> no detection
+            const rHigh = analyzeSaccadesFromVectors(vectors, { velocityThresholdDegPerSec: 1000 });  // With a very high velocity threshold, we should detect no saccades
+            expect(rHigh.detection.saccades.length).toBe(0);                                          // We should detect 0 saccades with the high velocity threshold
+            expect(rHigh.detection.saccadesExtended.length).toBe(0);                                  // Extended saccades should also be 0
+            expect(rHigh.metrics.perSaccade.length).toBe(0);                                          // With no detected saccades, we should have 0 kept saccades
+            // Session should be the empty-session contract
+            expect(rHigh.metrics.session.durationMs).toBe(0);                                         // Session duration should be 0 for an empty session
+            expect(rHigh.metrics.session.durationSec).toBe(0);                                        // Session duration should be 0 for an empty session
+            expect(rHigh.metrics.session.ratePerSec).toBe(0);                                         // Saccade rate should be 0 for an empty session
+        });
+
+        it('C2) includeExtended flag propagates and only affects saccadesExtended', () => {
+            // Default includeExtended = true (per schema)
+            // We run the same vectors twice:
+            // A: default (expect saccadesExtended present, same count as saccades)
+            // B: includeExtended = false (expect saccadesExtended to be empty)
+            // Metrics should be identical
+            const vectors: Vec3[] = [];                                                     // Initialize empty dataset
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                       // Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));                // Saccade: 10 steps of 0.6° => 6.0°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));                     // Hold at 6°
+            // Run A: default (includeExtended = true)
+            const a = analyzeSaccadesFromVectors(vectors);                                  // Run with default options (includeExtended should be true)
+            expect(a.detection.saccades.length).toBeGreaterThanOrEqual(1);                  // We should detect at least 1 saccade
+            expect(a.detection.saccadesExtended.length).toBe(a.detection.saccades.length);  // With includeExtended = true, saccadesExtended should have the same count as saccades
+            // Spot check extended fields exist on the first extended event
+            const ext0 = a.detection.saccadesExtended[0];                                   // First extended saccade
+            expect(ext0.startVector).toBeDefined();                                         // startVector should be defined in extended saccades
+            expect(ext0.endVector).toBeDefined();                                           // endVector should be defined in extended saccades
+            expect(ext0.direction).toBeDefined();                                           // direction should be defined in extended saccades
+            // Run B: includeExtended = false
+            const b = analyzeSaccadesFromVectors(vectors, { includeExtended: false });      // Run with includeExtended = false
+            expect(b.detection.saccades.length).toBeGreaterThanOrEqual(1);                  // We should still detect at least 1 saccade
+            expect(b.detection.saccadesExtended.length).toBe(0);                            // With includeExtended = false, saccadesExtended should be empty
+            // Metrics should be identical between A and B 
+            expect(b.metrics).toEqual(a.metrics);
         });
     });
 });
