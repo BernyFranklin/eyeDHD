@@ -385,17 +385,17 @@ describe('Saccade Pipeline (Integration)', () => {
             // Saccade 2 around 300ms
             const vectors: Vec3[] = [];
             // Hold at 0°
-            for (let i=0; i < 20; i++) vectors.push(rotateYDeg(0)); // 20 samples * 5ms = 100ms hold
+            for (let i=0; i < 20; i++) vectors.push(rotateYDeg(0));             // 20 samples * 5ms = 100ms hold
             // Saccade 1
-            for (let k=1; k <= 10;k++) vectors.push(rotateYDeg(k * 0.6)); // 10 steps of 0.6° => 6.0°, should yield ~120°/s velocity
+            for (let k=1; k <= 10;k++) vectors.push(rotateYDeg(k * 0.6));       // 10 steps of 0.6° => 6.0°, should yield ~120°/s velocity
             // Hold long enough to create a clear segment boundary
-            for (let i=0; i < 40; i++) vectors.push(rotateYDeg(6.0)); // 40 samples * 5ms = 200ms hold, now at 300ms total
+            for (let i=0; i < 40; i++) vectors.push(rotateYDeg(6.0));           // 40 samples * 5ms = 200ms hold, now at 300ms total
             // Saccade 2
             for (let k=1; k <= 10;k++) vectors.push(rotateYDeg(6.0 + k * 0.6)); // Another saccade of 6.0° starting at ~300ms
             // Hold at the end
-            for (let i=0; i < 20; i++) vectors.push(rotateYDeg(12.0)); // Final hold
+            for (let i=0; i < 20; i++) vectors.push(rotateYDeg(12.0));          // Final hold
 
-            const result = analyzeSaccadesFromVectors( // Run the pipeline with segment configuration
+            const result = analyzeSaccadesFromVectors(                          // Run the pipeline with segment configuration
                 vectors, undefined, 
                 { segments: [
                     {id: 'A', startTime: 0, endTime: 200 },
@@ -404,19 +404,19 @@ describe('Saccade Pipeline (Integration)', () => {
                 }
             );
 
-            const segments = result.metrics.segmentSummaries; // Extract segment summaries for assertions
-            expect(segments.length).toBe(2); // We should have 2 segments in the summary
+            const segments = result.metrics.segmentSummaries;                   // Extract segment summaries for assertions
+            expect(segments.length).toBe(2);                                    // We should have 2 segments in the summary
             
-            const segA = segments.find(s => s.id === 'A'); // Find segment A
-            const segB = segments.find(s => s.id === 'B'); // Find segment B
-            expect(segA).toBeDefined(); // Segment A should be defined
-            expect(segB).toBeDefined(); // Segment B should be defined
-            expect(segA!.count).toBe(1); // Segment A should contain the first saccade
-            expect(segB!.count).toBe(1); // Segment B should contain the second saccade
-            expect(result.metrics.unassigned.count).toBe(0); // With our construction, we should have no unassigned saccades
+            const segA = segments.find(s => s.id === 'A');                      // Find segment A
+            const segB = segments.find(s => s.id === 'B');                      // Find segment B
+            expect(segA).toBeDefined();                                         // Segment A should be defined
+            expect(segB).toBeDefined();                                         // Segment B should be defined
+            expect(segA!.count).toBe(1);                                        // Segment A should contain the first saccade
+            expect(segB!.count).toBe(1);                                        // Segment B should contain the second saccade
+            expect(result.metrics.unassigned.count).toBe(0);                    // With our construction, we should have no unassigned saccades
 
             // Rate per sec = count / durationSec
-            expect(segA!.ratePerSec).toBeCloseTo(  // Rate for segment A should be count divided by duration in seconds
+            expect(segA!.ratePerSec).toBeCloseTo(                               // Rate for segment A should be count divided by duration in seconds
                 segB!.count / segA!.durationSec,
                 10
             );
