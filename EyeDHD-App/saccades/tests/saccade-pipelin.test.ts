@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { analyzeSaccadesFromVectors } from '../index';
 import type { Vec3 } from '../index';
 
+// Helper function to create a Vec3 representing a rotation around the Y-axis by a given angle in degrees.
 function rotateYDeg(angleDeg: number): Vec3 {
     const rad = (angleDeg * Math.PI) / 180;
     return {
@@ -9,6 +10,18 @@ function rotateYDeg(angleDeg: number): Vec3 {
         y: 0,
         z: Math.cos(rad),
     };
+}
+
+// Helper function for stable sorting
+function stableChronoSortSec<T extends { startTimeSec: number, endTimeSec: number }>(items: T[]): T[] {
+    return items
+    .map((item, i) => ({ item, i}))
+    .sort((a, b) => {
+        if (a.item.startTimeSec !== b.item.startTimeSec) return a.item.startTimeSec - b.item.startTimeSec;
+        if (a.item.endTimeSec !== b.item.endTimeSec) return a.item.endTimeSec - b.item.endTimeSec;
+        return a.i - b.i;
+    })
+    .map(x => x.item);
 }
 
 describe('Saccade Pipeline (Integration)', () => {
@@ -206,6 +219,42 @@ describe('Saccade Pipeline (Integration)', () => {
 
             // ISI values should never be negative after filtering
             expect(result.metrics.isiSeries.every(isi => Number.isFinite(isi) && isi >= 0)).toBe(true); // All ISI values should be finite and non-negative
+        });
+    });
+
+    describe('B) Time Unit & Precision Guarantees', () => {
+        it('B1) Correct sec -> ms conversion from detection into metrics input', () => {
+            // Intentionally keeping plausible bounds undefined to avoid filtering so every detected saccade becomes a metrics input
+            const vectors: Vec3[] = []; // Initialize empty dataset
+            // A1 style dataset (will prodce >= 1 detected saccade)
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));         // Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));  // Saccade: 10 steps of 0.6° => 6.0°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));       // Hold at 6°
+            const result = analyzeSaccadesFromVectors(
+                vectors, undefined, { series: {amplitudeDegOverTime: true } }
+            );
+            // Sanity Check
+            expect(result.detection.saccades.length).toBeGreaterThanOrEqual(1); // We should have at least 1 detected saccade to validate the conversion
+            // No filtering when plausibleBounds are not provided
+            expect(result.metrics.filtered.totalFiltered).toBe(0); // With no plausible bounds, we expect no filtering to occur
+            // Every detected saccade should appear in perSaccade since nothing is filtered
+            expect(result.metrics.perSaccade.length).toBe(result.detection.saccades.length); // All detected saccades should be kept since no filtering occurs
+
+            const detOrdered = stableChronoSortSec(result.detection.saccades); // Sort detected saccades by start time to ensure chronological order
+            const metOrdered = result.metrics.perSaccade; // perSaccade should already be in chronological order 
+            // Core conversion guarantee: times are multiplied by 1000
+            for (let i = 0; i < detOrdered.length; i++) {
+                const d = detOrdered[i];
+                const m = metOrdered[i];
+
+                expect(m.startTime).toBeCloseTo(d.startTimeSec * 1000, 8); // startTime in ms should be startTimeSec * 1000
+                expect(m.endTime).toBeCloseTo(d.endTimeSec * 1000, 8);     // endTime in ms should be endTimeSec * 1000
+                // Validate the duration relationship survives conversion
+                const detDurationMsFromSec = (d.endTimeSec - d.startTimeSec) * 1000;  // Duration in ms should be (endTimeSec - startTimeSec) * 1000
+                expect(m.durationMs).toBeCloseTo(detDurationMsFromSec, 8); // durationMs should match the converted duration from detection
+                // Amplitude is passed through unchanged in wrapper
+                expect(m.amplitudeDeg).toBeCloseTo(d.amplitudeDeg, 10); // Amplitude should be unchanged by the conversion
+            }
         });
     });
 });
