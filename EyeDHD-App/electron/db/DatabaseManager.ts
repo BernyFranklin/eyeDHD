@@ -187,7 +187,7 @@ export default class DatabaseManager {
 		const rows: DataType[] = [];
 
 		for (let i = 0; i < count; i++) {
-			const { value, done } = await stream.next();
+			const { value, done } = await stream.next(this);
 			if (done) {
 				break;
 			}
@@ -205,7 +205,6 @@ export default class DatabaseManager {
 		}
 		this.deleteStream(key);
 	}
-
 }
 
 export function getDB(options: DBOptions = { logging: false, temporary: false }) {

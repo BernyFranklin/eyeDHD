@@ -24,7 +24,6 @@ const CLEANING_BATCH_SIZE = 1000;
  * Wraps a batch iterator and tracks stream progress by batch size.
  */
 export default class DataStream {
-	private manager: DatabaseManager;
 	type: StreamType;
 	file?: Metadata;
 	iterator: AsyncIterator<DataType[]>;
@@ -35,8 +34,7 @@ export default class DataStream {
 		totalBytes: 0
 	};
 
-	private constructor(manager: DatabaseManager, type: StreamType, iterator: AsyncIterator<DataType[]>, file?: Metadata) {
-		this.manager = manager;
+	private constructor(type: StreamType, iterator: AsyncIterator<DataType[]>, file?: Metadata) {
 		this.type = type;
 		this.iterator = iterator;
 		this.file = file;
@@ -44,9 +42,13 @@ export default class DataStream {
 
 	static new(manager: DatabaseManager, type: StreamType, file?: Metadata): DataStream {
 		const iterator = DataStream.createIterator(manager, type, file);
-		const stream = new DataStream(manager, type, iterator, file);
+		const stream = new DataStream(type, iterator, file);
 
 		return stream;
+	}
+
+	static createForTest(type: StreamType, iterator: AsyncIterator<DataType[]>, file?: Metadata): DataStream {
+		return new DataStream(type, iterator, file);
 	}
 
 	private static async *createIterator(
@@ -158,15 +160,8 @@ export default class DataStream {
 			}
 
 			const batch = value ?? [];
-			if (this.type === 'Cleaning') {
-				const cleaner = this.manager.getCleaner(this.file);
-				if (cleaner) {
-					this.progress.bytesRead = cleaner.progress.bytesRead;
-					this.progress.totalBytes = cleaner.progress.totalBytes;
-				}
-			} else {
-				this.progress.rows += batch.length;
-			}
+			this.progress.rows += batch.length;
+
 			yield batch;
 		}
 	}
@@ -187,7 +182,26 @@ export default class DataStream {
 		return allData;
 	}
 
-	async next(): Promise<IteratorResult<DataType[]>> {
-		return await this.iterator.next();
+	async next(manager: DatabaseManager): Promise<IteratorResult<DataType[]>> {
+		const result = await this.iterator.next();
+		const { done, value } = result;
+
+		if (done) {
+			this.close();
+			return result;
+		}
+
+		const batch = value ?? [];
+		if (this.type === 'Cleaning') {
+			const cleaner = manager.getCleaner(this.file);
+			if (cleaner) {
+				this.progress.bytesRead = cleaner.progress.bytesRead;
+				this.progress.totalBytes = cleaner.progress.totalBytes;
+			}
+		} else {
+			this.progress.rows += batch.length;
+		}
+
+		return result;
 	}
 }

@@ -13,17 +13,17 @@ describe('Database - CSVData', () => {
 
     db.prepare(`
       INSERT INTO metadata (name, path)
-      VALUES (?, ?, ?);
+      VALUES (?, ?);
     `).run('test.csv', 'test.csv');
 
     db.prepare(`
       INSERT INTO metadata (name, path)
-      VALUES (?, ?, ?);
+      VALUES (?, ?);
     `).run('test2.csv', 'test2.csv');
 
     db.prepare(`
       INSERT INTO metadata (name, path)
-      VALUES (?, ?, ?);
+      VALUES (?, ?);
     `).run('test3.csv', 'test3.csv');
   };
 
