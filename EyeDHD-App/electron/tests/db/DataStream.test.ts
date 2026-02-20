@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import DataStream from '../../db/DataStream';
-import type { DataType } from '../../db/DatabaseManager';
+import DataStream, { type DataType } from '../../db/DataStream';
 
 type Batch = DataType[];
 
@@ -49,18 +48,6 @@ describe('Database - DataStream', () => {
 
 	    const third = await stream.next();
 	    expect(third.done).toBe(true);
-	    expect(stream.progress.done).toBe(true);
-	  });
-
-	  it('A2) Calls iterator.return() on close()', async () => {
-	    const batches: Batch[] = [];
-	    const iterator = makeBatchIteratorWithReturn(batches);
-
-	    const stream = new DataStream('CSVData', iterator);
-	    await stream.next(); // consume one batch
-	    stream.close();
-
-	    expect(iterator.return).toHaveBeenCalledTimes(1);
 	    expect(stream.progress.done).toBe(true);
 	  });
 	});

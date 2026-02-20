@@ -2,7 +2,7 @@ import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
 import DataCleaner from '../analysis/DataCleaner';
-import DataStream, { type Progress } from './DataStream';
+import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
 import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
 import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
 import saccadeActions, { type SaccadeData, createSaccadeTable, deleteSaccadeTable } from './tables/saccade';
@@ -29,21 +29,10 @@ type SaccadeDataActions = {
 	store: () => void;
 };
 
-export type DataType = Metadata | CSVData | SaccadeData;
-export type StreamType = 'Metadata' | 'CSVData' | 'SaccadeData' | 'Cleaning';
-export type StreamKey = {
-	id: number;
-	type: StreamType;
-};
-
 export default class DatabaseManager {
 	private db: Database;
 	private cleaners = new Map<string, DataCleaner>();
 	private streams = new Map<number, DataStream>();
-	private streamContexts = new Map<number, { type: StreamType; file?: Metadata }>();
-
-	private static readonly STREAM_BATCH_SIZE = 1000;
-	private static readonly CLEANING_BATCH_SIZE = 1000;
 
 	metadata: MetadataActions;
 	csv: CSVActions;
@@ -140,10 +129,6 @@ export default class DatabaseManager {
 		this.createCleaner(file);
 	}
 
-	cleanerExists(file: Metadata): boolean {
-		return this.cleaners.has(file.name);
-	}
-
 	getCleaner(file: Metadata): DataCleaner {
 		return this.cleaners.get(file.name);
 	}
@@ -169,10 +154,9 @@ export default class DatabaseManager {
 	}
 
 	async startStream(type: StreamType, file?: Metadata): Promise<StreamKey> {
-		const iterator = this.createIterator(type, file);
+		const stream = DataStream.new(this, type, file);
 		const key = { id: Date.now(), type };
-		this.streams.set(key.id, new DataStream(type, iterator));
-		this.streamContexts.set(key.id, { type, file });
+		this.streams.set(key.id, stream);
 
 		return key;
 	}
@@ -183,7 +167,6 @@ export default class DatabaseManager {
 
 	private deleteStream(key: StreamKey) {
 		this.streams.delete(key.id);
-		this.streamContexts.delete(key.id);
 	}
 
 	async pullStream(
@@ -212,17 +195,6 @@ export default class DatabaseManager {
 			rows.push(...(value ?? []));
 		}
 
-		if (stream.type === 'Cleaning') {
-			const context = this.streamContexts.get(key.id);
-			if (context?.file) {
-				const cleaner = this.getCleaner(context.file);
-				if (cleaner) {
-					stream.progress.bytesRead = cleaner.progress.bytesRead;
-					stream.progress.totalBytes = cleaner.progress.totalBytes;
-				}
-			}
-		}
-
 		send(rows, stream.progress);
 	}
 
@@ -234,100 +206,6 @@ export default class DatabaseManager {
 		this.deleteStream(key);
 	}
 
-	private async *createIterator(type: StreamType, file?: Metadata): AsyncIterator<DataType[]> {
-		switch (type) {
-			case 'Metadata': {
-				const sql = metadataActions.iterate();
-				const stmt = this.db.prepare<[], Metadata>(sql);
-
-				let batch: Metadata[] = [];
-				for (const row of stmt.iterate()) {
-					batch.push(row);
-					if (batch.length >= DatabaseManager.STREAM_BATCH_SIZE) {
-						yield batch;
-						batch = [];
-					}
-				}
-
-				if (batch.length > 0) {
-					yield batch;
-				}
-				break;
-			}
-
-			case 'CSVData': {
-				if (!file) {
-					throw new Error('File must be provided for CSVData streams');
-				}
-
-				const sql = csvActions.iterate(file);
-				const stmt = this.db.prepare<[], CSVData>(sql);
-
-				let batch: CSVData[] = [];
-				for (const row of stmt.iterate()) {
-					batch.push(row);
-					if (batch.length >= DatabaseManager.STREAM_BATCH_SIZE) {
-						yield batch;
-						batch = [];
-					}
-				}
-
-				if (batch.length > 0) {
-					yield batch;
-				}
-				break;
-			}
-
-			case 'SaccadeData': {
-				throw new Error('SaccadeData streaming not implemented yet');
-			}
-
-			case 'Cleaning': {
-				if (!file) {
-					throw new Error('File must be provided for Cleaning streams');
-				}
-
-				let metadata = file;
-				const cleaner = this.getCleaner(metadata);
-				if (!cleaner) {
-					throw new Error(`No cleaner found for file: ${metadata.name}`);
-				}
-
-				// If progress has been made restart
-				if (cleaner.status.start) {
-					this.metadata.resetCleaning(metadata);
-				}
-
-				const header = cleaner.header.join(',') + '\n';
-				metadata = this.updateMetadata({ ...metadata, header });
-
-				let batch: CSVData[] = [];
-				for await (const row of cleaner) {
-					batch.push(row);
-
-					if (batch.length >= DatabaseManager.CLEANING_BATCH_SIZE) {
-						this.csv.store(metadata, batch);
-						yield batch;
-						batch = [];
-					}
-				}
-
-				if (batch.length > 0) {
-					this.csv.store(metadata, batch);
-					yield batch;
-				}
-
-				cleaner.close();
-
-				this.updateMetadata({
-					...metadata,
-					rows: cleaner.progress.currentRow,
-					completed: 1
-				});
-				break;
-			}
-		}
-	}
 }
 
 export function getDB(options: DBOptions = { logging: false, temporary: false }) {

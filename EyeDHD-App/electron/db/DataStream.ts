@@ -1,29 +1,151 @@
-import { DataType, StreamType } from "./DatabaseManager";
+import csvActions, { type CSVData } from "./tables/csv";
+import metadataActions, { type Metadata } from "./tables/metadata";
+import saccadeActions, { type SaccadeData } from "./tables/saccade";
+import DatabaseManager from "./DatabaseManager";
+
+export type DataType = Metadata | CSVData | SaccadeData;
+export type StreamType = 'Metadata' | 'CSVData' | 'SaccadeData' | 'Cleaning';
+export type StreamKey = {
+	id: number;
+	type: StreamType;
+};
 
 export type Progress = {
 	done: boolean;
 	rows: number;
-	bytesRead?: number;
-	totalBytes?: number;
+	bytesRead: number;
+	totalBytes: number;
 };
+
+const STREAM_BATCH_SIZE = 1000;
+const CLEANING_BATCH_SIZE = 1000;
 
 /**
  * Wraps a batch iterator and tracks stream progress by batch size.
  */
 export default class DataStream {
+	private manager: DatabaseManager;
 	type: StreamType;
+	file?: Metadata;
 	iterator: AsyncIterator<DataType[]>;
 	progress: Progress = {
 		done: false,
-		rows: 0
+		rows: 0,
+		bytesRead: 0,
+		totalBytes: 0
 	};
 
-	private wrappedIterator: AsyncIterator<DataType[]>;
-
-	constructor(type: StreamType, iterator: AsyncIterator<DataType[]>) {
+	private constructor(manager: DatabaseManager, type: StreamType, iterator: AsyncIterator<DataType[]>, file?: Metadata) {
+		this.manager = manager;
 		this.type = type;
 		this.iterator = iterator;
-		this.wrappedIterator = this[Symbol.asyncIterator]();
+		this.file = file;
+	}
+
+	static new(manager: DatabaseManager, type: StreamType, file?: Metadata): DataStream {
+		const iterator = DataStream.createIterator(manager, type, file);
+		const stream = new DataStream(manager, type, iterator, file);
+
+		return stream;
+	}
+
+	private static async *createIterator(
+		manager: DatabaseManager,
+		type: StreamType,
+		file?: Metadata
+	): AsyncIterator<DataType[]> {
+		switch (type) {
+			case 'Metadata': {
+				const sql = metadataActions.iterate();
+				const stmt = manager['db'].prepare<[], Metadata>(sql);
+
+				let batch: Metadata[] = [];
+				for (const row of stmt.iterate()) {
+					batch.push(row);
+					if (batch.length >= STREAM_BATCH_SIZE) {
+						yield batch;
+						batch = [];
+					}
+				}
+
+				if (batch.length > 0) {
+					yield batch;
+				}
+				break;
+			}
+
+			case 'CSVData': {
+				if (!file) {
+					throw new Error('File must be provided for CSVData streams');
+				}
+
+				const sql = csvActions.iterate(file);
+				const stmt = manager['db'].prepare<[], CSVData>(sql);
+
+				let batch: CSVData[] = [];
+				for (const row of stmt.iterate()) {
+					batch.push(row);
+					if (batch.length >= STREAM_BATCH_SIZE) {
+						yield batch;
+						batch = [];
+					}
+				}
+
+				if (batch.length > 0) {
+					yield batch;
+				}
+				break;
+			}
+
+			case 'SaccadeData': {
+				throw new Error('SaccadeData streaming not implemented yet');
+			}
+
+			case 'Cleaning': {
+				if (!file) {
+					throw new Error('File must be provided for Cleaning streams');
+				}
+
+				let metadata = file;
+				const cleaner = manager.getCleaner(metadata);
+				if (!cleaner) {
+					throw new Error(`No cleaner found for file: ${metadata.name}`);
+				}
+
+				// If progress has been made restart
+				if (cleaner.status.start) {
+					manager.metadata.resetCleaning(metadata);
+				}
+
+				const header = cleaner.header.join(',') + '\n';
+				metadata = manager['updateMetadata']({ ...metadata, header });
+
+				let batch: CSVData[] = [];
+				for await (const row of cleaner) {
+					batch.push(row);
+
+					if (batch.length >= CLEANING_BATCH_SIZE) {
+						manager.csv.store(metadata, batch);
+						yield batch;
+						batch = [];
+					}
+				}
+
+				if (batch.length > 0) {
+					manager.csv.store(metadata, batch);
+					yield batch;
+				}
+
+				cleaner.close();
+
+				manager['updateMetadata']({
+					...metadata,
+					rows: cleaner.progress.currentRow,
+					completed: 1
+				});
+				break;
+			}
+		}
 	}
 
 	async *[Symbol.asyncIterator](): AsyncIterator<DataType[]> {
@@ -36,7 +158,15 @@ export default class DataStream {
 			}
 
 			const batch = value ?? [];
-			this.progress.rows += batch.length;
+			if (this.type === 'Cleaning') {
+				const cleaner = this.manager.getCleaner(this.file);
+				if (cleaner) {
+					this.progress.bytesRead = cleaner.progress.bytesRead;
+					this.progress.totalBytes = cleaner.progress.totalBytes;
+				}
+			} else {
+				this.progress.rows += batch.length;
+			}
 			yield batch;
 		}
 	}
@@ -47,12 +177,6 @@ export default class DataStream {
 		}
 
 		this.progress.done = true;
-		const iteratorWithReturn = this.iterator as AsyncIterator<DataType[]> & {
-			return?: () => Promise<IteratorResult<DataType[]>>;
-		};
-		if (iteratorWithReturn.return) {
-			void iteratorWithReturn.return();
-		}
 	}
 
 	async collect() {
@@ -64,6 +188,6 @@ export default class DataStream {
 	}
 
 	async next(): Promise<IteratorResult<DataType[]>> {
-		return await this.wrappedIterator.next();
+		return await this.iterator.next();
 	}
 }

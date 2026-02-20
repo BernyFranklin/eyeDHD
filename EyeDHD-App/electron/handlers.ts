@@ -5,14 +5,15 @@ import os from 'os';
 import { spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 
-import DatabaseManager, { type DataType, type StreamKey, type StreamType } from './db/DatabaseManager';
+import DatabaseManager from './db/DatabaseManager';
+import { type StreamKey } from './db/DataStream';
 import { type Metadata } from './db/tables/metadata';
 
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
 // Database setup
 const appRoot = app.getAppPath();
-const dbmgr = new DatabaseManager({
+const manager = new DatabaseManager({
 	path: path.join(appRoot, 'main.db'),
 	temporary: false,
 	logging: false
@@ -38,7 +39,7 @@ ipcMain.handle('csv:open-file', async (_) => {
 		const filename = path.basename(filepath);
 
 		try {
-			const metadata = dbmgr.openFile(filename, filepath);
+			const metadata = manager.openFile(filename, filepath);
 
 			return resolve(metadata);
 		} catch (err) {
@@ -51,7 +52,7 @@ ipcMain.handle('csv:open-file', async (_) => {
 ipcMain.handle('csv:read-metadata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const metadata = dbmgr.metadata.read(filename);
+			const metadata = manager.metadata.read(filename);
 			return resolve(metadata);
 		} catch (err) {
 			return reject(`Failed to read metadata for file: ${filename}. Error: ${err}`);
@@ -63,7 +64,7 @@ ipcMain.handle('csv:read-metadata', async (_, filename) => {
 ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
-			dbmgr.metadata.resetCleaning(file);
+			manager.metadata.resetCleaning(file);
 
 			return resolve();
 		} catch (err) {
@@ -108,13 +109,13 @@ async function exportToCSV(file: Metadata, outputPath: string) {
 			let exportedRows = 0;
 
 			const stream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
-			const metadata = dbmgr.metadata.read(file.name);
+			const metadata = manager.metadata.read(file.name);
 
 			// Add header row
 			csvContent += metadata.header;
 
-			const streamkey = await dbmgr.startStream("CSVData", file);
-			const data = dbmgr.getStream(streamkey);
+			const streamkey = await manager.startStream("CSVData", file);
+			const data = manager.getStream(streamkey);
 
 			for await (const batch of data) {
 				for (const row of batch) {
@@ -129,7 +130,7 @@ async function exportToCSV(file: Metadata, outputPath: string) {
 				}
 			}
 
-			dbmgr.cancelStream(streamkey);
+			manager.cancelStream(streamkey);
 			stream.end();
 
 			console.log('export complete.');
@@ -261,19 +262,19 @@ ipcMain.handle('vr:video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }
 // Starts a new stream for the given type and file (if applicable).
 // Returns a unique stream key to identify the stream in subsequent calls
 ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => {
-	return await dbmgr.startStream(type, file);
+	return await manager.startStream(type, file);
 })
 
 // Pulls the next chunk of data for a stream. The callback sends the data back
 // to the renderer in batches until the stream is done
 ipcMain.handle('stream:pull', async (event, { key, count }) => {
-	const _ = await dbmgr.pullStream(key, count, (rows, progress) => {
+	const _ = await manager.pullStream(key, count, (rows, progress) => {
 		event.sender.send('stream:data', { key, rows, progress });
 	});
 });
 
 ipcMain.on('stream:cancel', (_, { key }) => {
-	dbmgr.cancelStream(key);
+	manager.cancelStream(key);
 });
 
 // Handles the notify request. Creates an OS notification with the given message
