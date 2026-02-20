@@ -347,5 +347,32 @@ describe('Saccade Pipeline (Integration)', () => {
             expect(rHigh.metrics.session.durationSec).toBe(0);                                        // Session duration should be 0 for an empty session
             expect(rHigh.metrics.session.ratePerSec).toBe(0);                                         // Saccade rate should be 0 for an empty session
         });
+
+        it('C2) includeExtended flag propagates and only affects saccadesExtended', () => {
+            // Default includeExtended = true (per schema)
+            // We run the same vectors twice:
+            // A: default (expect saccadesExtended present, same count as saccades)
+            // B: includeExtended = false (expect saccadesExtended to be empty)
+            // Metrics should be identical
+            const vectors: Vec3[] = [];                                                     // Initialize empty dataset
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                       // Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));                // Saccade: 10 steps of 0.6° => 6.0°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));                     // Hold at 6°
+            // Run A: default (includeExtended = true)
+            const a = analyzeSaccadesFromVectors(vectors);                                  // Run with default options (includeExtended should be true)
+            expect(a.detection.saccades.length).toBeGreaterThanOrEqual(1);                  // We should detect at least 1 saccade
+            expect(a.detection.saccadesExtended.length).toBe(a.detection.saccades.length);  // With includeExtended = true, saccadesExtended should have the same count as saccades
+            // Spot check extended fields exist on the first extended event
+            const ext0 = a.detection.saccadesExtended[0];                                   // First extended saccade
+            expect(ext0.startVector).toBeDefined();                                         // startVector should be defined in extended saccades
+            expect(ext0.endVector).toBeDefined();                                           // endVector should be defined in extended saccades
+            expect(ext0.direction).toBeDefined();                                           // direction should be defined in extended saccades
+            // Run B: includeExtended = false
+            const b = analyzeSaccadesFromVectors(vectors, { includeExtended: false });      // Run with includeExtended = false
+            expect(b.detection.saccades.length).toBeGreaterThanOrEqual(1);                  // We should still detect at least 1 saccade
+            expect(b.detection.saccadesExtended.length).toBe(0);                            // With includeExtended = false, saccadesExtended should be empty
+            // Metrics should be identical between A and B 
+            expect(b.metrics).toEqual(a.metrics);
+        });
     });
 });
