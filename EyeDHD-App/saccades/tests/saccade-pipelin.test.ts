@@ -421,5 +421,56 @@ describe('Saccade Pipeline (Integration)', () => {
                 10
             );
         });
+
+        it('D2) ISI plausible bounds propagate and filter out-of-bounds ISIs with transparency', () => {
+            // Build two strong saccades separated by a long hold so ISI is large
+            // dt = 5ms (200 Hz)
+            // We then set isiPlausibleBounds to a small max to force:
+            // - raw ISI exists
+            // - filtered ISI series becomes empty
+            // - isiFiltered.totalFiltered increments with reason "isi_out_of_bounds"
+            const vectors: Vec3[] = [];  // Initialize empty dataset
+            // Hold at 0°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));              // Hold for 100ms
+            // Saccade 1: 0° -> 6°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));       // Saccade of ~6° should yield ~120°/s velocity
+            // Hold for a long time to create a large ISI
+            for (let i = 0; i < 80; i++) vectors.push(rotateYDeg(6.0));            // Hold for 400ms to create a large ISI (well above typical plausible bounds)
+            // Saccade 2: 6° -> 12°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6)); // Another saccade of 6.0° starting at ~500ms
+            // Hold at 12°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));           // Final hold
+            // Baseline run with NO ISI bounds: should keep the ISI (non-negative, finite)
+            const baseline = analyzeSaccadesFromVectors(
+                vectors,
+                undefined,
+                { series: { amplitudeDegOverTime: true } }                         // Enable series to ensure perSaccade is in chronological order
+            );
+            // We need at least 2 kept saccades to have an ISI
+            const strongBase = baseline.metrics.perSaccade.filter(s => s.amplitudeDeg >= 5.0);            // Filter for strong saccades to identify our two main events
+            expect(strongBase.length).toBeGreaterThanOrEqual(2);                                          // We should have at least 2 strong saccades to analyze the ISI between them
+            // Baseline ISI series should contain at least one value
+            expect(baseline.metrics.isiSeries.length).toBeGreaterThanOrEqual(1);                          // With at least 2 kept saccades, we should have at least 1 ISI value in the baseline
+            expect(baseline.metrics.isiSeries.every(isi => Number.isFinite(isi) && isi >= 0)).toBe(true); // All ISI values in the baseline should be finite and non-negative
+            // Now enforce a max ISI that is way too small (50ms)
+            const bounded = analyzeSaccadesFromVectors(
+                vectors,
+                undefined,
+                {
+                    series: { amplitudeDegOverTime: true },   // Enable series to ensure perSaccade is in chronological order
+                    isiPlausibleBounds: {
+                        isiMs: { min: 0, max: 50 },           // Set max ISI to 50ms, which is much smaller than our expected ISI of ~400ms
+                    },
+                }
+            );
+            // With a large gap, ISI should be filtered out
+            expect(bounded.metrics.isiSeries.length).toBe(0);                                          // With the max ISI set to 50ms, our expected ISI of ~400ms should be filtered out
+            // Transparency: totalFiltered should be >= 1 and reason should include "isi_out_of_bounds"
+            expect(bounded.metrics.isiFiltered.totalFiltered).toBeGreaterThanOrEqual(1);               // We should have filtered at least 1 ISI due to it being out of bounds
+            expect(bounded.metrics.isiFiltered.byReason.isi_out_of_bounds).toBeGreaterThanOrEqual(1);  // The reason for filtering should include "isi_out_of_bounds"
+            // Also ensure no negative/overlap reason is present for this constructed case
+            // We built increasing time, so ISI should be non-negative
+            expect(bounded.metrics.isiFiltered.byReason.isi_negative_or_overlap ?? 0).toBe(0);         // We should have no negative or overlap ISIs in this construction
+        });
     });
 });
