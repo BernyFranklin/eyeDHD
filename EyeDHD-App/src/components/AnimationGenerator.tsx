@@ -7,187 +7,195 @@ import CanvasRecorder from './CanvasRecorder';
 import { type Error, type CSVData, type Metadata } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
-export default function AnimationGenerator() {
-  const [files, setFiles] = useState<Metadata[]>([]);
-  const [file, setFile] = useState<Metadata | null>(null);
-  const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
+type Props = {
+  buttonsDisabled: boolean;
+  setButtonsDisabled: (disabled: boolean) => void;
+};
 
-  const [error, setError] = useState('');
-  const [alertMessage, setAlertMessage] = useState('');
-  const [showAlert, setShowAlert] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled }: Props) {
+	const [files, setFiles] = useState<Metadata[]>([]);
+	const [file, setFile] = useState<Metadata | null>(null);
+	const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
 
-  const styles = {
-    container: {
-      textAlign: ' center',
-      backgroundColor: '#fff',
-      padding: '2rem',
-      display: 'flex',
-      flexDirection: 'column',
-      width: '100vw',
-      margin: '2rem auto',
-      alignItems: 'stretch',
-      justifyContent: 'center',
-      gap: '2rem',
-    },
-    buttonContainer: {
-      display: 'flex',
-      flexDirection: 'row',
-      gap: '10px',
-      justifyContent: 'center',
-      marginTop: '1rem'
-    },
-    buttonInline: {
-      display: 'inline-block'
-    },
-    singlePane: {
-      width: '40%',
-      padding: '1rem',
-      border: '1px solid #ccc',
-      borderRadius: '8px',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    },
-    infoBox: {
-      backgroundColor: '#e3f2fd',
-      border: '1px solid #2196f3',
-      borderRadius: '4px',
-      padding: '1rem',
-      marginBottom: '1rem',
-      fontSize: '0.9rem',
-      color: '#0d47a1',
-      maxWidth: '80%',
-      wordWrap: 'break-word',
-      overflowWrap: 'break-word',
-      whiteSpace: 'normal'
-    }
-  } as any;
+	const [error, setError] = useState('');
+	const [alertMessage, setAlertMessage] = useState('');
+	const [showAlert, setShowAlert] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
 
-  // gets the list of cleaned files
-  const getFilesList = async () => {
-    setIsLoading(true);
+	const styles = {
+		container: {
+			textAlign: ' center',
+			backgroundColor: '#fff',
+			padding: '2rem',
+			display: 'flex',
+			flexDirection: 'column',
+			width: '100vw',
+			margin: '2rem auto',
+			alignItems: 'stretch',
+			justifyContent: 'center',
+			gap: '2rem',
+		},
+		buttonContainer: {
+			display: 'flex',
+			flexDirection: 'row',
+			gap: '10px',
+			justifyContent: 'center',
+			marginTop: '1rem'
+		},
+		buttonInline: {
+			display: 'inline-block'
+		},
+		singlePane: {
+			width: '40%',
+			padding: '1rem',
+			border: '1px solid #ccc',
+			borderRadius: '8px',
+			display: 'flex',
+			flexDirection: 'column',
+			justifyContent: 'space-between',
+			alignItems: 'center'
+		},
+		infoBox: {
+			backgroundColor: '#e3f2fd',
+			border: '1px solid #2196f3',
+			borderRadius: '4px',
+			padding: '1rem',
+			marginBottom: '1rem',
+			fontSize: '0.9rem',
+			color: '#0d47a1',
+			maxWidth: '80%',
+			wordWrap: 'break-word',
+			overflowWrap: 'break-word',
+			whiteSpace: 'normal'
+		}
+	} as any;
 
-    if (files.length > 0) return;
+	const getFilesList = async () => {
+		setIsLoading(true);
 
-    // This is running twice for some reason,
-    // I believe its because of <StrictMode> in main.tsx
-    const stream = await RemoteStream.create("Metadata", {});
-    try {
-      const files = await stream.collect() as Metadata[];
-      const cleaned = files.filter((metadata: Metadata) => metadata.completed);
+		if (files.length > 0) return;
 
-      setFiles(cleaned);
-    } catch (err) {
-    	stream.cancel();
-      handleError(err);
-    }
+		const stream = await RemoteStream.create("Metadata", {});
+		try {
+			const files = await stream.collect() as Metadata[];
+			const cleaned = files.filter((metadata: Metadata) => metadata.completed);
 
-    setIsLoading(false);
-  };
+			setFiles(cleaned);
+		} catch (err) {
+			stream.cancel();
+			handleError(err);
+		}
 
-  const getStream = async (file: Metadata | null) => {
-    if (!file) {
-      sendError({ message: 'No file loaded' });
-      return;
-    }
+		setIsLoading(false);
+	};
 
-    setCsvStream(await RemoteStream.create("CSVData", { file }));
-  };
+	const getStream = async (file: Metadata | null) => {
+		if (!file) {
+			sendError({ message: 'No file loaded' });
+			return;
+		}
 
-  const sendAlert = (message: string) => {
-    setAlertMessage(message);
-    setShowAlert(true);
-    setTimeout(() => {
-      setShowAlert(false);
-      setAlertMessage('');
-    }, 4000);
-  };
+		setCsvStream(await RemoteStream.create("CSVData", { file }));
+	};
 
-  const handleError = (err: Error) => {
-    sendError(err);
-  };
+	const sendAlert = (message: string) => {
+		setAlertMessage(message);
+		setShowAlert(true);
+		setTimeout(() => {
+			setShowAlert(false);
+			setAlertMessage('');
+		}, 4000);
+	};
 
-  const sendError = (err: Error) => {
-    setError(err.message);
-    setTimeout(() => {
-      setError('');
-    }, 4000);
-  };
+	const handleError = (err: Error) => {
+		sendError(err);
+	};
 
-  const handleSubmit: ReactEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
-    setFile(null);
+	const sendError = (err: Error) => {
+		setError(err.message);
+		setTimeout(() => {
+			setError('');
+		}, 4000);
+	};
 
-    const form: HTMLFormElement | undefined = e.target as HTMLFormElement;
-    const data = new FormData(form);
+	const handleSubmit: ReactEventHandler<HTMLFormElement> = async (e) => {
+		e.preventDefault();
+		if (buttonsDisabled) return;
+		setFile(null);
 
-    const selected_file = data.get('fileSelect');
-    if (selected_file === 'none') return;
+		const form: HTMLFormElement | undefined = e.target as HTMLFormElement;
+		const data = new FormData(form);
 
-    const metadata = files.find((file) => file.name === selected_file);
+		const selected_file = data.get('fileSelect');
+		if (selected_file === 'none') return;
 
-    try {
-      setFile(metadata);
-      await getStream(metadata);
-    } catch (err) {
-      handleError(err);
-    }
-  };
+		const metadata = files.find((file) => file.name === selected_file);
 
-  const handleReset: ReactEventHandler<HTMLFormElement> = async (e) => {
-    e.preventDefault();
+		try {
+			setFile(metadata);
+			await getStream(metadata);
+		} catch (err) {
+			handleError(err);
+		}
+	};
 
-    // Set form select back to 'none'
-    const select: HTMLSelectElement | null = document.querySelector(
-      'select[name="fileSelect"]'
-    );
-    if (select) select.value = 'none';
+	const handleReset: ReactEventHandler<HTMLFormElement> = async (e) => {
+		e.preventDefault();
+		if (buttonsDisabled) return;
 
-    // Reset reading progress if we have a filename
-    if (file) {
-      csvStream?.cancel();
-    }
+		// Set form select back to 'none'
+		const select: HTMLSelectElement | null = document.querySelector(
+			'select[name="fileSelect"]'
+		);
+		if (select) select.value = 'none';
 
-    // Reset all state
-    setFile(null);
-    setCsvStream(null);
-  };
+		// Reset reading progress if we have a filename
+		if (file) {
+			csvStream?.cancel();
+		}
 
-  useEffect(() => {
-    getFilesList();
-  }, []);
+		// Reset all state
+		setFile(null);
+		setCsvStream(null);
+	};
 
-  return (
-    <>
-      {/*Conditionally render an error message*/}
-      {error && (
-        <AlertWindow
-          message={error}
-          classColor=" red"
-          onClose={() => {
-            setError('');
-            setShowAlert(false);
-          }}
-        />
-      )}
-      {/*Conditionally render the alert message*/}
-      {showAlert && (
-        <AlertWindow
-          message={alertMessage}
-          classColor=" green"
-          onClose={() => {
-            setShowAlert(false);
-            setAlertMessage('');
-          }}
-        />
-      )}
-      <div style={styles.container}>
-	      <div className="animation-generator-container" style={styles.singlePane}>
-	        {/*Used for when things take awhile to load*/}
-	        <LoadingOverlay isLoading={isLoading} />
-					<div style={styles.infoBox as any}>
+	useEffect(() => {
+		getFilesList();
+	}, []);
+
+	useEffect(() => {
+		setButtonsDisabled(!!csvStream);
+	}, [csvStream, setButtonsDisabled]);
+
+	return (
+		<>
+      		{/*Conditionally render an error message*/}
+       		{error && (
+         		<AlertWindow
+           			message={error}
+              		classColor=" red"
+                	onClose={() => {
+                 		setError('');
+                   		setShowAlert(false);
+                 	}}
+                />
+         	)}
+         	{/*Conditionally render the alert message*/}
+          	{showAlert && (
+           		<AlertWindow
+             		message={alertMessage}
+               		classColor=" green"
+                 	onClose={() => {
+                  		setShowAlert(false);
+                    	setAlertMessage('');
+                  	}}
+                />
+           )}
+           <div style={styles.container}>
+	           <div className="animation-generator-container" style={styles.singlePane}>
+	           		{/*Used for when things take awhile to load*/}
+	             	<LoadingOverlay isLoading={isLoading} />
+					<div style={styles.infoBox as React.CSSProperties}>
 						<strong>Real-time Video Recording</strong>
 						<br />
 						This export method records the animation in real-time as an MP4 video (or WebM if
@@ -198,62 +206,64 @@ export default function AnimationGenerator() {
 						<br />
 						Ensure that the application remains open and active during the export process.
 					</div>
-	        {files && (
-	          <form
-	            method="post"
-	            onSubmit={handleSubmit}
-	            onReset={handleReset}
-	          >
-	            <label htmlFor="file-select">
-	              Please select a file to generate an animation.
-	            </label>
-	            <div style={styles.buttonContainer}>
-	              <select name="fileSelect" defaultValue="none">
-	                <option disabled value="none">
-	                  none
-	                </option>
-	                {files.map((file, index) => {
-	                  return (
-	                    <option key={index} value={file.name}>
-	                      {file.name}
-	                    </option>
-	                  );
-	                })}
-	              </select>
-	              <Button
-	                type="submit"
-	                onClick={undefined}
-	                className="btn"
-	                buttonText="Generate"
-	                style={styles.buttonInline as React.CSSProperties}
-	              />
-	              <Button
-	                type="reset"
-	                onClick={undefined}
-	                className="btn"
-	                buttonText="Reset"
-	                style={styles.buttonInline as React.CSSProperties}
-	              />
-	            </div>
-	          </form>
-	        )}
+		        	{files && (
+		          		<form
+			            	method="post"
+				            onSubmit={handleSubmit}
+				            onReset={handleReset}
+				        >
+		            		<label htmlFor="file-select">
+			              		Please select a file to generate an animation.
+				            </label>
+				        <div style={styles.buttonContainer}>
+		              		<select name="fileSelect" defaultValue="none" disabled={buttonsDisabled}>
+				                <option disabled value="none">
+			                  		none
+				                </option>
+				                {files.map((file, index) => {
+			                  		return (
+				                    	<option key={index} value={file.name}>
+				                      		{file.name}
+					                    </option>
+					                );
+				                })}
+							</select>
+		              		<Button
+		                		type="submit"
+				                onClick={undefined}
+				                className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
+				                buttonText="Generate"
+				                style={styles.buttonInline as React.CSSProperties}
+				                disabled={buttonsDisabled}
+						    />
+		              		<Button
+		                		type="reset"
+				                onClick={undefined}
+				                className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
+				                buttonText="Reset"
+				                style={styles.buttonInline as React.CSSProperties}
+				                disabled={buttonsDisabled}
+						    />
+		            	</div>
+		          	</form>
+		        )}
 					{/*Conditionally render the AnimationContainer*/}
-	        {file && csvStream && (
-	        <>
-	        	<h3>Generating Animation...</h3>
-						<div>
-							{csvStream && (
-				        <CanvasRecorder
-									file={file}
-				          csvStream={csvStream}
-									setCsvStream={setCsvStream}
-				        />
-							)}
-						</div>
-	        </>
-	        )}
-	      </div>
-      </div>
-    </>
-  );
+	        		{file && csvStream && (
+		        		<>
+		        			<h3>Generating Animation...</h3>
+							<div>
+								{csvStream && (
+				        			<CanvasRecorder
+										file={file}
+				        				csvStream={csvStream}
+										setCsvStream={setCsvStream}
+				        			/>
+								)}
+							</div>
+		        		</>
+	        		)}
+           		</div>
+           	</div>
+    	</>
+	);
 }

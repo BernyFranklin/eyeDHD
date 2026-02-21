@@ -19,7 +19,10 @@ function App() {
       buttonsDisabled={buttonsDisabled}
       setButtonsDisabled={setButtonsDisabled}
     />,
-    <AnimationGenerator />,
+    <AnimationGenerator
+      buttonsDisabled={buttonsDisabled}
+      setButtonsDisabled={setButtonsDisabled}
+    />,
     <SidebySide />,
     <Visualization />
   ];
