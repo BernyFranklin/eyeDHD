@@ -138,7 +138,7 @@ export default class DataCleaner {
 			const fileStats = fs.statSync(path);
 			this.progress.totalBytes = fileStats.size;
 		} catch (err) {
-			console.warn('Could not get file size:', err);
+			//console.warn('Could not get file size:', err);
 			this.progress.totalBytes = 0;
 		}
 
@@ -174,7 +174,7 @@ export default class DataCleaner {
 				// Validate header structure
 				const headerValidation = this.validateHeader();
 				if (!headerValidation.isValid) {
-					console.warn('Header validation issues detected:', headerValidation);
+					//console.warn('Header validation issues detected:', headerValidation);
 				}
 
 				this.performance.startTime = Date.now();
@@ -680,7 +680,7 @@ export default class DataCleaner {
 		);
 
 		if (missingFields.length > 0) {
-			console.warn('Warning: Missing expected eye tracking fields:', missingFields);
+			//console.warn('Warning: Missing expected eye tracking fields:', missingFields);
 		}
 
 		const hasTimestamp = this.header.some(
