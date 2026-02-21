@@ -168,6 +168,8 @@ export default class DataStream {
 
 	): AsyncGenerator<DataType[], void, undefined> {
 		throw new Error('SaccadeData streaming not implemented yet');
+		const batch: SaccadeData[] = [];
+		yield batch;
 	}
 
 	/**

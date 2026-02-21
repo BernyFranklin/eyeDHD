@@ -66,9 +66,5 @@ describe('Database - SaccadeData', () => {
 		it.todo('C1) Stores saccade rows tied to existing metadata');
 
 		it.todo('C2) Reads saccade rows for a given file');
-
-		it.todo('C3) Updates saccade rows for a given file');
-
-		it.todo('C4) Deletes saccade rows for a given file');
 	});
 });

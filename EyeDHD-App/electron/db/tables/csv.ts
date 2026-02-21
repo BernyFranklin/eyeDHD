@@ -3,10 +3,13 @@ import type { Metadata } from './metadata';
 
 export default { create, iterate };
 
-// Converts filename into table name
-// ID.011.csv -> ID_011_csv_rows
+/**
+ * Converts a filename into a valid table name by replacing '.' with '_' and appending
+ * '_rows' to the end.
+ *
+ * ID.011.csv -> ID_011_csv_rows
+ */
 export function toTableName(filename: string) {
-	// Replace '.' with '_' in filename
 	const name = filename.replace(/\./g, '_');
 	return `${name}_rows`;
 }
@@ -56,7 +59,10 @@ export type CSVData = {
 	FocusStability: number;
 };
 
-// Creates a new table for storing cleaned CSV data
+/**
+ * Creates a new table for storing CSV data. The table name is derived from the filename
+ * by replacing '.' with '_' and appending '_rows' to the end.
+ */
 export function createCSVTable(db: Database, filename: string) {
 	db.prepare(`
 			CREATE TABLE IF NOT EXISTS ${toTableName(filename)} (
@@ -107,6 +113,10 @@ export function createCSVTable(db: Database, filename: string) {
 		.run();
 }
 
+/**
+ * Deletes the table associated with the given filename. The table name is derived from
+ * the filename by replacing '.' with '_' and appending '_rows' to the end.
+ */
 export function deleteCSVTable(db: Database, filename: string) {
 	db.prepare(`
 			DROP TABLE IF EXISTS ${toTableName(filename)};
@@ -114,6 +124,12 @@ export function deleteCSVTable(db: Database, filename: string) {
 		.run();
 }
 
+/**
+ * Inserts multiple rows of CSV data into the table associated with the given file.
+ *
+ * If a row with the same Frame primary key already exists, it will be skipped and a
+ * warning will be logged.
+ */
 function create(db: Database, file: Metadata, rows: CSVData[]): boolean {
 	const table = toTableName(file.name);
 	const insert = db.prepare(`
@@ -230,6 +246,10 @@ function create(db: Database, file: Metadata, rows: CSVData[]): boolean {
 	return true;
 }
 
+/**
+ * Returns a SQL query string to select all rows from the table associated with the given
+ * file.
+ */
 function iterate(file: Metadata) {
 	return (`
 		SELECT * FROM ${toTableName(file.name)};

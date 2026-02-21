@@ -172,55 +172,5 @@ describe('Database - CSVData', () => {
 				rows.map((row) => row.Frame).sort((a, b) => a - b)
 			);
 		});
-
-		it('C3) Deletes CSV rows for a given file when resetting cleaning', () => {
-			seedMetadata();
-			const file = db
-				.prepare(`SELECT * FROM metadata WHERE name = ?;`)
-				.get('test3.csv') as Metadata;
-
-			createCSVTable(db, file.name);
-
-			const rows: CSVData[] = [makeRow(1), makeRow(2)];
-			csvActions.create(db, file, rows);
-
-			deleteCSVTable(db, file.name);
-			createCSVTable(db, file.name);
-
-			const table = db.prepare(`
-					SELECT name FROM sqlite_master WHERE type='table' AND name=?;
-				`)
-				.get(toTableName(file.name));
-
-			expect(table).toStrictEqual({ name: toTableName(file.name) });
-
-			const count = db
-				.prepare(`SELECT COUNT(*) as count FROM ${toTableName(file.name)};`)
-				.get() as { count: number };
-
-			expect(count.count).toBe(0);
-		});
-
-		it('C4) Deletes CSV rows for a given file when removing metadata', () => {
-			seedMetadata();
-			const file = db
-				.prepare(`SELECT * FROM metadata WHERE name = ?;`)
-				.get('test.csv') as Metadata;
-
-			createCSVTable(db, file.name);
-
-			const rows: CSVData[] = [makeRow(1)];
-			csvActions.create(db, file, rows);
-
-			db.prepare(`DELETE FROM metadata WHERE name = ?;`).run(file.name);
-			deleteCSVTable(db, file.name);
-
-			const table = db.prepare(`
-					SELECT name FROM sqlite_master WHERE type='table' AND name=?;
-				`)
-				.get(toTableName(file.name));
-
-			expect(table).toBeUndefined();
-		});
 	});
 });

@@ -13,7 +13,11 @@ export type Metadata = {
 	updated_at: string;
 };
 
-// Creates a new table for storing file metadata
+/**
+ * Creates the metadata table in the database if it doesn't already exist. The metadata
+ * table stores information about each CSV file, including its name, path, header,
+ * completion status, number of rows, and timestamps for creation and last update.
+ */
 export function createMetadataTable(db: Database) {
 	db.prepare(`
 		CREATE TABLE IF NOT EXISTS metadata (
@@ -29,6 +33,10 @@ export function createMetadataTable(db: Database) {
 	`).run();
 }
 
+/**
+ * Drops the metadata table from the database. This is typically used for testing purposes
+ * to reset the database state.
+ */
 export function deleteMetadataTable(db: Database) {
   	db.prepare(`
     	DROP TABLE IF EXISTS metadata;
@@ -36,6 +44,11 @@ export function deleteMetadataTable(db: Database) {
    .run();
 }
 
+/**
+ * Creates a new metadata entry for a CSV file in the database. It takes the filename and
+ * filepath as parameters, inserts a new row into the metadata table, and returns the
+ * created metadata object. If the insertion fails, it throws an error.
+ */
 function create(
 	db: Database,
 	filename: string,
@@ -59,6 +72,11 @@ function create(
     return file;
 }
 
+/**
+ * Reads the metadata for a given filename from the database. It queries the metadata
+ * table for a row matching the provided filename and returns the corresponding metadata
+ * object. If no matching entry is found, it throws an error.
+ */
 function read(db: Database, filename: string): Metadata {
   	const file = db.prepare<string, Metadata>(`
     	SELECT * FROM metadata WHERE name = ?;
@@ -72,6 +90,11 @@ function read(db: Database, filename: string): Metadata {
   return file;
 }
 
+/**
+ * Checks if a metadata entry exists for a given filename in the database. It queries the
+ * metadata table for a row matching the provided filename and returns true if an entry
+ * exists, or false if it does not.
+ */
 function exists(db: Database, filename: string): boolean {
 	const file = db.prepare<string, Metadata>(`
 			SELECT 1 FROM metadata WHERE name = ?;
@@ -85,12 +108,23 @@ function exists(db: Database, filename: string): boolean {
 	return true;
 }
 
+/**
+ * Returns a SQL query string that selects all metadata entries from the database. This is
+ * used for iterating over all metadata entries, such as when streaming data for all
+ * files.
+ */
 function iterate() {
 	return (`
 		SELECT * FROM metadata;
 	`);
 }
 
+/**
+ * Updates the metadata entry for a given file in the database. It takes the existing
+ * metadata object, applies the provided updates (except for id, name, and path), and
+ * updates the corresponding row in the metadata table. It returns the updated metadata
+ * object. If the update fails, it throws an error.
+ */
 function update(db: Database, file: Metadata, updates: Partial<Metadata>): Metadata {
 	if (updates.id !== undefined || updates.name !== undefined || updates.path !== undefined) {
 		throw new Error('Cannot update id, name, or path fields for metadata');
@@ -122,6 +156,12 @@ function update(db: Database, file: Metadata, updates: Partial<Metadata>): Metad
     return read(db, file.name);
 }
 
+/**
+ * Removes the metadata entry for a given file from the database. It first reads the
+ * existing metadata to ensure the entry exists, then deletes the corresponding row from
+ * the metadata table. It returns the original metadata object that was removed. If the
+ * deletion fails, it throws an error.
+ */
 function remove(db: Database, file: Metadata): Metadata {
   	const original = read(db, file.name);
    	if (original === null) {
