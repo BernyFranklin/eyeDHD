@@ -168,8 +168,6 @@ export default class DataStream {
 
 	): AsyncGenerator<DataType[], void, undefined> {
 		throw new Error('SaccadeData streaming not implemented yet');
-		const batch: SaccadeData[] = [];
-		yield batch;
 	}
 
 	/**
@@ -198,7 +196,7 @@ export default class DataStream {
 		}
 
 		const header = cleaner.header.join(',') + '\n';
-		metadata = manager.metadata.update({ ...metadata, header });
+		metadata = manager.metadata.update(metadata, { header });
 
 		let batch: CSVData[] = [];
 		for await (const row of cleaner) {
@@ -218,8 +216,7 @@ export default class DataStream {
 
 		cleaner.close();
 
-		manager['updateMetadata']({
-			...metadata,
+		manager.metadata.update(metadata, {
 			rows: cleaner.progress.currentRow,
 			completed: 1
 		});

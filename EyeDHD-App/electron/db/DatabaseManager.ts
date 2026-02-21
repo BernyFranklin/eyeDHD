@@ -60,8 +60,7 @@ export default class DatabaseManager {
 				deleteCSVTable(this.db, file.name);
 				createCSVTable(this.db, file.name);
 
-				return metadataActions.update(this.db, {
-					...file,
+				return metadataActions.update(this.db, file, {
 					completed: 0,
 					rows: 0
 				});

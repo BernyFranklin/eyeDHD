@@ -106,8 +106,7 @@ describe('Database - Metadata', () => {
 			const { db, cleanup } = seedMetadataDb();
 
 			const original = metadataActions.read(db, 'test2.csv');
-			const result = metadataActions.update(db, {
-				...original,
+			const result = metadataActions.update(db, original, {
 				header: 'a,b,c',
 				completed: 1,
 				rows: 42,

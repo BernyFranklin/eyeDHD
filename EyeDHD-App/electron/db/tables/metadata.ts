@@ -92,6 +92,18 @@ function iterate() {
 }
 
 function update(db: Database, file: Metadata, updates: Partial<Metadata>): Metadata {
+	if (updates.id !== undefined || updates.name !== undefined || updates.path !== undefined) {
+		throw new Error('Cannot update id, name, or path fields for metadata');
+	}
+
+	const merged: Metadata = {
+		id: file.id,
+		name: file.name,
+		path: file.path,
+		...file,
+		...updates
+	};
+
 	const result = db.prepare(`
     	UPDATE metadata
 		SET
@@ -101,7 +113,7 @@ function update(db: Database, file: Metadata, updates: Partial<Metadata>): Metad
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = @id;
 		`)
-    .run(file);
+    .run(merged);
 
   	if (!result.changes) {
     	throw new Error(`Failed to update file entry for: ${file.name}`);
