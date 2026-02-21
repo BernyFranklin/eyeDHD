@@ -91,7 +91,7 @@ function iterate() {
 	`);
 }
 
-function update(db: Database, file: Metadata): Metadata {
+function update(db: Database, file: Metadata, updates: Partial<Metadata>): Metadata {
 	const result = db.prepare(`
     	UPDATE metadata
 		SET

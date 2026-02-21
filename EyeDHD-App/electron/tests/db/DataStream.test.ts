@@ -26,7 +26,7 @@ describe('Database - DataStream', () => {
          		[null]
       		];
       		const manager = {} as unknown as DatabaseManager;
-	       	const stream = DataStream.createForTest(
+	       	const stream = DataStream.testStream(
 				'CSVData',
 				makeBatchIterator(batches)
 			);

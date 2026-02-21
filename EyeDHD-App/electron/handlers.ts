@@ -24,7 +24,7 @@ const manager = new DatabaseManager({
  */
 
 // Handles the csv-open-file request. Opens a file selector
-ipcMain.handle('csv:open-file', async (_) => {
+ipcMain.handle('csv:open-file', async () => {
 	return new Promise(async (resolve, reject) => {
 		const { canceled, filePaths } = await dialog.showOpenDialog({
 			properties: ['openFile'],
@@ -48,7 +48,8 @@ ipcMain.handle('csv:open-file', async (_) => {
 	});
 });
 
-//
+// Handles the csv:read-metadata request.
+// Reads the metadata for a given file from the database and returns it
 ipcMain.handle('csv:read-metadata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -60,7 +61,8 @@ ipcMain.handle('csv:read-metadata', async (_, filename) => {
 	});
 });
 
-//
+// Handles the csv:reset-cleaning-progress request.
+// Resets the cleaning progress for a given file in the database
 ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
@@ -101,7 +103,7 @@ ipcMain.handle('csv:export-data', async (_, file: Metadata) => {
 	});
 });
 
-//
+// Utility function to export cleaned CSV data for a file to a specified output path
 async function exportToCSV(file: Metadata, outputPath: string) {
 	return new Promise(async (resolve) => {
 		try {
@@ -122,7 +124,8 @@ async function exportToCSV(file: Metadata, outputPath: string) {
 					Object.values(row).forEach((value) => {
 						csvContent += value + ',';
 					});
-					csvContent = csvContent.slice(0, -1) + '\n'; // Remove trailing comma and add newline
+					// Remove trailing comma and add newline
+					csvContent = csvContent.slice(0, -1) + '\n';
 					exportedRows++;
 
 					stream.write(csvContent);
@@ -172,7 +175,11 @@ ipcMain.handle('vr:select-video-file', async () => {
 
 // Used by the video-sync-vr request handler to stitch together the VR and
 // Animation videos using FFMPEG
-function SidebySide(vrFile: any, animFile: any, offsetSeconds: number) {
+function SidebySide(
+	vrFile: string,
+	animFile: string,
+	offsetSeconds: number
+): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const offset = Number(offsetSeconds);
 
@@ -236,8 +243,8 @@ function SidebySide(vrFile: any, animFile: any, offsetSeconds: number) {
 
 		console.log('[ffmpeg sync] running:', FFMPEG_PATH, args.join(' '));
 
-		const ff: any = spawn(FFMPEG_PATH, args);
-		ff.stderr.on('data', (d: any) => console.log('[ffmpeg sync]', d.toString()));
+		const ff = spawn(FFMPEG_PATH, args);
+		ff.stderr.on('data', (d) => console.log('[ffmpeg sync]', d.toString()));
 
 		ff.on('close', (code: number) => {
 			if (code === 0) resolve(outputPath);
@@ -268,11 +275,12 @@ ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => 
 // Pulls the next chunk of data for a stream. The callback sends the data back
 // to the renderer in batches until the stream is done
 ipcMain.handle('stream:pull', async (event, { key, count }) => {
-	const _ = await manager.pullStream(key, count, (rows, progress) => {
+	await manager.pullStream(key, count, (rows, progress) => {
 		event.sender.send('stream:data', { key, rows, progress });
 	});
 });
 
+// Cancels an active stream, freeing up any associated resources
 ipcMain.on('stream:cancel', (_, { key }) => {
 	manager.cancelStream(key);
 });
