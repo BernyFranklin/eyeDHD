@@ -472,5 +472,59 @@ describe('Saccade Pipeline (Integration)', () => {
             // We built increasing time, so ISI should be non-negative
             expect(bounded.metrics.isiFiltered.byReason.isi_negative_or_overlap ?? 0).toBe(0);         // We should have no negative or overlap ISIs in this construction
         });
+
+        it('D3) Series flags propagate and series points match per-saccade values', () => {
+            // Two strong saccades for multiple points
+            // Then enable both series:
+            // - saccadeRatePerSecOverTime
+            // - amplitudeDegOverTime
+
+            // Assertions:
+            // - Series arrays are present and have correct lengths
+            // - x values match perSaccade.startTime
+            // - y values match perSaccade.ratePerSec / amplitudeDeg
+            // - series are in chronological order (non-decreasing by x, tie-breaking by y)
+            const vectors: Vec3[] = [];
+
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));               // Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));        // Saccade 1: 0 -> 6°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));             // Hold
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));  // Saccade 2: 6 -> 12°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));            // Hold
+
+            const result = analyzeSaccadesFromVectors(
+                vectors,
+                undefined,
+                {
+                // No plausibleBounds so we keep all detected events
+                series: {
+                    saccadeRatePerSecOverTime: true,
+                    amplitudeDegOverTime: true,
+                },
+                }
+            );
+            // With series enabled, metrics.perSaccade returns keptOrdered per our implementation.
+            const per = result.metrics.perSaccade;
+            expect(per.length).toBeGreaterThanOrEqual(2);                             // Sanity: expect at least 2 (may be more if detector produces extra intervals)
+            const rateSeries = result.metrics.series.saccadeRatePerSecOverTime;       // Extract the saccade rate series for assertions
+            const ampSeries = result.metrics.series.amplitudeDegOverTime;             // Extract the amplitude series for assertions
+            // Series lengths must match keptOrdered length (perSaccadeOut)
+            expect(rateSeries.length).toBe(per.length);                               // The saccade rate series should have the same number of points as the perSaccade array 
+            expect(ampSeries.length).toBe(per.length);                                // The amplitude series should also have the same number of points as the perSaccade array 
+            for (let i = 0; i < per.length; i++) {
+                expect(rateSeries[i].x).toBe(per[i].startTime);                       // The x value of the rate series point should match the startTime of the corresponding perSaccade record
+                expect(rateSeries[i].y).toBeCloseTo(per[i].ratePerSec, 12);           // The y value of the rate series point should match the ratePerSec of the corresponding perSaccade record
+
+                expect(ampSeries[i].x).toBe(per[i].startTime);                        // The x value of the amplitude series point should match the startTime of the corresponding perSaccade record
+                expect(ampSeries[i].y).toBeCloseTo(per[i].amplitudeDeg, 12);          // The y value of the amplitude series point should match the amplitudeDeg of the corresponding perSaccade record
+            }
+            // Chronological monotonicity for series x-values
+            for (let i = 1; i < rateSeries.length; i++) {
+                expect(rateSeries[i].x).toBeGreaterThanOrEqual(rateSeries[i - 1].x);  // The x values of the rate series should be in non-decreasing order to ensure chronological ordering
+            }
+            for (let i = 1; i < ampSeries.length; i++) {
+                expect(ampSeries[i].x).toBeGreaterThanOrEqual(ampSeries[i - 1].x);    // The x values of the amplitude series should also be in non-decreasing order to ensure chronological ordering
+            }
+        });
     });
 });
