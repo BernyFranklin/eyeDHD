@@ -727,5 +727,25 @@ describe('Saccade Pipeline (Integration)', () => {
 
         expect(sig2).toEqual(sig1);                                                             // The sequence of saccades should be identical across runs
     });
-  });
+    });
+
+    describe('F) Configuration Stability & Backward Compatibility', () => {
+        it('F1) Explicit empty options are equivalent to implicit defaults', () => {
+            // Contract:
+            // analyzeSaccadesFromVectors(vectors) === analyzeSaccadesFromVectors(vectors, {}, {})
+
+            // This protects backward compatibility and ensures the wrapper doesn't treat
+            // "undefined" differently than "empty object" in a way that changes outputs.
+            const vectors: Vec3[] = [];                                                    // Initialize empty dataset
+            // Use a dataset that yields multiple events to make equality meaningful.
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                      // Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));               // Saccade: 10 steps of 0.6° => 6.0°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));                    // Hold at 6°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));         // Saccade: 10 steps of 0.6° => 6.0°, now at 12°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));                   // Hold at 12°
+            const implicit = analyzeSaccadesFromVectors(vectors);                          // Run with implicit defaults
+            const explicit = analyzeSaccadesFromVectors(vectors, {}, {});                  // Run with explicit empty options
+            expect(explicit).toEqual(implicit);                                            // The full result objects should be deeply equal
+        });
+    });
 });
