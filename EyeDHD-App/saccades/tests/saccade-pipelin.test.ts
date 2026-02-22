@@ -57,6 +57,21 @@ function assertStableOrder(result: ReturnType<typeof analyzeSaccadesFromVectors>
   }
 }
 
+// Deep-freeze helper to catch accidental mutations
+function deepFreeze<T>(obj: T): T {
+  if (obj && typeof obj === 'object') {
+    Object.freeze(obj);
+    for (const key of Object.keys(obj as any)) {
+      const val = (obj as any)[key];
+      // Avoid freezing null
+      if (val && typeof val === 'object' && !Object.isFrozen(val)) {
+        deepFreeze(val);
+      }
+    }
+  }
+  return obj;
+}
+
 describe('Saccade Pipeline (Integration)', () => {
     describe('A) Core End-to-End Pipeline Integrity', () => {
         it('A1) Minimal end-to-end detection with default options', () => {
@@ -746,6 +761,72 @@ describe('Saccade Pipeline (Integration)', () => {
             const implicit = analyzeSaccadesFromVectors(vectors);                          // Run with implicit defaults
             const explicit = analyzeSaccadesFromVectors(vectors, {}, {});                  // Run with explicit empty options
             expect(explicit).toEqual(implicit);                                            // The full result objects should be deeply equal
+        });
+
+        it('F2) Provided detectionOptions and metricsOptions are not mutated', () => {
+            // Contract:
+            // - analyzeSaccadesFromVectors must not mutate caller-provided option objects.
+            // - This includes nested objects (segments, bounds, csv, series, etc.)
+            
+            const vectors: Vec3[] = [];                                             // Initialize empty dataset
+            // Multi-saccade dataset (like A3) so we exercise more code paths
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));               // Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));        // Saccade: 10 steps of 0.6° => 6.0°
+            for (let i = 0; i < 30; i++) vectors.push(rotateYDeg(6.0));             // Hold at 6° for a bit longer
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));  // Another saccade of 6.0° starting at ~200ms
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));            // Hold at 12°
+            const detectionOptions = {                                              // Start with non-default values to ensure we're not just accidentally matching defaults
+                samplingRate: 200,
+                velocityThresholdDegPerSec: 100,
+                minDurationMs: 10,
+                maxDurationMs: 150,
+                includeExtended: true,
+            };
+
+            const metricsOptions = {                                                // Start with non-default values to ensure we're not just accidentally matching defaults
+                plausibleBounds: {
+                    amplitudeDeg: { min: 0, max: 100 },
+                    durationMs: { min: 1, max: 250 },
+                },
+                includeRatePerMin: true,
+                segments: [
+                    { id: 'A', startTime: 0, endTime: 200 },
+                    { id: 'B', startTime: 200, endTime: 600 },
+                ],
+                isiPlausibleBounds: {
+                    isiMs: { min: 0, max: 1000 },
+                },
+                isiHistogramBinWidthMs: {
+                    binSizeMs: 50,
+                    maxMs: 1000,
+                },
+                isiBySegment: true,
+                series: {
+                    saccadeRatePerSecOverTime: true,
+                    amplitudeDegOverTime: true,
+                },
+                csv: {
+                    sessionSummaryRow: true,
+                    segmentSummaryRows: true,
+                },
+            } as const;
+
+            // Snapshot copies 
+            const detectionSnapshot = structuredClone(detectionOptions);           // Create a deep copy of the detection options to compare against after the function call
+            const metricsSnapshot = structuredClone(metricsOptions);               // Create a deep copy of the metrics options to compare against after the function call
+
+            // Freeze to catch mutations
+            deepFreeze(detectionOptions);                                          // Deep freeze the detection options to ensure any mutation attempts will throw an error
+            deepFreeze(metricsOptions);                                            // Deep freeze the metrics options to ensure any mutation attempts will throw an error
+
+            // Run
+            analyzeSaccadesFromVectors(                                            // Run the function with the provided options 
+                vectors, 
+                detectionOptions, 
+                metricsOptions as any);  
+            // Verify no mutation
+            expect(detectionOptions).toEqual(detectionSnapshot);                   // The detection options should remain unchanged after the function call
+            expect(metricsOptions).toEqual(metricsSnapshot);                       // The metrics options should also remain unchanged after the function call
         });
     });
 });
