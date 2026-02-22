@@ -526,5 +526,67 @@ describe('Saccade Pipeline (Integration)', () => {
                 expect(ampSeries[i].x).toBeGreaterThanOrEqual(ampSeries[i - 1].x);    // The x values of the amplitude series should also be in non-decreasing order to ensure chronological ordering
             }
         });
+
+        it('D4) CSV flags propagate and rows reflect session & segment summaries', () => {
+            // Two saccades in two segments
+            // Enable:
+            // - csv.sessionSummaryRow
+            // - csv.segmentSummaryRows
+            // Assertions:
+            // - sessionSummaryRow exists and matches metrics.session
+            // - segmentSummaryRows length matches segment count
+            // - Counts and rates are correct
+            const vectors: Vec3[] = [];
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                               // Hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));                        // Saccade 1: 0 -> 6°
+            for (let i = 0; i < 40; i++) vectors.push(rotateYDeg(6.0));                             // Hold
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));                  // Saccade 2: 6 -> 12°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));                            // Hold
+
+            const result = analyzeSaccadesFromVectors(                                              // Run the pipeline with CSV configuration
+                vectors,
+                undefined,
+                {
+                includeRatePerMin: true,
+                segments: [
+                    { id: 'A', startTime: 0, endTime: 200 },                                        // Segment A: should contain Saccade 1
+                    { id: 'B', startTime: 200, endTime: 500 },                                      // Segment B: should contain Saccade 2
+                ],
+                csv: {
+                    sessionSummaryRow: true,
+                    segmentSummaryRows: true,
+                },
+                }
+            );
+
+            // ---- Session CSV ----
+            const sessionRow = result.metrics.csv.sessionSummaryRow;                                // Extract the session summary row for assertions
+            expect(sessionRow).not.toBeNull();                                                      // We should have a session summary row 
+            expect(sessionRow!.keptCount).toBe(result.metrics.perSaccade.length);                   // The kept count should match the number of per-saccade metrics
+            expect(sessionRow!.filteredCount).toBe(result.metrics.filtered.totalFiltered);          // The filtered count should match the total filtered metrics
+            expect(sessionRow!.durationMs).toBe(result.metrics.session.durationMs);                 // The duration in ms should match the session duration
+            expect(sessionRow!.durationSec).toBe(result.metrics.session.durationSec);               // The duration in seconds should match the session duration
+            expect(sessionRow!.ratePerSec).toBe(result.metrics.session.ratePerSec);                 // The rate per second should match the session rate
+            expect(sessionRow!.ratePerMin).toBeCloseTo(                                             // The rate per minute should be approx the session rate per second * 60
+                result.metrics.session.ratePerSec * 60,
+                10
+            );
+
+            // ---- Segment CSV ----
+            const segmentRows = result.metrics.csv.segmentSummaryRows;                              // Extract the segment summary rows for assertions
+            expect(segmentRows.length).toBe(2);                                                     // We should have 2 segment summary rows since we defined 2 segments in the config
+
+            // For each segment row, find the corresponding segment summary and validate counts and rates
+            for (const row of segmentRows) {
+                const summary = result.metrics.segmentSummaries.find(s => s.id === row.segmentId);  // Find the corresponding segment summary for this row
+                expect(summary).toBeDefined();                                                      // We should find a matching segment summary for this row
+
+                expect(row.keptCount).toBe(summary!.count);                                         // The kept count in the row should match the count in the segment summary
+                expect(row.durationMs).toBe(summary!.durationMs);                                   // The duration in ms should match the segment duration
+                expect(row.durationSec).toBe(summary!.durationSec);                                 // The duration in seconds should match the segment duration
+                expect(row.ratePerSec).toBe(summary!.ratePerSec);                                   // The rate per second should match the segment rate
+                expect(row.ratePerMin).toBeCloseTo(summary!.ratePerSec * 60, 10);                   // The rate per minute should be approx the segment rate per second * 60
+            }
+        });
     });
 });
