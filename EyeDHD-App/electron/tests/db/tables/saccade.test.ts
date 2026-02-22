@@ -63,8 +63,12 @@ describe('Database - SaccadeData', () => {
 	});
 
 	describe('C) CRUD operations', () => {
-		it.todo('C1) Stores saccade rows tied to existing metadata');
+		it('C1) Stores saccade rows tied to existing metadata', () => {
+			expect(true).toBe(false);
+		});
 
-		it.todo('C2) Reads saccade rows for a given file');
+		it('C2) Reads saccade rows for a given file', () => {
+			expect(true).toBe(false);
+		});
 	});
 });
