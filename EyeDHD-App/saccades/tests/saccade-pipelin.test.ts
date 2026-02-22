@@ -589,4 +589,67 @@ describe('Saccade Pipeline (Integration)', () => {
             }
         });
     });
+
+    describe('E) Ordering & Stability Guarantees', () => {
+    it('E1) Enforces stable chronological ordering across perSaccade, rows, and series', () => {
+    
+        // Create 3 saccades spaced in time.
+        // We only care about final ordering guarantees.
+        const vectors: Vec3[] = [];  // Initialize empty dataset
+
+        
+        for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));  // Initial hold at 0°
+        for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));  // Saccade 1: 0 -> 6°
+        for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));  // Hold at 6°
+        for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));  // Saccade 2: 6 -> 12°
+        for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));  // Hold at 12°
+        for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(12.0 + k * 0.6));  // Saccade 3: 12 -> 18°
+
+        const result = analyzeSaccadesFromVectors(  // Run the pipeline with series enabled to get perSaccade in chronological order
+        vectors,
+        undefined,
+        {
+            series: {
+            amplitudeDegOverTime: true,
+            saccadeRatePerSecOverTime: true,
+            },
+        }
+        );
+
+        const per = result.metrics.perSaccade;                                      // Extract the per-saccade metrics for assertions
+        const rows = result.metrics.perSaccadeRows;                                 // Extract the per-saccade CSV rows for assertions
+        const rateSeries = result.metrics.series.saccadeRatePerSecOverTime;         // Extract the saccade rate series for assertions
+        const ampSeries = result.metrics.series.amplitudeDegOverTime;               // Extract the amplitude series for assertions
+
+        for (let i = 1; i < per.length; i++) {                                      // 1) perSaccade monotonic startTime
+            const prev = per[i - 1];                                                // Previous saccade
+            const cur = per[i];                                                     // Current saccade
+
+            const ok =  
+                cur.startTime > prev.startTime ||                                   // Each saccade should start after the previous one, 
+                (cur.startTime === prev.startTime && cur.endTime >= prev.endTime);  // or if they start at the same time, the end time should be non-decreasing
+
+            expect(ok).toBe(true);                                                  // Assert that the ordering is correct
+        }
+
+        
+        for (let i = 0; i < rows.length; i++) {                                     // 2) Rows follow same order
+            expect(rows[i].startTime).toBe(per[i].startTime);                       // Each row should correspond to the same saccade as in perSaccade
+        }
+
+        
+        for (let i = 0; i < per.length; i++) {                                      // 3) Series follow same order
+            expect(rateSeries[i].x).toBe(per[i].startTime);                         // The x value of the rate series point should match the startTime of the corresponding perSaccade record  
+            expect(ampSeries[i].x).toBe(per[i].startTime);                          // The x value of the amplitude series point should match the startTime of the corresponding perSaccade record
+        }
+
+        
+        if (per.length >= 2) {                                                      // 4) ISI is computed from chronological order
+        for (let i = 0; i < result.metrics.isiSeries.length; i++) { 
+            const expectedIsi = per[i + 1].startTime - per[i].endTime;              // Expected ISI should be the difference between the start of next saccade and end of the current saccade
+            expect(result.metrics.isiSeries[i]).toBeCloseTo(expectedIsi, 10);       // Assert that the ISI value matches the expected value based on the perSaccade ordering
+        }
+        }
+    });
+  });
 });
