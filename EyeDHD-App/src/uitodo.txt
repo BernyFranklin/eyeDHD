@@ -1,5 +1,3 @@
 - Work on eye dilation chart
 - Make saccade chart component
 - Animation generation progress bar
-- Add cleaning stats to data streams
-- COMMENT CODE

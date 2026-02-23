@@ -1,5 +1,2 @@
 - Create saccade data schema to db
 - Analyze csv files and store them the results
-- Clean up DataCleaner
-- Add cleaning stats to data streams
-- COMMENT CODE
