@@ -639,77 +639,21 @@ describe('Saccade Pipeline (Integration)', () => {
     });
 
     describe('E) Ordering & Stability Guarantees', () => {
-    it('E1) Enforces stable chronological ordering across perSaccade, rows, and series', () => {
-    
-        // Create 3 saccades spaced in time.
-        // We only care about final ordering guarantees.
-        const vectors: Vec3[] = [];                                                 // Initialize empty dataset
-
+        it('E1) Enforces stable chronological ordering across perSaccade, rows, and series', () => {
         
-        for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                   // Initial hold at 0°
-        for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));            // Saccade 1: 0 -> 6°
-        for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));                 // Hold at 6°
-        for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));      // Saccade 2: 6 -> 12°
-        for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));                // Hold at 12°
-        for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(12.0 + k * 0.6));     // Saccade 3: 12 -> 18°
+            // Create 3 saccades spaced in time.
+            // We only care about final ordering guarantees.
+            const vectors: Vec3[] = [];                                                 // Initialize empty dataset
 
-        const result = analyzeSaccadesFromVectors(                                  // Run the pipeline with series enabled to get perSaccade in chronological order
-        vectors,
-        undefined,
-        {
-            series: {
-            amplitudeDegOverTime: true,
-            saccadeRatePerSecOverTime: true,
-            },
-        }
-        );
+            
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                   // Initial hold at 0°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));            // Saccade 1: 0 -> 6°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(6.0));                 // Hold at 6°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));      // Saccade 2: 6 -> 12°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));                // Hold at 12°
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(12.0 + k * 0.6));     // Saccade 3: 12 -> 18°
 
-        const per = result.metrics.perSaccade;                                      // Extract the per-saccade metrics for assertions
-        const rows = result.metrics.perSaccadeRows;                                 // Extract the per-saccade CSV rows for assertions
-        const rateSeries = result.metrics.series.saccadeRatePerSecOverTime;         // Extract the saccade rate series for assertions
-        const ampSeries = result.metrics.series.amplitudeDegOverTime;               // Extract the amplitude series for assertions
-
-        for (let i = 1; i < per.length; i++) {                                      // 1) perSaccade monotonic startTime
-            const prev = per[i - 1];                                                // Previous saccade
-            const cur = per[i];                                                     // Current saccade
-            const ok =  
-                cur.startTime > prev.startTime ||                                   // Each saccade should start after the previous one, 
-                (cur.startTime === prev.startTime && cur.endTime >= prev.endTime);  // or if they start at the same time, the end time should be non-decreasing
-
-            expect(ok).toBe(true);                                                  // Assert that the ordering is correct
-        }
-
-        for (let i = 0; i < rows.length; i++) {                                     // 2) Rows follow same order
-            expect(rows[i].startTime).toBe(per[i].startTime);                       // Each row should correspond to the same saccade as in perSaccade
-        }
-
-        for (let i = 0; i < per.length; i++) {                                      // 3) Series follow same order
-            expect(rateSeries[i].x).toBe(per[i].startTime);                         // The x value of the rate series point should match the startTime of the corresponding perSaccade record  
-            expect(ampSeries[i].x).toBe(per[i].startTime);                          // The x value of the amplitude series point should match the startTime of the corresponding perSaccade record
-        }
-
-        if (per.length >= 2) {                                                      // 4) ISI is computed from chronological order
-        for (let i = 0; i < result.metrics.isiSeries.length; i++) { 
-            const expectedIsi = per[i + 1].startTime - per[i].endTime;              // Expected ISI should be the difference between the start of next saccade and end of the current saccade
-            expect(result.metrics.isiSeries[i]).toBeCloseTo(expectedIsi, 10);       // Assert that the ISI value matches the expected value based on the perSaccade ordering
-        }
-        }
-    });
-
-    it('E2) Maintains stable ordering under near-ties at dt resolution across perSaccade, rows, and series', () => {
-        // Build two strong saccades separated by the smallest possible clean gap (1 sample tick).
-        // dt = 5ms.
-
-        // We don't need exact tie startTimes; we need to ensure no ordering instability
-        // when events are extremely close in time.
-    
-        const vectors: Vec3[] = [];                                                             // Initialize empty dataset
-        for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                               // Hold
-        for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));                        // Saccade 1: 0 -> 6°
-        vectors.push(rotateYDeg(6.0));                                                          // Minimal gap: 1 sample hold (5ms)
-        for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));                  // Saccade 2: 6 -> 12°
-        for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));                            // Hold
-        const r1 = analyzeSaccadesFromVectors(                                                  // Run twice to catch any unstable ordering
+            const result = analyzeSaccadesFromVectors(                                  // Run the pipeline with series enabled to get perSaccade in chronological order
             vectors,
             undefined,
             {
@@ -718,30 +662,86 @@ describe('Saccade Pipeline (Integration)', () => {
                 saccadeRatePerSecOverTime: true,
                 },
             }
-        );
-        const r2 = analyzeSaccadesFromVectors(                                                  // Run twice to catch any unstable ordering
-            vectors,
-            undefined,
-            {
-                series: {
-                amplitudeDegOverTime: true,
-                saccadeRatePerSecOverTime: true,
-                },
-            }
-        );
-        // Sanity: we expect >= 2 kept events (might include artifacts if bounds are enabled elsewhere)
-        expect(r1.metrics.perSaccade.length).toBeGreaterThanOrEqual(2);                         // We should detect at least 2 saccades in the first run
-        expect(r2.metrics.perSaccade.length).toBeGreaterThanOrEqual(2);                         // We should also detect at least 2 saccades in the second run
-        // Ordering invariants in each run
-        assertStableOrder(r1);                                                                  // Check that the order of saccades is stable in the first run
-        assertStableOrder(r2);                                                                  // Check that the order of saccades is stable in the second run
-        // Stability across runs: ordering should not change
-        // Compare the sequence of (startTime,endTime,amplitudeDeg) tuples.
-        const sig1 = r1.metrics.perSaccade.map(s => [s.startTime, s.endTime, s.amplitudeDeg]);  // Extract the signature of saccades from the first run for comparison
-        const sig2 = r2.metrics.perSaccade.map(s => [s.startTime, s.endTime, s.amplitudeDeg]);  // Extract the signature of saccades from the second run for comparison
+            );
 
-        expect(sig2).toEqual(sig1);                                                             // The sequence of saccades should be identical across runs
-    });
+            const per = result.metrics.perSaccade;                                      // Extract the per-saccade metrics for assertions
+            const rows = result.metrics.perSaccadeRows;                                 // Extract the per-saccade CSV rows for assertions
+            const rateSeries = result.metrics.series.saccadeRatePerSecOverTime;         // Extract the saccade rate series for assertions
+            const ampSeries = result.metrics.series.amplitudeDegOverTime;               // Extract the amplitude series for assertions
+
+            for (let i = 1; i < per.length; i++) {                                      // 1) perSaccade monotonic startTime
+                const prev = per[i - 1];                                                // Previous saccade
+                const cur = per[i];                                                     // Current saccade
+                const ok =  
+                    cur.startTime > prev.startTime ||                                   // Each saccade should start after the previous one, 
+                    (cur.startTime === prev.startTime && cur.endTime >= prev.endTime);  // or if they start at the same time, the end time should be non-decreasing
+
+                expect(ok).toBe(true);                                                  // Assert that the ordering is correct
+            }
+
+            for (let i = 0; i < rows.length; i++) {                                     // 2) Rows follow same order
+                expect(rows[i].startTime).toBe(per[i].startTime);                       // Each row should correspond to the same saccade as in perSaccade
+            }
+
+            for (let i = 0; i < per.length; i++) {                                      // 3) Series follow same order
+                expect(rateSeries[i].x).toBe(per[i].startTime);                         // The x value of the rate series point should match the startTime of the corresponding perSaccade record  
+                expect(ampSeries[i].x).toBe(per[i].startTime);                          // The x value of the amplitude series point should match the startTime of the corresponding perSaccade record
+            }
+
+            if (per.length >= 2) {                                                      // 4) ISI is computed from chronological order
+            for (let i = 0; i < result.metrics.isiSeries.length; i++) { 
+                const expectedIsi = per[i + 1].startTime - per[i].endTime;              // Expected ISI should be the difference between the start of next saccade and end of the current saccade
+                expect(result.metrics.isiSeries[i]).toBeCloseTo(expectedIsi, 10);       // Assert that the ISI value matches the expected value based on the perSaccade ordering
+            }
+            }
+        });
+
+        it('E2) Maintains stable ordering under near-ties at dt resolution across perSaccade, rows, and series', () => {
+            // Build two strong saccades separated by the smallest possible clean gap (1 sample tick).
+            // dt = 5ms.
+
+            // We don't need exact tie startTimes; we need to ensure no ordering instability
+            // when events are extremely close in time.
+        
+            const vectors: Vec3[] = [];                                                             // Initialize empty dataset
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                               // Hold
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));                        // Saccade 1: 0 -> 6°
+            vectors.push(rotateYDeg(6.0));                                                          // Minimal gap: 1 sample hold (5ms)
+            for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));                  // Saccade 2: 6 -> 12°
+            for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));                            // Hold
+            const r1 = analyzeSaccadesFromVectors(                                                  // Run twice to catch any unstable ordering
+                vectors,
+                undefined,
+                {
+                    series: {
+                    amplitudeDegOverTime: true,
+                    saccadeRatePerSecOverTime: true,
+                    },
+                }
+            );
+            const r2 = analyzeSaccadesFromVectors(                                                  // Run twice to catch any unstable ordering
+                vectors,
+                undefined,
+                {
+                    series: {
+                    amplitudeDegOverTime: true,
+                    saccadeRatePerSecOverTime: true,
+                    },
+                }
+            );
+            // Sanity: we expect >= 2 kept events (might include artifacts if bounds are enabled elsewhere)
+            expect(r1.metrics.perSaccade.length).toBeGreaterThanOrEqual(2);                         // We should detect at least 2 saccades in the first run
+            expect(r2.metrics.perSaccade.length).toBeGreaterThanOrEqual(2);                         // We should also detect at least 2 saccades in the second run
+            // Ordering invariants in each run
+            assertStableOrder(r1);                                                                  // Check that the order of saccades is stable in the first run
+            assertStableOrder(r2);                                                                  // Check that the order of saccades is stable in the second run
+            // Stability across runs: ordering should not change
+            // Compare the sequence of (startTime,endTime,amplitudeDeg) tuples.
+            const sig1 = r1.metrics.perSaccade.map(s => [s.startTime, s.endTime, s.amplitudeDeg]);  // Extract the signature of saccades from the first run for comparison
+            const sig2 = r2.metrics.perSaccade.map(s => [s.startTime, s.endTime, s.amplitudeDeg]);  // Extract the signature of saccades from the second run for comparison
+
+            expect(sig2).toEqual(sig1);                                                             // The sequence of saccades should be identical across runs
+        });
     });
 
     describe('F) Configuration Stability & Backward Compatibility', () => {
