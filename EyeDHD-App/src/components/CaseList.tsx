@@ -9,10 +9,12 @@ import RemoteStream from '../data/RemoteStream';
 import { Error, type Metadata } from '../types';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
+import AlertWindow, { useAlert } from './AlertWindow';
 
 export default function CaseList() {
 	const [cases, setCases] = useState<Metadata[]>([]);
 
+	const alert = useAlert();
 	const [loading, setLoading] = useState(false);
 	const [casesLoaded, setCasesLoaded] = useState(false);
 
@@ -23,7 +25,7 @@ export default function CaseList() {
 	};
 
 	const createCase = async () => {
-
+		alert.show('Create case functionality not implemented yet');
 	};
 
 	const handleError = (err: Error) => {
@@ -79,6 +81,7 @@ export default function CaseList() {
 
 	return (
 		<>
+			<AlertWindow message={alert.message} onClose={alert.hide} isVisible={alert.isVisible} classColor='green' />
 			<div>
 				{/* Lists all cases that have been opened and
 					allows new cases to be opened

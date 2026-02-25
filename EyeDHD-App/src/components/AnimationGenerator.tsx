@@ -1,6 +1,6 @@
 import React, { useState, useEffect, ReactEventHandler } from 'react';
 import LoadingOverlay from './LoadingOverlay';
-import AlertWindow from './AlertWindow';
+import AlertWindow, { useAlert } from './AlertWindow';
 import Button from './Button';
 import CanvasRecorder from './CanvasRecorder';
 
@@ -17,9 +17,8 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 	const [file, setFile] = useState<Metadata | null>(null);
 	const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
 
-	const [error, setError] = useState('');
-	const [alertMessage, setAlertMessage] = useState('');
-	const [showAlert, setShowAlert] = useState(false);
+	const errorAlert = useAlert();
+	const successAlert = useAlert();
 	const [isLoading, setIsLoading] = useState(false);
 
 	const styles = {
@@ -91,31 +90,15 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 
 	const getStream = async (file: Metadata | null) => {
 		if (!file) {
-			sendError({ message: 'No file loaded' });
+			errorAlert.show('No file loaded');
 			return;
 		}
 
 		setCsvStream(await RemoteStream.create("CSVData", { file }));
 	};
 
-	const sendAlert = (message: string) => {
-		setAlertMessage(message);
-		setShowAlert(true);
-		setTimeout(() => {
-			setShowAlert(false);
-			setAlertMessage('');
-		}, 4000);
-	};
-
 	const handleError = (err: Error) => {
-		sendError(err);
-	};
-
-	const sendError = (err: Error) => {
-		setError(err.message);
-		setTimeout(() => {
-			setError('');
-		}, 4000);
+		errorAlert.show(err.message);
 	};
 
 	const handleSubmit: ReactEventHandler<HTMLFormElement> = async (e) => {
@@ -170,27 +153,19 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 	return (
 		<>
       		{/*Conditionally render an error message*/}
-       		{error && (
-         		<AlertWindow
-           			message={error}
-              		classColor=" red"
-                	onClose={() => {
-                 		setError('');
-                   		setShowAlert(false);
-                 	}}
-                />
-         	)}
-         	{/*Conditionally render the alert message*/}
-          	{showAlert && (
-           		<AlertWindow
-             		message={alertMessage}
-               		classColor=" green"
-                 	onClose={() => {
-                  		setShowAlert(false);
-                    	setAlertMessage('');
-                  	}}
-                />
-           )}
+       		<AlertWindow
+         		message={errorAlert.message}
+           		classColor="red"
+         		isVisible={errorAlert.isVisible}
+         		onClose={errorAlert.hide}
+           	/>
+        	{/*Conditionally render the alert message*/}
+         	<AlertWindow
+          		message={successAlert.message}
+         		classColor="green"
+            	isVisible={successAlert.isVisible}
+              	onClose={successAlert.hide}
+            />
            <div style={styles.container}>
 	           <div className="animation-generator-container" style={styles.singlePane}>
 	           		{/*Used for when things take awhile to load*/}
