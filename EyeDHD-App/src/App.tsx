@@ -1,8 +1,8 @@
 import React from 'react';
+import { Outlet } from 'react-router';
 
 import './App.css';
 import Navbar from './components/Navbar';
-import { Outlet } from 'react-router';
 
 type Props = {
 	buttonsDisabled: boolean

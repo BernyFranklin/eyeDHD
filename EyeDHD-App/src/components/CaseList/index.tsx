@@ -29,6 +29,11 @@ export default function CaseList() {
 
 	const openCase = async (file: Metadata) => {
 		handleError(new Error(`Opening: ${file.name}, not yet implemented`));
+		// Create an anchor element pointing to '/case' and click it
+
+		const anchor = document.createElement('a');
+		anchor.href = '/case';
+		anchor.click();
 	}
 
 	const handleError = (err: Error) => {
