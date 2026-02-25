@@ -8,6 +8,7 @@ import { Visualization } from './components/visualization';
 import LoadingOverlay from './components/LoadingOverlay';
 import Navbar from './components/Navbar';
 import SidebySide from './components/SidebySide';
+import CaseList from './components/CaseList';
 
 function App() {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,16 +27,21 @@ function App() {
     <SidebySide />,
     <Visualization />
   ];
+
+  // return (
+  //   <>
+  //     <LoadingOverlay isLoading={isLoading} />
+  //     <Navbar
+  //       current={current}
+  //       setCurrent={setCurrent}
+  //       buttonsDisabled={buttonsDisabled}
+  //     />
+  //     {content[current]}
+  //   </>
+  // );
+  //
   return (
-    <>
-      <LoadingOverlay isLoading={isLoading} />
-      <Navbar
-        current={current}
-        setCurrent={setCurrent}
-        buttonsDisabled={buttonsDisabled}
-      />
-      {content[current]}
-    </>
+  	<CaseList />
   );
 }
 
