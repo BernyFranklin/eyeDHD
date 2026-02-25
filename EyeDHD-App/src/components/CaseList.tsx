@@ -4,12 +4,12 @@ import React, {
 } from 'react';
 
 import Case from "./case";
-
-import RemoteStream from '../data/RemoteStream';
-import { type Error, type Metadata } from '../types';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow, { useAlert } from './AlertWindow';
+
+import RemoteStream from '../data/RemoteStream';
+import { type Error, type Metadata } from '../types';
 
 export default function CaseList() {
 	const [cases, setCases] = useState<Metadata[]>([]);

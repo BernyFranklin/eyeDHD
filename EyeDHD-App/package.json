@@ -50,6 +50,7 @@
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/react-router": "^5.1.20",
     "apexcharts": "^5.3.6",
     "better-sqlite3": "^12.4.1",
     "csv": "^6.4.1",
@@ -60,6 +61,7 @@
     "jszip": "^3.10.1",
     "papaparse": "^5.5.3",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-router": "^7.13.1"
   }
 }
