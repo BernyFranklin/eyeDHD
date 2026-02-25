@@ -6,12 +6,12 @@
 
 // Sample data from CSV files
 const sampleHeader =
-  'Frame,CaptureTime,LogTime,HMDPositionX,HMDPositionY,HMDPositionz,HMDRotationX,HMDRotationY,HMDRotationZ,HMDRotationHuh,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ,CombinedGazePositionX,CombinedGazePositionY,CombinedGazePositionZ,InterPupillaryDistanceInMM,LeftEyeStatus,LeftEyeForwardX,LeftEyeForwardY,LeftEyeForwardZ,LeftEyePositionX,LeftEyePositionY,LeftEyePositionZ,LeftPupilIrisDiameterRatio,LeftPupilDiameterInMM,LeftIrisDiameterInMM,left Eye Openness,RightEyeStatus,RightEyeForwardX,RightEyeForwardY,RightEyeForwardZ,RightEyePositionX,RightEyePositionY,RightEyePositionZ,RightPupilIrisDiameterRatio,RightPupilDiameterInMM,RightIrisDiameterInMM,Right Eye Openness,FocusDistance,FocusStability';
+  'Frame,CaptureTime,LogTime,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ,LeftEyeStatus,LeftEyeForwardX,LeftEyeForwardY,LeftEyeForwardZ,LeftPupilDiameterInMM,RightEyeStatus,RightEyeForwardX,RightEyeForwardY,RightEyeForwardZ,RightPupilDiameterInMM';
 
 const sampleDataRows = [
-  '175365,1000001128969124600,63875741920341,(0.033, 1.439, -0.018),(0.056, -0.022, -0.008, 0.998),VALID,(0.090, 0.236, 0.968),(0.000, 0.000, 0.000),64.325,VALID,(0.133, 0.187, 0.973),(-0.032, 0.000, 0.000),0.660,4.231,6.415,0.917,VALID,(0.089, 0.236, 0.968),(0.032, 0.000, 0.000),0.710,4.527,6.373,0.913,0.6361062,0.3482583',
-  '175366,1000001128974137600,63875741920341,(0.033, 1.439, -0.018),(0.056, -0.022, -0.008, 0.998),VALID,(0.090, 0.236, 0.968),(0.000, 0.000, 0.000),64.325,VALID,(0.133, 0.186, 0.974),(-0.032, 0.000, 0.000),0.659,4.231,6.415,0.917,VALID,(0.089, 0.236, 0.968),(0.032, 0.000, 0.000),0.712,4.539,6.373,0.913,0.6294022,0.3139404',
-  '175367,,63875741920341,NA,INVALID,(0.090, 0.235, 0.968),,64.325,INVALID,,-100000,0.659,4.230,6.415,0.916,false,(0.090, 0.236, 0.968),(0.032, 0.000, 0.000),NULL,4.558,6.373,true,0.6603686,0.2631154'
+  '175365,1000001128969124600,63875741920341,VALID,0.090,0.236,0.968,VALID,0.133,0.187,0.973,4.231,VALID,0.089,0.236,0.968,4.527',
+  '175366,1000001128974137600,63875741920341,VALID,0.090,0.236,0.968,VALID,0.133,0.186,0.974,4.231,VALID,0.089,0.236,0.968,4.539',
+  '175367,,63875741920341,INVALID,0.090,0.235,0.968,INVALID,-100000,0.659,0,4.230,INVALID,0.090,0.236,0.968,4.558'
 ];
 
 // ===== DATA CLEANING FUNCTIONS (from DataCleaner.js) =====
