@@ -52,21 +52,26 @@ export default function HomePage({ setCurrent }: Props) {
               title="Generate Eye Animation" 
               img="../images/eye-solid-full.svg" />
         </button>
-        
-        <a className="card-link" onClick={handleSideBySideViewerClick}>
-          <DoubleCard
-            title="Side-by-side Viewer"
-            img1="../images/file-video-solid-full.svg"
-            img2="../images/eye-solid-full.svg"
-          />
-        </a>
-        <a className="card-link" onClick={handleVisualizationClick}>
-          <DoubleCard
-            title="Visualization"
-            img1="../images/file-video-solid-full.svg"
-            img2="../images/eye-solid-full.svg"
-          />
-        </a>
+        {/* Side-by-side Viewer */}
+        <button className = "card-link main-menu-button"
+                onClick={handleSideBySideViewerClick}
+                type="button"
+                title="View side-by-side comparison of the original video and eye movement data animation.">
+          <DoubleCard title="Side-by-side Viewer"
+                      img1="../images/file-video-solid-full.svg"
+                      img2="../images/eye-solid-full.svg"
+                      className = "main-menu-card"/>
+        </button>
+        {/* Eye Visualization */}
+        <button className="card-link main-menu-button"
+                onClick={handleVisualizationClick}
+                type="button"
+                title="View graphs and charts of processed eye movement data." >
+          <DoubleCard title="Visualization"
+                      img1="../images/file-video-solid-full.svg"
+                      img2="../images/eye-solid-full.svg"
+                      className = "main-menu-card"/>
+        </button>
       </div>
     </div>
   );

@@ -29,7 +29,7 @@ type Props = {
 
 export default function Card({ title, img, className }: Props) {
   return (
-    <div className={`card ${className ?? ''}`} style={cardStyles}>
+    <div className={`card ${className}`} style={cardStyles}>
       <p>{title}</p>
       <img src={img} alt={title} style={imgStyles} />
     </div>
