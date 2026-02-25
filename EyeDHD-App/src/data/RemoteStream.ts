@@ -32,7 +32,7 @@ export default class RemoteStream {
 		return stream;
 	}
 
-	constructor(key: StreamKey) {
+	private constructor(key: StreamKey) {
 		this.type = key.type;
 		this.key = key;
 		this.progress = {
@@ -125,11 +125,11 @@ export default class RemoteStream {
 	 * this will load all data into memory, so it should be used with caution for large
 	 * datasets.
 	 */
-	async collect(): Promise<DataType[]> {
+	async collect<T extends DataType>(): Promise<T[]> {
 		const results: DataType[] = [];
 		for await (const row of this) {
 			results.push(row);
 		}
-		return results;
+		return results as T[];
 	}
 }

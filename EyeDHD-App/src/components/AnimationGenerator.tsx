@@ -77,7 +77,7 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 
 		const stream = await RemoteStream.create("Metadata", {});
 		try {
-			const files = await stream.collect() as Metadata[];
+			const files = await stream.collect<Metadata>();
 			const cleaned = files.filter((metadata: Metadata) => metadata.completed);
 
 			setFiles(cleaned);
