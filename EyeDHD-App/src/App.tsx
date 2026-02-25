@@ -9,45 +9,19 @@ import LoadingOverlay from './components/LoadingOverlay';
 import Navbar from './components/Navbar';
 import SidebySide from './components/SidebySide';
 import CaseList from './components/CaseList';
+import { BrowserRouter, Outlet } from 'react-router';
 
-function App() {
-	const [isLoading, setIsLoading] = useState(false);
-	const [current, setCurrent] = useState(0);
-	const [buttonsDisabled, setButtonsDisabled] = useState(false);
-	const content = [
-		<HomePage setCurrent={setCurrent} />,
-		<CsvFileImport
-		buttonsDisabled={buttonsDisabled}
-		setButtonsDisabled={setButtonsDisabled}
-		/>,
-		<AnimationGenerator
-		buttonsDisabled={buttonsDisabled}
-		setButtonsDisabled={setButtonsDisabled}
-		/>,
-		<SidebySide />,
-		<Visualization />
-	];
+type Props = {
+	buttonsDisabled: boolean
+}
 
-	// return (
-	//   <>
-	//     <LoadingOverlay isLoading={isLoading} />
-	//     <Navbar
-	//       current={current}
-	//       setCurrent={setCurrent}
-	//       buttonsDisabled={buttonsDisabled}
-	//     />
-	//     {content[current]}
-	//   </>
-	// );
-	//
+function App(props: Props) {
 	return (
 		<>
 			<Navbar
-				current={current}
-			  	setCurrent={setCurrent}
-				buttonsDisabled={buttonsDisabled}
+				buttonsDisabled={props.buttonsDisabled}
 			/>
-			<CaseList />
+			<Outlet />
 		</>
 	);
 }

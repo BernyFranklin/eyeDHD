@@ -3,7 +3,7 @@ import React, {
 	useState
 } from 'react';
 
-import Case from "./case";
+import Case from "./Case";
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow, { useAlert } from './AlertWindow';

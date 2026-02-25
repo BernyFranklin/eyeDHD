@@ -25,7 +25,7 @@ const DEFAULT_CLEANING_PROGRESS: CleaningProgressState = {
 	rowsProcessed: 0
 };
 
-export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
+export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 	// Store data and handle the file load
 	const [csvData, setCsvData] = useState<CSVData[]>([]);
 	const [file, setFile] = useState<Metadata | null>(null);
@@ -338,5 +338,3 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 		</div>
 	);
 }
-
-export default CsvFileImport;
