@@ -17,8 +17,8 @@ function row(
   };
 }
 
-describe("Phase 4 - Step 2 Adapter (adaptGazeRowsToAnalysisInput)", () => {
-  it("A1 happy path: includes all rows (default policy) and preserves asParsed order", () => {
+describe("Saccades Adapter", () => {
+  it("A1) Includes all rows (default policy) and preserves asParsed order", () => {
     const rows: RawGazeRow[] = [
       row(0, 1000, "VALID", { x: 1, y: 0, z: 0 }),
       row(1, 2000, "VALID", { x: 0, y: 1, z: 0 }),
@@ -41,7 +41,7 @@ describe("Phase 4 - Step 2 Adapter (adaptGazeRowsToAnalysisInput)", () => {
     expect(res.diagnostics.excludedByReason.gazeStatusFiltered).toBe(0);
   });
 
-  it("A2 policy: filters by includeGazeStatuses and reports transparent counts", () => {
+  it("A2) Filters by includeGazeStatuses and reports transparent counts", () => {
     const rows: RawGazeRow[] = [
       row(0, 1000, "VALID", { x: 1, y: 0, z: 0 }),
       row(1, 2000, "INVALID", { x: 0, y: 1, z: 0 }),
