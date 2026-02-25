@@ -6,24 +6,33 @@ import React, {
 import Case from "./case/Index";
 
 import RemoteStream from '../data/RemoteStream';
-import { type Metadata } from '../types';
+import { Error, type Metadata } from '../types';
+import Button from './Button';
+import LoadingOverlay from './LoadingOverlay';
 
 export default function CaseList() {
 	const [cases, setCases] = useState<Metadata[]>([]);
 
+	const [loading, setLoading] = useState(false);
+
 	const fetchCases = async () => {
 		const stream = await RemoteStream.create('Metadata', {});
-		try {
-			const cases = await stream.collect<Metadata>();
-			setCases(cases);
-		} catch (err) {
-			console.error('Error streaming metadata:', err);
-		}
+		const cases = await stream.collect<Metadata>();
+		setCases(cases);
+	};
+
+	const createCase = async () => {
+
+	};
+
+	const handleError = (err: Error) => {
+		console.error(err);
 	};
 
 	useEffect(() => {
+		setLoading(true);
+
 		setCases([
-			// Add mock metadata for demo prototyping purposes
 			{
 				id: 0,
 				name: 'ID.001.csv',
@@ -55,15 +64,31 @@ export default function CaseList() {
 				updated_at: Date.now().toString()
 			}
 		]);
+
+		if (cases.length === 0) {
+			fetchCases().catch(handleError).then(() => setLoading(false));
+		}
 	}, []);
 
 	return (
 		<div>
-			Open Cases:
+			{/* Lists all cases that have been opened and
+				allows new cases to be opened
+		  	*/}
 			<ul>
+				<LoadingOverlay isLoading={loading} />
+
+				{/* Map cases into clickable list items w/
+					right side ... button for options like
+					deleting the case
+				*/}
 				{cases.map(metadata => {
-					return <Case metadata={metadata} />
+					return <li><Case metadata={metadata} /></li>
 				})}
+				{/* Button for opening a new case */}
+				<li>
+					<Button buttonText="+" onClick={createCase} />
+				</li>
 			</ul>
 		</div>
 	);
