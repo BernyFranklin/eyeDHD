@@ -14,7 +14,9 @@ import AlertWindow, { useAlert } from './AlertWindow';
 export default function CaseList() {
 	const [cases, setCases] = useState<Metadata[]>([]);
 
-	const alert = useAlert();
+	const goodAlert = useAlert();
+	const badAlert = useAlert();
+
 	const [loading, setLoading] = useState(false);
 	const [casesLoaded, setCasesLoaded] = useState(false);
 
@@ -25,63 +27,66 @@ export default function CaseList() {
 	};
 
 	const createCase = async () => {
-		alert.show('Create case functionality not implemented yet');
+		goodAlert.show('Create case functionality not implemented yet');
 	};
 
 	const handleError = (err: Error) => {
-		console.error(err);
+		badAlert.show(`Error: ${err.message}`);
 	};
 
 	useEffect(() => {
-		if (casesLoaded && cases.length === 0) {
-			setCases([
-				{
-					id: 0,
-					name: 'ID.001.csv',
-					path: '/path/to/ID.001.csv',
-					header: 'header,stuff',
-					completed: 0,
-					rows: 0,
-					created_at: Date.now().toString(),
-					updated_at: Date.now().toString()
-				},
-				{
-					id: 1,
-					name: 'ID.002.csv',
-					path: '/path/to/ID.002.csv',
-					header: 'header,stuff',
-					completed: 0,
-					rows: 0,
-					created_at: Date.now().toString(),
-					updated_at: Date.now().toString()
-				},
-				{
-					id: 2,
-					name: 'ID.003.csv',
-					path: '/path/to/ID.003.csv',
-					header: 'header,stuff',
-					completed: 0,
-					rows: 0,
-					created_at: Date.now().toString(),
-					updated_at: Date.now().toString()
-				}
-			]);
-
-			return;
-		}
-
 		setLoading(true);
 
-		fetchCases().catch(handleError).then(() => {
-			setLoading(false);
-			setCasesLoaded(true);
-		});
+		setCases([
+			{
+				id: 0,
+				name: 'ID.001.csv',
+				path: '/path/to/ID.001.csv',
+				header: 'header,stuff',
+				completed: 0,
+				rows: 0,
+				created_at: Date.now().toString(),
+				updated_at: Date.now().toString()
+			},
+			{
+				id: 1,
+				name: 'ID.002.csv',
+				path: '/path/to/ID.002.csv',
+				header: 'header,stuff',
+				completed: 0,
+				rows: 0,
+				created_at: Date.now().toString(),
+				updated_at: Date.now().toString()
+			},
+			{
+				id: 2,
+				name: 'ID.003.csv',
+				path: '/path/to/ID.003.csv',
+				header: 'header,stuff',
+				completed: 0,
+				rows: 0,
+				created_at: Date.now().toString(),
+				updated_at: Date.now().toString()
+			}
+		]);
 
-	}, [casesLoaded]);
+		setLoading(true);
+	}, []);
 
 	return (
 		<>
-			<AlertWindow message={alert.message} onClose={alert.hide} isVisible={alert.isVisible} classColor='green' />
+			<AlertWindow
+				message={goodAlert.message}
+				onClose={goodAlert.hide}
+				isVisible={goodAlert.isVisible}
+				classColor='green'
+			/>
+			<AlertWindow
+				message={badAlert.message}
+				onClose={badAlert.hide}
+				isVisible={badAlert.isVisible}
+				classColor='red'
+			/>
 			<div>
 				{/* Lists all cases that have been opened and
 					allows new cases to be opened
