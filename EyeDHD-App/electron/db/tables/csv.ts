@@ -15,48 +15,48 @@ export function toTableName(filename: string) {
 }
 
 export type CSVData = {
-	Frame: number;
-	CaptureTime: number;
-	LogTime: number;
-	HMDPositionX: number;
-	HMDPositionY: number;
-	HMDPositionz: number;
-	HMDRotationX: number;
-	HMDRotationY: number;
-	HMDRotationZ: number;
-	HMDRotationHuh: number;
-	GazeStatus: string;
-	CombinedGazeForwardX: number;
-	CombinedGazeForwardY: number;
-	CombinedGazeForwardZ: number;
-	CombinedGazePositionX: number;
-	CombinedGazePositionY: number;
-	CombinedGazePositionZ: number;
-	InterPupillaryDistanceInMM: number;
-	LeftEyeStatus: string;
-	LeftEyeForwardX: number;
-	LeftEyeForwardY: number;
-	LeftEyeForwardZ: number;
-	LeftEyePositionX: number;
-	LeftEyePositionY: number;
-	LeftEyePositionZ: number;
-	LeftPupilIrisDiameterRatio: number;
-	LeftPupilDiameterInMM: number;
-	LeftIrisDiameterInMM: number;
-	LeftEyeOpenness: number;
-	RightEyeStatus: string;
-	RightEyeForwardX: number;
-	RightEyeForwardY: number;
-	RightEyeForwardZ: number;
-	RightEyePositionX: number;
-	RightEyePositionY: number;
-	RightEyePositionZ: number;
-	RightPupilIrisDiameterRatio: number;
-	RightPupilDiameterInMM: number;
-	RightIrisDiameterInMM: number;
-	RightEyeOpenness: number;
-	FocusDistance: number;
-	FocusStability: number;
+	Frame: number; // Keep
+	CaptureTime: number; // Keep
+	LogTime: number; // Keep
+	// HMDPositionX: number;
+	// HMDPositionY: number;
+	// HMDPositionz: number;
+	// HMDRotationX: number;
+	// HMDRotationY: number;
+	// HMDRotationZ: number;
+	// HMDRotationHuh: number;
+	GazeStatus: string; // Keep
+	CombinedGazeForwardX: number; // Keep
+	CombinedGazeForwardY: number; // Keep
+	CombinedGazeForwardZ: number; // Keep
+	// CombinedGazePositionX: number;
+	// CombinedGazePositionY: number;
+	// CombinedGazePositionZ: number;
+	// InterPupillaryDistanceInMM: number;
+	LeftEyeStatus: string; // Keep
+	LeftEyeForwardX: number; // Keep
+	LeftEyeForwardY: number; // Keep
+	LeftEyeForwardZ: number; // Keep
+	// LeftEyePositionX: number;
+	// LeftEyePositionY: number;
+	// LeftEyePositionZ: number;
+	// LeftPupilIrisDiameterRatio: number;
+	LeftPupilDiameterInMM: number; // Keep
+	// LeftIrisDiameterInMM: number;
+	// LeftEyeOpenness: number;
+	RightEyeStatus: string; // Keep
+	RightEyeForwardX: number; // Keep
+	RightEyeForwardY: number; // Keep
+	RightEyeForwardZ: number; // Keep
+	// RightEyePositionX: number;
+	// RightEyePositionY: number;
+	// RightEyePositionZ: number;
+	// RightPupilIrisDiameterRatio: number;
+	RightPupilDiameterInMM: number; // Keep
+	// RightIrisDiameterInMM: number;
+	// RightEyeOpenness: number;
+	// FocusDistance: number;
+	// FocusStability: number;
 };
 
 /**
@@ -69,45 +69,20 @@ export function createCSVTable(db: Database, filename: string) {
 				Frame INTEGER PRIMARY KEY NOT NULL,
 				CaptureTime INTEGER DEFAULT 0,
 				LogTime INTEGER DEFAULT 0,
-				HMDPositionX REAL DEFAULT 0,
-				HMDPositionY REAL DEFAULT 0,
-				HMDPositionz REAL DEFAULT 0,
-				HMDRotationX REAL DEFAULT 0,
-				HMDRotationY REAL DEFAULT 0,
-				HMDRotationZ REAL DEFAULT 0,
-				HMDRotationHuh REAL DEFAULT 0,
 				GazeStatus TEXT DEFAULT 'INVALID',
 				CombinedGazeForwardX REAL DEFAULT 0,
 				CombinedGazeForwardY REAL DEFAULT 0,
 				CombinedGazeForwardZ REAL DEFAULT 0,
-				CombinedGazePositionX REAL DEFAULT 0,
-				CombinedGazePositionY REAL DEFAULT 0,
-				CombinedGazePositionZ REAL DEFAULT 0,
-				InterPupillaryDistanceInMM REAL DEFAULT 0,
 				LeftEyeStatus TEXT DEFAULT 'INVALID',
 				LeftEyeForwardX REAL DEFAULT 0,
 				LeftEyeForwardY REAL DEFAULT 0,
 				LeftEyeForwardZ REAL DEFAULT 0,
-				LeftEyePositionX REAL DEFAULT 0,
-				LeftEyePositionY REAL DEFAULT 0,
-				LeftEyePositionZ REAL DEFAULT 0,
-				LeftPupilIrisDiameterRatio REAL DEFAULT 0,
 				LeftPupilDiameterInMM REAL DEFAULT 0,
-				LeftIrisDiameterInMM REAL DEFAULT 0,
-				LeftEyeOpenness REAL DEFAULT 0,
 				RightEyeStatus TEXT DEFAULT 'INVALID',
 				RightEyeForwardX REAL DEFAULT 0,
 				RightEyeForwardY REAL DEFAULT 0,
 				RightEyeForwardZ REAL DEFAULT 0,
-				RightEyePositionX REAL DEFAULT 0,
-				RightEyePositionY REAL DEFAULT 0,
-				RightEyePositionZ REAL DEFAULT 0,
-				RightPupilIrisDiameterRatio REAL DEFAULT 0,
-				RightPupilDiameterInMM REAL DEFAULT 0,
-				RightIrisDiameterInMM REAL DEFAULT 0,
-				RightEyeOpenness REAL DEFAULT 0,
-				FocusDistance REAL DEFAULT 0,
-				FocusStability REAL DEFAULT 0
+				RightPupilDiameterInMM REAL DEFAULT 0
 			);
 		`)
 		.run();
@@ -137,89 +112,39 @@ function create(db: Database, file: Metadata, rows: CSVData[]): boolean {
 				Frame,
 				CaptureTime,
 				LogTime,
-				HMDPositionX,
-				HMDPositionY,
-				HMDPositionz,
-				HMDRotationX,
-				HMDRotationY,
-				HMDRotationZ,
-				HMDRotationHuh,
 				GazeStatus,
 				CombinedGazeForwardX,
 				CombinedGazeForwardY,
 				CombinedGazeForwardZ,
-				CombinedGazePositionX,
-				CombinedGazePositionY,
-				CombinedGazePositionZ,
-				InterPupillaryDistanceInMM,
 				LeftEyeStatus,
 				LeftEyeForwardX,
 				LeftEyeForwardY,
 				LeftEyeForwardZ,
-				LeftEyePositionX,
-				LeftEyePositionY,
-				LeftEyePositionZ,
-				LeftPupilIrisDiameterRatio,
 				LeftPupilDiameterInMM,
-				LeftIrisDiameterInMM,
-				LeftEyeOpenness,
 				RightEyeStatus,
 				RightEyeForwardX,
 				RightEyeForwardY,
 				RightEyeForwardZ,
-				RightEyePositionX,
-				RightEyePositionY,
-				RightEyePositionZ,
-				RightPupilIrisDiameterRatio,
-				RightPupilDiameterInMM,
-				RightIrisDiameterInMM,
-				RightEyeOpenness,
-				FocusDistance,
-				FocusStability
+				RightPupilDiameterInMM
 			)
 			VALUES (
 				@Frame,
 				@CaptureTime,
 				@LogTime,
-				@HMDPositionX,
-				@HMDPositionY,
-				@HMDPositionz,
-				@HMDRotationX,
-				@HMDRotationY,
-				@HMDRotationZ,
-				@HMDRotationHuh,
 				@GazeStatus,
 				@CombinedGazeForwardX,
 				@CombinedGazeForwardY,
 				@CombinedGazeForwardZ,
-				@CombinedGazePositionX,
-				@CombinedGazePositionY,
-				@CombinedGazePositionZ,
-				@InterPupillaryDistanceInMM,
 				@LeftEyeStatus,
 				@LeftEyeForwardX,
 				@LeftEyeForwardY,
 				@LeftEyeForwardZ,
-				@LeftEyePositionX,
-				@LeftEyePositionY,
-				@LeftEyePositionZ,
-				@LeftPupilIrisDiameterRatio,
 				@LeftPupilDiameterInMM,
-				@LeftIrisDiameterInMM,
-				@LeftEyeOpenness,
 				@RightEyeStatus,
 				@RightEyeForwardX,
 				@RightEyeForwardY,
 				@RightEyeForwardZ,
-				@RightEyePositionX,
-				@RightEyePositionY,
-				@RightEyePositionZ,
-				@RightPupilIrisDiameterRatio,
-				@RightPupilDiameterInMM,
-				@RightIrisDiameterInMM,
-				@RightEyeOpenness,
-				@FocusDistance,
-				@FocusStability
+				@RightPupilDiameterInMM
 			);
 		`);
 

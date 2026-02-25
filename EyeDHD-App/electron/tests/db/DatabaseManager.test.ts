@@ -79,10 +79,10 @@ describe('Database - Manager', () => {
 
 			try {
 				const csv = createTempCsv([
-					'Frame,CaptureTime,LogTime,HMDPositionX,HMDPositionY,HMDPositionz,HMDRotationX,HMDRotationY,HMDRotationZ,HMDRotationHuh,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ,CombinedGazePositionX,CombinedGazePositionY,CombinedGazePositionZ,InterPupillaryDistanceInMM,LeftEyeStatus,LeftEyeForwardX,LeftEyeForwardY,LeftEyeForwardZ,LeftEyePositionX,LeftEyePositionY,LeftEyePositionZ,LeftPupilIrisDiameterRatio,LeftPupilDiameterInMM,LeftIrisDiameterInMM,LeftEyeOpenness,RightEyeStatus,RightEyeForwardX,RightEyeForwardY,RightEyeForwardZ,RightEyePositionX,RightEyePositionY,RightEyePositionZ,RightPupilIrisDiameterRatio,RightPupilDiameterInMM,RightIrisDiameterInMM,RightEyeOpenness,FocusDistance,FocusStability',
-					'1,100,200,0,0,0,0,0,0,0,VALID,0,0,1,0,0,0,60,VALID,0,0,1,0,0,0,0.5,4,6,1,VALID,0,0,1,0,0,0,0.5,4,6,1,1,0.9',
-					'2,101,201,0,0,0,0,0,0,0,VALID,0,0,1,0,0,0,60,VALID,0,0,1,0,0,0,0.5,4,6,1,VALID,0,0,1,0,0,0,0.5,4,6,1,1,0.9',
-					'3,102,202,0,0,0,0,0,0,0,VALID,0,0,1,0,0,0,60,VALID,0,0,1,0,0,0,0.5,4,6,1,VALID,0,0,1,0,0,0,0.5,4,6,1,1,0.9'
+					'Frame,CaptureTime,LogTime,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ,LeftEyeStatus,LeftEyeForwardX,LeftEyeForwardY,LeftEyeForwardZ,LeftPupilDiameterInMM,RightEyeStatus,RightEyeForwardX,RightEyeForwardY,RightEyeForwardZ,RightPupilDiameterInMM',
+					'1,100,200,VALID,0,0,1,VALID,0,0,1,4,VALID,0,0,1,4',
+					'2,101,201,VALID,0,0,1,VALID,0,0,1,4,VALID,0,0,1,4',
+					'3,102,202,VALID,0,0,1,VALID,0,0,1,4,VALID,0,0,1,4'
 				]);
 				createdFilePath = csv.filePath;
 

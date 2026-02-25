@@ -114,12 +114,10 @@ export default class DataCleaner {
 			'LeftEyeForwardY',
 			'LeftEyeForwardZ',
 			'LeftPupilDiameterInMM',
-			'LeftIrisDiameterInMM',
 			'RightEyeForwardX',
 			'RightEyeForwardY',
 			'RightEyeForwardZ',
-			'RightPupilDiameterInMM',
-			'RightIrisDiameterInMM'
+			'RightPupilDiameterInMM'
 		],
 		validStatuses: ['VALID', 'INVALID', 'LOST', 'TRACKING', 'NOT_TRACKING']
 	};
@@ -272,21 +270,66 @@ export default class DataCleaner {
 		* Implements proper CSV parsing with type conversion and validation
 		*/
 	private cleanRow(raw: string): CSVData {
+		const allowedFields = new Set([
+			'Frame',
+			'CaptureTime',
+			'LogTime',
+			'GazeStatus',
+			'CombinedGazeForwardX',
+			'CombinedGazeForwardY',
+			'CombinedGazeForwardZ',
+			'LeftEyeStatus',
+			'LeftEyeForwardX',
+			'LeftEyeForwardY',
+			'LeftEyeForwardZ',
+			'LeftPupilDiameterInMM',
+			'RightEyeStatus',
+			'RightEyeForwardX',
+			'RightEyeForwardY',
+			'RightEyeForwardZ',
+			'RightPupilDiameterInMM'
+		]);
+
 		try {
 			const values = this.parseCsvLine(raw);
 			const cleaned: Record<string, string | number> = {};
 
 			this.header.forEach((column, index) => {
-				if (column === 'left Eye Openness') {
-					cleaned.LeftEyeOpenness = this.cleanValue(values[index]) as number;
-				} else if (column === 'Right Eye Openness') {
-					cleaned.RightEyeOpenness = this.cleanValue(values[index]) as number;
-				} else {
-					cleaned[column] = this.cleanValue(values[index]);
+				const trimmedColumn = column.trim();
+				if (!allowedFields.has(trimmedColumn)) {
+					return;
+				}
+				cleaned[trimmedColumn] = this.cleanValue(values[index]);
+			});
+
+			const defaults: CSVData = {
+				Frame: 0,
+				CaptureTime: 0,
+				LogTime: 0,
+				GazeStatus: 'INVALID',
+				CombinedGazeForwardX: 0,
+				CombinedGazeForwardY: 0,
+				CombinedGazeForwardZ: 0,
+				LeftEyeStatus: 'INVALID',
+				LeftEyeForwardX: 0,
+				LeftEyeForwardY: 0,
+				LeftEyeForwardZ: 0,
+				LeftPupilDiameterInMM: 0,
+				RightEyeStatus: 'INVALID',
+				RightEyeForwardX: 0,
+				RightEyeForwardY: 0,
+				RightEyeForwardZ: 0,
+				RightPupilDiameterInMM: 0
+			};
+
+			const cleanedRow = cleaned as Record<keyof CSVData, string | number>;
+			(Object.keys(defaults) as Array<keyof CSVData>).forEach((key) => {
+				if (cleanedRow[key] === undefined || cleanedRow[key] === null) {
+					cleanedRow[key] = defaults[key];
 				}
 			});
 
-			const validatedRow = this.validateRow(cleaned);
+			const validatedRow = this.validateRow(cleanedRow);
 
 			// Additional eye tracking validation
 			this.validateEyeTrackingRow(validatedRow);
@@ -297,7 +340,10 @@ export default class DataCleaner {
 			// Return a minimal valid row structure to prevent crashes
 			const errorRow: any = {};
 			this.header.forEach((column) => {
-				errorRow[column] = null;
+				const trimmedColumn = column.trim();
+				if (allowedFields.has(trimmedColumn)) {
+					errorRow[trimmedColumn] = null;
+				}
 			});
 			errorRow._error = error.message;
 			return errorRow;
