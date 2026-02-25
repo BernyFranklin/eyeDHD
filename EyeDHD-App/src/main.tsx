@@ -8,7 +8,7 @@ import App from './App';
 import CaseList from './components/CaseList';
 import CsvFileImport from './components/CsvFileImport';
 import AnimationGenerator from './components/AnimationGenerator';
-import { Visualization } from './components/visualization';
+import Visualization from './components/Visualization';
 import SidebySide from './components/SidebySide';
 import CaseViewer from './components/CaseViewer';
 
