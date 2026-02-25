@@ -10,6 +10,7 @@ import CsvFileImport from './components/CsvFileImport';
 import AnimationGenerator from './components/AnimationGenerator';
 import { Visualization } from './components/visualization';
 import SidebySide from './components/SidebySide';
+import CaseViewer from './components/CaseViewer';
 
 const Main = () => {
 	const [buttonsDisabled, setButtonsDisabled] = useState(false);
@@ -19,6 +20,7 @@ const Main = () => {
 			<Routes>
 				<Route path='/' element={<App buttonsDisabled={buttonsDisabled} />}>
 					<Route index element={<CaseList />} />
+					<Route path='case' element={<CaseViewer />} />
 					<Route path='import' element={
 						<CsvFileImport
 							buttonsDisabled={buttonsDisabled}

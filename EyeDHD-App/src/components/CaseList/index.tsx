@@ -3,13 +3,13 @@ import React, {
 	useState
 } from 'react';
 
-import Case from "./Case";
-import Button from './Button';
-import LoadingOverlay from './LoadingOverlay';
-import AlertWindow, { useAlert } from './AlertWindow';
+import CaseItem from "./CaseItem";
+import Button from '../Button';
+import LoadingOverlay from '../LoadingOverlay';
+import AlertWindow, { useAlert } from '../AlertWindow';
 
-import RemoteStream from '../data/RemoteStream';
-import { type Error, type Metadata } from '../types';
+import RemoteStream from '../../data/RemoteStream';
+import { type Error, type Metadata } from '../../types';
 
 export default function CaseList() {
 	const [cases, setCases] = useState<Metadata[]>([]);
@@ -94,7 +94,7 @@ export default function CaseList() {
 						deleting the case
 					*/}
 					{cases.map(metadata => {
-						return <li><Case file={metadata} onClick={openCase} /></li>
+						return <li><CaseItem file={metadata} onClick={openCase} /></li>
 					})}
 					{/* Button for opening a new case */}
 					<li>
