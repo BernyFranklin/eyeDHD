@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
-
-// Implementation will live here later.
 import { parseGazeCsvSession } from '../csv/parseGazeCsvSession';
 
-// Optional: once types exist, you can import them for stronger assertions.
-import type { ParseGazeCsvOptions, ParseGazeCsvResult } from '../csv/types';
 
 // -------------------------
 // Fixtures / helpers
