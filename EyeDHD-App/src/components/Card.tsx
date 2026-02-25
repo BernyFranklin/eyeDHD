@@ -11,7 +11,6 @@ const cardStyles = {
   color: '#fff',
   fontWeight: 'bold',
   borderRadius: '10%',
-  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.9)',
   margin: '20px',
   padding: '10px'
 } as React.CSSProperties;
@@ -25,11 +24,12 @@ const imgStyles = {
 type Props = {
   title: string;
   img: string;
+  className: string;
 };
 
-export default function Card({ title, img }: Props) {
+export default function Card({ title, img, className }: Props) {
   return (
-    <div className="card" style={cardStyles}>
+    <div className={`card ${className}`} style={cardStyles}>
       <p>{title}</p>
       <img src={img} alt={title} style={imgStyles} />
     </div>
