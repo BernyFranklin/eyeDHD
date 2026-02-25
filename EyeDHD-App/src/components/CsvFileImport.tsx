@@ -29,8 +29,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 	// Store data and handle the file load
 	const [csvData, setCsvData] = useState<CSVData[]>([]);
 	const [file, setFile] = useState<Metadata | null>(null);
-	const errorAlert = useAlert();
-	const successAlert = useAlert();
+	const alert = useAlert();
 	const [isLoading, setIsLoading] = useState(false);
 
 	// Data cleaning state
@@ -134,7 +133,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 	const cleanData = async () => {
 		if (buttonsDisabled) return;
 		if (!file) {
-			errorAlert.show('No file selected for cleaning');
+			alert.show('No file selected for cleaning', 'red');
 			return;
 		}
 
@@ -189,11 +188,11 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 
 			setIsCleaning(false);
 			setButtonsDisabled(false);
-			successAlert.show('Data cleaning complete!');
+			alert.show('Data cleaning complete!', 'green');
 		} catch (err) {
 			setButtonsDisabled(false);
 			setIsCleaning(false);
-			errorAlert.show(err.message);
+			alert.show(err.message, 'red');
 		}
 	};
 
@@ -201,13 +200,13 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 	const exportCleanedData = async () => {
 		if (buttonsDisabled) return;
 		if (!file) {
-			errorAlert.show('No file selected for export');
+			alert.show('No file selected for export', 'red');
 			return;
 		}
 
 		// Check if cleaning is complete
 		if (!cleaningProgress.isComplete && !file.completed) {
-			errorAlert.show('No cleaned data available. Please clean the data first.');
+			alert.show('No cleaned data available. Please clean the data first.', 'red');
 			return;
 		}
 
@@ -216,16 +215,17 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 			const result = await window.electron.csv.exportData(file);
 
 			if (result.success) {
-				successAlert.show(
+				alert.show(
 					`Successfully exported ${result.stats.totalExported} rows to ${result.stats.filePath
 						.split('\\')
-						.pop()}`
+						.pop()}`,
+					'green'
 				);
 			} else {
-				errorAlert.show(result.message || 'Export failed');
+				alert.show(result.message || 'Export failed', 'red');
 			}
 		} catch (err) {
-			errorAlert.show(err.message);
+			alert.show(err.message, 'red');
 		} finally {
 			setIsLoading(false);
 		}
@@ -245,7 +245,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 	};
 
 	const handleError = (err: Error) => {
-		errorAlert.show(err.message);
+		alert.show(err.message, 'red');
 	};
 
 	return (
@@ -259,10 +259,10 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 			/>
 
 			<AlertWindow
-				message={errorAlert.message}
-				classColor="red"
-				isVisible={errorAlert.isVisible}
-				onClose={errorAlert.hide}
+				message={alert.message}
+				classColor={alert.classColor}
+				isVisible={alert.isVisible}
+				onClose={alert.hide}
 			/>
 			{file && (
 				<>
@@ -334,13 +334,7 @@ export function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
 				</>
 			)}
 
-			{/* Alert window */}
-			<AlertWindow
-				message={successAlert.message}
-				classColor="green"
-				isVisible={successAlert.isVisible}
-				onClose={successAlert.hide}
-			/>
+
 		</div>
 	);
 }

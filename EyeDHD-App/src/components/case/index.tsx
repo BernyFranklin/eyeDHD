@@ -1,24 +1,20 @@
 import { useMemo } from 'react';
 import { type Metadata } from '../../types';
-import AlertWindow from '../AlertWindow';
 
 type Props = {
-	metadata: Metadata
+	file: Metadata,
+	onClick: (file: Metadata) => void
 };
 
 export default function Case(props: Props) {
 	const name = useMemo(() => {
-		const nameWithoutExtension = props.metadata.name.replace(/\.[^/.]+$/, '');
+		const nameWithoutExtension = props.file.name.replace(/\.[^/.]+$/, '');
 		return nameWithoutExtension;
-	}, [props.metadata]);
-
-	const openCase = async () => {
-
-	};
+	}, [props.file]);
 
 	return (
 		<>
-			<div className='case-item' onClick={openCase}>
+			<div className='case-item' onClick={() => props.onClick(props.file)}>
 				<span className='case-name'>{name}</span>
 				<div className='case-options'>...</div>
 			</div>

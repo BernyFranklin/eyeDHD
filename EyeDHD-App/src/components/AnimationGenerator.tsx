@@ -17,8 +17,7 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 	const [file, setFile] = useState<Metadata | null>(null);
 	const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
 
-	const errorAlert = useAlert();
-	const successAlert = useAlert();
+	const alert = useAlert();
 	const [isLoading, setIsLoading] = useState(false);
 
 	const styles = {
@@ -90,7 +89,7 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 
 	const getStream = async (file: Metadata | null) => {
 		if (!file) {
-			errorAlert.show('No file loaded');
+			alert.show('No file loaded', 'red');
 			return;
 		}
 
@@ -98,7 +97,7 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 	};
 
 	const handleError = (err: Error) => {
-		errorAlert.show(err.message);
+		alert.show(err.message, 'red');
 	};
 
 	const handleSubmit: ReactEventHandler<HTMLFormElement> = async (e) => {
@@ -152,20 +151,13 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 
 	return (
 		<>
-      		{/*Conditionally render an error message*/}
+     		{/* Alert message */}
        		<AlertWindow
-         		message={errorAlert.message}
-           		classColor="red"
-         		isVisible={errorAlert.isVisible}
-         		onClose={errorAlert.hide}
+         		message={alert.message}
+           		classColor={alert.classColor}
+         		isVisible={alert.isVisible}
+         		onClose={alert.hide}
            	/>
-        	{/*Conditionally render the alert message*/}
-         	<AlertWindow
-          		message={successAlert.message}
-         		classColor="green"
-            	isVisible={successAlert.isVisible}
-              	onClose={successAlert.hide}
-            />
            <div style={styles.container}>
 	           <div className="animation-generator-container" style={styles.singlePane}>
 	           		{/*Used for when things take awhile to load*/}

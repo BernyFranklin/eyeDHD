@@ -7,19 +7,24 @@ type Props = {
 	isVisible?: boolean;
 };
 
+type AlertColor = 'red' | 'green';
+
 type UseAlertOptions = {
 	autoDismissMs?: number | null;
+	defaultColor?: AlertColor;
 };
 
 export function useAlert(options: UseAlertOptions = {}) {
-	const { autoDismissMs = 4000 } = options;
+	const { autoDismissMs = 4000, defaultColor = 'green' } = options;
 	const [message, setMessage] = useState('');
 	const [isVisible, setIsVisible] = useState(false);
+	const [classColor, setClassColor] = useState<AlertColor>(defaultColor);
 
-	const show = useCallback((nextMessage: string) => {
+	const show = useCallback((nextMessage: string, nextColor: AlertColor = defaultColor) => {
 		setMessage(nextMessage);
+		setClassColor(nextColor);
 		setIsVisible(true);
-	}, []);
+	}, [defaultColor]);
 
 	const hide = useCallback(() => {
 		setIsVisible(false);
@@ -40,6 +45,7 @@ export function useAlert(options: UseAlertOptions = {}) {
 	return {
 		message,
 		isVisible,
+		classColor,
 		show,
 		hide
 	};

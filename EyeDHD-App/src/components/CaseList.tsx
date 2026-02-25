@@ -6,19 +6,16 @@ import React, {
 import Case from "./case";
 
 import RemoteStream from '../data/RemoteStream';
-import { Error, type Metadata } from '../types';
+import { type Error, type Metadata } from '../types';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow, { useAlert } from './AlertWindow';
 
 export default function CaseList() {
 	const [cases, setCases] = useState<Metadata[]>([]);
-
-	const goodAlert = useAlert();
-	const badAlert = useAlert();
-
 	const [loading, setLoading] = useState(false);
-	const [casesLoaded, setCasesLoaded] = useState(false);
+
+	const alert = useAlert();
 
 	const fetchCases = async () => {
 		const stream = await RemoteStream.create('Metadata', {});
@@ -27,11 +24,15 @@ export default function CaseList() {
 	};
 
 	const createCase = async () => {
-		goodAlert.show('Create case functionality not implemented yet');
+		alert.show('Create case functionality not implemented yet', 'green');
 	};
 
+	const openCase = async (file: Metadata) => {
+		handleError(new Error(`Opening: ${file.name}, not yet implemented`));
+	}
+
 	const handleError = (err: Error) => {
-		badAlert.show(`Error: ${err.message}`);
+		alert.show(`Error: ${err.message}`, 'red');
 	};
 
 	useEffect(() => {
@@ -70,22 +71,16 @@ export default function CaseList() {
 			}
 		]);
 
-		setLoading(true);
+		setLoading(false);
 	}, []);
 
 	return (
 		<>
 			<AlertWindow
-				message={goodAlert.message}
-				onClose={goodAlert.hide}
-				isVisible={goodAlert.isVisible}
-				classColor='green'
-			/>
-			<AlertWindow
-				message={badAlert.message}
-				onClose={badAlert.hide}
-				isVisible={badAlert.isVisible}
-				classColor='red'
+				message={alert.message}
+				onClose={alert.hide}
+				isVisible={alert.isVisible}
+				classColor={alert.classColor}
 			/>
 			<div>
 				{/* Lists all cases that have been opened and
@@ -99,7 +94,7 @@ export default function CaseList() {
 						deleting the case
 					*/}
 					{cases.map(metadata => {
-						return <li><Case metadata={metadata} /></li>
+						return <li><Case file={metadata} onClick={openCase} /></li>
 					})}
 					{/* Button for opening a new case */}
 					<li>
