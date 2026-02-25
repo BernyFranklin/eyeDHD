@@ -1,0 +1,3 @@
+- Work on eye dilation chart
+- Animation generation progress bar
+- Consider changing so the user selects a projects directory which the app store data in like video files and raw csv files and stuff. A subdirectory would be created called Cases, and inside that a folder would be made for each case containing: imported csv and vr video, generated animations, side-by-sides, screen shots of graphs, etc

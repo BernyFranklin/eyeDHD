@@ -1,2 +1,0 @@
-- Create saccade data schema to db
-- Analyze csv files and store them the results
