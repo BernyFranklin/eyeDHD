@@ -1,10 +1,16 @@
+import { useMemo } from 'react';
 import { type Metadata } from '../../types';
+import AlertWindow from '../AlertWindow';
 
 type Props = {
 	metadata: Metadata
 };
 
 export default function Case(props: Props) {
+	const name = useMemo(() => {
+		const nameWithoutExtension = props.metadata.name.replace(/\.[^/.]+$/, '');
+		return nameWithoutExtension;
+	}, [props.metadata]);
 
 	const openCase = async () => {
 
@@ -13,13 +19,15 @@ export default function Case(props: Props) {
 	return (
 		<>
 			<div className='case-item' onClick={openCase}>
-				<span className='case-name'>{props.metadata.name}</span>
+				<span className='case-name'>{name}</span>
 				<div className='case-options'>...</div>
 			</div>
 			<style>
 			{`
 				.case-item {
 					display: flex;
+					align-items: center;
+					justify-content: space-between;
 					padding: 10px;
 					width: 200px;
 					border: 1px solid #ccc;
@@ -30,12 +38,11 @@ export default function Case(props: Props) {
 				}
 
 				.case-name {
-					justify-self: left;
 					padding-left: 5px;
 				}
 
 				.case-options {
-					justify-self: right;
+					margin-left: auto;
 					padding-right: 5px;
 				}
 			`}
