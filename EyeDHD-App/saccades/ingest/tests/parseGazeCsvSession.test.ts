@@ -1,11 +1,6 @@
-// Line 195 is commented out!!!!!!!!
 import { describe, it, expect } from 'vitest';
-
-// Implementation will live here later.
 import { parseGazeCsvSession } from '../csv/parseGazeCsvSession';
 
-// Optional: once types exist, you can import them for stronger assertions.
-import type { ParseGazeCsvOptions, ParseGazeCsvResult } from '../csv/types';
 
 // -------------------------
 // Fixtures / helpers
@@ -192,7 +187,6 @@ describe('CSV Parse + Validate', () => {
       expect(result.diagnostics.captureTime.nonMonotonicCount).toBe(1);
       expect(result.diagnostics.invalidByReason.NON_MONOTONIC_CAPTURE_TIME).toBe(1);
       expect(result.rows).toHaveLength(3); // 4 input rows - 1 invalidated
-      //expect(result.diagnostics.warnings.some(w => w.code === '...')).toBe(true); // if you add a specific warning
     });
 
     it('C2) captureTimeMonotonicity="error" -> adds an error entry (deterministic) when non-monotonic occurs', () => {

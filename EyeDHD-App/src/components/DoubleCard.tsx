@@ -26,11 +26,12 @@ type Props = {
   title: string;
   img1: string;
   img2: string;
+  className: string;
 };
 
-export default function DoubleCard({ title, img1, img2 }: Props) {
+export default function DoubleCard({ title, img1, img2, className }: Props) {
   return (
-    <div className="card" style={cardStyles as React.CSSProperties}>
+    <div className={`card ${className ?? ''}`} style={cardStyles as React.CSSProperties}>
       <p>{title}</p>
       <div style={{ display: 'inline-block' }}>
         <img src={img1} alt={title} style={imgStyles} />
