@@ -12,8 +12,8 @@ import Visualization from './components/Visualization';
 import SidebySide from './components/SidebySide';
 import CaseViewer from './components/CaseViewer';
 
-const Main = () => {
-	return (
+createRoot(document.getElementById('root')).render(
+	<StrictMode>
 		<BrowserRouter>
 			<Routes>
 				<Route path='/' element={<App />}>
@@ -26,11 +26,5 @@ const Main = () => {
 				</Route>
 			</Routes>
 		</BrowserRouter>
-	);
-}
-
-createRoot(document.getElementById('root')).render(
-	<StrictMode>
-		<Main />
 	</StrictMode>
 );
