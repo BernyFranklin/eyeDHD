@@ -34,8 +34,16 @@ const disabledLinkStyles = {
 	cursor: 'not-allowed'
 };
 
+const disabledLinkProps = {
+	onClick: (e: React.MouseEvent<HTMLAnchorElement>) => e.preventDefault(),
+	'aria-disabled': true,
+	tabIndex: -1,
+	style: { pointerEvents: 'none' as const }
+};
+
 export default function Navbar() {
 	const buttonsDisabled = useSelector(selectDisabled);
+	const disabledAnchorProps = buttonsDisabled ? disabledLinkProps : {};
 
 	return (
 		<nav className="navbar" style={navbarStyles}>
@@ -44,12 +52,12 @@ export default function Navbar() {
 			</span>
 			<span className="navbar-links">
 				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
-					<a href='/' className="home-link">
+					<a href='/' className="home-link" {...disabledAnchorProps}>
 						<img src="./images/house-solid-full.svg" alt="Home" style={imgStyles} />
 					</a>
 				</div>
 				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
-					<a href='import' className="home-link">
+					<a href='import' className="home-link" {...disabledAnchorProps}>
 						<img
 						src="./images/file-import-solid-full.svg"
 						alt="Import"
@@ -58,7 +66,7 @@ export default function Navbar() {
 					</a>
 				</div>
 				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
-					<a href='animation' className="home-link">
+					<a href='animation' className="home-link" {...disabledAnchorProps}>
 						<img
 						src="./images/eye-solid-full.svg"
 						alt="Generate Eye Animation"
@@ -67,7 +75,7 @@ export default function Navbar() {
 					</a>
 				</div>
 				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
-					<a href='side-by-side' className="home-link">
+					<a href='side-by-side' className="home-link" {...disabledAnchorProps}>
 						<img
 						src="./images/file-video-solid-full.svg"
 						alt="Side-by-Side Viewer"
@@ -81,7 +89,7 @@ export default function Navbar() {
 					</a>
 				</div>
 				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
-					<a href='visualization' className="home-link">
+					<a href='visualization' className="home-link" {...disabledAnchorProps}>
 						<img
 						src="./images/eye-solid-full.svg"
 						alt="Visualization"
