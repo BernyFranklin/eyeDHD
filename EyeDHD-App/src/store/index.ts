@@ -1,9 +1,11 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit'
 
-import buttonsReducer from './features/buttons';
+import globalReducer from './features/global';
+import userReducer from './features/user';
 
 const root = combineReducers({
-  buttons: buttonsReducer,
+  global: globalReducer,
+  user: userReducer
 })
 
 export const store = configureStore({

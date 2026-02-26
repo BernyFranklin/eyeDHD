@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { useSelector } from '../store/hooks';
-import { selectDisabled } from '../store/features/buttons';
+import { selectButtons } from '../store/features/global';
 
 const imgStyles = {
 	width: '50px',
@@ -42,8 +42,8 @@ const disabledLinkProps = {
 };
 
 export default function Navbar() {
-	const buttonsDisabled = useSelector(selectDisabled);
-	const disabledAnchorProps = buttonsDisabled ? disabledLinkProps : {};
+	const buttons = useSelector(selectButtons);
+	const disabledAnchorProps = buttons.disabled ? disabledLinkProps : {};
 
 	return (
 		<nav className="navbar" style={navbarStyles}>
@@ -51,12 +51,12 @@ export default function Navbar() {
 				<img className="navbar-logo-image" src="./images/fs-logo-white.png" alt="Logo" />
 			</span>
 			<span className="navbar-links">
-				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
+				<div style={buttons.disabled ? disabledLinkStyles : linkStyles}>
 					<a href='/' className="home-link" {...disabledAnchorProps}>
 						<img src="./images/house-solid-full.svg" alt="Home" style={imgStyles} />
 					</a>
 				</div>
-				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
+				<div style={buttons.disabled ? disabledLinkStyles : linkStyles}>
 					<a href='import' className="home-link" {...disabledAnchorProps}>
 						<img
 						src="./images/file-import-solid-full.svg"
@@ -65,7 +65,7 @@ export default function Navbar() {
 						/>
 					</a>
 				</div>
-				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
+				<div style={buttons.disabled ? disabledLinkStyles : linkStyles}>
 					<a href='animation' className="home-link" {...disabledAnchorProps}>
 						<img
 						src="./images/eye-solid-full.svg"
@@ -74,7 +74,7 @@ export default function Navbar() {
 						/>
 					</a>
 				</div>
-				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
+				<div style={buttons.disabled ? disabledLinkStyles : linkStyles}>
 					<a href='side-by-side' className="home-link" {...disabledAnchorProps}>
 						<img
 						src="./images/file-video-solid-full.svg"
@@ -88,7 +88,7 @@ export default function Navbar() {
 						/>
 					</a>
 				</div>
-				<div style={buttonsDisabled ? disabledLinkStyles : linkStyles}>
+				<div style={buttons.disabled ? disabledLinkStyles : linkStyles}>
 					<a href='visualization' className="home-link" {...disabledAnchorProps}>
 						<img
 						src="./images/eye-solid-full.svg"

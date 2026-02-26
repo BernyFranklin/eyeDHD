@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import { useSelector, useDispatch } from '../store/hooks';
-import { selectDisabled, enableButtons, disableButtons } from '../store/features/buttons';
+import { selectButtons, enableButtons, disableButtons } from '../store/features/global';
 
 import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow, { useAlert } from './AlertWindow';
@@ -39,7 +39,7 @@ export default function CsvFileImport() {
 	);
 	const [showCleaningResults, setShowCleaningResults] = useState(false);
 
-	const buttonsDisabled = useSelector(selectDisabled);
+	const buttons = useSelector(selectButtons);
 	const dispatch = useDispatch();
 
 	const styles = {
@@ -85,7 +85,7 @@ export default function CsvFileImport() {
 	};
 
 	const openFile = async () => {
-		if (buttonsDisabled) return;
+		if (buttons.disabled) return;
 		setIsLoading(true);
 
 		setFile(null);
@@ -134,7 +134,7 @@ export default function CsvFileImport() {
 
 	// Data cleaning functionality
 	const cleanData = async () => {
-		if (buttonsDisabled) return;
+		if (buttons.disabled) return;
 		if (!file) {
 			alert.show('red', 'No file selected for cleaning');
 			return;
@@ -201,7 +201,7 @@ export default function CsvFileImport() {
 
 	// Export cleaned CSV data to a new file
 	const exportCleanedData = async () => {
-		if (buttonsDisabled) return;
+		if (buttons.disabled) return;
 		if (!file) {
 			alert.show('red', 'No file selected for export');
 			return;
@@ -234,7 +234,7 @@ export default function CsvFileImport() {
 	};
 
 	const clearFile = async () => {
-		if (buttonsDisabled) return;
+		if (buttons.disabled) return;
 		setCsvData([]);
 		setCleaningProgress(DEFAULT_CLEANING_PROGRESS);
 		setShowCleaningResults(false);
@@ -255,8 +255,8 @@ export default function CsvFileImport() {
 			<LoadingOverlay isLoading={isLoading} />
 			<Button
 				onClick={openFile}
-				className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
-				disabled={buttonsDisabled}
+				className={`btn ${buttons.disabled ? 'disabled' : ''}`}
+				disabled={buttons.disabled}
 				buttonText="Select a CSV File"
 			/>
 
@@ -317,15 +317,15 @@ export default function CsvFileImport() {
 						)}
 						<Button
 							onClick={exportCleanedData}
-							className={`btn${buttonsDisabled || !cleaningProgress.isComplete ? ' disabled' : ''}`}
+							className={`btn${buttons.disabled || !cleaningProgress.isComplete ? ' disabled' : ''}`}
 							buttonText="Export Clean Data"
-							disabled={buttonsDisabled || !cleaningProgress.isComplete}
+							disabled={buttons.disabled || !cleaningProgress.isComplete}
 						/>
 						<Button
 							onClick={clearFile}
-							className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
+							className={`btn ${buttons.disabled ? 'disabled' : ''}`}
 							buttonText="Clear File"
-							disabled={buttonsDisabled}
+							disabled={buttons.disabled}
 						/>
 					</div>
 				</>

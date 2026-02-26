@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ReactEventHandler } from 'react';
 
 import { useSelector, useDispatch } from '../store/hooks';
-import { selectDisabled, enableButtons, disableButtons } from '../store/features/buttons';
+import { selectButtons, enableButtons, disableButtons } from '../store/features/global';
 
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow, { useAlert } from './AlertWindow';
@@ -19,7 +19,7 @@ export default function AnimationGenerator() {
 	const alert = useAlert();
 	const [isLoading, setIsLoading] = useState(false);
 
-	const buttonsDisabled = useSelector(selectDisabled);
+	const buttons = useSelector(selectButtons);
 	const dispatch = useDispatch();
 
 	const styles = {
@@ -104,7 +104,7 @@ export default function AnimationGenerator() {
 
 	const handleSubmit: ReactEventHandler<HTMLFormElement> = async (e) => {
 		e.preventDefault();
-		if (buttonsDisabled) return;
+		if (buttons.disabled) return;
 		setFile(null);
 
 		const form: HTMLFormElement | undefined = e.target as HTMLFormElement;
@@ -125,7 +125,7 @@ export default function AnimationGenerator() {
 
 	const handleReset: ReactEventHandler<HTMLFormElement> = async (e) => {
 		e.preventDefault();
-		if (buttonsDisabled) return;
+		if (buttons.disabled) return;
 
 		// Set form select back to 'none'
 		const select: HTMLSelectElement | null = document.querySelector(
@@ -184,7 +184,7 @@ export default function AnimationGenerator() {
 			              		Please select a file to generate an animation.
 				            </label>
 				        <div style={styles.buttonContainer}>
-		              		<select name="fileSelect" defaultValue="none" disabled={buttonsDisabled}>
+		              		<select name="fileSelect" defaultValue="none" disabled={buttons.disabled}>
 				                <option disabled value="none">
 			                  		none
 				                </option>
@@ -199,18 +199,18 @@ export default function AnimationGenerator() {
 		              		<Button
 		                		type="submit"
 				                onClick={undefined}
-				                className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
+				                className={`btn ${buttons.disabled ? 'disabled' : ''}`}
 				                buttonText="Generate"
 				                style={styles.buttonInline as React.CSSProperties}
-				                disabled={buttonsDisabled}
+				                disabled={buttons.disabled}
 						    />
 		              		<Button
 		                		type="reset"
 				                onClick={undefined}
-				                className={`btn ${buttonsDisabled ? 'disabled' : ''}`}
+				                className={`btn ${buttons.disabled ? 'disabled' : ''}`}
 				                buttonText="Reset"
 				                style={styles.buttonInline as React.CSSProperties}
-				                disabled={buttonsDisabled}
+				                disabled={buttons.disabled}
 						    />
 		            	</div>
 		          	</form>
