@@ -161,4 +161,31 @@ describe("Saccades Adapter", () => {
     expect(res.diagnostics.includedByGazeStatus["VALID"]).toBe(3);        // Three rows with VALID status should be included
     expect(res.diagnostics.excludedByGazeStatus["INVALID"]).toBe(2);      // Two rows with INVALID status should be excluded
   });
+
+  it("A7) Determinism: same input + options => identical output; does not mutate input rows", () => {
+    const rows: RawGazeRow[] = [                                        // Create 5 gaze rows with a mix of VALID/INVALID statuses and out-of-order capture times
+      row(0, 3000, "VALID",   { x: 3, y: 0, z: 0 }),
+      row(1, 1000, "INVALID", { x: 9, y: 9, z: 9 }),
+      row(2, 2000, "VALID",   { x: 2, y: 0, z: 0 }),
+      row(3, 1500, "INVALID", { x: 8, y: 8, z: 8 }),
+      row(4, 1000, "VALID",   { x: 1, y: 0, z: 0 }),
+    ];
+
+    const originalRowIndexOrder = rows.map(r => r.rowIndex);            // Capture the original order of row indices
+    const originalTimeOrder = rows.map(r => r.captureTimeNs);           // Capture the original order of capture times
+
+    const options = {                                                   // Define options to filter by VALID gaze statuses and order by captureTimeNs
+      selection: { includeGazeStatuses: ["VALID"] },
+      ordering: "byCaptureTime" as const,
+    };
+
+    const res1 = adaptGazeRowsToAnalysisInput(rows, options);           // First adaptation with the given rows and options
+    const res2 = adaptGazeRowsToAnalysisInput(rows, options);           // Second adaptation with the same rows and options
+
+    expect(res1).toEqual(res2);                                         // The results should be identical for the same input and options, confirming determinism
+
+    // Ensure we didn't mutate the input array ordering
+    expect(rows.map(r => r.rowIndex)).toEqual(originalRowIndexOrder);   // Row indices should be in the original order, confirming no mutation
+    expect(rows.map(r => r.captureTimeNs)).toEqual(originalTimeOrder);  // Capture times should be in the original order, confirming no mutation
+  });
 });
