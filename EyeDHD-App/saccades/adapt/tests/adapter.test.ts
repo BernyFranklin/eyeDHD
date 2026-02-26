@@ -107,4 +107,27 @@ describe("Saccades Adapter", () => {
     expect(res.diagnostics.excludedRows).toBe(0);                         // No rows should be excluded
     expect(res.diagnostics.excludedByReason.gazeStatusFiltered).toBe(0);  // No rows should be excluded by gaze status filter
   });
+
+  it("A5 all filtered out: returns empty vectors and correct exclusion diagnostics", () => {
+    const rows: RawGazeRow[] = [                                            // Create 3 gaze rows that will all be filtered out by the gaze status filter
+      row(0, 1000, "INVALID", { x: 1, y: 0, z: 0 }),
+      row(1, 2000, "INVALID", { x: 0, y: 1, z: 0 }),
+      row(2, 3000, "INVALID", { x: 0, y: 0, z: 1 }),
+    ];
+
+    const res = adaptGazeRowsToAnalysisInput(rows, {                        // Apply a filter to only include rows with VALID gaze status
+      selection: { includeGazeStatuses: ["VALID"] },
+    });
+
+    expect(res.vectors).toEqual([]);                                        // No vectors should be included since all rows are filtered out
+    expect(res.sourceRowIndices).toEqual([]);                               // No source row indices since no rows are included
+
+    expect(res.diagnostics.totalRows).toBe(3);                              // Total rows should be 3
+    expect(res.diagnostics.includedRows).toBe(0);                           // No rows should be included since all are filtered out
+    expect(res.diagnostics.excludedRows).toBe(3);                           // All rows should be excluded
+
+    expect(res.diagnostics.excludedByReason.gazeStatusFiltered).toBe(3);    // All rows should be excluded by gaze status filter
+    expect(res.diagnostics.includedByGazeStatus["VALID"]).toBeUndefined();  // No rows with VALID status should be included
+    expect(res.diagnostics.excludedByGazeStatus["INVALID"]).toBe(3);        // All rows with INVALID status should be excluded
+  });
 });
