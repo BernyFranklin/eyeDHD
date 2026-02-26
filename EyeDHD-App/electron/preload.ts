@@ -9,6 +9,9 @@ export { Electron, Renderer };
  * Declares the API that the backend exposes to the frontend through the preload script
  */
 declare interface Electron {
+	projects: {
+		selectDirectory(): Promise<string | null>;
+	},
 	csv: {
 		openFile(): Promise<Metadata | null>;
 		readMetadata(filename: string): Promise<Metadata>;
@@ -54,6 +57,18 @@ declare interface Renderer {
  * Defines the Electron requests
  */
 const electron: Electron = {
+	projects: {
+		/**
+		 * Opens a native dialog to select a project directory and returns the selected
+		 * path.
+		 *
+		 * @returns The full path of the selected directory, or null if the dialog was
+		 * canceled.
+		 */
+		selectDirectory: async (): Promise<string | null> => {
+			return await ipcRenderer.invoke('projects:select-directory');
+		}
+	},
 	csv: {
 		/**
 		 * Requests for a csv file to be opened and cleaned

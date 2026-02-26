@@ -20,6 +20,33 @@ const manager = new DatabaseManager({
 });
 
 /*
+ * Project directory handlers
+ */
+
+// Handles the project:select-directory request. Opens a directory selector
+// and returns the selected directory path. This will be set as the
+// project directory in the manager, which will be used for all subsequent file operations
+ipcMain.handle('project:select-directory', async () => {
+	return new Promise(async (resolve, reject) => {
+		const { canceled, filePaths } = await dialog.showOpenDialog({
+			properties: ['openDirectory']
+		});
+
+		if (canceled) {
+			return resolve(null);
+		}
+
+		const dirPath = filePaths[0];
+		try {
+			//manager.setProjectDirectory(dirPath);
+			return resolve(dirPath);
+		} catch (err) {
+			return reject(`Failed to set project directory: ${err}`);
+		}
+	});
+});
+
+/*
  * CSV file / case handlers
  */
 

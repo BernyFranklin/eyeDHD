@@ -258,12 +258,7 @@ export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: P
 				buttonText="Select a CSV File"
 			/>
 
-			<AlertWindow
-				message={alert.message}
-				classColor={alert.classColor}
-				isVisible={alert.isVisible}
-				onClose={alert.hide}
-			/>
+			<AlertWindow alert={alert} />
 			{file && (
 				<>
 					<PreviewCsvFile fileName={file.name} csvData={csvData} />

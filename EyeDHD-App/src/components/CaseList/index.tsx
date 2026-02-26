@@ -81,12 +81,7 @@ export default function CaseList() {
 
 	return (
 		<>
-			<AlertWindow
-				message={alert.message}
-				onClose={alert.hide}
-				isVisible={alert.isVisible}
-				classColor={alert.classColor}
-			/>
+			<AlertWindow alert={alert} />
 			<div>
 				{/* Lists all cases that have been opened and
 					allows new cases to be opened

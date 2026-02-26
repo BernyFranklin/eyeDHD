@@ -152,14 +152,9 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 	return (
 		<>
      		{/* Alert message */}
-       		<AlertWindow
-         		message={alert.message}
-           		classColor={alert.classColor}
-         		isVisible={alert.isVisible}
-         		onClose={alert.hide}
-           	/>
-           <div style={styles.container}>
-	           <div className="animation-generator-container" style={styles.singlePane}>
+       		<AlertWindow alert={alert} />
+           	<div style={styles.container}>
+	           	<div className="animation-generator-container" style={styles.singlePane}>
 	           		{/*Used for when things take awhile to load*/}
 	             	<LoadingOverlay isLoading={isLoading} />
 					<div style={styles.infoBox as React.CSSProperties}>

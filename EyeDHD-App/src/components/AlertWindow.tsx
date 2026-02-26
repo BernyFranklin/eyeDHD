@@ -1,46 +1,54 @@
-import React, { useCallback, useEffect, useState } from 'react';
-
-type Props = {
-	message: string;
-	onClose: () => void;
-	classColor: string;
-	isVisible?: boolean;
-};
+import React, { useEffect, useState } from 'react';
 
 type AlertColor = 'red' | 'green';
 
-type UseAlertOptions = {
-	autoDismissMs?: number | null;
-	defaultColor?: AlertColor;
+interface AlertContext {
+	message: string;
+	isVisible: boolean;
+	classColor: AlertColor;
+	hide: () => void;
+}
+
+type Props = {
+	alert: AlertContext;
 };
 
-export function useAlert(options: UseAlertOptions = {}) {
-	const { autoDismissMs = 4000, defaultColor = 'green' } = options;
+const AUTO_DISMISS_MS = 4000;
+const DEFAULT_COLOR = 'green';
+
+/**
+ * Custom hook to manage alert state and behavior.
+ * Provides message, visibility, color, and show/hide functions.
+ */
+export function useAlert() {
 	const [message, setMessage] = useState('');
 	const [isVisible, setIsVisible] = useState(false);
-	const [classColor, setClassColor] = useState<AlertColor>(defaultColor);
+	const [classColor, setClassColor] = useState<AlertColor>(DEFAULT_COLOR);
 
-	const show = useCallback((nextMessage: string, nextColor: AlertColor = defaultColor) => {
+	const show = (
+		nextMessage: string,
+		nextColor: AlertColor = DEFAULT_COLOR
+	) => {
 		setMessage(nextMessage);
 		setClassColor(nextColor);
 		setIsVisible(true);
-	}, [defaultColor]);
+	};
 
-	const hide = useCallback(() => {
+	const hide = () => {
 		setIsVisible(false);
 		setMessage('');
-	}, []);
+	};
 
 	useEffect(() => {
-		if (!isVisible || autoDismissMs == null) return;
+		if (!isVisible) return;
 
 		const timeout = setTimeout(() => {
 			setIsVisible(false);
 			setMessage('');
-		}, autoDismissMs);
+		}, AUTO_DISMISS_MS);
 
 		return () => clearTimeout(timeout);
-	}, [autoDismissMs, isVisible, message]);
+	}, [isVisible, message]);
 
 	return {
 		message,
@@ -51,20 +59,20 @@ export function useAlert(options: UseAlertOptions = {}) {
 	};
 }
 
-export default function AlertWindow({
-	message,
-	onClose,
-	classColor,
-	isVisible = true
-}: Props) {
-	if (!isVisible) {
+/**
+ * AlertWindow component that displays an alert message with a close button.
+ * It uses the alert context to determine visibility, message, and color.
+ * The alert will auto-dismiss after a set duration or can be closed manually.
+ */
+export default function AlertWindow({ alert }: Props) {
+	if (!alert.isVisible) {
 		return null;
 	}
 
 	return (
-		<div className={`alert-window ${classColor}`}>
-			<p>{message}</p>
-			<button onClick={onClose}>Close</button>
+		<div className={`alert-window ${alert.classColor}`}>
+			<p>{alert.message}</p>
+			<button onClick={alert.hide}>Close</button>
 		</div>
 	);
 }
