@@ -44,7 +44,6 @@ export default function CaseViewer() {
 					border: 1px solid #ccc;
 					border-radius: 5px;
 					margin-bottom: 10px;
-					cursor: pointer;
 					transition: background-color 0.2s ease;
 				}
 
