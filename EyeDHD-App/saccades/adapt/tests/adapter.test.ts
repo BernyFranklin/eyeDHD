@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import type { Vec3 } from "../../index"; 
 import type { RawGazeRow } from "../../ingest/csv/types";
 import { adaptGazeRowsToAnalysisInput } from "../adapter";
+import { parseGazeCsvSession } from "../../ingest/csv/index";
+import { analyzeSaccadesFromVectors } from "../../index";
 
 function row(
   rowIndex: number,
@@ -187,5 +189,40 @@ describe("Saccades Adapter", () => {
     // Ensure we didn't mutate the input array ordering
     expect(rows.map(r => r.rowIndex)).toEqual(originalRowIndexOrder);   // Row indices should be in the original order, confirming no mutation
     expect(rows.map(r => r.captureTimeNs)).toEqual(originalTimeOrder);  // Capture times should be in the original order, confirming no mutation
+  });
+});
+
+describe("Phase 4 integration: Step1 -> Step2 -> analyze", () => {
+  it("I1) parses CSV, adapts vectors with policy+ordering, and analyze runs", () => {
+    const csvText = [                                                                           // Simulate a CSV session with 5 rows,
+      "CaptureTime,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ",  // mixing VALID/INVALID gaze statuses and out-of-order capture times
+      "3000,VALID,3,0,0",
+      "1000,INVALID,9,9,9",
+      "2000,VALID,2,0,0",
+      "1500,INVALID,8,8,8",
+      "1000,VALID,1,0,0",
+    ].join("\n");  
+
+    const parsed = parseGazeCsvSession(csvText);                                                // Parse the CSV text into structured rows
+
+    expect(parsed.rows.length).toBe(5);                                                         // Step 1 sanity: we got some rows out
+
+    const adapted = adaptGazeRowsToAnalysisInput(parsed.rows, {                                 // Adapt with a policy to include only VALID gaze statuses and order by captureTimeNs
+      selection: { includeGazeStatuses: ["VALID"] },
+      ordering: "byCaptureTime",
+    });
+
+    expect(adapted.vectors).toEqual([                                                           // Step 2 sanity: filtered then ordered
+      { x: 1, y: 0, z: 0 },                                                                     // t=1000 VALID (rowIndex 4 if Step1 uses rowIndex as file row order)
+      { x: 2, y: 0, z: 0 },                                                                     // t=2000 VALID
+      { x: 3, y: 0, z: 0 },                                                                     // t=3000 VALID
+    ]);
+    expect(adapted.diagnostics.includedRows).toBe(3);                                           // Should include 3 VALID rows
+    expect(adapted.diagnostics.excludedRows).toBe(2);                                           // Should exclude 2 INVALID rows
+
+    expect(() => analyzeSaccadesFromVectors(adapted.vectors)).not.toThrow();                    // Step 3 (analysis) sanity: should not throw
+
+    const analysis = analyzeSaccadesFromVectors(adapted.vectors);                               // Run the full analysis pipeline on the adapted vectors
+    expect(analysis).toBeTruthy();                                                              // No assertion on specific analysis results, just runs without error and produces a result object
   });
 });
