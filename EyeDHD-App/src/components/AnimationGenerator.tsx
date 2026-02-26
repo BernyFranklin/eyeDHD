@@ -1,4 +1,8 @@
 import React, { useState, useEffect, ReactEventHandler } from 'react';
+
+import { useSelector, useDispatch } from '../store/hooks';
+import { selectDisabled, enableButtons, disableButtons } from '../store/features/buttons';
+
 import LoadingOverlay from './LoadingOverlay';
 import AlertWindow, { useAlert } from './AlertWindow';
 import Button from './Button';
@@ -7,18 +11,16 @@ import CanvasRecorder from './CanvasRecorder';
 import { type Error, type CSVData, type Metadata } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
-type Props = {
-  buttonsDisabled: boolean;
-  setButtonsDisabled: (disabled: boolean) => void;
-};
-
-export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled }: Props) {
+export default function AnimationGenerator() {
 	const [files, setFiles] = useState<Metadata[]>([]);
 	const [file, setFile] = useState<Metadata | null>(null);
 	const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
 
 	const alert = useAlert();
 	const [isLoading, setIsLoading] = useState(false);
+
+	const buttonsDisabled = useSelector(selectDisabled);
+	const dispatch = useDispatch();
 
 	const styles = {
 		container: {
@@ -146,8 +148,12 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 	}, []);
 
 	useEffect(() => {
-		setButtonsDisabled(!!csvStream);
-	}, [csvStream, setButtonsDisabled]);
+		if (csvStream) {
+			dispatch(disableButtons());
+		} else {
+			dispatch(enableButtons());
+		}
+	}, [csvStream]);
 
 	return (
 		<>

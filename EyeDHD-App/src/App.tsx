@@ -4,16 +4,10 @@ import { Outlet } from 'react-router';
 import './App.css';
 import Navbar from './components/Navbar';
 
-type Props = {
-	buttonsDisabled: boolean
-}
-
-function App(props: Props) {
+function App() {
 	return (
 		<>
-			<Navbar
-				buttonsDisabled={props.buttonsDisabled}
-			/>
+			<Navbar />
 			<Outlet />
 		</>
 	);

@@ -1,4 +1,4 @@
-import React, { StrictMode, useState } from 'react';
+import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router';
 
@@ -13,26 +13,14 @@ import SidebySide from './components/SidebySide';
 import CaseViewer from './components/CaseViewer';
 
 const Main = () => {
-	const [buttonsDisabled, setButtonsDisabled] = useState(false);
-
 	return (
 		<BrowserRouter>
 			<Routes>
-				<Route path='/' element={<App buttonsDisabled={buttonsDisabled} />}>
+				<Route path='/' element={<App />}>
 					<Route index element={<CaseList />} />
 					<Route path='case' element={<CaseViewer />} />
-					<Route path='import' element={
-						<CsvFileImport
-							buttonsDisabled={buttonsDisabled}
-							setButtonsDisabled={setButtonsDisabled}
-						/>
-					} />
-					<Route path='animation' element={
-						<AnimationGenerator
-							buttonsDisabled={buttonsDisabled}
-							setButtonsDisabled={setButtonsDisabled}
-						/>
-					} />
+					<Route path='import' element={<CsvFileImport /> } />
+					<Route path='animation' element={<AnimationGenerator />} />
 					<Route path='side-by-side' element={<SidebySide />} />
 					<Route path='visualization' element={<Visualization />} />
 				</Route>

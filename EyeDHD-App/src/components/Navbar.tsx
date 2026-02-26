@@ -1,5 +1,8 @@
 import React from 'react';
 
+import { useSelector } from '../store/hooks';
+import { selectDisabled } from '../store/features/buttons';
+
 const imgStyles = {
 	width: '50px',
 	color: 'white',
@@ -31,11 +34,9 @@ const disabledLinkStyles = {
 	cursor: 'not-allowed'
 };
 
-type Props = {
-	buttonsDisabled: boolean;
-};
+export default function Navbar() {
+	const buttonsDisabled = useSelector(selectDisabled);
 
-export default function Navbar({ buttonsDisabled }: Props) {
 	return (
 		<nav className="navbar" style={navbarStyles}>
 			<span className="navbar-logo">

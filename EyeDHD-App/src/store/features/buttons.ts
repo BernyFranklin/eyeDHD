@@ -4,29 +4,29 @@ import type { PayloadAction } from '@reduxjs/toolkit'
 import type { RootState } from '../../store'
 
 interface ButtonsState {
-	enabled: boolean
+	disabled: boolean
 }
 
 const initialState: ButtonsState = {
-	enabled: true
+	disabled: false
 };
 
 export const buttonsSlice = createSlice({
 	name: 'buttons',
 	initialState,
 	reducers: {
-		enable: (state) => {
-			state.enabled = true;
+		enableButtons: (state) => {
+			state.disabled = false;
 		},
-		disable: (state) => {
-			state.enabled = false;
+		disableButtons: (state) => {
+			state.disabled = true;
 		}
 	}
 });
 
-export const { enable, disable } = buttonsSlice.actions;
+export const { enableButtons, disableButtons } = buttonsSlice.actions;
 
 // Other code such as selectors can use the imported `RootState` type
-export const selectEnabled = (state: RootState) => state.enabled;
+export const selectDisabled = (state: RootState) => state.buttons.disabled;
 
 export default buttonsSlice.reducer;

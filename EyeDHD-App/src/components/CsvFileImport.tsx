@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
+
+import { useSelector, useDispatch } from '../store/hooks';
+import { selectDisabled, enableButtons, disableButtons } from '../store/features/buttons';
+
 import PreviewCsvFile from './PreviewCsvFile';
 import AlertWindow, { useAlert } from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
+
 import { type Error, type CSVData, Metadata } from '../types';
 import RemoteStream from '../data/RemoteStream';
-
-type Props = {
-	buttonsDisabled: boolean;
-	setButtonsDisabled: (disabled: boolean) => void;
-};
 
 type CleaningProgressState = {
 	progressPercent: number;
@@ -25,7 +25,7 @@ const DEFAULT_CLEANING_PROGRESS: CleaningProgressState = {
 	rowsProcessed: 0
 };
 
-export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: Props) {
+export default function CsvFileImport() {
 	// Store data and handle the file load
 	const [csvData, setCsvData] = useState<CSVData[]>([]);
 	const [file, setFile] = useState<Metadata | null>(null);
@@ -38,6 +38,9 @@ export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: P
 		DEFAULT_CLEANING_PROGRESS
 	);
 	const [showCleaningResults, setShowCleaningResults] = useState(false);
+
+	const buttonsDisabled = useSelector(selectDisabled);
+	const dispatch = useDispatch();
 
 	const styles = {
 		buttonContainer: {
@@ -138,7 +141,7 @@ export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: P
 		}
 
 		try {
-			setButtonsDisabled(true);
+			dispatch(disableButtons());
 			setIsCleaning(true);
 			setCleaningProgress({
 				progressPercent: 0,
@@ -187,10 +190,10 @@ export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: P
 			setCsvData(previewCSV);
 
 			setIsCleaning(false);
-			setButtonsDisabled(false);
+			dispatch(enableButtons());
 			alert.show('green', 'Data cleaning complete!');
 		} catch (err) {
-			setButtonsDisabled(false);
+			dispatch(enableButtons());
 			setIsCleaning(false);
 			alert.show(err.message, 'red');
 		}
