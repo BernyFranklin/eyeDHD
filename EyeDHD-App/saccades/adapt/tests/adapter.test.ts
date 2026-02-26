@@ -96,7 +96,7 @@ describe("Saccades Adapter", () => {
     expect(res.diagnostics.excludedRows).toBe(0);                                   // No rows should be excluded
   });
 
-  it("A4) empty input returns empty vectors and zeroed counts", () => {
+  it("A4) Empty input returns empty vectors and zeroed counts", () => {
     const res = adaptGazeRowsToAnalysisInput([]);                         // Adapt an empty array of gaze rows
 
     expect(res.vectors).toEqual([]);                                      // No vectors should be included since input is empty
@@ -108,7 +108,7 @@ describe("Saccades Adapter", () => {
     expect(res.diagnostics.excludedByReason.gazeStatusFiltered).toBe(0);  // No rows should be excluded by gaze status filter
   });
 
-  it("A5 all filtered out: returns empty vectors and correct exclusion diagnostics", () => {
+  it("A5) All filtered out: returns empty vectors and correct exclusion diagnostics", () => {
     const rows: RawGazeRow[] = [                                            // Create 3 gaze rows that will all be filtered out by the gaze status filter
       row(0, 1000, "INVALID", { x: 1, y: 0, z: 0 }),
       row(1, 2000, "INVALID", { x: 0, y: 1, z: 0 }),
@@ -129,5 +129,36 @@ describe("Saccades Adapter", () => {
     expect(res.diagnostics.excludedByReason.gazeStatusFiltered).toBe(3);    // All rows should be excluded by gaze status filter
     expect(res.diagnostics.includedByGazeStatus["VALID"]).toBeUndefined();  // No rows with VALID status should be included
     expect(res.diagnostics.excludedByGazeStatus["INVALID"]).toBe(3);        // All rows with INVALID status should be excluded
+  });
+
+  it('A6) Combo: filters by includeGazeStatuses then applies "byCaptureTime" ordering', () => {
+    const rows: RawGazeRow[] = [                                          // Mix VALID/INVALID and out-of-order times
+      row(0, 3000, "VALID",   { x: 3, y: 0, z: 0 }),
+      row(1, 1000, "INVALID", { x: 9, y: 9, z: 9 }),
+      row(2, 2000, "VALID",   { x: 2, y: 0, z: 0 }),
+      row(3, 1500, "INVALID", { x: 8, y: 8, z: 8 }),
+      row(4, 1000, "VALID",   { x: 1, y: 0, z: 0 }),
+    ];
+
+    const res = adaptGazeRowsToAnalysisInput(rows, {                      // First filter to include only VALID gaze statuses, then order by captureTimeNs
+      selection: { includeGazeStatuses: ["VALID"] },
+      ordering: "byCaptureTime",
+    });
+
+    expect(res.vectors).toEqual([                                         // VALID rows are rowIndex 0 (t=3000), 2 (t=2000), 4 (t=1000)
+      { x: 1, y: 0, z: 0 },                                               // After ordering by captureTime: rowIndex 4 (t=1000), 2 (t=2000), 0 (t=3000)
+      { x: 2, y: 0, z: 0 },
+      { x: 3, y: 0, z: 0 },
+    ]);
+
+    expect(res.sourceRowIndices).toEqual([4, 2, 0]);                      // Source row indices should reflect the new order after filtering and sorting
+
+    expect(res.diagnostics.totalRows).toBe(5);                            // Total rows should be 5
+    expect(res.diagnostics.includedRows).toBe(3);                         // Three rows should be included (VALID)
+    expect(res.diagnostics.excludedRows).toBe(2);                         // Two rows should be excluded (INVALID)
+    expect(res.diagnostics.excludedByReason.gazeStatusFiltered).toBe(2);  // Two rows should be excluded by gaze status filter
+
+    expect(res.diagnostics.includedByGazeStatus["VALID"]).toBe(3);        // Three rows with VALID status should be included
+    expect(res.diagnostics.excludedByGazeStatus["INVALID"]).toBe(2);      // Two rows with INVALID status should be excluded
   });
 });
