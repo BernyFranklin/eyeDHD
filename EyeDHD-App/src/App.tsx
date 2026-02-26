@@ -1,5 +1,8 @@
 import React from 'react';
+import { Provider } from 'react-redux';
 import { Outlet } from 'react-router';
+
+import { store } from './store';
 
 import './App.css';
 import Navbar from './components/Navbar';
@@ -7,8 +10,10 @@ import Navbar from './components/Navbar';
 function App() {
 	return (
 		<>
-			<Navbar />
-			<Outlet />
+			<Provider store={store}>
+				<Navbar />
+				<Outlet />
+			</Provider>
 		</>
 	);
 }
