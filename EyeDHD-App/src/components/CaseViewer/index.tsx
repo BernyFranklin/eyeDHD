@@ -1,6 +1,20 @@
+import { useEffect } from "react";
+import AlertWindow, { useAlert } from "../AlertWindow"
+
 export default function CaseViewer() {
+	const alert = useAlert();
+
+	const handleError = (err: Error) => {
+		alert.show('red', `Error: ${err.message}`);
+	};
+
+	useEffect(() => {
+		handleError(new Error('Case viewer functionality not implemented yet'));
+	}, []);
+
 	return (
 		<>
+			<AlertWindow alert={alert} />
 			<div>
 				Tasks
 				<ul className='task-list'>

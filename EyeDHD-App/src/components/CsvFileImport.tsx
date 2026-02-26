@@ -133,7 +133,7 @@ export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: P
 	const cleanData = async () => {
 		if (buttonsDisabled) return;
 		if (!file) {
-			alert.show('No file selected for cleaning', 'red');
+			alert.show('red', 'No file selected for cleaning');
 			return;
 		}
 
@@ -188,7 +188,7 @@ export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: P
 
 			setIsCleaning(false);
 			setButtonsDisabled(false);
-			alert.show('Data cleaning complete!', 'green');
+			alert.show('green', 'Data cleaning complete!');
 		} catch (err) {
 			setButtonsDisabled(false);
 			setIsCleaning(false);
@@ -200,13 +200,13 @@ export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: P
 	const exportCleanedData = async () => {
 		if (buttonsDisabled) return;
 		if (!file) {
-			alert.show('No file selected for export', 'red');
+			alert.show('red', 'No file selected for export');
 			return;
 		}
 
 		// Check if cleaning is complete
 		if (!cleaningProgress.isComplete && !file.completed) {
-			alert.show('No cleaned data available. Please clean the data first.', 'red');
+			alert.show('red', 'No cleaned data available. Please clean the data first.');
 			return;
 		}
 
@@ -215,14 +215,13 @@ export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: P
 			const result = await window.electron.csv.exportData(file);
 
 			if (result.success) {
-				alert.show(
+				alert.show('green',
 					`Successfully exported ${result.stats.totalExported} rows to ${result.stats.filePath
 						.split('\\')
-						.pop()}`,
-					'green'
+						.pop()}`
 				);
 			} else {
-				alert.show(result.message || 'Export failed', 'red');
+				alert.show('red', result.message || 'Export failed');
 			}
 		} catch (err) {
 			alert.show(err.message, 'red');
@@ -245,7 +244,7 @@ export default function CsvFileImport({ buttonsDisabled, setButtonsDisabled }: P
 	};
 
 	const handleError = (err: Error) => {
-		alert.show(err.message, 'red');
+		alert.show('red', err.message);
 	};
 
 	return (

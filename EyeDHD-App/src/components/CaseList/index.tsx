@@ -24,20 +24,20 @@ export default function CaseList() {
 	};
 
 	const createCase = async () => {
-		alert.show('Create case functionality not implemented yet', 'green');
+		alert.show('green', 'Create case functionality not implemented yet');
 	};
 
 	const openCase = async (file: Metadata) => {
 		handleError(new Error(`Opening: ${file.name}, not yet implemented`));
 		// Create an anchor element pointing to '/case' and click it
 
-		const anchor = document.createElement('a');
-		anchor.href = '/case';
-		anchor.click();
+		//const anchor = document.createElement('a');
+		//anchor.href = '/case';
+		//anchor.click();
 	}
 
 	const handleError = (err: Error) => {
-		alert.show(`Error: ${err.message}`, 'red');
+		alert.show('red', `Error: ${err.message}`);
 	};
 
 	useEffect(() => {
@@ -94,7 +94,9 @@ export default function CaseList() {
 						deleting the case
 					*/}
 					{cases.map(metadata => {
-						return <li><CaseItem file={metadata} onClick={openCase} /></li>
+						return <li>
+							<CaseItem file={metadata} onClick={openCase} alert={alert}/>
+						</li>
 					})}
 					{/* Button for opening a new case */}
 					<li>

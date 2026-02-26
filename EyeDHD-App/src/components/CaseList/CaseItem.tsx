@@ -1,9 +1,12 @@
 import { useMemo } from 'react';
+
 import { type Metadata } from '../../types';
+import { AlertContext } from '../AlertWindow';
 
 type Props = {
 	file: Metadata,
-	onClick: (file: Metadata) => void
+	onClick: (file: Metadata) => void,
+	alert: AlertContext
 };
 
 export default function Case(props: Props) {
@@ -14,9 +17,9 @@ export default function Case(props: Props) {
 
 	return (
 		<>
-			<div className='case-item' onClick={() => props.onClick(props.file)}>
-				<span className='case-name'>{name}</span>
-				<div className='case-options'>...</div>
+			<div className='case-item'>
+				<a href='/case' onClick={() => props.onClick(props.file)}>{name}</a>
+				<div className='case-options' onClick={() => props.alert.show('red', 'Not implemented')}>...</div>
 			</div>
 			<style>
 			{`
@@ -29,17 +32,20 @@ export default function Case(props: Props) {
 					border: 1px solid #ccc;
 					border-radius: 5px;
 					margin-bottom: 10px;
-					cursor: pointer;
 					transition: background-color 0.2s ease;
 				}
 
-				.case-name {
+				.case-item a {
+					cursor: pointer;
+					text-decoration: none;
+					color: #333;
 					padding-left: 5px;
 				}
 
 				.case-options {
 					margin-left: auto;
 					padding-right: 5px;
+					cursor: pointer;
 				}
 			`}
 			</style>

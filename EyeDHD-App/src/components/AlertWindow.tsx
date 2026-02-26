@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 
 type AlertColor = 'red' | 'green';
 
-interface AlertContext {
+export interface AlertContext {
 	message: string;
 	isVisible: boolean;
 	classColor: AlertColor;
 	hide: () => void;
+	show: (color: AlertColor, message: string) => void;
 }
 
 type Props = {
@@ -26,8 +27,8 @@ export function useAlert() {
 	const [classColor, setClassColor] = useState<AlertColor>(DEFAULT_COLOR);
 
 	const show = (
-		nextMessage: string,
-		nextColor: AlertColor = DEFAULT_COLOR
+		nextColor: AlertColor = DEFAULT_COLOR,
+		nextMessage: string
 	) => {
 		setMessage(nextMessage);
 		setClassColor(nextColor);

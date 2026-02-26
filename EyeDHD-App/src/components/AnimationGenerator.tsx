@@ -89,7 +89,7 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 
 	const getStream = async (file: Metadata | null) => {
 		if (!file) {
-			alert.show('No file loaded', 'red');
+			alert.show('red', 'No file loaded');
 			return;
 		}
 
@@ -97,7 +97,7 @@ export default function AnimationGenerator({ buttonsDisabled, setButtonsDisabled
 	};
 
 	const handleError = (err: Error) => {
-		alert.show(err.message, 'red');
+		alert.show('red', err.message);
 	};
 
 	const handleSubmit: ReactEventHandler<HTMLFormElement> = async (e) => {
