@@ -19,7 +19,12 @@ export default function Case(props: Props) {
 		<>
 			<div className='case-item'>
 				<a href='/case' onClick={() => props.onClick(props.file)}>{name}</a>
-				<div className='case-options' onClick={() => props.alert.show('red', 'Not implemented')}>...</div>
+				<div
+					className='case-options'
+					onClick={() => props.alert.show('red', 'Not implemented')}
+				>
+					...
+				</div>
 			</div>
 			<style>
 			{`
