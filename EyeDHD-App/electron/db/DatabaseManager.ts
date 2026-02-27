@@ -5,7 +5,6 @@ import DataCleaner from '../analysis/DataCleaner';
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
 import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
 import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
-import saccadeActions, { type SaccadeData, createSaccadeTable, deleteSaccadeTable } from './tables/saccade';
 
 type DBOptions = {
 	logging: boolean;
@@ -18,16 +17,11 @@ type MetadataActions = {
 	exists: (filename: string) => boolean;
 	update: (file: Metadata, updates: Partial<Metadata>) => Metadata;
 	resetCleaning: (file: Metadata) => void;
-	resetAnalysis: (file: Metadata) => void;
 	remove: (file: Metadata) => Metadata;
 };
 
 type CSVActions = {
 	store: (file: Metadata, rows: CSVData[]) => void;
-};
-
-type SaccadeDataActions = {
-	store: () => void;
 };
 
 /**
@@ -45,7 +39,6 @@ export default class DatabaseManager {
 
 	metadata: MetadataActions;
 	csv: CSVActions;
-	saccade: SaccadeDataActions;
 
 	constructor(options: DBOptions = { logging: false, temporary: false }) {
 		this.db = getDB(options);
@@ -65,10 +58,6 @@ export default class DatabaseManager {
 					rows: 0
 				});
 			},
-			resetAnalysis: (file: Metadata) => {
-				deleteSaccadeTable(this.db, file.name);
-				createSaccadeTable(this.db, file.name);
-			},
 			remove: (file: Metadata) => metadataActions.remove(this.db, file)
 		};
 
@@ -79,10 +68,6 @@ export default class DatabaseManager {
 					throw new Error(`Failed to insert csv data for file: ${file.name}`);
 				}
 			}
-		};
-
-		this.saccade = {
-			store: () => {}
 		};
 	}
 
@@ -126,7 +111,6 @@ export default class DatabaseManager {
 
 		this.createCleaner(metadata);
 		createCSVTable(this.db, metadata.name);
-		createSaccadeTable(this.db, metadata.name);
 
 		return metadata;
 	}

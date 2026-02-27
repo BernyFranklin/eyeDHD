@@ -1,10 +1,9 @@
 import csvActions, { type CSVData } from "./tables/csv";
 import metadataActions, { type Metadata } from "./tables/metadata";
-import saccadeActions, { type SaccadeData } from "./tables/saccade";
 import DatabaseManager from "./DatabaseManager";
 
-export type DataType = Metadata | CSVData | SaccadeData;
-export type StreamType = 'Metadata' | 'CSVData' | 'SaccadeData' | 'Cleaning';
+export type DataType = Metadata | CSVData;
+export type StreamType = 'Metadata' | 'CSVData' | 'Cleaning';
 export type StreamKey = {
 	id: number;
 	type: StreamType;
@@ -97,11 +96,6 @@ export default class DataStream {
 				break;
 			}
 
-			case 'SaccadeData': {
-				yield* DataStream.saccadeDataIterator();
-				break;
-			}
-
 			case 'Cleaning': {
 				yield* DataStream.cleaningIterator(manager, file);
 				break;
@@ -159,17 +153,6 @@ export default class DataStream {
 		if (batch.length > 0) {
 			yield batch;
 		}
-	}
-
-	/**
-	 * Private static method to create an async iterator for streaming saccade data.
-	 */
-	private static async *saccadeDataIterator(
-
-	): AsyncGenerator<DataType[], void, undefined> {
-		throw new Error('SaccadeData streaming not implemented yet');
-		const batch: SaccadeData[] = [];
-		yield batch;
 	}
 
 	/**
