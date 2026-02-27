@@ -9,14 +9,14 @@ type Options = {
 };
 
 type UserState = {
-	projectDir: string;
+	projectDir?: string;
 	options: Options;
 	cases: Metadata[];
 	selectedCase?: Metadata;
 }
 
 const initialState: UserState = {
-	projectDir: '',
+	projectDir: null,
 	options: {
 		stuff: null,
 	},

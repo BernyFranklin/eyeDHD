@@ -8,6 +8,7 @@ import './App.css';
 import Navbar from './components/Navbar';
 
 function App() {
+	// Load user data stored in database / projects dir into redux store
 	return (
 		<>
 			<Provider store={store}>
