@@ -8,7 +8,7 @@ import AlertWindow, { useAlert } from './AlertWindow';
 import Button from './Button';
 import LoadingOverlay from './LoadingOverlay';
 
-import { type Error, type CSVData, Metadata } from '../types';
+import { type Error, type CSVData, type CaseData } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
 type CleaningProgressState = {
@@ -28,7 +28,7 @@ const DEFAULT_CLEANING_PROGRESS: CleaningProgressState = {
 export default function CsvFileImport() {
 	// Store data and handle the file load
 	const [csvData, setCsvData] = useState<CSVData[]>([]);
-	const [file, setFile] = useState<Metadata | null>(null);
+	const [file, setFile] = useState<CaseData | null>(null);
 	const alert = useAlert();
 	const [isLoading, setIsLoading] = useState(false);
 

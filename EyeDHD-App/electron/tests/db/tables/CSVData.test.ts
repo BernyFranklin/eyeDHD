@@ -2,29 +2,29 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { Database } from 'better-sqlite3';
 
 import { getDB } from '../../../db/DatabaseManager';
-import { createMetadataTable, type Metadata } from '../../../db/tables/metadata';
-import csvActions, { createCSVTable, deleteCSVTable, toTableName, type CSVData } from '../../../db/tables/csv';
+import { createCaseDataTable, type CaseData } from '../../../db/tables/CaseData';
+import csvActions, { createCSVTable, deleteCSVTable, toTableName, type CSVData } from '../../../db/tables/CSVData';
 
 describe('Database - CSVData', () => {
 	let db: Database;
 
 	const seedMetadata = () => {
-		createMetadataTable(db);
+		createCaseDataTable(db);
 
 		db.prepare(`
-				INSERT INTO metadata (name, path)
+				INSERT INTO CaseData (name, path)
 				VALUES (?, ?);
 			`)
 			.run('test.csv', 'test.csv');
 
 		db.prepare(`
-				INSERT INTO metadata (name, path)
+				INSERT INTO CaseData (name, path)
 				VALUES (?, ?);
 			`)
 			.run('test2.csv', 'test2.csv');
 
 		db.prepare(`
-				INSERT INTO metadata (name, path)
+				INSERT INTO CaseData (name, path)
 				VALUES (?, ?);
 			`)
 			.run('test3.csv', 'test3.csv');
@@ -65,7 +65,7 @@ describe('Database - CSVData', () => {
 		});
 
 		it('A2) Creates a CSV data table for a given file name', () => {
-			const file = { name: 'testa.csv' } as Metadata;
+			const file = { name: 'testa.csv' } as CaseData;
 
 			createCSVTable(db, file.name);
 
@@ -111,8 +111,8 @@ describe('Database - CSVData', () => {
 		it('C1) Creates CSV rows tied to existing metadata', () => {
 			seedMetadata();
 			const file = db
-				.prepare(`SELECT * FROM metadata WHERE name = ?;`)
-				.get('test.csv') as Metadata;
+				.prepare(`SELECT * FROM CaseData WHERE name = ?;`)
+				.get('test.csv') as CaseData;
 
 			createCSVTable(db, file.name);
 
@@ -131,8 +131,8 @@ describe('Database - CSVData', () => {
 		it('C2) Reads CSV rows for a given file', () => {
 			seedMetadata();
 			const file = db
-				.prepare(`SELECT * FROM metadata WHERE name = ?;`)
-				.get('test2.csv') as Metadata;
+				.prepare(`SELECT * FROM CaseData WHERE name = ?;`)
+				.get('test2.csv') as CaseData;
 
 			createCSVTable(db, file.name);
 

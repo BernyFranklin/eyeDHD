@@ -1,5 +1,5 @@
 import type { Database } from 'better-sqlite3';
-import type { Metadata } from './metadata';
+import type { CaseData } from './CaseData';
 
 export default { create, iterate };
 
@@ -105,7 +105,7 @@ export function deleteCSVTable(db: Database, filename: string) {
  * If a row with the same Frame primary key already exists, it will be skipped and a
  * warning will be logged.
  */
-function create(db: Database, file: Metadata, rows: CSVData[]): boolean {
+function create(db: Database, file: CaseData, rows: CSVData[]): boolean {
 	const table = toTableName(file.name);
 	const insert = db.prepare(`
 			INSERT INTO ${table} (
@@ -175,7 +175,7 @@ function create(db: Database, file: Metadata, rows: CSVData[]): boolean {
  * Returns a SQL query string to select all rows from the table associated with the given
  * file.
  */
-function iterate(file: Metadata) {
+function iterate(file: CaseData) {
 	return (`
 		SELECT * FROM ${toTableName(file.name)};
 	`);

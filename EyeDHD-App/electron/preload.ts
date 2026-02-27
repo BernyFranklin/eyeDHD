@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { type Metadata } from './db/tables/metadata';
+import { type CaseData } from './db/tables/CaseData';
 import { type Progress, type DataType, type StreamKey, type StreamType } from './db/DataStream';
 
 export { Electron, Renderer };
@@ -13,11 +13,11 @@ declare interface Electron {
 		selectDirectory(): Promise<string | null>;
 	},
 	csv: {
-		openFile(): Promise<Metadata | null>;
-		readMetadata(filename: string): Promise<Metadata>;
-		resetCleaningProgress(file: Metadata): Promise<void>;
-		cleanData(file: Metadata): Promise<void>;
-		exportData(file: Metadata): Promise<{
+		openFile(): Promise<CaseData | null>;
+		readMetadata(filename: string): Promise<CaseData>;
+		resetCleaningProgress(file: CaseData): Promise<void>;
+		cleanData(file: CaseData): Promise<void>;
+		exportData(file: CaseData): Promise<{
 			success: boolean,
 			message: string,
 			stats: {
@@ -35,7 +35,7 @@ declare interface Electron {
 	};
 
 	stream: {
-		start(type: StreamType, file?: Metadata): Promise<StreamKey>;
+		start(type: StreamType, file?: CaseData): Promise<StreamKey>;
 		pull(key: StreamKey, batchCount: number): Promise<void>;
 		cancel(key: StreamKey): void;
 	}
@@ -75,13 +75,13 @@ const electron: Electron = {
 		 *
 		 * @returns filename of file opened or null if cancelled
 		 */
-		openFile: async (): Promise<Metadata | null> => {
+		openFile: async (): Promise<CaseData | null> => {
 			return await ipcRenderer.invoke('csv:open-file');
 		},
 		/**
 		 * Reads the metadata for a given file.
 		 */
-		readMetadata: async (filename: string): Promise<Metadata> => {
+		readMetadata: async (filename: string): Promise<CaseData> => {
 			return await ipcRenderer.invoke('csv:read-metadata', filename);
 		},
 
@@ -89,7 +89,7 @@ const electron: Electron = {
 		 * Resets the cleaning progress of a file, allowing it to be cleaned
 		 * again from the start.
 		 */
-		resetCleaningProgress: async (file: Metadata): Promise<void> => {
+		resetCleaningProgress: async (file: CaseData): Promise<void> => {
 			return await ipcRenderer.invoke('csv:reset-cleaning-progress', file);
 		},
 		/**
@@ -98,7 +98,7 @@ const electron: Electron = {
 		 * @param filename - The name of the file to clean
 		 * @returns Promise with success status and message
 		 */
-		cleanData: async (file: Metadata) => {
+		cleanData: async (file: CaseData) => {
 			return await ipcRenderer.invoke('csv:clean-data', file);
 		},
 		/**
@@ -107,7 +107,7 @@ const electron: Electron = {
 		 * @param filename - The name of the file to export
 		 * @returns Promise with export result
 		 */
-		exportData: async (file: Metadata) => {
+		exportData: async (file: CaseData) => {
 			return await ipcRenderer.invoke('csv:export-data', file);
 		}
 	},
@@ -145,7 +145,7 @@ const electron: Electron = {
 		/**
 		 * Starts a new stream of the specified type, optionally associated with a file.
 		 */
-		start: async (type: StreamType, file?: Metadata): Promise<StreamKey> => {
+		start: async (type: StreamType, file?: CaseData): Promise<StreamKey> => {
 			return await ipcRenderer.invoke('stream:start', { type, file })
 		},
 		/**

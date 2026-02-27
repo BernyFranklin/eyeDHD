@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import AnimationWindow from "./animation/AnimationWindow";
 import RemoteStream from "../data/RemoteStream";
-import { type Metadata } from "../types";
+import { type CaseData } from "../types";
 
 type Props = {
-	file: Metadata;
+	file: CaseData;
 	csvStream: RemoteStream;
 	setCsvStream: React.Dispatch<React.SetStateAction<RemoteStream | null>>;
 };

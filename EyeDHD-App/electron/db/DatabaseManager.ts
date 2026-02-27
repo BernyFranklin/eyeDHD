@@ -3,8 +3,8 @@ import fs from 'fs';
 
 import DataCleaner from '../analysis/DataCleaner';
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
-import metadataActions, { type Metadata, createMetadataTable } from './tables/metadata';
-import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/csv';
+import metadataActions, { type CaseData, createCaseDataTable } from './tables/CaseData';
+import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/CSVData';
 
 type DBOptions = {
 	logging: boolean;
@@ -12,16 +12,16 @@ type DBOptions = {
 	path?: string;
 };
 
-type MetadataActions = {
-	read: (filename: string) => Metadata;
+type CaseDataActions = {
+	read: (filename: string) => CaseData;
 	exists: (filename: string) => boolean;
-	update: (file: Metadata, updates: Partial<Metadata>) => Metadata;
-	resetCleaning: (file: Metadata) => void;
-	remove: (file: Metadata) => Metadata;
+	update: (file: CaseData, updates: Partial<CaseData>) => CaseData;
+	resetCleaning: (file: CaseData) => void;
+	remove: (file: CaseData) => CaseData;
 };
 
 type CSVActions = {
-	store: (file: Metadata, rows: CSVData[]) => void;
+	store: (file: CaseData, rows: CSVData[]) => void;
 };
 
 /**
@@ -37,18 +37,18 @@ export default class DatabaseManager {
 	private cleaners = new Map<string, DataCleaner>();
 	private streams = new Map<number, DataStream>();
 
-	metadata: MetadataActions;
+	metadata: CaseDataActions;
 	csv: CSVActions;
 
 	constructor(options: DBOptions = { logging: false, temporary: false }) {
 		this.db = getDB(options);
-		createMetadataTable(this.db);
+		createCaseDataTable(this.db);
 
 		this.metadata = {
 			exists: (filename: string) => metadataActions.exists(this.db, filename),
 			read: (filename: string) => metadataActions.read(this.db, filename),
-			update: (file: Metadata, updates: Partial<Metadata>) => metadataActions.update(this.db, file, updates),
-			resetCleaning: (file: Metadata) => {
+			update: (file: CaseData, updates: Partial<CaseData>) => metadataActions.update(this.db, file, updates),
+			resetCleaning: (file: CaseData) => {
 				this.resetCleaner(file);
 				deleteCSVTable(this.db, file.name);
 				createCSVTable(this.db, file.name);
@@ -58,11 +58,11 @@ export default class DatabaseManager {
 					rows: 0
 				});
 			},
-			remove: (file: Metadata) => metadataActions.remove(this.db, file)
+			remove: (file: CaseData) => metadataActions.remove(this.db, file)
 		};
 
 		this.csv = {
-			store: (file: Metadata, rows: CSVData[]) => {
+			store: (file: CaseData, rows: CSVData[]) => {
 				const ok = csvActions.create(this.db, file, rows);
 				if (!ok) {
 					throw new Error(`Failed to insert csv data for file: ${file.name}`);
@@ -96,7 +96,7 @@ export default class DatabaseManager {
 	 * new metadata entry, initializes a DataCleaner for the file, and creates the
 	 * necessary tables for storing cleaned data and analysis results.
 	 */
-	openFile(filename: string, filepath: string): Metadata {
+	openFile(filename: string, filepath: string): CaseData {
 		if (this.metadata.exists(filename)) {
 			const metadata = metadataActions.read(this.db, filename);
 			if (!metadata.completed) {
@@ -119,7 +119,7 @@ export default class DatabaseManager {
 	 * Creates a new DataCleaner instance for the specified file and stores it in the
 	 * cleaners map.
 	 */
-	private createCleaner(file: Metadata) {
+	private createCleaner(file: CaseData) {
 		const cleaner = new DataCleaner({ path: file.path });
 		this.cleaners.set(file.name, cleaner);
 	}
@@ -128,7 +128,7 @@ export default class DatabaseManager {
 	 * Resets the DataCleaner for the specified file by deleting the existing cleaner and
 	 * creating a new one. This is used when the cleaning progress is reset for a file.
 	 */
-	private resetCleaner(file: Metadata) {
+	private resetCleaner(file: CaseData) {
 		this.cleaners.delete(file.name);
 		this.createCleaner(file);
 	}
@@ -136,7 +136,7 @@ export default class DatabaseManager {
 	/**
 	 * Retrieves the DataCleaner instance for the specified file from the cleaners map.
 	 */
-	getCleaner(file: Metadata): DataCleaner {
+	getCleaner(file: CaseData): DataCleaner {
 		return this.cleaners.get(file.name);
 	}
 
@@ -145,7 +145,7 @@ export default class DatabaseManager {
 	 * It creates a new DataStream instance, stores it in the streams map with a unique
 	 * key, and returns the key to the caller for future reference.
 	 */
-	async startStream(type: StreamType, file?: Metadata): Promise<StreamKey> {
+	async startStream(type: StreamType, file?: CaseData): Promise<StreamKey> {
 		const stream = DataStream.new(this, type, file);
 		const key = { id: Date.now(), type };
 		this.streams.set(key.id, stream);

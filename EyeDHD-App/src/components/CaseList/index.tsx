@@ -9,17 +9,17 @@ import LoadingOverlay from '../LoadingOverlay';
 import AlertWindow, { useAlert } from '../AlertWindow';
 
 import RemoteStream from '../../data/RemoteStream';
-import { type Error, type Metadata } from '../../types';
+import { type Error, type CaseData } from '../../types';
 
 export default function CaseList() {
-	const [cases, setCases] = useState<Metadata[]>([]);
+	const [cases, setCases] = useState<CaseData[]>([]);
 	const [loading, setLoading] = useState(false);
 
 	const alert = useAlert();
 
 	const fetchCases = async () => {
-		const stream = await RemoteStream.create('Metadata', {});
-		const cases = await stream.collect<Metadata>();
+		const stream = await RemoteStream.create('CaseData', {});
+		const cases = await stream.collect<CaseData>();
 		setCases(cases);
 	};
 
@@ -27,7 +27,7 @@ export default function CaseList() {
 		alert.show('green', 'Create case functionality not implemented yet');
 	};
 
-	const openCase = async (file: Metadata) => {
+	const openCase = async (file: CaseData) => {
 		handleError(new Error(`Opening: ${file.name}, not yet implemented`));
 	}
 

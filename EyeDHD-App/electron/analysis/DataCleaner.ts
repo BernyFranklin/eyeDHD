@@ -1,7 +1,7 @@
 import fs from 'fs';
 import rl from 'readline';
 
-import { type CSVData } from '../db/tables/csv';
+import { type CSVData } from '../db/tables/CSVData';
 
 /**
 * Reads and cleans a CSV file at the given path. Cleans data lazyily,

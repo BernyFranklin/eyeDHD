@@ -2,31 +2,31 @@ import { describe, it, expect } from 'vitest';
 import { type Database } from 'better-sqlite3';
 
 import { getDB } from '../../../db/DatabaseManager';
-import metadataActions, { createMetadataTable, type Metadata } from '../../../db/tables/metadata';
+import metadataActions, { createCaseDataTable, type CaseData } from '../../../db/tables/CaseData';
 
 type SeededDb = {
 	db: Database;
 	cleanup: () => void;
 };
 
-function seedMetadataDb(): SeededDb {
+function seedCaseDataDb(): SeededDb {
 	const db = getDB({ temporary: true, logging: false });
-	createMetadataTable(db);
+	createCaseDataTable(db);
 
 	db.prepare(`
-			INSERT INTO metadata (name, path)
+			INSERT INTO CaseData (name, path)
 			VALUES (?, ?);
 		`)
 		.run('test.csv', 'test.csv');
 
 	db.prepare(`
-			INSERT INTO metadata (name, path)
+			INSERT INTO CaseData (name, path)
 			VALUES (?, ?);
 		`)
 		.run('test2.csv', 'test2.csv');
 
 	db.prepare(`
-			INSERT INTO metadata (name, path)
+			INSERT INTO CaseData (name, path)
 			VALUES (?, ?);
 		`)
 		.run('test3.csv', 'test3.csv');
@@ -34,7 +34,7 @@ function seedMetadataDb(): SeededDb {
 	return { db, cleanup: () => db.close() };
 }
 
-function compareMetadata(result: Metadata, expected: Metadata) {
+function compareMetadata(result: CaseData, expected: CaseData) {
 	expect(result.id).toBe(expected.id);
 	expect(result.name).toBe(expected.name);
 	expect(result.path).toBe(expected.path);
@@ -42,28 +42,28 @@ function compareMetadata(result: Metadata, expected: Metadata) {
 	expect(result.rows).toBe(expected.rows);
 }
 
-describe('Database - Metadata', () => {
+describe('Database - CaseData', () => {
 	describe('A) Table setup', () => {
-		it('A1) Creates the metadata table', () => {
+		it('A1) Creates the CaseData table', () => {
 			const db = getDB({ temporary: true, logging: false });
-			createMetadataTable(db);
+			createCaseDataTable(db);
 
 			const result = db
 				.prepare(`
-					SELECT name FROM sqlite_master WHERE type='table' AND name='metadata';
+					SELECT name FROM sqlite_master WHERE type='table' AND name='CaseData';
 				`)
 				.get();
 
-			expect(result).toStrictEqual({ name: 'metadata' });
+			expect(result).toStrictEqual({ name: 'CaseData' });
 			db.close();
 		});
 	});
 
 	describe('B) CRUD operations', () => {
-		it('B1) Creates a metadata row', () => {
-			const { db, cleanup } = seedMetadataDb();
+		it('B1) Creates a CaseData row', () => {
+			const { db, cleanup } = seedCaseDataDb();
 
-			const expected: Metadata = {
+			const expected: CaseData = {
 				id: 4,
 				name: 'newData.csv',
 				path: '../newData.csv',
@@ -77,14 +77,14 @@ describe('Database - Metadata', () => {
 			const result = metadataActions.create(db, expected.name, expected.path);
 			expect(result).not.toBeNull();
 
-			compareMetadata(result as Metadata, expected);
+			compareMetadata(result as CaseData, expected);
 			cleanup();
 		});
 
-		it('B2) Reads a metadata row', () => {
-			const { db, cleanup } = seedMetadataDb();
+		it('B2) Reads a CaseData row', () => {
+			const { db, cleanup } = seedCaseDataDb();
 
-			const expected: Metadata = {
+			const expected: CaseData = {
 				id: 2,
 				name: 'test2.csv',
 				path: 'test2.csv',
@@ -98,12 +98,12 @@ describe('Database - Metadata', () => {
 			const result = metadataActions.read(db, 'test2.csv');
 			expect(result).not.toBeNull();
 
-			compareMetadata(result as Metadata, expected);
+			compareMetadata(result as CaseData, expected);
 			cleanup();
 		});
 
-		it('B3) Updates a metadata row', () => {
-			const { db, cleanup } = seedMetadataDb();
+		it('B3) Updates a CaseData row', () => {
+			const { db, cleanup } = seedCaseDataDb();
 
 			const original = metadataActions.read(db, 'test2.csv');
 			const result = metadataActions.update(db, original, {
@@ -115,7 +115,7 @@ describe('Database - Metadata', () => {
 			expect(result).not.toBeNull();
 			expect(result.header).toBe('a,b,c');
 
-			const expected: Metadata = {
+			const expected: CaseData = {
 				...original,
 				header: 'a,b,c',
 				completed: 1,
@@ -124,18 +124,18 @@ describe('Database - Metadata', () => {
 				updated_at: '',
 			};
 
-			compareMetadata(result as Metadata, expected);
+			compareMetadata(result as CaseData, expected);
 			cleanup();
 		});
 
-		it('B4) Removes a metadata row', () => {
-			const { db, cleanup } = seedMetadataDb();
+		it('B4) Removes a CaseData row', () => {
+			const { db, cleanup } = seedCaseDataDb();
 
 			const file = metadataActions.read(db, 'test3.csv');
 			const result = metadataActions.remove(db, file);
 
 			expect(result).not.toBeNull();
-			compareMetadata(result as Metadata, file);
+			compareMetadata(result as CaseData, file);
 
 			expect(() => metadataActions.read(db, 'test3.csv')).toThrow();
 			cleanup();

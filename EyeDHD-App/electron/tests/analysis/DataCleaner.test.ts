@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 
 import DataCleaner from '../../analysis/DataCleaner';
-import { type CSVData } from '../../db/tables/csv';
+import { type CSVData } from '../../db/tables/CSVData';
 
 const HEADER = 'Frame,LeftEyeStatus,LeftEyeForwardX,LeftEyeForwardY,LeftEyeForwardZ';
 const ROWS = [

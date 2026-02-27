@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 
-import { type Metadata } from '../../types';
+import { type CaseData } from '../../types';
 import { AlertContext } from '../AlertWindow';
 
 type Props = {
-	file: Metadata,
-	onClick: (file: Metadata) => void,
+	file: CaseData,
+	onClick: (file: CaseData) => void,
 	alert: AlertContext
 };
 

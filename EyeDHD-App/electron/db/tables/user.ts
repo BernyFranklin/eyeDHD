@@ -48,8 +48,8 @@ function create(
       	`)
     	.run(dir);
 
-   	const user = db.prepare<[number | bigint], User>(`
-	      	SELECT * FROM metadata WHERE id = ?;
+  	const user = db.prepare<[number | bigint], User>(`
+	      	SELECT * FROM user WHERE id = ?;
 		`)
     	.get(result.lastInsertRowid);
 
@@ -65,7 +65,7 @@ function create(
  */
 function read(db: Database): User {
   	const user = db.prepare<string, User>(`
-    	SELECT * FROM metadata WHERE name = ?;
+    	SELECT * FROM user WHERE name = ?;
 	`)
     .get(NAME);
 

@@ -32,7 +32,7 @@ function createTempCsv(lines: string[]): { filePath: string; filename: string; r
 }
 
 describe('Database - Manager', () => {
-	describe('A) Metadata streaming', () => {
+	describe('A) CaseData streaming', () => {
 		it('A1) Streams metadata in batches and reports row progress', async () => {
 			const dbmgr = new DatabaseManager({ temporary: true, logging: false });
 			const createdFiles: string[] = [];
@@ -44,18 +44,18 @@ describe('Database - Manager', () => {
 
 				const db = dbmgr['db'];
 				db.prepare(`
-						INSERT INTO metadata (name, path)
+						INSERT INTO CaseData (name, path)
 						VALUES (?, ?);
 					`)
 					.run(csv1.filename, csv1.filePath);
 
 				db.prepare(`
-						INSERT INTO metadata (name, path)
+						INSERT INTO CaseData (name, path)
 						VALUES (?, ?);
 					`)
 					.run(csv2.filename, csv2.filePath);
 
-				const streamKey = await dbmgr.startStream('Metadata');
+				const streamKey = await dbmgr.startStream('CaseData');
 				const { rows, progress } = await pullOnce(dbmgr, streamKey, 1);
 
 				expect(rows.length).toBeGreaterThanOrEqual(2);

@@ -3,7 +3,7 @@ import {
 	type StreamKey,
 	type StreamType,
 	type Progress,
-	type Metadata
+	type CaseData
 } from '../types';
 
 /**
@@ -19,7 +19,7 @@ export default class RemoteStream {
 
 	static async create(
 		type: StreamType,
-		args: { filename?: string, file?: Metadata }
+		args: { filename?: string, file?: CaseData }
 	): Promise<RemoteStream> {
 		const key = await RemoteStream.startStream(type, args);
 		const stream = new RemoteStream(key);
@@ -29,9 +29,9 @@ export default class RemoteStream {
 
 	private static async startStream(
 		type: StreamType,
-		args: { filename?: string, file?: Metadata }
+		args: { filename?: string, file?: CaseData }
 	): Promise<StreamKey> {
-		if (type === "Metadata") {
+		if (type === "CaseData") {
 			return window.electron.stream.start(type);
 		} else {
 			return window.electron.stream.start(type, args.file);

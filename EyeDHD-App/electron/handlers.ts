@@ -7,7 +7,7 @@ import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
-import { type Metadata } from './db/tables/metadata';
+import { type CaseData } from './db/tables/CaseData';
 
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
@@ -103,7 +103,7 @@ ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 });
 
 // Handles the csv-export-data request. Exports cleaned CSV data to a new file
-ipcMain.handle('csv:export-data', async (_, file: Metadata) => {
+ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			if (!file.completed) {
@@ -131,7 +131,7 @@ ipcMain.handle('csv:export-data', async (_, file: Metadata) => {
 });
 
 // Utility function to export cleaned CSV data for a file to a specified output path
-async function exportToCSV(file: Metadata, outputPath: string) {
+async function exportToCSV(file: CaseData, outputPath: string) {
 	return new Promise(async (resolve) => {
 		try {
 			let csvContent = '';

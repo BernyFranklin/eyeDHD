@@ -8,12 +8,12 @@ import AlertWindow, { useAlert } from './AlertWindow';
 import Button from './Button';
 import CanvasRecorder from './CanvasRecorder';
 
-import { type Error, type CSVData, type Metadata } from '../types';
+import { type Error, type CSVData, type CaseData } from '../types';
 import RemoteStream from '../data/RemoteStream';
 
 export default function AnimationGenerator() {
-	const [files, setFiles] = useState<Metadata[]>([]);
-	const [file, setFile] = useState<Metadata | null>(null);
+	const [files, setFiles] = useState<CaseData[]>([]);
+	const [file, setFile] = useState<CaseData | null>(null);
 	const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
 
 	const alert = useAlert();
@@ -75,10 +75,10 @@ export default function AnimationGenerator() {
 
 		if (files.length > 0) return;
 
-		const stream = await RemoteStream.create("Metadata", {});
+		const stream = await RemoteStream.create("CaseData", {});
 		try {
-			const files = await stream.collect<Metadata>();
-			const cleaned = files.filter((metadata: Metadata) => metadata.completed);
+			const files = await stream.collect<CaseData>();
+			const cleaned = files.filter((metadata: CaseData) => metadata.completed);
 
 			setFiles(cleaned);
 		} catch (err) {
@@ -89,7 +89,7 @@ export default function AnimationGenerator() {
 		setIsLoading(false);
 	};
 
-	const getStream = async (file: Metadata | null) => {
+	const getStream = async (file: CaseData | null) => {
 		if (!file) {
 			alert.show('red', 'No file loaded');
 			return;

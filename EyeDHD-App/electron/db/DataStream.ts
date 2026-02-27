@@ -1,9 +1,9 @@
-import csvActions, { type CSVData } from "./tables/csv";
-import metadataActions, { type Metadata } from "./tables/metadata";
+import csvActions, { type CSVData } from "./tables/CSVData";
+import metadataActions, { type CaseData } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
 
-export type DataType = Metadata | CSVData;
-export type StreamType = 'Metadata' | 'CSVData' | 'Cleaning';
+export type DataType = CaseData | CSVData;
+export type StreamType = 'CaseData' | 'CSVData' | 'Cleaning';
 export type StreamKey = {
 	id: number;
 	type: StreamType;
@@ -25,7 +25,7 @@ const CLEANING_BATCH_SIZE = 1000;
  */
 export default class DataStream {
 	type: StreamType;
-	file?: Metadata;
+	file?: CaseData;
 	iterator: AsyncIterator<DataType[]>;
 	progress: Progress = {
 		done: false,
@@ -41,7 +41,7 @@ export default class DataStream {
 	private constructor(
 		type: StreamType,
 		iterator: AsyncIterator<DataType[]>,
-		file?: Metadata
+		file?: CaseData
 	) {
 		this.type = type;
 		this.iterator = iterator;
@@ -52,7 +52,7 @@ export default class DataStream {
 	 * Static method to create a new DataStream instance. It initializes the
 	 * async iterator based on the stream type and file (if applicable).
 	 */
-	static new(manager: DatabaseManager, type: StreamType, file?: Metadata): DataStream {
+	static new(manager: DatabaseManager, type: StreamType, file?: CaseData): DataStream {
 		const iterator = DataStream.createIterator(manager, type, file);
 		const stream = new DataStream(type, iterator, file);
 
@@ -65,7 +65,7 @@ export default class DataStream {
 	static testStream(
 		type: StreamType,
 		iterator: AsyncIterator<DataType[]>,
-		file?: Metadata
+		file?: CaseData
 	): DataStream {
 		return new DataStream(type, iterator, file);
 	}
@@ -77,7 +77,7 @@ export default class DataStream {
 	private static async *createIterator(
 		manager: DatabaseManager,
 		type: StreamType,
-		file?: Metadata
+		file?: CaseData
 	): AsyncGenerator<DataType[], void, undefined> {
 		// We switch on the `type` to determine which iterator code to run
 		//
@@ -86,8 +86,8 @@ export default class DataStream {
 		//
 		// The batch size is determined by the STREAM_BATCH_SIZE constant.
 		switch (type) {
-			case 'Metadata': {
-				yield* DataStream.metadataIterator(manager);
+			case 'CaseData': {
+				yield* DataStream.caseDataIterator(manager);
 				break;
 			}
 
@@ -104,15 +104,15 @@ export default class DataStream {
 	}
 
 	/**
-	 * Private static method to create an async iterator for streaming metadata.
+	 * Private static method to create an async iterator for streaming case data.
 	 */
-	private static async *metadataIterator(
+	private static async *caseDataIterator(
 		manager: DatabaseManager
 	): AsyncGenerator<DataType[], void, undefined> {
 		const sql = metadataActions.iterate();
-		const stmt = manager['db'].prepare<[], Metadata>(sql);
+		const stmt = manager['db'].prepare<[], CaseData>(sql);
 
-		let batch: Metadata[] = [];
+		let batch: CaseData[] = [];
 		for (const row of stmt.iterate()) {
 			batch.push(row);
 			if (batch.length >= STREAM_BATCH_SIZE) {
@@ -132,7 +132,7 @@ export default class DataStream {
 	 */
 	private static async *csvDataIterator(
 		manager: DatabaseManager,
-		file?: Metadata
+		file?: CaseData
 	): AsyncGenerator<DataType[], void, undefined> {
 		if (!file) {
 			throw new Error('File must be provided for CSVData streams');
@@ -158,12 +158,12 @@ export default class DataStream {
 	/**
 	 * Private static method to create an async iterator for streaming cleaned CSV data
 	 * for a given file. It uses the cleaner's async iterator to read and clean the data
-	 * on-the-fly, yielding batches of cleaned data and updating the metadata progress as
+	 * on-the-fly, yielding batches of cleaned data and updating the case data progress as
 	 * we go.
 	 */
 	private static async *cleaningIterator(
 		manager: DatabaseManager,
-		file?: Metadata
+		file?: CaseData
 	): AsyncGenerator<DataType[], void, undefined> {
 		if (!file) {
 			throw new Error('File must be provided for Cleaning streams');

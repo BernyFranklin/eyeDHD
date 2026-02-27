@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 
 import type { RootState } from '..'
-import { type Metadata } from '../../types';
+import { type CaseData } from '../../types';
 
 type Options = {
 	stuff: void;
@@ -11,8 +11,8 @@ type Options = {
 type UserState = {
 	projectDir?: string;
 	options: Options;
-	cases: Metadata[];
-	selectedCase?: Metadata;
+	cases: CaseData[];
+	selectedCase?: CaseData;
 }
 
 const initialState: UserState = {
@@ -31,7 +31,7 @@ export const userSlice = createSlice({
 		setProjectDir: (state, action: PayloadAction<string>) => {
 			state.projectDir = action.payload;
 		},
-		setCases: (state, action: PayloadAction<Metadata[]>) => {
+		setCases: (state, action: PayloadAction<CaseData[]>) => {
 			state.cases = action.payload;
 		}
 	}
