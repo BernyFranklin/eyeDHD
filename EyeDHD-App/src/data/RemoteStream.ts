@@ -21,15 +21,21 @@ export default class RemoteStream {
 		type: StreamType,
 		args: { filename?: string, file?: Metadata }
 	): Promise<RemoteStream> {
-		let key;
-		if (type === "Metadata") {
-			key = await window.electron.stream.start(type);
-		} else {
-			key = await window.electron.stream.start(type, args.file);
-		}
+		const key = await RemoteStream.startStream(type, args);
 		const stream = new RemoteStream(key);
 
 		return stream;
+	}
+
+	private static async startStream(
+		type: StreamType,
+		args: { filename?: string, file?: Metadata }
+	): Promise<StreamKey> {
+		if (type === "Metadata") {
+			return window.electron.stream.start(type);
+		} else {
+			return window.electron.stream.start(type, args.file);
+		}
 	}
 
 	private constructor(key: StreamKey) {
