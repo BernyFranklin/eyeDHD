@@ -20,53 +20,7 @@ export default function AnimationGenerator() {
 	const buttons = useSelector(selectButtons);
 	const dispatch = useDispatch();
 
-	const styles = {
-		container: {
-			textAlign: ' center',
-			backgroundColor: '#fff',
-			padding: '2rem',
-			display: 'flex',
-			flexDirection: 'column',
-			width: '100vw',
-			margin: '2rem auto',
-			alignItems: 'stretch',
-			justifyContent: 'center',
-			gap: '2rem',
-		},
-		buttonContainer: {
-			display: 'flex',
-			flexDirection: 'row',
-			gap: '10px',
-			justifyContent: 'center',
-			marginTop: '1rem'
-		},
-		buttonInline: {
-			display: 'inline-block'
-		},
-		singlePane: {
-			width: '40%',
-			padding: '1rem',
-			border: '1px solid #ccc',
-			borderRadius: '8px',
-			display: 'flex',
-			flexDirection: 'column',
-			justifyContent: 'space-between',
-			alignItems: 'center'
-		},
-		infoBox: {
-			backgroundColor: '#e3f2fd',
-			border: '1px solid #2196f3',
-			borderRadius: '4px',
-			padding: '1rem',
-			marginBottom: '1rem',
-			fontSize: '0.9rem',
-			color: '#0d47a1',
-			maxWidth: '80%',
-			wordWrap: 'break-word',
-			overflowWrap: 'break-word',
-			whiteSpace: 'normal'
-		}
-	} as any;
+
 
 	const getFilesList = async () => {
 		setIsLoading(true);
@@ -156,11 +110,11 @@ export default function AnimationGenerator() {
 	return (
 		<>
      		{/* Alert message */}
-           	<div style={styles.container}>
-	           	<div className="animation-generator-container" style={styles.singlePane}>
+           	<div className="animation-generator-page">
+	           	<div className="animation-generator-panel">
 	           		{/*Used for when things take awhile to load*/}
 	             	<LoadingOverlay isLoading={isLoading} />
-					<div style={styles.infoBox as React.CSSProperties}>
+					<div className="animation-generator-info">
 						<strong>Real-time Video Recording</strong>
 						<br />
 						This export method records the animation in real-time as an MP4 video (or WebM if
@@ -180,7 +134,7 @@ export default function AnimationGenerator() {
 		            		<label htmlFor="file-select">
 			              		Please select a file to generate an animation.
 				            </label>
-				        <div style={styles.buttonContainer}>
+				        <div className="animation-generator-actions">
 		              		<select name="fileSelect" defaultValue="none" disabled={buttons.disabled}>
 				                <option disabled value="none">
 			                  		none
@@ -196,19 +150,19 @@ export default function AnimationGenerator() {
 		              		<Button
 		                		type="submit"
 				                onClick={undefined}
-				                className={`btn ${buttons.disabled ? 'disabled' : ''}`}
-				                buttonText="Generate"
-				                style={styles.buttonInline as React.CSSProperties}
+				                className={`animation-generator-button${buttons.disabled ? ' disabled' : ''}`}
 				                disabled={buttons.disabled}
-						    />
+						    >
+						    	Generate
+						    </Button>
 		              		<Button
 		                		type="reset"
 				                onClick={undefined}
-				                className={`btn ${buttons.disabled ? 'disabled' : ''}`}
-				                buttonText="Reset"
-				                style={styles.buttonInline as React.CSSProperties}
+				                className={`animation-generator-button${buttons.disabled ? ' disabled' : ''}`}
 				                disabled={buttons.disabled}
-						    />
+						    >
+						    	Reset
+						    </Button>
 		            	</div>
 		          	</form>
 		        )}
@@ -227,8 +181,59 @@ export default function AnimationGenerator() {
 							</div>
 		        		</>
 	        		)}
-           		</div>
-           	</div>
-    	</>
+          		</div>
+				<style>{`
+					.animation-generator-page {
+						text-align: center;
+						background-color: #fff;
+						padding: 2rem;
+						display: flex;
+						flex-direction: column;
+						width: 100vw;
+						margin: 2rem auto;
+						align-items: stretch;
+						justify-content: center;
+						gap: 2rem;
+					}
+
+					.animation-generator-panel {
+						width: 40%;
+						padding: 1rem;
+						border: 1px solid #ccc;
+						border-radius: 8px;
+						display: flex;
+						flex-direction: column;
+						justify-content: space-between;
+						align-items: center;
+					}
+
+					.animation-generator-info {
+						background-color: #e3f2fd;
+						border: 1px solid #2196f3;
+						border-radius: 4px;
+						padding: 1rem;
+						margin-bottom: 1rem;
+						font-size: 0.9rem;
+						color: #0d47a1;
+						max-width: 80%;
+						word-wrap: break-word;
+						overflow-wrap: break-word;
+						white-space: normal;
+					}
+
+					.animation-generator-actions {
+						display: flex;
+						flex-direction: row;
+						gap: 10px;
+						justify-content: center;
+						margin-top: 1rem;
+					}
+
+					.animation-generator-button {
+						display: inline-block;
+					}
+				`}</style>
+          	</div>
+   	</>
 	);
 }

@@ -40,47 +40,7 @@ export default function CsvFileImport() {
 	const buttons = useSelector(selectButtons);
 	const dispatch = useDispatch();
 
-	const styles = {
-		buttonContainer: {
-			display: 'flex',
-			flexDirection: 'row',
-			justifyContent: 'center',
-			gap: '20px'
-		},
-		cleaningContainer: {
-			margin: '20px 0',
-			padding: '15px',
-			backgroundColor: '#f5f5f5',
-			borderRadius: '8px',
-			border: '1px solid #ddd'
-		},
-		progressBar: {
-			width: '400px',
-			height: '20px',
-			backgroundColor: '#e0e0e0',
-			borderRadius: '10px',
-			overflow: 'hidden',
-			margin: '0 auto 10px auto'
-		},
-		progressFill: {
-			height: '100%',
-			backgroundColor: '#4caf50',
-			transition: 'width 0.3s ease'
-		},
-		statsGrid: {
-			display: 'flex',
-			flexDirection: 'row',
-			justifyContent: 'space-between',
-			gap: '10px',
-			marginTop: '10px'
-		},
-		statItem: {
-			padding: '8px 12px',
-			backgroundColor: 'white',
-			borderRadius: '4px',
-			border: '1px solid #ccc'
-		}
-	};
+
 
 	const openFile = async () => {
 		if (buttons.disabled) return;
@@ -254,26 +214,25 @@ export default function CsvFileImport() {
 			<LoadingOverlay isLoading={isLoading} />
 			<Button
 				onClick={openFile}
-				className={`btn ${buttons.disabled ? 'disabled' : ''}`}
+				className={buttons.disabled ? 'disabled' : ''}
 				disabled={buttons.disabled}
-				buttonText="Select a CSV File"
-			/>
+			>
+				Select a CSV File
+			</Button>
 			{file && (
 				<>
 					<PreviewCsvFile fileName={file.name} csvData={csvData} />
 
 					{/* Data Cleaning Section */}
 					{showCleaningResults && cleaningProgress && (
-						<div style={styles.cleaningContainer}>
+						<div className="csv-cleaning-container">
 							<h3>Data Cleaning {isCleaning ? 'In Progress...' : 'Results'}</h3>
 							{/* Cleaning progress  */}
 							<div>
-								<div style={styles.progressBar}>
+								<div className="csv-progress-bar">
 									<div
-									style={{
-										...styles.progressFill,
-										width: `${cleaningProgress.progressPercent}%`
-									}}
+										className="csv-progress-fill"
+										style={{ ['--progress-width' as any]: `${cleaningProgress.progressPercent}%` }}
 									/>
 								</div>
 								<p>{cleaningProgress.progressPercent.toFixed(1)}% Complete</p>
@@ -289,12 +248,12 @@ export default function CsvFileImport() {
 
 							{/* Cleaning stats */}
 							{/* cleaningStats && cleaningStats.stats && (
-								<div style={styles.statsGrid as React.CSSProperties}>
-								<div style={styles.statItem}>
+								<div className="csv-stats-grid">
+								<div className="csv-stat-item">
 								<strong>Total Rows:</strong>{' '}
 								{(cleaningStats.stats.totalRows || 0).toLocaleString()}
 								</div>
-								<div style={styles.statItem}>
+								<div className="csv-stat-item">
 								<strong>Error Rows:</strong>{' '}
 								{(cleaningStats.stats.errorRows || 0).toLocaleString()}
 								</div>
@@ -304,29 +263,90 @@ export default function CsvFileImport() {
 					)}
 
 					{/* File action buttons */}
-					<div style={styles.buttonContainer as React.CSSProperties}>
+					<div className="csv-button-container">
 						{!cleaningProgress.isComplete && (
 							<Button
-							onClick={isCleaning ? undefined : cleanData}
-							className={`btn${isCleaning ? ' disabled' : ''}`}
-							buttonText={isCleaning ? 'Cleaning...' : 'Clean Data'}
-							/>
+								onClick={isCleaning ? undefined : cleanData}
+								className={isCleaning ? 'disabled' : ''}
+							>
+								{isCleaning ? 'Cleaning...' : 'Clean Data'}
+							</Button>
 						)}
 						<Button
 							onClick={exportCleanedData}
-							className={`btn${buttons.disabled || !cleaningProgress.isComplete ? ' disabled' : ''}`}
-							buttonText="Export Clean Data"
+							className={buttons.disabled || !cleaningProgress.isComplete ? 'disabled' : ''}
 							disabled={buttons.disabled || !cleaningProgress.isComplete}
-						/>
+						>
+							Export Clean Data
+						</Button>
 						<Button
 							onClick={clearFile}
-							className={`btn ${buttons.disabled ? 'disabled' : ''}`}
-							buttonText="Clear File"
+							className={buttons.disabled ? 'disabled' : ''}
 							disabled={buttons.disabled}
-						/>
+						>
+							Clear File
+						</Button>
 					</div>
 				</>
 			)}
+			<style>{`
+				.csv-import-container {
+					text-align: center;
+					background-color: #fff;
+					padding: 2rem;
+					display: flex;
+					flex-direction: column;
+					width: 60%;
+					margin: 2rem auto;
+					align-items: center;
+				}
+
+				.csv-cleaning-container {
+					margin: 20px 0;
+					padding: 15px;
+					background-color: #f5f5f5;
+					border-radius: 8px;
+					border: 1px solid #ddd;
+				}
+
+				.csv-progress-bar {
+					width: 400px;
+					height: 20px;
+					background-color: #e0e0e0;
+					border-radius: 10px;
+					overflow: hidden;
+					margin: 0 auto 10px auto;
+				}
+
+				.csv-progress-fill {
+					height: 100%;
+					background-color: #4caf50;
+					transition: width 0.3s ease;
+					width: var(--progress-width, 0%);
+				}
+
+				.csv-button-container {
+					display: flex;
+					flex-direction: row;
+					justify-content: center;
+					gap: 20px;
+				}
+
+				.csv-stats-grid {
+					display: flex;
+					flex-direction: row;
+					justify-content: space-between;
+					gap: 10px;
+					margin-top: 10px;
+				}
+
+				.csv-stat-item {
+					padding: 8px 12px;
+					background-color: white;
+					border-radius: 4px;
+					border: 1px solid #ccc;
+				}
+			`}</style>
 		</div>
 	);
 }

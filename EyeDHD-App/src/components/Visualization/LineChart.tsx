@@ -54,40 +54,7 @@ export default function LineChart() {
 
 	const chartRef = useRef(null);
 
-	const styles = {
-		container: {
-			textAlign: ' center',
-			backgroundColor: '#fff',
-			padding: '2rem',
-			display: 'flex',
-			flexDirection: 'row',
-			width: '100%',
-			margin: '2rem auto',
-			alignItems: 'stretch',
-			justifyContent: 'center',
-			gap: '2rem'
-		},
-		buttonContainer: {
-			display: 'flex',
-			flexDirection: 'row',
-			gap: '10px',
-			justifyContent: 'center',
-			marginTop: '1rem'
-		},
-		buttonInline: {
-			display: 'inline-block'
-		},
-		singlePane: {
-			width: '40%',
-			padding: '1rem',
-			border: '1px solid #ccc',
-			borderRadius: '8px',
-			display: 'flex',
-			flexDirection: 'column',
-			justifyContent: 'space-between',
-			alignItems: 'center'
-		}
-	};
+
 
 	useEffect(() => {
 		const chart = new ApexCharts(document.getElementById(id), {
@@ -108,14 +75,25 @@ export default function LineChart() {
 
 	return (
 		<>
-			<div
-				className="dilation-chart-container"
-				style={styles.container as React.CSSProperties}
-			>
+			<div className="dilation-chart-container">
 				{/*Used for when things take awhile to load*/}
 				<LoadingOverlay isLoading={isLoading} />
 				<h3>Chart Dilation</h3>
 				<div id={id} ref={chartRef} />
+				<style>{`
+					.dilation-chart-container {
+						text-align: center;
+						background-color: #fff;
+						padding: 2rem;
+						display: flex;
+						flex-direction: row;
+						width: 100%;
+						margin: 2rem auto;
+						align-items: stretch;
+						justify-content: center;
+						gap: 2rem;
+					}
+				`}</style>
 			</div>
 		</>
 	);

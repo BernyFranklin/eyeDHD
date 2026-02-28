@@ -54,7 +54,7 @@ export default function CaseList(props: Props) {
 					})}
 					{/* Button for opening a new case */}
 					<li>
-						<Button buttonText="+" onClick={createCase} />
+						<Button onClick={createCase}>+</Button>
 					</li>
 				</ul>
 			</div>

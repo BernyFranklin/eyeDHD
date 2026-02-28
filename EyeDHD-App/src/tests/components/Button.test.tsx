@@ -10,17 +10,17 @@ describe('UI - Button', () => {
 
 	describe('A) Rendering', () => {
 		it('A1) Renders the provided text', () => {
-			render(<Button buttonText="Save" onClick={() => {}} />);
+			render(<Button onClick={() => {}}>Save</Button>);
 			expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
 		});
 
 		it('A2) Respects the disabled prop', () => {
-			render(<Button buttonText="Save" onClick={() => {}} disabled />);
+			render(<Button onClick={() => {}} disabled>Save</Button>);
 			expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
 		});
 
 		it('A3) Uses the provided type', () => {
-			render(<Button buttonText="Save" onClick={() => {}} type="submit" />);
+			render(<Button onClick={() => {}} type="submit">Save</Button>);
 			expect(screen.getByRole('button', { name: 'Save' })).toHaveAttribute('type', 'submit');
 		});
 	});
@@ -30,7 +30,7 @@ describe('UI - Button', () => {
 			const user = userEvent.setup();
 			const onClick = vi.fn();
 
-			render(<Button buttonText="Save" onClick={onClick} />);
+			render(<Button onClick={onClick}>Save</Button>);
 
 			await user.click(screen.getByRole('button', { name: 'Save' }));
 			expect(onClick).toHaveBeenCalledTimes(1);

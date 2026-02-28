@@ -1,3 +1,11 @@
+:root {
+	--action-bg: #13284c;
+	--action-bg-hover: #27395c;
+	--action-bg-disabled: #33486c;
+	--action-text: #fff;
+	--action-radius: 10px;
+}
+
 #root {
 	width: 100%;
 	margin: 0 auto;
@@ -16,206 +24,12 @@ body {
 	background-color: #fff;
 }
 
-.error-info {
-	color: red;
-	font-weight: bold;
-	margin-top: 20px;
-}
 
-.csv-textarea {
-	width: 50%;
-	height: 150px;
-	margin-top: 20px;
-	font-family: monospace;
-	font-size: 14px;
-	padding: 10px;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-	box-sizing: border-box;
-	color: #000;
-	background-color: #fff;
-}
-
-.navbar {
-	background-color: #b1102b;
-	margin: 0;
-	padding: 10px 20px;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-}
-
-.navbar-logo-image {
-	height: 60px;
-}
-
-.navbar-links {
-	display: flex;
-	gap: 15px;
-}
-
-.navbar-links a {
-	color: #fff;
-	text-decoration: none;
-	font-weight: 600;
-}
-
-.navbar-links a:hover {
-	text-decoration: underline;
-}
-
-.csv-import-container {
-	text-align: center;
-	background-color: #fff;
-	padding: 2rem;
-	display: flex;
-	flex-direction: column;
-	width: 60%;
-	margin: 2rem auto;
-	align-items: center;
-}
-
-.csv-upload-label {
-	display: block;
-	margin-bottom: 0.5rem;
-	font-weight: 600;
-}
-
-.csv-upload-input {
-	background-color: #ced1d4;
-}
-
-input[type='file'] {
-	font-family: inherit;
-	font-size: 1rem;
-	border-radius: 5px;
-}
-
-input[type='file']::file-selector-button {
-	background-color: #13284c;
-	color: #fff;
-	border: none;
-	padding: 0.5rem 1rem;
-	border-radius: 4px;
-	cursor: pointer;
-	font-weight: 600;
-	font-size: 1rem;
-	transition: ease background-color 0.3s;
-}
-
-input[type='file']::file-selector-button:hover {
-	background-color: #27395c;
-}
-
-.preview-title {
-	margin: 1.5rem 0 -1rem 0;
-}
-.preview-csv-file-container {
-	width: 100%;
-}
-
-.alert-window {
-	margin-top: 0;
-	padding: 1rem;
-	border: 1px solid;
-	border-radius: 4px;
-	position: absolute;
-	top: 12px;
-	right: 12px;
-	animation: fadeInOut 4s ease-in-out forwards;
-}
-
-.green {
-	background-color: #d4edda;
-	color: #155724;
-	border-color: 1px solid #c3e6cb;
-}
-
-.red {
-	background-color: #f8d7da;
-	color: #721c24;
-	border-color: 1px solid #f5c6cb;
-}
-
-.btn {
-	display: block;
-	background-color: #13284c;
-	color: #fff;
-	border: none;
-	padding: 1rem;
-	border-radius: 4px;
-	cursor: pointer;
-	font-weight: 600;
-	font-size: 1rem;
-	transition: ease background-color 0.3s;
-	margin-top: 1rem;
-	width: fit-content;
-}
-
-.btn:hover {
-	background-color: #27395c;
-}
-
-.btn:disabled {
-	background-color: #33486c;
-	cursor: not-allowed;
-}
-
-/* Overlay background */
-.loading-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(19, 40, 76, 0.5);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 9999;
-}
 
 .disabled {
-	background-color: #33486c;
+	background-color: var(--action-bg-disabled);
 	opacity: 0.8;
 	cursor: not-allowed;
-}
-
-/* Spinner animation */
-.spinner {
-	border: 6px solid #f3f3f3;
-	border-top: 6px solid #b1102b;
-	border-radius: 50%;
-	width: 50px;
-	height: 50px;
-	animation: spin 1s linear infinite;
-}
-
-.animation-window-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	margin-top: 1rem;
-}
-
-.main-menu-button {
-	background:none;
-	border:none;
-}
-
-.main-menu-card {
-	box-shadow: rgba(0, 0, 0, 0.9) 0px 2px 2px !important;
-}
-
-.card-link:hover {
-	cursor: pointer;
-	transform: scale(1.05);
-	transition: transform 0.3s ease-in-out;
-}
-
-.home-link:hover {
-	transform: translateX(-2px);
-	transition: transform 0.3s ease-in-out;
 }
 
 select {
@@ -232,28 +46,4 @@ select>option {
 	background-color: #eee;
 	color: #000;
 	border: 1px solid #111;
-}
-
-@keyframes spin {
-	0% {
-		transform: rotate(0deg);
-	}
-	100% {
-		transform: rotate(360deg);
-	}
-}
-
-@keyframes fadeInOut {
-	0% {
-		opacity: 0;
-	}
-	10% {
-		opacity: 1;
-	}
-	90% {
-		opacity: 1;
-	}
-	100% {
-		opacity: 0;
-	}
 }

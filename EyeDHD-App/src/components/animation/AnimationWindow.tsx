@@ -57,29 +57,37 @@ const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({
 	}, [finished, isRecording]);
 
 	return (
-		<Canvas
-			style={{ height: '50vh', aspectRatio:'16 / 9' }}
-			ref={ref}
-		>
-			<OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
-			<ambientLight intensity={2} color="white" />
-			<Environment preset="studio" /> {/* Lighting environment */}
-			<Suspense fallback={null}>
-				{/* Left Eye */}
-				<RotatingModel
-					csvData={csvData}
-					eyePosition="Left"
-					position={[-2, 0, 0]} // Shift left eye to the left
-				/>
+		<>
+			<Canvas
+				className="animation-window-canvas"
+				ref={ref}
+			>
+				<OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
+				<ambientLight intensity={2} color="white" />
+				<Environment preset="studio" /> {/* Lighting environment */}
+				<Suspense fallback={null}>
+					{/* Left Eye */}
+					<RotatingModel
+						csvData={csvData}
+						eyePosition="Left"
+						position={[-2, 0, 0]} // Shift left eye to the left
+					/>
 
-				{/* Right Eye */}
-				<RotatingModel
-					csvData={csvData}
-					eyePosition="Right"
-					position={[2, 0, 0]} // Shift right eye to the right
-				/>
-			</Suspense>
-		</Canvas>
+					{/* Right Eye */}
+					<RotatingModel
+						csvData={csvData}
+						eyePosition="Right"
+						position={[2, 0, 0]} // Shift right eye to the right
+					/>
+				</Suspense>
+			</Canvas>
+			<style>{`
+				.animation-window-canvas {
+					height: 50vh;
+					aspect-ratio: 16 / 9;
+				}
+			`}</style>
+		</>
 	);
 });
 

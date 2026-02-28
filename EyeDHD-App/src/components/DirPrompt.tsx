@@ -62,7 +62,12 @@ export default function DirPrompt(props: Props) {
 					readOnly
 				/>
 				<div className='dir-prompt-actions'>
-					<Button buttonText='confirm' onClick={handleConfirm} disabled={!projectDir} />
+					<Button
+						onClick={handleConfirm}
+						disabled={!projectDir}
+					>
+						confirm
+					</Button>
 				</div>
 			</div>
 

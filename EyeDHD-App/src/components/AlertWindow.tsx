@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 
 import { useDispatch, useSelector } from '../store/hooks';
 import { selectAlert, hideAlert } from '../store/features/global';
+import Button from './Button';
 
 const AUTO_DISMISS_MS = 4000;
 
@@ -35,7 +36,46 @@ export default function AlertWindow() {
 			onAnimationEnd={() => dispatch(hideAlert())}
 		>
 			<p>{alert.message}</p>
-			<button onClick={() => dispatch(hideAlert())}>Close</button>
+			<Button onClick={() => dispatch(hideAlert())}>Close</Button>
+			<style>{`
+				.alert-window {
+					margin-top: 0;
+					padding: 1rem;
+					border: 1px solid;
+					border-radius: 4px;
+					position: absolute;
+					top: 12px;
+					right: 12px;
+					animation: fadeInOut 4s ease-in-out forwards;
+				}
+
+				.alert-window.green {
+					background-color: #d4edda;
+					color: #155724;
+					border-color: 1px solid #c3e6cb;
+				}
+
+				.alert-window.red {
+					background-color: #f8d7da;
+					color: #721c24;
+					border-color: 1px solid #f5c6cb;
+				}
+
+				@keyframes fadeInOut {
+					0% {
+						opacity: 0;
+					}
+					10% {
+						opacity: 1;
+					}
+					90% {
+						opacity: 1;
+					}
+					100% {
+						opacity: 0;
+					}
+				}
+			`}</style>
 		</div>
 	);
 }
