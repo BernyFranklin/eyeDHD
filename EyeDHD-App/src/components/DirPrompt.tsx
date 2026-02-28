@@ -15,6 +15,7 @@ export default function DirPrompt(props: Props) {
 	const projectDir = useSelector(selectProjectDir);
 
 	const [hidden, setHidden] = useState(true);
+	const [hasCheckedInitial, setHasCheckedInitial] = useState(false);
 
 	const selectDir = async () => {
 		try {
@@ -29,39 +30,97 @@ export default function DirPrompt(props: Props) {
 	}
 
 	const handleConfirm = () => {
-
+		if (projectDir) {
+			setHidden(true);
+		}
 	};
 
 	useEffect(() => {
-		if (props.loading) {
+		if (props.loading || hasCheckedInitial) {
 			return;
 		}
 
-		if (!projectDir) {
-			setHidden(false);
-		}
-	}, [projectDir]);
+		setHidden(!!projectDir);
+		setHasCheckedInitial(true);
+	}, [projectDir, props.loading, hasCheckedInitial]);
+
+	if (hidden) {
+		return null;
+	}
 
 	return (
-		<>
-			<div>
-				Select the folder you want your project data stored in:
+		<div
+			className='dir-prompt-overlay'
+			role='dialog'
+			aria-modal='true'
+			aria-label='Select project directory'
+		>
+			<div className='dir-prompt-window'>
+				<div className='dir-prompt-title'>
+					Project folder needed!
+				</div>
 				<textarea
 					className='project-dir-input'
 					onClick={selectDir}
-					value={projectDir ?? 'Select a folder'}
+					value={projectDir ?? 'Please select a folder'}
 					readOnly
 				/>
-				<Button buttonText='confirm' onClick={handleConfirm} />
+				<div className='dir-prompt-actions'>
+					<Button buttonText='confirm' onClick={handleConfirm} />
+				</div>
 			</div>
 
 			<style>
 				{`
+					.dir-prompt-overlay {
+						position: fixed;
+						inset: 0;
+						background: rgba(0, 0, 0, 0.45);
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						z-index: 1000;
+					}
+
+					.dir-prompt-window {
+						width: 520px;
+						max-width: 90vw;
+						padding: 24px;
+						background: #fff;
+						border-radius: 12px;
+						box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+						display: flex;
+						flex-direction: column;
+						align-items: stretch;
+						gap: 12px;
+					}
+
+					.dir-prompt-title {
+						font-size: 18px;
+						font-weight: 600;
+						text-align: center;
+					}
+
 					.project-dir-input {
+						width: 100%;
+						min-height: 80px;
+						padding: 10px;
+						border-radius: 8px;
+						border: 1px solid #444;
 						resize: none;
+						cursor: pointer;
+						align-self: stretch;
+						margin: 0;
+						box-sizing: border-box;
+					}
+
+					.dir-prompt-actions {
+						display: flex;
+						justify-content: flex-end;
+						width: 100%;
 					}
 				`}
 			</style>
-		</>
+		</div>
 	);
 }
