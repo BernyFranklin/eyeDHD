@@ -20,6 +20,10 @@ const manager = new DatabaseManager({
 	logging: false
 });
 
+// TODO: consider creating another database that is stored in the project folder which
+// will contain the csv data rows, or don't store any csv in database and go straight
+// to csv.
+
 /*
  * User handlers
  */
