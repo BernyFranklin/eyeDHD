@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import DirPrompt from './components/DirPrompt';
 import CaseList from './components/CaseList';
@@ -63,7 +63,9 @@ export default function HomePage() {
 		dispatch(setCases(testing));
 	};
 
-	loadUserData().catch(handleError).then(() => setLoading(false));
+	useEffect(() => {
+		loadUserData().catch(handleError).then(() => setLoading(false));
+	}, []);
 
 	return (
 		<>
