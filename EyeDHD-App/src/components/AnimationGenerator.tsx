@@ -1,10 +1,9 @@
 import React, { useState, useEffect, ReactEventHandler } from 'react';
 
 import { useSelector, useDispatch } from '../store/hooks';
-import { selectButtons, enableButtons, disableButtons } from '../store/features/global';
+import { showAlert, selectButtons, enableButtons, disableButtons } from '../store/features/global';
 
 import LoadingOverlay from './LoadingOverlay';
-import AlertWindow, { useAlert } from './AlertWindow';
 import Button from './Button';
 import CanvasRecorder from './CanvasRecorder';
 
@@ -16,7 +15,6 @@ export default function AnimationGenerator() {
 	const [file, setFile] = useState<CaseData | null>(null);
 	const [csvStream, setCsvStream] = useState<RemoteStream | null>(null);
 
-	const alert = useAlert();
 	const [isLoading, setIsLoading] = useState(false);
 
 	const buttons = useSelector(selectButtons);
@@ -91,7 +89,7 @@ export default function AnimationGenerator() {
 
 	const getStream = async (file: CaseData | null) => {
 		if (!file) {
-			alert.show('red', 'No file loaded');
+			dispatch(showAlert({ color: 'red', message: 'No file loaded' }));
 			return;
 		}
 
@@ -99,7 +97,7 @@ export default function AnimationGenerator() {
 	};
 
 	const handleError = (err: Error) => {
-		alert.show('red', err.message);
+		dispatch(showAlert({ color: 'red', message: err.message }));
 	};
 
 	const handleSubmit: ReactEventHandler<HTMLFormElement> = async (e) => {
@@ -158,7 +156,6 @@ export default function AnimationGenerator() {
 	return (
 		<>
      		{/* Alert message */}
-       		<AlertWindow alert={alert} />
            	<div style={styles.container}>
 	           	<div className="animation-generator-container" style={styles.singlePane}>
 	           		{/*Used for when things take awhile to load*/}

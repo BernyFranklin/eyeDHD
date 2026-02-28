@@ -3,8 +3,6 @@ import ApexCharts from 'apexcharts';
 import React, { useEffect, useState, useRef } from 'react';
 
 import LoadingOverlay from '../LoadingOverlay';
-import AlertWindow from '../AlertWindow';
-import Button from '../Button';
 
 // #region Sample data
 const data = [

@@ -4,6 +4,7 @@ import DirPrompt from './components/DirPrompt';
 import CaseList from './components/CaseList';
 
 import { useDispatch } from './store/hooks';
+import { showAlert } from './store/features/global';
 import { setCases, setProjectDir } from './store/features/user';
 import RemoteStream from './data/RemoteStream';
 import { CaseData } from './types';
@@ -15,10 +16,7 @@ export default function HomePage() {
 	const [loading, setLoading] = useState(true);
 
 	const handleError = (err: Error) => {
-		// TODO: switch to alert window, have alert window rendered here,
-		// and maybe store useAlert result in redux store so it can
-		// be easily accessed by sub components
-		console.error('Error loading user data:', err);
+		dispatch(showAlert({ color: 'red', message: `Error loading user data: ${err.message}` }));
 	};
 
 	// Loads user data on startup into the redux store
@@ -75,11 +73,9 @@ export default function HomePage() {
 				<CaseList loading={loading} />
 			</div>
 
-			<style>
-				{`
+			<style>{`
 
-				`}
-			</style>
+			`}</style>
 		</>
 	);
 }

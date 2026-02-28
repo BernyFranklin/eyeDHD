@@ -3,10 +3,10 @@ import React from 'react';
 import CaseItem from "./CaseItem";
 import Button from '../Button';
 import LoadingOverlay from '../LoadingOverlay';
-import AlertWindow, { useAlert } from '../AlertWindow';
 
 import { type Error, type CaseData } from '../../types';
-import { useSelector } from '../../store/hooks';
+import { useSelector, useDispatch } from '../../store/hooks';
+import { showAlert } from '../../store/features/global';
 import { selectCases, selectProjectDir } from '../../store/features/user';
 
 type Props = {
@@ -16,19 +16,19 @@ type Props = {
 export default function CaseList(props: Props) {
 	const dir = useSelector(selectProjectDir);
 	const cases = useSelector(selectCases);
-	const alert = useAlert();
+	const dispatch = useDispatch();
+
+	const handleError = (err: Error) => {
+		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
+	};
 
 	const createCase = async () => {
-		alert.show('green', 'Create case functionality not implemented yet');
+		dispatch(showAlert({ color: 'green', message: 'Create case functionality not implemented yet' }));
 	};
 
 	const openCase = async (file: CaseData) => {
 		handleError(new Error(`Opening: ${file.name}, not yet implemented`));
 	}
-
-	const handleError = (err: Error) => {
-		alert.show('red', `Error: ${err.message}`);
-	};
 
 	if (!dir || props.loading) {
 		return null;
@@ -36,7 +36,6 @@ export default function CaseList(props: Props) {
 
 	return (
 		<>
-			<AlertWindow alert={alert} />
 			<div>
 				{/* Lists all cases that have been opened and
 					allows new cases to be opened
@@ -50,7 +49,7 @@ export default function CaseList(props: Props) {
 					*/}
 					{cases.map(file => {
 						return <li>
-							<CaseItem file={file} onClick={openCase} alert={alert} />
+							<CaseItem file={file} onClick={openCase} />
 						</li>
 					})}
 					{/* Button for opening a new case */}
@@ -59,21 +58,19 @@ export default function CaseList(props: Props) {
 					</li>
 				</ul>
 			</div>
-			<style>
-				{`
-					.case-list {
-						display: flex;
-						flex-direction: column;
-						width: 100%;
-						justify-content: center;
-						align-items: center;
-						gap: 0.5rem;
-						padding: 10px;
-						margin: 0;
-						list-style: none;
-					}
-				`}
-			</style>
+			<style>{`
+				.case-list {
+					display: flex;
+					flex-direction: column;
+					width: 100%;
+					justify-content: center;
+					align-items: center;
+					gap: 0.5rem;
+					padding: 10px;
+					margin: 0;
+					list-style: none;
+				}
+			`}</style>
 		</>
 	);
 }

@@ -1,11 +1,13 @@
 import { useEffect } from "react";
-import AlertWindow, { useAlert } from "../AlertWindow"
+
+import { useDispatch } from "../../store/hooks";
+import { showAlert } from "../../store/features/global";
 
 export default function CaseViewer() {
-	const alert = useAlert();
+	const dispatch = useDispatch();
 
 	const handleError = (err: Error) => {
-		alert.show('red', `Error: ${err.message}`);
+		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
 	};
 
 	useEffect(() => {
@@ -14,7 +16,6 @@ export default function CaseViewer() {
 
 	return (
 		<>
-			<AlertWindow alert={alert} />
 			<div>
 				Tasks
 				<ul className='task-list'>

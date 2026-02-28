@@ -1,15 +1,17 @@
 import { useMemo } from 'react';
 
 import { type CaseData } from '../../types';
-import { AlertContext } from '../AlertWindow';
+import { useDispatch } from '../../store/hooks';
+import { showAlert } from '../../store/features/global';
 
 type Props = {
 	file: CaseData,
-	onClick: (file: CaseData) => void,
-	alert: AlertContext
+	onClick: (file: CaseData) => void
 };
 
 export default function Case(props: Props) {
+	const dispatch = useDispatch();
+
 	const name = useMemo(() => {
 		const nameWithoutExtension = props.file.name.replace(/\.[^/.]+$/, '');
 		return nameWithoutExtension;
@@ -21,13 +23,12 @@ export default function Case(props: Props) {
 				<a href='/case' onClick={() => props.onClick(props.file)}>{name}</a>
 				<div
 					className='case-options'
-					onClick={() => props.alert.show('red', 'Not implemented')}
+					onClick={() => dispatch(showAlert({ color: 'red', message: 'Not implemented' }))}
 				>
 					...
 				</div>
 			</div>
-			<style>
-			{`
+			<style>{`
 				.case-item {
 					display: flex;
 					align-items: center;
@@ -52,9 +53,7 @@ export default function Case(props: Props) {
 					padding-right: 5px;
 					cursor: pointer;
 				}
-			`}
-			</style>
-
+			`}</style>
 		</>
 	);
 }

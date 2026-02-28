@@ -6,6 +6,7 @@ import { store } from './store';
 
 import './App.css';
 import Navbar from './components/Navbar';
+import AlertWindow from './components/AlertWindow';
 
 function App() {
 
@@ -14,6 +15,7 @@ function App() {
 		<>
 			<Provider store={store}>
 				<Navbar />
+				<AlertWindow />
 				<Outlet />
 			</Provider>
 		</>
