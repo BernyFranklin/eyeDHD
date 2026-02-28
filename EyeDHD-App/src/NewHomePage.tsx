@@ -59,10 +59,13 @@ export default function HomePage() {
 		loadUserData().catch(handleError).then(() => setLoading(false));
 	}, [user_dir, projectInitialized]);
 
+	if (!user_dir || !projectInitialized) {
+		return <DirPrompt loading={loading} />;
+	}
+
 	return (
 		<>
 			<LoadingOverlay isLoading={loading} />
-			<DirPrompt loading={loading} />
 			<CreateCaseWindow
 				isOpen={showCreateCase}
 				onClose={() => setShowCreateCase(false)}
@@ -73,7 +76,7 @@ export default function HomePage() {
 					<CaseList loading={loading} />
 					<Button
 						onClick={() => setShowCreateCase(true)}
-						height='42px'
+						height='45px'
 						padding='10px 16px'
 						style={{ marginTop: '10px', marginLeft: '10px' }}
 					>
@@ -90,7 +93,7 @@ export default function HomePage() {
 					gap: 0;
 					width: 100%;
 					height: 100%;
-					padding: 10px;
+					padding: 15px;
 				}
 
 				.cases-row p {
@@ -101,8 +104,10 @@ export default function HomePage() {
 					display: flex;
 					width: 20%;
 					min-width: 280px;
+					min-height: 50px;
 					align-items: flex-start;
 					border: 1px solid #ccc;
+					padding-top: 10px;
 				}
 			`}</style>
 		</>
