@@ -18,68 +18,71 @@ export default function HomePage() {
 	const [loading, setLoading] = useState(true);
 
 	const handleError = (err: Error) => {
-		dispatch(showAlert({ color: 'red', message: `Error loading user data: ${err.message}` }));
+		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
 	};
 
-	// Keeps redux in sync with user database
 	const loadUserData = async () => {
-		const user = await window.electron.user.read();
+		try {
+			const user = await window.electron.user.read();
 
-		if (user?.dir && user?.dir !== user_dir) {
-			dispatch(setProjectDir(user.dir));
-		}
-		if (!!user?.project_initialized !== !!projectInitialized) {
-			dispatch(setProjectInitialized(!!user.project_initialized));
-		}
-
-		if (!user?.dir || !user.project_initialized) {
-			dispatch(setCases([]));
-			return;
-		}
-
-		const initializedUser = await window.electron.user.initializeDirectory(user);
-		if (initializedUser?.dir && initializedUser?.dir !== user_dir) {
-			dispatch(setProjectDir(initializedUser.dir));
-		}
-		dispatch(setProjectInitialized(!!initializedUser.project_initialized));
-
-		const stream = await RemoteStream.create('CaseData', {});
-		const cases = await stream.collect<CaseData>();
-
-		const testing = [
-			{
-				id: 0,
-				name: 'ID.001.csv',
-				path: '/path/to/ID.001.csv',
-				header: 'header,stuff',
-				completed: 0,
-				rows: 0,
-				created_at: Date.now().toString(),
-				updated_at: Date.now().toString()
-			},
-			{
-				id: 1,
-				name: 'ID.002.csv',
-				path: '/path/to/ID.002.csv',
-				header: 'header,stuff',
-				completed: 0,
-				rows: 0,
-				created_at: Date.now().toString(),
-				updated_at: Date.now().toString()
-			},
-			{
-				id: 2,
-				name: 'ID.003.csv',
-				path: '/path/to/ID.003.csv',
-				header: 'header,stuff',
-				completed: 0,
-				rows: 0,
-				created_at: Date.now().toString(),
-				updated_at: Date.now().toString()
+			if (user.dir && user.dir !== user_dir) {
+				dispatch(setProjectDir(user.dir));
 			}
-		];
+			if (!!user.project_initialized !== !!projectInitialized) {
+				dispatch(setProjectInitialized(!!user.project_initialized));
+			}
 
-		dispatch(setCases(testing));
+			if (!user.dir || !user.project_initialized) {
+				dispatch(setCases([]));
+				return;
+			}
+
+			const initializedUser = await window.electron.user.initializeDirectory(user);
+			if (initializedUser.dir && initializedUser.dir !== user_dir) {
+				dispatch(setProjectDir(initializedUser.dir));
+			}
+			dispatch(setProjectInitialized(!!initializedUser.project_initialized));
+
+			const stream = await RemoteStream.create('CaseData', {});
+			const cases = await stream.collect<CaseData>();
+
+			const testing = [
+				{
+					id: 0,
+					name: 'ID.001.csv',
+					path: '/path/to/ID.001.csv',
+					header: 'header,stuff',
+					completed: 0,
+					rows: 0,
+					created_at: Date.now().toString(),
+					updated_at: Date.now().toString()
+				},
+				{
+					id: 1,
+					name: 'ID.002.csv',
+					path: '/path/to/ID.002.csv',
+					header: 'header,stuff',
+					completed: 0,
+					rows: 0,
+					created_at: Date.now().toString(),
+					updated_at: Date.now().toString()
+				},
+				{
+					id: 2,
+					name: 'ID.003.csv',
+					path: '/path/to/ID.003.csv',
+					header: 'header,stuff',
+					completed: 0,
+					rows: 0,
+					created_at: Date.now().toString(),
+					updated_at: Date.now().toString()
+				}
+			];
+
+			dispatch(setCases(testing));
+		} catch (err) {
+			handleError(err);
+		}
 	};
 
 	useEffect(() => {
