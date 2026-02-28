@@ -83,8 +83,12 @@ export default function FileImportWindow(props: Props) {
 			role='dialog'
 			aria-modal='true'
 			aria-label='Import CSV and VR files'
+			onClick={props.onClose}
 		>
-			<div className='file-import-window'>
+			<div
+				className='file-import-window'
+				onClick={(event) => event.stopPropagation()}
+			>
 				<div className='file-import-title'>
 					Import case files
 				</div>

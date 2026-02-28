@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useDispatch } from '../store/hooks';
@@ -16,12 +16,14 @@ type Props = {
 export function CreateCaseWindow(props: Props) {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
+	const inputRef = useRef<HTMLInputElement | null>(null);
 	const [caseName, setCaseName] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	useEffect(() => {
 		if (props.isOpen) {
 			setCaseName('');
+			requestAnimationFrame(() => inputRef.current?.focus());
 		}
 	}, [props.isOpen]);
 
@@ -64,12 +66,17 @@ export function CreateCaseWindow(props: Props) {
 			role='dialog'
 			aria-modal='true'
 			aria-label='Create new case'
+			onClick={props.onClose}
 		>
-			<div className='create-case-window'>
+			<div
+				className='create-case-window'
+				onClick={(event) => event.stopPropagation()}
+			>
 				<div className='create-case-title'>
 					Create a new case
 				</div>
 				<input
+					ref={inputRef}
 					className='create-case-input'
 					value={caseName}
 					onChange={(event) => setCaseName(event.target.value)}
