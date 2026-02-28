@@ -16,6 +16,7 @@ pids
 *.pid.lock
 .DS_Store
 *.db
+!/example_project/**/*.db
 *.db-shm
 *.db-wal
 
@@ -93,10 +94,13 @@ typings/
 
 # Electron-Forge
 out/
+!/example_project/**/*/out/
 
 # Misc files
 *.mp4
+!/example_project/**/*.mp4
 *.csv
+!/example_project/**/*.csv
 
 # Editor directories and files
 .vscode/*
