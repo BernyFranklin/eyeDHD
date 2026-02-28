@@ -177,31 +177,31 @@ export default class DataStream {
 
 		// If progress has been made restart
 		if (cleaner.status.start) {
-			manager.metadata.resetCleaning(metadata);
+			manager.actions.case.resetCleaning(metadata);
 		}
 
 		const header = cleaner.header.join(',') + '\n';
-		metadata = manager.metadata.update(metadata, { header });
+		metadata = manager.actions.case.update(metadata, { header });
 
 		let batch: CSVData[] = [];
 		for await (const row of cleaner) {
 			batch.push(row);
 
 			if (batch.length >= CLEANING_BATCH_SIZE) {
-				manager.csv.store(metadata, batch);
+				manager.actions.csv.store(metadata, batch);
 				yield batch;
 				batch = [];
 			}
 		}
 
 		if (batch.length > 0) {
-			manager.csv.store(metadata, batch);
+			manager.actions.csv.store(metadata, batch);
 			yield batch;
 		}
 
 		cleaner.close();
 
-		manager.metadata.update(metadata, {
+		manager.actions.case.update(metadata, {
 			rows: cleaner.progress.currentRow,
 			completed: 1
 		});

@@ -1,14 +1,16 @@
 import type { Database } from 'better-sqlite3';
 
-export default { create, read, update };
+export default { create, read, exists, update };
 
 export type User = {
 	id: number;
 	name: string;
 	dir?: string;
+	created_at: string;
+	updated_at: string;
 };
 
-const NAME = 'USER';
+const NAME = 'HOMELESS_MAN';
 
 /**
  *
@@ -42,11 +44,11 @@ function create(
 	db: Database,
 	dir?: string
 ): User {
-  	const result = db.prepare<[string | null], User>(`
+  	const result = db.prepare<[string, string | null], User>(`
 	   		INSERT INTO user (name, dir)
-	     	VALUES (${NAME}, ?);
+	     	VALUES (?, ?);
       	`)
-    	.run(dir);
+    	.run(NAME, dir ?? null);
 
   	const user = db.prepare<[number | bigint], User>(`
 	      	SELECT * FROM user WHERE id = ?;
@@ -58,6 +60,15 @@ function create(
     }
 
     return user;
+}
+
+function exists(db: Database): boolean {
+	const user = db.prepare<string, User>(`
+		SELECT * FROM user WHERE name = ?;
+	`)
+	.get(NAME);
+
+	return !!user;
 }
 
 /**
@@ -96,9 +107,9 @@ function update(db: Database, user: User, updates: Partial<User>): User {
 		SET
 			dir = @dir,
 			updated_at = CURRENT_TIMESTAMP
-		WHERE id = @id;
+		WHERE name = @name;
 		`)
-    .run(merged);
+    	.run(merged);
 
   	if (!result.changes) {
     	throw new Error(`Failed to update file entry for: ${NAME}`);

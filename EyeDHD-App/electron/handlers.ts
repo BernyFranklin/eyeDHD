@@ -8,6 +8,7 @@ import ffmpegPath from 'ffmpeg-static';
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
 import { type CaseData } from './db/tables/CaseData';
+import { User } from './db/tables/User';
 
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
@@ -20,13 +21,21 @@ const manager = new DatabaseManager({
 });
 
 /*
- * Project directory handlers
+ * User handlers
  */
 
-// Handles the project:select-directory request. Opens a directory selector
-// and returns the selected directory path. This will be set as the
-// project directory in the manager, which will be used for all subsequent file operations
-ipcMain.handle('project:select-directory', async () => {
+ipcMain.handle('user:read', async () => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const user = manager.actions.user.read();
+			return resolve(user);
+		} catch (err) {
+			return reject(`Failed to read user data: ${err}`);
+		}
+	});
+});
+
+ipcMain.handle('user:select-directory', async (_, user: User) => {
 	return new Promise(async (resolve, reject) => {
 		const { canceled, filePaths } = await dialog.showOpenDialog({
 			properties: ['openDirectory']
@@ -38,8 +47,8 @@ ipcMain.handle('project:select-directory', async () => {
 
 		const dirPath = filePaths[0];
 		try {
-			//manager.setProjectDirectory(dirPath);
-			return resolve(dirPath);
+			const new_user = manager.actions.user.update(user, { dir: dirPath });
+			return resolve(new_user);
 		} catch (err) {
 			return reject(`Failed to set project directory: ${err}`);
 		}
@@ -80,7 +89,7 @@ ipcMain.handle('csv:open-file', async () => {
 ipcMain.handle('csv:read-metadata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const metadata = manager.metadata.read(filename);
+			const metadata = manager.actions.case.read(filename);
 			return resolve(metadata);
 		} catch (err) {
 			return reject(`Failed to read metadata for file: ${filename}. Error: ${err}`);
@@ -93,7 +102,7 @@ ipcMain.handle('csv:read-metadata', async (_, filename) => {
 ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
-			manager.metadata.resetCleaning(file);
+			manager.actions.case.resetCleaning(file);
 
 			return resolve();
 		} catch (err) {
@@ -138,7 +147,7 @@ async function exportToCSV(file: CaseData, outputPath: string) {
 			let exportedRows = 0;
 
 			const stream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
-			const metadata = manager.metadata.read(file.name);
+			const metadata = manager.actions.case.read(file.name);
 
 			// Add header row
 			csvContent += metadata.header;

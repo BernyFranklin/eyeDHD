@@ -3,14 +3,20 @@ import fs from 'fs';
 
 import DataCleaner from '../analysis/DataCleaner';
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
-import metadataActions, { type CaseData, createCaseDataTable } from './tables/CaseData';
+import caseActions, { type CaseData, createCaseDataTable } from './tables/CaseData';
 import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/CSVData';
+import userActions, { type User, createUserTable } from './tables/User';
 
 type DBOptions = {
 	logging: boolean;
 	temporary: boolean;
 	path?: string;
 };
+
+type UserActions = {
+	read: () => User;
+	update: (user: User, updates: Partial<User>) => User;
+}
 
 type CaseDataActions = {
 	read: (filename: string) => CaseData;
@@ -20,7 +26,7 @@ type CaseDataActions = {
 	remove: (file: CaseData) => CaseData;
 };
 
-type CSVActions = {
+type CSVDataActions = {
 	store: (file: CaseData, rows: CSVData[]) => void;
 };
 
@@ -37,38 +43,53 @@ export default class DatabaseManager {
 	private cleaners = new Map<string, DataCleaner>();
 	private streams = new Map<number, DataStream>();
 
-	metadata: CaseDataActions;
-	csv: CSVActions;
+	actions: {
+		user: UserActions;
+		case: CaseDataActions;
+		csv: CSVDataActions;
+	};
 
 	constructor(options: DBOptions = { logging: false, temporary: false }) {
 		this.db = getDB(options);
+
+		createUserTable(this.db);
+		if (!userActions.exists(this.db)) {
+			userActions.create(this.db);
+		}
+
 		createCaseDataTable(this.db);
 
-		this.metadata = {
-			exists: (filename: string) => metadataActions.exists(this.db, filename),
-			read: (filename: string) => metadataActions.read(this.db, filename),
-			update: (file: CaseData, updates: Partial<CaseData>) => metadataActions.update(this.db, file, updates),
-			resetCleaning: (file: CaseData) => {
-				this.resetCleaner(file);
-				deleteCSVTable(this.db, file.name);
-				createCSVTable(this.db, file.name);
+		this.actions = {
+			case: {
+				exists: (filename: string) => caseActions.exists(this.db, filename),
+				read: (filename: string) => caseActions.read(this.db, filename),
+				update: (file: CaseData, updates: Partial<CaseData>) => caseActions.update(this.db, file, updates),
+				resetCleaning: (file: CaseData) => {
+					this.resetCleaner(file);
+					deleteCSVTable(this.db, file.name);
+					createCSVTable(this.db, file.name);
 
-				return metadataActions.update(this.db, file, {
-					completed: 0,
-					rows: 0
-				});
+					return caseActions.update(this.db, file, {
+						completed: 0,
+						rows: 0
+					});
+				},
+				remove: (file: CaseData) => caseActions.remove(this.db, file)
 			},
-			remove: (file: CaseData) => metadataActions.remove(this.db, file)
-		};
-
-		this.csv = {
-			store: (file: CaseData, rows: CSVData[]) => {
-				const ok = csvActions.create(this.db, file, rows);
-				if (!ok) {
-					throw new Error(`Failed to insert csv data for file: ${file.name}`);
+			csv: {
+				store: (file: CaseData, rows: CSVData[]) => {
+					const ok = csvActions.create(this.db, file, rows);
+					if (!ok) {
+						throw new Error(`Failed to insert csv data for file: ${file.name}`);
+					}
 				}
+			},
+			user: {
+				read: () => userActions.read(this.db),
+				update: (user: User, updates: Partial<User>) => userActions.update(this.db, user, updates)
 			}
 		};
+
 	}
 
 	/**
@@ -97,17 +118,17 @@ export default class DatabaseManager {
 	 * necessary tables for storing cleaned data and analysis results.
 	 */
 	openFile(filename: string, filepath: string): CaseData {
-		if (this.metadata.exists(filename)) {
-			const metadata = metadataActions.read(this.db, filename);
+		if (this.actions.case.exists(filename)) {
+			const metadata = caseActions.read(this.db, filename);
 			if (!metadata.completed) {
-				this.metadata.resetCleaning(metadata);
+				this.actions.case.resetCleaning(metadata);
 			}
 			this.createCleaner(metadata);
 
 			return metadata;
 		}
 
-		const metadata = metadataActions.create(this.db, filename, filepath);
+		const metadata = caseActions.create(this.db, filename, filepath);
 
 		this.createCleaner(metadata);
 		createCSVTable(this.db, metadata.name);

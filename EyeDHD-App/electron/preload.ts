@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+import { type User } from './db/tables/User';
 import { type CaseData } from './db/tables/CaseData';
 import { type Progress, type DataType, type StreamKey, type StreamType } from './db/DataStream';
 
@@ -9,8 +10,9 @@ export { Electron, Renderer };
  * Declares the API that the backend exposes to the frontend through the preload script
  */
 declare interface Electron {
-	projects: {
-		selectDirectory(): Promise<string | null>;
+	user: {
+		read(): Promise<User>;
+		selectDirectory(user: User): Promise<User | null>;
 	},
 	csv: {
 		openFile(): Promise<CaseData | null>;
@@ -57,7 +59,10 @@ declare interface Renderer {
  * Defines the Electron requests
  */
 const electron: Electron = {
-	projects: {
+	user: {
+		read: async (): Promise<User> => {
+			return await ipcRenderer.invoke('user:read');
+		},
 		/**
 		 * Opens a native dialog to select a project directory and returns the selected
 		 * path.
@@ -65,8 +70,8 @@ const electron: Electron = {
 		 * @returns The full path of the selected directory, or null if the dialog was
 		 * canceled.
 		 */
-		selectDirectory: async (): Promise<string | null> => {
-			return await ipcRenderer.invoke('projects:select-directory');
+		selectDirectory: async (user: User): Promise<User | null> => {
+			return await ipcRenderer.invoke('user:select-directory', user);
 		}
 	},
 	csv: {

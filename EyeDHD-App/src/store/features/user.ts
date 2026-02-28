@@ -11,7 +11,7 @@ type Options = {
 type UserState = {
 	projectDir?: string;
 	options: Options;
-	cases: CaseData[];
+	cases?: CaseData[];
 	selectedCase?: CaseData;
 }
 
