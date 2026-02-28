@@ -13,6 +13,7 @@ import {
  */
 export default class RemoteStream {
 	private buf: DataType[] = [];
+	private waiter: (() => void) | null = null;
 	private key: StreamKey;
 	type: StreamType;
 	progress: Progress;
@@ -56,8 +57,31 @@ export default class RemoteStream {
 					this.cancel();
 				}
 
-				this.buf.push(...rows);
+				if (rows.length > 0) {
+					this.buf.push(...rows);
+				}
+
+				this.resolveWaiter();
 			}
+		});
+	}
+
+	private resolveWaiter() {
+		if (!this.waiter) {
+			return;
+		}
+
+		this.waiter();
+		this.waiter = null;
+	}
+
+	private waitForData(): Promise<void> {
+		if (this.buf.length > 0 || this.progress.done) {
+			return Promise.resolve();
+		}
+
+		return new Promise((resolve) => {
+			this.waiter = resolve;
 		});
 	}
 
@@ -92,8 +116,9 @@ export default class RemoteStream {
 			throw new Error("Stream not initialized");
 		}
 
-		if (this.buf.length === 0 && !this.progress.done) {
+		while (this.buf.length === 0 && !this.progress.done) {
 			await window.electron.stream.pull(this.key, 1);
+			await this.waitForData();
 		}
 
 		return this.buf.shift() ?? null;
