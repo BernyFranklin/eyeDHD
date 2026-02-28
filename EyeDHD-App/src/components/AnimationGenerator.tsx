@@ -20,8 +20,6 @@ export default function AnimationGenerator() {
 	const buttons = useSelector(selectButtons);
 	const dispatch = useDispatch();
 
-
-
 	const getFilesList = async () => {
 		setIsLoading(true);
 

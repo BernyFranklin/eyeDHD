@@ -4,8 +4,6 @@ import Button from './Button';
 import Card from './Card';
 import DoubleCard from './DoubleCard';
 
-
-
 type Props = {
 	setCurrent: (page: number) => void;
 };
@@ -114,7 +112,7 @@ export default function HomePage({ setCurrent }: Props) {
 					transform: scale(1.05);
 					transition: transform 0.3s ease-in-out;
 				}
-				`}</style>
+			`}</style>
 		</div>
 	);
 }

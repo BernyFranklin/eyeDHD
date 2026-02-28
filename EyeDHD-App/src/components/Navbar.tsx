@@ -3,14 +3,6 @@ import React from 'react';
 import { useSelector } from '../store/hooks';
 import { selectButtons } from '../store/features/global';
 
-
-
-
-
-
-
-
-
 const disabledLinkProps = {
 	onClick: (e: React.MouseEvent<HTMLAnchorElement>) => e.preventDefault(),
 	'aria-disabled': true,

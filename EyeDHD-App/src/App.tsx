@@ -9,8 +9,6 @@ import Navbar from './components/Navbar';
 import AlertWindow from './components/AlertWindow';
 
 function App() {
-
-	// Load open cases and place into redux store
 	return (
 		<>
 			<Provider store={store}>

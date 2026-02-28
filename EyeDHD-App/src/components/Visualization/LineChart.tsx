@@ -44,7 +44,6 @@ const data = [
 	}
 ];
 
-// #endregion
 export default function LineChart() {
 	const [error, setError] = useState('');
 	const [alertMessage, setAlertMessage] = useState('');
@@ -53,8 +52,6 @@ export default function LineChart() {
 	const [isHidden, setIsHidden] = useState(true);
 
 	const chartRef = useRef(null);
-
-
 
 	useEffect(() => {
 		const chart = new ApexCharts(document.getElementById(id), {

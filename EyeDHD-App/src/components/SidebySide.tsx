@@ -8,7 +8,6 @@ export default function SidebySide() {
 	const [offsetSeconds, setOffsetSeconds] = useState(0); //animation delay vs VR
 	const [status, setStatus] = useState(defaultStatus);
 
-
 	// Video player dimesnions height and width
 	const vpw = 640;
 	const vph = 480;
