@@ -8,10 +8,10 @@ import App from './App';
 import HomePage from './NewHomePage';
 import CaseViewer from './components/CaseViewer';
 // Old pages, functionality will be extracted into tasks for CaseViewer
-import CsvFileImport from './components/CsvFileImport';
-import AnimationGenerator from './components/AnimationGenerator';
-import Visualization from './components/Visualization';
-import SidebySide from './components/SidebySide';
+// import CsvFileImport from './components/CsvFileImport';
+// import AnimationGenerator from './components/AnimationGenerator';
+// import Visualization from './components/Visualization';
+// import SidebySide from './components/SidebySide';
 
 createRoot(document.getElementById('root')).render(
 	<StrictMode>
@@ -20,11 +20,6 @@ createRoot(document.getElementById('root')).render(
 				<Route path='/' element={<App />}>
 					<Route index element={<HomePage />} />
 					<Route path='case' element={<CaseViewer />} />
-					{/* Old pages */}
-					<Route path='import' element={<CsvFileImport /> } />
-					<Route path='animation' element={<AnimationGenerator />} />
-					<Route path='side-by-side' element={<SidebySide />} />
-					<Route path='visualization' element={<Visualization />} />
 				</Route>
 			</Routes>
 		</BrowserRouter>

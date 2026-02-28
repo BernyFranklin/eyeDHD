@@ -37,67 +37,6 @@ export default function Navbar() {
 						/>
 					</a>
 				</div>
-				<div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
-					<a
-						href='import'
-						className="home-link"
-						title="Import CSV Data"
-						{...disabledAnchorProps}
-					>
-						<img
-							src="./images/file-import-solid-full.svg"
-							alt="Import"
-							className="navbar-icon"
-						/>
-					</a>
-				</div>
-				<div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
-					<a
-						href='animation'
-						className="home-link"
-						title="Generate Eye Animation"
-						{...disabledAnchorProps}
-					>
-						<img
-							src="./images/eye-solid-full.svg"
-							alt="Generate Eye Animation"
-							className="navbar-icon"
-						/>
-					</a>
-				</div>
-				<div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
-					<a
-						href='side-by-side'
-						className="home-link"
-						title="Side-by-Side Viewer"
-						{...disabledAnchorProps}
-					>
-						<img
-							src="./images/file-video-solid-full.svg"
-							alt="Side-by-Side Viewer"
-							className="navbar-icon"
-						/>
-						<img
-							src="./images/eye-solid-full.svg"
-							alt="Side-by-Side Viewer"
-							className="navbar-icon"
-						/>
-					</a>
-				</div>
-				<div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
-					<a
-						href='visualization'
-						className="home-link"
-						title="Visualization"
-						{...disabledAnchorProps}
-					>
-						<img
-							src="./images/eye-solid-full.svg"
-							alt="Visualization"
-							className="navbar-icon"
-						/>
-					</a>
-				</div>
 			</span>
 			<style>{`
 				.navbar {
@@ -177,3 +116,65 @@ export default function Navbar() {
 		</nav>
 	);
 }
+
+// <div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
+// 	<a
+// 		href='import'
+// 		className="home-link"
+// 		title="Import CSV Data"
+// 		{...disabledAnchorProps}
+// 	>
+// 		<img
+// 			src="./images/file-import-solid-full.svg"
+// 			alt="Import"
+// 			className="navbar-icon"
+// 		/>
+// 	</a>
+// </div>
+// <div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
+// 	<a
+// 		href='animation'
+// 		className="home-link"
+// 		title="Generate Eye Animation"
+// 		{...disabledAnchorProps}
+// 	>
+// 		<img
+// 			src="./images/eye-solid-full.svg"
+// 			alt="Generate Eye Animation"
+// 			className="navbar-icon"
+// 		/>
+// 	</a>
+// </div>
+// <div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
+// 	<a
+// 		href='side-by-side'
+// 		className="home-link"
+// 		title="Side-by-Side Viewer"
+// 		{...disabledAnchorProps}
+// 	>
+// 		<img
+// 			src="./images/file-video-solid-full.svg"
+// 			alt="Side-by-Side Viewer"
+// 			className="navbar-icon"
+// 		/>
+// 		<img
+// 			src="./images/eye-solid-full.svg"
+// 			alt="Side-by-Side Viewer"
+// 			className="navbar-icon"
+// 		/>
+// 	</a>
+// </div>
+// <div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
+// 	<a
+// 		href='visualization'
+// 		className="home-link"
+// 		title="Visualization"
+// 		{...disabledAnchorProps}
+// 	>
+// 		<img
+// 			src="./images/eye-solid-full.svg"
+// 			alt="Visualization"
+// 			className="navbar-icon"
+// 		/>
+// 	</a>
+// </div>

@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import LoadingOverlay from './components/LoadingOverlay';
 import DirPrompt from './components/DirPrompt';
 import CaseList from './components/CaseList';
+import { CreateCaseWindow } from './components/CreateCaseWindow';
+import Button from './components/Button';
 
 import RemoteStream from './data/RemoteStream';
 import { CaseData } from './types';
@@ -16,6 +18,7 @@ export default function HomePage() {
 	const projectInitialized = useSelector(selectProjectInitialized);
 
 	const [loading, setLoading] = useState(true);
+	const [showCreateCase, setShowCreateCase] = useState(false);
 
 	const handleError = (err: Error) => {
 		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
@@ -60,12 +63,47 @@ export default function HomePage() {
 		<>
 			<LoadingOverlay isLoading={loading} />
 			<DirPrompt loading={loading} />
-			<div>
-				<CaseList loading={loading} />
+			<CreateCaseWindow
+				isOpen={showCreateCase}
+				onClose={() => setShowCreateCase(false)}
+			/>
+			<div className='cases-row'>
+				<p>Open Cases</p>
+				<div className='cases-list-wrapper'>
+					<CaseList loading={loading} />
+					<Button
+						onClick={() => setShowCreateCase(true)}
+						height='42px'
+						padding='10px 16px'
+						style={{ marginTop: '10px', marginLeft: '10px' }}
+					>
+						+
+					</Button>
+				</div>
 			</div>
 
 			<style>{`
+				.cases-row {
+					display: flex;
+					justify-content: center;
+					align-items: flex-start;
+					gap: 0;
+					width: 100%;
+					height: 100%;
+					padding: 10px;
+				}
 
+				.cases-row p {
+					margin: 10px 16px 0 0;
+				}
+
+				.cases-list-wrapper {
+					display: flex;
+					width: 20%;
+					min-width: 280px;
+					align-items: flex-start;
+					border: 1px solid #ccc;
+				}
 			`}</style>
 		</>
 	);

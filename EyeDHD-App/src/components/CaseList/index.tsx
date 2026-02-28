@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
 import CaseItem from "./CaseItem";
-import Button from '../Button';
+
 import LoadingOverlay from '../LoadingOverlay';
 
 import { type CaseData } from '../../types';
 import { useSelector, useDispatch } from '../../store/hooks';
 import { showAlert } from '../../store/features/global';
 import { selectCases, selectProjectDir, setCases, setSelectedCase } from '../../store/features/user';
-import { CreateCaseWindow } from '../CreateCaseWindow';
+
 import RemoteStream from '../../data/RemoteStream';
 import { useNavigate } from 'react-router';
 
@@ -21,11 +21,9 @@ export default function CaseList(props: Props) {
 	const cases = useSelector(selectCases);
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
-	const [showCreateCase, setShowCreateCase] = useState(false);
 
-	const createCase = async () => {
-		setShowCreateCase(true);
-	};
+
+
 
 	const openCase = async (file: CaseData) => {
 		dispatch(setSelectedCase(file));
@@ -42,7 +40,7 @@ export default function CaseList(props: Props) {
 				const stream = await RemoteStream.create('CaseData', {});
 				const cases = await stream.collect<CaseData>();
 				dispatch(setCases(cases));
-			} catch (err: any) {
+			} catch (err) {
 				dispatch(showAlert({
 					color: 'red',
 					message: `Error loading cases: ${err.message}`
@@ -60,10 +58,6 @@ export default function CaseList(props: Props) {
 	return (
 		<>
 			<div>
-				<CreateCaseWindow
-					isOpen={showCreateCase}
-					onClose={() => setShowCreateCase(false)}
-				/>
 				{/* Lists all cases that have been opened and
 					allows new cases to be opened
 			  	*/}
@@ -79,10 +73,7 @@ export default function CaseList(props: Props) {
 							<CaseItem file={file} onClick={openCase} />
 						</li>
 					})}
-					{/* Button for opening a new case */}
-					<li>
-						<Button onClick={createCase}>+</Button>
-					</li>
+
 				</ul>
 			</div>
 			<style>{`
