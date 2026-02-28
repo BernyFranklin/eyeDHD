@@ -5,7 +5,7 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 import './index.css';
 
 import App from './App';
-import HomePage from './NewHomePage';
+import HomePage from './components/NewHomePage';
 import CaseViewer from './components/CaseViewer';
 // Old pages, functionality will be extracted into tasks for CaseViewer
 // import CsvFileImport from './components/CsvFileImport';
