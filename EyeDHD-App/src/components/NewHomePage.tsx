@@ -10,12 +10,13 @@ import RemoteStream from '../data/RemoteStream';
 import { CaseData } from '../types';
 import { useDispatch, useSelector } from '../store/hooks';
 import { showAlert } from '../store/features/global';
-import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from '../store/features/user';
+import { selectCases, selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from '../store/features/user';
 
 export default function HomePage() {
 	const dispatch = useDispatch();
 	const user_dir = useSelector(selectProjectDir);
 	const projectInitialized = useSelector(selectProjectInitialized);
+	const cases = useSelector(selectCases);
 
 	const [loading, setLoading] = useState(true);
 	const [showCreateCase, setShowCreateCase] = useState(false);
@@ -72,13 +73,13 @@ export default function HomePage() {
 			/>
 			<div className='cases-row'>
 				<p>Open Cases</p>
-				<div className='cases-list-wrapper'>
+				<div className={`cases-list-wrapper${cases.length === 0 ? ' cases-list-wrapper--empty' : ''}`}>
 					<CaseList loading={loading} />
 					<Button
 						onClick={() => setShowCreateCase(true)}
 						height='45px'
 						padding='10px 16px'
-						style={{ marginTop: '10px', marginLeft: '10px' }}
+						style={{ marginLeft: '10px' }}
 					>
 						+
 					</Button>
@@ -104,10 +105,22 @@ export default function HomePage() {
 					display: flex;
 					width: 20%;
 					min-width: 280px;
-					min-height: 50px;
+					min-height: 60px;
 					align-items: flex-start;
 					border: 1px solid #ccc;
-					padding-top: 10px;
+					padding: 10px;
+				}
+
+				.cases-list-wrapper .btn {
+					margin-top: 10px;
+				}
+
+				.cases-list-wrapper--empty {
+					align-items: center;
+				}
+
+				.cases-list-wrapper--empty .btn {
+					margin-top: 0;
 				}
 			`}</style>
 		</>

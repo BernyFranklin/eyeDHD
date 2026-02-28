@@ -88,6 +88,10 @@ export default function CaseList(props: Props) {
 					margin: 0;
 					list-style: none;
 				}
+
+				.case-list li:last-child .case-item {
+					margin-bottom: 0;
+				}
 			`}</style>
 		</>
 	);
