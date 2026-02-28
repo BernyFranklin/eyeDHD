@@ -10,18 +10,16 @@ import AlertWindow, { useAlert } from '../AlertWindow';
 
 import RemoteStream from '../../data/RemoteStream';
 import { type Error, type CaseData } from '../../types';
+import { useSelector } from '../../store/hooks';
+import { selectCases } from '../../store/features/user';
 
-export default function CaseList() {
-	const [cases, setCases] = useState<CaseData[]>([]);
-	const [loading, setLoading] = useState(false);
+type Props = {
+	loading: boolean;
+};
 
+export default function CaseList(props: Props) {
+	const cases = useSelector(selectCases);
 	const alert = useAlert();
-
-	const fetchCases = async () => {
-		const stream = await RemoteStream.create('CaseData', {});
-		const cases = await stream.collect<CaseData>();
-		setCases(cases);
-	};
 
 	const createCase = async () => {
 		alert.show('green', 'Create case functionality not implemented yet');

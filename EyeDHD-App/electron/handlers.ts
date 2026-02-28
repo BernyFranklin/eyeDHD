@@ -8,7 +8,7 @@ import ffmpegPath from 'ffmpeg-static';
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
 import { type CaseData } from './db/tables/CaseData';
-import { User } from './db/tables/User';
+import { type User } from './db/tables/User';
 
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
