@@ -28,7 +28,7 @@ export default function AnimationGenerator() {
 		const stream = await RemoteStream.create("CaseData", {});
 		try {
 			const files = await stream.collect<CaseData>();
-			const cleaned = files.filter((metadata: CaseData) => metadata.completed);
+			const cleaned = files.filter((metadata: CaseData) => metadata.cleaned);
 
 			setFiles(cleaned);
 		} catch (err) {

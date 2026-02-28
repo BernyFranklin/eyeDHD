@@ -1,5 +1,9 @@
-import csvActions, { type CSVData } from "./tables/CSVData";
-import metadataActions, { type CaseData } from "./tables/CaseData";
+import fs from "fs";
+import path from "path";
+import rl from "readline";
+
+import { type CSVData } from "./tables/CSVData";
+import metadataActions, { type CaseData, caseOutputCsvPath } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
 
 export type DataType = CaseData | CSVData;
@@ -18,6 +22,26 @@ export type Progress = {
 
 const STREAM_BATCH_SIZE = 1000;
 const CLEANING_BATCH_SIZE = 1000;
+
+const CLEANED_FIELDS: Array<keyof CSVData> = [
+	'Frame',
+	'CaptureTime',
+	'LogTime',
+	'GazeStatus',
+	'CombinedGazeForwardX',
+	'CombinedGazeForwardY',
+	'CombinedGazeForwardZ',
+	'LeftEyeStatus',
+	'LeftEyeForwardX',
+	'LeftEyeForwardY',
+	'LeftEyeForwardZ',
+	'LeftPupilDiameterInMM',
+	'RightEyeStatus',
+	'RightEyeForwardX',
+	'RightEyeForwardY',
+	'RightEyeForwardZ',
+	'RightPupilDiameterInMM'
+];
 
 /**
  * DataStream class that provides an async iterator interface for streaming data
@@ -92,7 +116,7 @@ export default class DataStream {
 			}
 
 			case 'CSVData': {
-				yield* DataStream.csvDataIterator(manager, file);
+				yield* DataStream.csvDataIterator(file);
 				break;
 			}
 
@@ -126,32 +150,78 @@ export default class DataStream {
 		}
 	}
 
+	private static parseCsvValue(value: string): string | number {
+		const trimmed = value.trim();
+		if (trimmed.length === 0) {
+			return 0;
+		}
+
+		const numeric = Number(trimmed);
+		if (!Number.isNaN(numeric)) {
+			return numeric;
+		}
+
+		return trimmed;
+	}
+
 	/**
-	 * Private static method to create an async iterator for streaming CSV data
+	 * Private static method to create an async iterator for streaming cleaned CSV data
 	 * for a given file.
 	 */
 	private static async *csvDataIterator(
-		manager: DatabaseManager,
 		file?: CaseData
 	): AsyncGenerator<DataType[], void, undefined> {
 		if (!file) {
 			throw new Error('File must be provided for CSVData streams');
 		}
 
-		const sql = csvActions.iterate(file);
-		const stmt = manager['db'].prepare<[], CSVData>(sql);
-
-		let batch: CSVData[] = [];
-		for (const row of stmt.iterate()) {
-			batch.push(row);
-			if (batch.length >= STREAM_BATCH_SIZE) {
-				yield batch;
-				batch = [];
-			}
+		const cleanedPath = caseOutputCsvPath(file);
+		if (!fs.existsSync(cleanedPath)) {
+			throw new Error(`Cleaned CSV not found for file: ${file.name}`);
 		}
 
-		if (batch.length > 0) {
-			yield batch;
+		const stream = fs.createReadStream(cleanedPath, { encoding: 'utf-8' });
+		const reader = rl.createInterface({ input: stream, crlfDelay: Infinity });
+		const iter = reader[Symbol.asyncIterator]();
+
+		try {
+			const headerResult = await iter.next();
+			if (headerResult.done || !headerResult.value) {
+				return;
+			}
+
+			const header = headerResult.value
+				.split(',')
+				.map((value) => value.trim())
+				.filter((value) => value.length > 0);
+
+			let batch: CSVData[] = [];
+			for await (const line of iter) {
+				if (!line) {
+					continue;
+				}
+
+				const values = line.split(',');
+				const row: Record<string, string | number> = {};
+
+				header.forEach((key, index) => {
+					row[key] = DataStream.parseCsvValue(values[index] ?? '');
+				});
+
+				batch.push(row as CSVData);
+
+				if (batch.length >= STREAM_BATCH_SIZE) {
+					yield batch;
+					batch = [];
+				}
+			}
+
+			if (batch.length > 0) {
+				yield batch;
+			}
+		} finally {
+			reader.close();
+			stream.close();
 		}
 	}
 
@@ -170,40 +240,62 @@ export default class DataStream {
 		}
 
 		let metadata = file;
-		const cleaner = manager.getCleaner(metadata);
+		let cleaner = manager.getCleaner(metadata);
 		if (!cleaner) {
 			throw new Error(`No cleaner found for file: ${metadata.name}`);
 		}
 
 		// If progress has been made restart
 		if (cleaner.status.start) {
-			manager.actions.case.resetCleaning(metadata);
+			metadata = manager.actions.case.resetCleaning(metadata);
+			cleaner = manager.getCleaner(metadata);
+			if (!cleaner) {
+				throw new Error(`No cleaner found for file: ${metadata.name}`);
+			}
 		}
 
-		const header = cleaner.header.join(',') + '\n';
+		const outputPath = caseOutputCsvPath(metadata);
+		const outputDir = path.dirname(outputPath);
+		if (!fs.existsSync(outputDir)) {
+			fs.mkdirSync(outputDir, { recursive: true });
+		}
+
+		const outputStream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
+		const header = CLEANED_FIELDS.join(',') + '\n';
+		outputStream.write(header);
 		metadata = manager.actions.case.update(metadata, { header });
 
 		let batch: CSVData[] = [];
 		for await (const row of cleaner) {
 			batch.push(row);
 
+			const csvLine = CLEANED_FIELDS.map((field) => {
+				const value = row[field];
+				return value ?? 0;
+			}).join(',') + '\n';
+			outputStream.write(csvLine);
+
 			if (batch.length >= CLEANING_BATCH_SIZE) {
-				manager.actions.csv.store(metadata, batch);
 				yield batch;
 				batch = [];
 			}
 		}
 
 		if (batch.length > 0) {
-			manager.actions.csv.store(metadata, batch);
 			yield batch;
 		}
 
 		cleaner.close();
+		outputStream.end();
+
+		await new Promise<void>((resolve, reject) => {
+			outputStream.on('finish', resolve);
+			outputStream.on('error', reject);
+		});
 
 		manager.actions.case.update(metadata, {
-			rows: cleaner.progress.currentRow,
-			completed: 1
+			cleaned_rows: cleaner.progress.currentRow,
+			cleaned: 1
 		});
 	}
 

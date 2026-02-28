@@ -1,14 +1,28 @@
+import path from 'path';
 import type { Database } from 'better-sqlite3';
 
-export default { create, exists, read, iterate, update, remove };
+export default {
+	create,
+	exists,
+	read,
+	iterate,
+	update,
+	remove,
+	caseFileBaseName,
+	caseImportsDir,
+	caseOutputsDir,
+	caseGraphsDir,
+	caseImportCsvPath,
+	caseOutputCsvPath
+};
 
 export type CaseData = {
 	id: number;
 	name: string;
 	path: string;
 	header: string;
-	completed: number;
-	rows: number;
+	cleaned: number;
+	cleaned_rows: number;
 	created_at: string;
 	updated_at: string;
 };
@@ -25,8 +39,8 @@ export function createCaseDataTable(db: Database) {
 			name TEXT UNIQUE NOT NULL,
 			path TEXT NOT NULL,
 			header TEXT DEFAULT '',
-			completed BOOLEAN DEFAULT 0,
-			rows INTEGER DEFAULT 0,
+			cleaned BOOLEAN DEFAULT 0,
+			cleaned_rows INTEGER DEFAULT 0,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
@@ -142,8 +156,8 @@ function update(db: Database, file: CaseData, updates: Partial<CaseData>): CaseD
 		UPDATE CaseData
 		SET
 			header = @header,
-			completed = @completed,
-			rows = @rows,
+			cleaned = @cleaned,
+			cleaned_rows = @cleaned_rows,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = @id;
 		`)
@@ -179,4 +193,34 @@ function remove(db: Database, file: CaseData): CaseData {
 	}
 
 	return original;
+}
+
+export function caseFileBaseName(file: CaseData): string {
+	const lowerName = file.name.toLowerCase();
+	if (lowerName.endsWith('.csv')) {
+		return file.name.slice(0, -4);
+	}
+	return file.name;
+}
+
+export function caseImportsDir(file: CaseData): string {
+	return path.join(file.path, 'imports');
+}
+
+export function caseOutputsDir(file: CaseData): string {
+	return path.join(file.path, 'outputs');
+}
+
+export function caseGraphsDir(file: CaseData): string {
+	return path.join(file.path, 'outputs', 'graphs');
+}
+
+export function caseImportCsvPath(file: CaseData): string {
+	const baseName = caseFileBaseName(file);
+	return path.join(file.path, 'imports', `${baseName}.csv`);
+}
+
+export function caseOutputCsvPath(file: CaseData): string {
+	const baseName = caseFileBaseName(file);
+	return path.join(file.path, 'outputs', `${baseName}_Cleaned.csv`);
 }

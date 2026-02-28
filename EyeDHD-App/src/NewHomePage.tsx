@@ -9,6 +9,7 @@ import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, se
 import RemoteStream from './data/RemoteStream';
 import { CaseData } from './types';
 import LoadingOverlay from './components/LoadingOverlay';
+import FileImportWindow from './components/FileImportWindow';
 
 export default function HomePage() {
 	const dispatch = useDispatch();
@@ -52,8 +53,8 @@ export default function HomePage() {
 					name: 'ID.001.csv',
 					path: '/path/to/ID.001.csv',
 					header: 'header,stuff',
-					completed: 0,
-					rows: 0,
+					cleaned: 0,
+					cleaned_rows: 0,
 					created_at: Date.now().toString(),
 					updated_at: Date.now().toString()
 				},
@@ -62,8 +63,8 @@ export default function HomePage() {
 					name: 'ID.002.csv',
 					path: '/path/to/ID.002.csv',
 					header: 'header,stuff',
-					completed: 0,
-					rows: 0,
+					cleaned: 0,
+					cleaned_rows: 0,
 					created_at: Date.now().toString(),
 					updated_at: Date.now().toString()
 				},
@@ -72,8 +73,8 @@ export default function HomePage() {
 					name: 'ID.003.csv',
 					path: '/path/to/ID.003.csv',
 					header: 'header,stuff',
-					completed: 0,
-					rows: 0,
+					cleaned: 0,
+					cleaned_rows: 0,
 					created_at: Date.now().toString(),
 					updated_at: Date.now().toString()
 				}
@@ -94,6 +95,7 @@ export default function HomePage() {
 			<LoadingOverlay isLoading={loading} />
 			<DirPrompt loading={loading} />
 			<div>
+				<FileImportWindow />
 				<CaseList loading={loading} />
 			</div>
 

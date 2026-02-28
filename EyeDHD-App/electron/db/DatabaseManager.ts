@@ -3,8 +3,8 @@ import fs from 'fs';
 
 import DataCleaner from '../analysis/DataCleaner';
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
-import caseActions, { type CaseData, createCaseDataTable } from './tables/CaseData';
-import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tables/CSVData';
+import caseActions, { type CaseData, caseImportCsvPath, caseOutputCsvPath, createCaseDataTable } from './tables/CaseData';
+
 import userActions, { type User, createUserTable } from './tables/User';
 
 type DBOptions = {
@@ -19,16 +19,15 @@ type UserActions = {
 }
 
 type CaseDataActions = {
+	create: (filename: string, filepath: string) => CaseData;
 	read: (filename: string) => CaseData;
 	exists: (filename: string) => boolean;
 	update: (file: CaseData, updates: Partial<CaseData>) => CaseData;
-	resetCleaning: (file: CaseData) => void;
+	resetCleaning: (file: CaseData) => CaseData;
 	remove: (file: CaseData) => CaseData;
 };
 
-type CSVDataActions = {
-	store: (file: CaseData, rows: CSVData[]) => void;
-};
+
 
 /**
  * DatabaseManager class that manages the SQLite database connection, provides methods
@@ -46,7 +45,6 @@ export default class DatabaseManager {
 	actions: {
 		user: UserActions;
 		case: CaseDataActions;
-		csv: CSVDataActions;
 	};
 
 	constructor(options: DBOptions = { logging: false, temporary: false }) {
@@ -61,29 +59,25 @@ export default class DatabaseManager {
 
 		this.actions = {
 			case: {
+				create: (filename: string, filepath: string) => caseActions.create(this.db, filename, filepath),
 				exists: (filename: string) => caseActions.exists(this.db, filename),
 				read: (filename: string) => caseActions.read(this.db, filename),
 				update: (file: CaseData, updates: Partial<CaseData>) => caseActions.update(this.db, file, updates),
 				resetCleaning: (file: CaseData) => {
 					this.resetCleaner(file);
-					deleteCSVTable(this.db, file.name);
-					createCSVTable(this.db, file.name);
+					const cleanedPath = caseOutputCsvPath(file);
+					if (fs.existsSync(cleanedPath)) {
+						fs.unlinkSync(cleanedPath);
+					}
 
 					return caseActions.update(this.db, file, {
-						completed: 0,
-						rows: 0
+						cleaned: 0,
+						cleaned_rows: 0
 					});
 				},
 				remove: (file: CaseData) => caseActions.remove(this.db, file)
 			},
-			csv: {
-				store: (file: CaseData, rows: CSVData[]) => {
-					const ok = csvActions.create(this.db, file, rows);
-					if (!ok) {
-						throw new Error(`Failed to insert csv data for file: ${file.name}`);
-					}
-				}
-			},
+
 			user: {
 				read: () => userActions.read(this.db),
 				update: (user: User, updates: Partial<User>) => userActions.update(this.db, user, updates)
@@ -112,26 +106,16 @@ export default class DatabaseManager {
 	}
 
 	/**
-	 * Opens a CSV file and returns its casedata. If the file has been opened before, it
-	 * reads the existing metadata from the database. If the file is new, it creates a
-	 * new casedata entry, initializes a DataCleaner for the file, and creates the
-	 * necessary tables for storing cleaned data and analysis results.
+	 * Creates a case entry and returns its casedata. If the case already exists, it
+	 * reads the existing metadata from the database. For new cases, it initializes
+	 * metadata and any required tables.
 	 */
-	openFile(filename: string, filepath: string): CaseData {
+	createCase(filename: string, filepath: string): CaseData {
 		if (this.actions.case.exists(filename)) {
-			const casedata = caseActions.read(this.db, filename);
-			if (!casedata.completed) {
-				this.actions.case.resetCleaning(casedata);
-			}
-			this.createCleaner(casedata);
-
-			return casedata;
+			return caseActions.read(this.db, filename);
 		}
 
 		const casedata = caseActions.create(this.db, filename, filepath);
-
-		this.createCleaner(casedata);
-		createCSVTable(this.db, casedata.name);
 
 		return casedata;
 	}
@@ -141,7 +125,7 @@ export default class DatabaseManager {
 	 * cleaners map.
 	 */
 	private createCleaner(file: CaseData) {
-		const cleaner = new DataCleaner({ path: file.path });
+		const cleaner = new DataCleaner({ path: caseImportCsvPath(file) });
 		this.cleaners.set(file.name, cleaner);
 	}
 

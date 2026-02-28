@@ -15,20 +15,17 @@ declare interface Electron {
 		selectDirectory(user: User): Promise<User | null>;
 		initializeDirectory(user: User): Promise<User>;
 	},
+	// COPILOT: This should be renamed to case
+	case: {
+		createNew(caseName: string): Promise<CaseData>;
+		read(filename: string): Promise<CaseData>;
+		importCsv(file: CaseData): Promise<CaseData | null>;
+	};
+
 	csv: {
-		openFile(): Promise<CaseData | null>;
-		readMetadata(filename: string): Promise<CaseData>;
 		resetCleaningProgress(file: CaseData): Promise<void>;
 		cleanData(file: CaseData): Promise<void>;
-		exportData(file: CaseData): Promise<{
-			success: boolean,
-			message: string,
-			stats: {
-				totalExported: number,
-				filePath: string,
-				fileSize: number
-			}
-		}>;
+		exportData(file: CaseData): Promise<void>;
 	};
 
 	video: {
@@ -78,21 +75,28 @@ const electron: Electron = {
 			return await ipcRenderer.invoke('user:initialize-directory', user);
 		}
 	},
+	case: {
+		/**
+		 * Creates a new case folder and metadata entry in the project database.
+		 */
+		createNew: async (caseName: string): Promise<CaseData> => {
+			return await ipcRenderer.invoke('case:create-new', caseName);
+		},
+		/**
+		 * Reads the casedata for a given case. Used mostly for updating after changes.
+		 */
+		read: async (name: string): Promise<CaseData> => {
+			return await ipcRenderer.invoke('case:read-casedata', name);
+		},
+		/**
+		 * Prompts for a CSV file and copies it into the case imports folder.
+		 */
+		importCsv: async (file: CaseData): Promise<CaseData | null> => {
+			return await ipcRenderer.invoke('case:import-csv', file);
+		}
+	},
+
 	csv: {
-		/**
-		 * Requests for a csv file to be opened and cleaned
-		 *
-		 * @returns filename of file opened or null if cancelled
-		 */
-		openFile: async (): Promise<CaseData | null> => {
-			return await ipcRenderer.invoke('csv:open-file');
-		},
-		/**
-		 * Reads the casedata for a given file.
-		 */
-		readMetadata: async (filename: string): Promise<CaseData> => {
-			return await ipcRenderer.invoke('csv:read-casedata', filename);
-		},
 
 		/**
 		 * Resets the cleaning progress of a file, allowing it to be cleaned

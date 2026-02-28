@@ -4,6 +4,7 @@ import os from 'os';
 import path from 'path';
 
 import DatabaseManager from '../../db/DatabaseManager';
+import { caseImportCsvPath } from '../../db/tables/CaseData';
 
 import { type Progress, type StreamKey, type DataType } from '../../db/DataStream';
 
@@ -76,6 +77,7 @@ describe('Database - Manager', () => {
 		it('B1) Streams cleaning batches and exposes byte-based progress', async () => {
 			const dbmgr = new DatabaseManager({ temporary: true, logging: false });
 			let createdFilePath = '';
+			let caseDir = '';
 
 			try {
 				const csv = createTempCsv([
@@ -86,8 +88,16 @@ describe('Database - Manager', () => {
 				]);
 				createdFilePath = csv.filePath;
 
-				const metadata = dbmgr.openFile(csv.filename, csv.filePath);
-				const streamKey = await dbmgr.startStream('Cleaning', metadata);
+				const caseName = path.parse(csv.filename).name;
+				caseDir = path.join(os.tmpdir(), `case_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+				fs.mkdirSync(path.join(caseDir, 'imports'), { recursive: true });
+
+				const metadata = dbmgr.createCase(caseName, caseDir);
+				const importPath = caseImportCsvPath(metadata);
+				fs.copyFileSync(csv.filePath, importPath);
+
+				const readyMetadata = dbmgr.actions.case.resetCleaning(metadata);
+				const streamKey = await dbmgr.startStream('Cleaning', readyMetadata);
 
 				let lastProgress: Progress | null = null;
 
@@ -114,6 +124,9 @@ describe('Database - Manager', () => {
 				dbmgr.close();
 				if (createdFilePath && fs.existsSync(createdFilePath)) {
 					fs.unlinkSync(createdFilePath);
+				}
+				if (caseDir && fs.existsSync(caseDir)) {
+					fs.rmSync(caseDir, { recursive: true, force: true });
 				}
 			}
 		});

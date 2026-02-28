@@ -7,7 +7,7 @@ import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
-import { type CaseData } from './db/tables/CaseData';
+import { type CaseData, caseImportCsvPath, caseOutputCsvPath } from './db/tables/CaseData';
 import { type User } from './db/tables/User';
 
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
@@ -126,11 +126,42 @@ ipcMain.handle('user:initialize-directory', async (_, user: User) => {
 });
 
 /*
- * CSV file / case handlers
+ * Case handlers
  */
 
-// Handles the csv-open-file request. Opens a file selector
-ipcMain.handle('csv:open-file', async () => {
+ipcMain.handle('case:create-new', async (_, caseName) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const user = main_manager.actions.user.read();
+			if (!user.dir) {
+				return reject('No project directory set for user');
+			}
+			if (!caseName || typeof caseName !== 'string') {
+				return reject('Case name is required');
+			}
+
+			const manager = requireProjectManager();
+
+			const caseDir = path.join(user.dir, 'cases', caseName);
+			const importsDir = path.join(caseDir, 'imports');
+			const outputsDir = path.join(caseDir, 'outputs');
+			const graphsDir = path.join(outputsDir, 'graphs');
+
+			[caseDir, importsDir, outputsDir, graphsDir].forEach((dirPath) => {
+				if (!fs.existsSync(dirPath)) {
+					fs.mkdirSync(dirPath);
+				}
+			});
+
+			const casedata = manager.createCase(caseName, caseDir);
+			return resolve(casedata);
+		} catch (err) {
+			return reject(`Failed to create case: ${err}`);
+		}
+	});
+});
+
+ipcMain.handle('case:import-csv', async (_, casedata: CaseData) => {
 	return new Promise(async (resolve, reject) => {
 		const { canceled, filePaths } = await dialog.showOpenDialog({
 			properties: ['openFile'],
@@ -142,32 +173,38 @@ ipcMain.handle('csv:open-file', async () => {
 		}
 
 		const filepath = filePaths[0];
-		const filename = path.basename(filepath);
 
 		try {
 			const user = main_manager.actions.user.read();
-			if (!user?.dir) {
+			if (!user.dir) {
 				return reject('No project directory set for user');
 			}
-			const manager = requireProjectManager();
-			const casedata = manager.openFile(filename, filepath);
-
-			// Create case folder under user.dir/cases/FILENAME without extension
-			const caseDir = path.join(user.dir, 'cases', path.parse(filename).name);
-			if (!fs.existsSync(caseDir)) {
-				fs.mkdirSync(caseDir);
+			if (!casedata) {
+				return reject('No case provided for import');
 			}
 
-			return resolve(casedata);
+			const manager = requireProjectManager();
+			const storedCase = manager.actions.case.read(casedata.name);
+
+			const importPath = caseImportCsvPath(storedCase);
+			const importDir = path.dirname(importPath);
+			if (!fs.existsSync(importDir)) {
+				fs.mkdirSync(importDir, { recursive: true });
+			}
+
+			fs.copyFileSync(filepath, importPath);
+
+			const updatedCase = manager.actions.case.resetCleaning(storedCase);
+			return resolve(updatedCase);
 		} catch (err) {
-			return reject(`Failed to open file: ${err}`);
+			return reject(`Failed to import CSV: ${err}`);
 		}
 	});
 });
 
-// Handles the csv:read-casedata request.
+// Handles the case:read-casedata request.
 // Reads the metadata for a given file from the database and returns it
-ipcMain.handle('csv:read-casedata', async (_, filename) => {
+ipcMain.handle('case:read-casedata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const manager = requireProjectManager();
@@ -178,6 +215,10 @@ ipcMain.handle('csv:read-casedata', async (_, filename) => {
 		}
 	});
 });
+
+/*
+ * CSV Handlers
+ */
 
 // Handles the csv:reset-cleaning-progress request.
 // Resets the cleaning progress for a given file in the database
@@ -194,11 +235,10 @@ ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	});
 });
 
-// Handles the csv-export-data request. Exports cleaned CSV data to a new file
 ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			if (!file.completed) {
+			if (!file.cleaned) {
 				return reject(`File: ${file.name} hasn't been cleaned yet. Clean the file first.`);
 			}
 
@@ -213,77 +253,32 @@ ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
 				return resolve({ success: false, message: 'Export canceled' });
 			}
 
-			// Export the cleaned data
-			const result = await exportToCSV(file, filePath);
-			return resolve(result);
+			const manager = requireProjectManager();
+			const storedCase = manager.actions.case.read(file.name);
+			const sourcePath = caseOutputCsvPath(storedCase);
+
+			if (!fs.existsSync(sourcePath)) {
+				return resolve({ success: false, message: `Cleaned CSV not found for ${file.name}` });
+			}
+
+			fs.copyFileSync(sourcePath, filePath);
+
+			const fileSize = fs.existsSync(filePath) ? fs.statSync(filePath).size : 0;
+
+			return resolve({
+				success: true,
+				message: `Successfully exported ${storedCase.cleaned_rows ?? 0} cleaned rows to ${filePath}`,
+				stats: {
+					totalExported: storedCase.cleaned_rows ?? 0,
+					filePath,
+					fileSize
+				}
+			});
 		} catch (err) {
 			return reject(`Failed to export file: ${file.name}. Error: ${err}`);
 		}
 	});
 });
-
-// Utility function to export cleaned CSV data for a file to a specified output path
-async function exportToCSV(file: CaseData, outputPath: string) {
-	return new Promise(async (resolve) => {
-		try {
-			let csvContent = '';
-			let exportedRows = 0;
-
-			const manager = requireProjectManager();
-			const stream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
-			const metadata = manager.actions.case.read(file.name);
-
-			// Add header row
-			const header = metadata.header.endsWith('\n') ? metadata.header : `${metadata.header}\n`;
-			stream.write(header);
-
-			const streamkey = await manager.startStream("CSVData", file);
-			const data = manager.getStream(streamkey);
-
-			for await (const batch of data) {
-				for (const row of batch) {
-					Object.values(row).forEach((value) => {
-						csvContent += value + ',';
-					});
-					// Remove trailing comma and add newline
-					csvContent = csvContent.slice(0, -1) + '\n';
-					exportedRows++;
-
-					stream.write(csvContent);
-					csvContent = '';
-				}
-			}
-
-			manager.cancelStream(streamkey);
-			stream.end();
-
-			await new Promise<void>((resolve, reject) => {
-				stream.on('finish', resolve);
-				stream.on('error', reject);
-			});
-
-			const fileSize = fs.existsSync(outputPath) ? fs.statSync(outputPath).size : 0;
-
-			console.log('export complete.');
-
-			return resolve({
-				success: true,
-				message: `Successfully exported ${exportedRows} cleaned rows to ${outputPath}`,
-				stats: {
-					totalExported: exportedRows,
-					filePath: outputPath,
-					fileSize
-				}
-			});
-		} catch (err) {
-			return resolve({
-				success: false,
-				message: `Failed to export CSV: ${err}`,
-				error: err
-			});
-		}
-	});
-}
 
 /*
  * VR video and Animation side-by-side handlers

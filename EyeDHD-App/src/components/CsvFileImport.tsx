@@ -62,12 +62,12 @@ export default function CsvFileImport() {
 
 			setFile(selectedFile);
 
-			if (selectedFile.completed) {
+			if (selectedFile.cleaned) {
 				setCleaningProgress({
 					progressPercent: 100,
 					isComplete: true,
 					isReading: false,
-					rowsProcessed: selectedFile.rows ?? 0
+					rowsProcessed: selectedFile.cleaned_rows ?? 0
 				});
 
 				// Get a stream, load 10 rows and cancel it
@@ -125,7 +125,7 @@ export default function CsvFileImport() {
 				if (totalBytes && bytesRead) {
 					progressPercent = Math.min((bytesRead / totalBytes) * 100, 100);
 				} else {
-					const estimatedTotalRows = Math.max(file.rows || 0, rowsProcessed, 1);
+					const estimatedTotalRows = Math.max(file.cleaned_rows || 0, rowsProcessed, 1);
 					progressPercent = Math.min((rowsProcessed / estimatedTotalRows) * 100, 100);
 				}
 
@@ -144,7 +144,7 @@ export default function CsvFileImport() {
 				isReading: false
 			}));
 
-			setFile({ ...file, completed: 1 });
+			setFile({ ...file, cleaned: 1 });
 			setCsvData(previewCSV);
 
 			setIsCleaning(false);
@@ -166,7 +166,7 @@ export default function CsvFileImport() {
 		}
 
 		// Check if cleaning is complete
-		if (!cleaningProgress.isComplete && !file.completed) {
+		if (!cleaningProgress.isComplete && !file.cleaned) {
 			dispatch(showAlert({ color: 'red', message: 'No cleaned data available. Please clean the data first.' }));
 			return;
 		}
