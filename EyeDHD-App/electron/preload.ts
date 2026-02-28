@@ -13,6 +13,7 @@ declare interface Electron {
 	user: {
 		read(): Promise<User>;
 		selectDirectory(user: User): Promise<User | null>;
+		initializeDirectory(user: User): Promise<User>;
 	},
 	csv: {
 		openFile(): Promise<CaseData | null>;
@@ -72,6 +73,9 @@ const electron: Electron = {
 		 */
 		selectDirectory: async (user: User): Promise<User | null> => {
 			return await ipcRenderer.invoke('user:select-directory', user);
+		},
+		initializeDirectory: async (user: User): Promise<User> => {
+			return await ipcRenderer.invoke('user:initialize-directory', user);
 		}
 	},
 	csv: {
@@ -84,10 +88,10 @@ const electron: Electron = {
 			return await ipcRenderer.invoke('csv:open-file');
 		},
 		/**
-		 * Reads the metadata for a given file.
+		 * Reads the casedata for a given file.
 		 */
 		readMetadata: async (filename: string): Promise<CaseData> => {
-			return await ipcRenderer.invoke('csv:read-metadata', filename);
+			return await ipcRenderer.invoke('csv:read-casedata', filename);
 		},
 
 		/**

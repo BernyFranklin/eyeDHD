@@ -12,17 +12,40 @@ import { type User } from './db/tables/User';
 
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
-// Database setup
+// TODO: consider creating another database that is stored in the project folder which
+// will contain the csv data rows, or don't store any csv in database and go straight
+// to csv.
+
+// Main database setup
+// The main database keeps track of user settings like project directory
 const appRoot = app.getAppPath();
-const manager = new DatabaseManager({
+const main_manager = new DatabaseManager({
 	path: path.join(appRoot, 'main.db'),
 	temporary: false,
 	logging: false
 });
+// The project database in stored in the project folder and keeps track
+// of the opened csv files and their cleaning progress. This is initialized when the user
+// confims a selected project directory.
+let project_manager: DatabaseManager | null = null;
+let project_dir: string | null = null;
 
-// TODO: consider creating another database that is stored in the project folder which
-// will contain the csv data rows, or don't store any csv in database and go straight
-// to csv.
+function requireProjectManager(): DatabaseManager {
+	if (!project_manager) {
+		throw new Error('Project database not initialized. Initialize a project directory first.');
+	}
+	return project_manager;
+}
+
+function isProjectInitialized(dirPath: string): boolean {
+	const projectDbPath = path.join(dirPath, 'project.db');
+	const casesDir = path.join(dirPath, 'cases');
+
+	const projectDbExists = fs.existsSync(projectDbPath);
+	const casesDirExists = fs.existsSync(casesDir) && fs.statSync(casesDir).isDirectory();
+
+	return projectDbExists && casesDirExists;
+}
 
 /*
  * User handlers
@@ -31,7 +54,7 @@ const manager = new DatabaseManager({
 ipcMain.handle('user:read', async () => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const user = manager.actions.user.read();
+			const user = main_manager.actions.user.read();
 			return resolve(user);
 		} catch (err) {
 			return reject(`Failed to read user data: ${err}`);
@@ -51,10 +74,53 @@ ipcMain.handle('user:select-directory', async (_, user: User) => {
 
 		const dirPath = filePaths[0];
 		try {
-			const new_user = manager.actions.user.update(user, { dir: dirPath });
+			const initialized = isProjectInitialized(dirPath);
+			project_manager = null;
+			project_dir = null;
+			const new_user = main_manager.actions.user.update(user, {
+				dir: dirPath,
+				project_initialized: initialized ? 1 : 0
+			});
 			return resolve(new_user);
 		} catch (err) {
 			return reject(`Failed to set project directory: ${err}`);
+		}
+	});
+});
+
+ipcMain.handle('user:initialize-directory', async (_, user: User) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const dirPath = user.dir;
+			if (!dirPath) {
+				return reject('No directory set for user');
+			}
+
+			if (!fs.existsSync(dirPath)) {
+				return reject(`Directory does not exist: ${dirPath}`);
+			}
+
+			if (project_manager && project_dir === dirPath && isProjectInitialized(dirPath)) {
+				const updated_user = main_manager.actions.user.update(user, { project_initialized: 1 });
+				return resolve(updated_user);
+			}
+
+			// Initialize project manager with project directory
+			project_manager = new DatabaseManager({
+				path: path.join(dirPath, 'project.db')
+			});
+			project_dir = dirPath;
+
+			// Create dirPath/cases directory
+			const casesDir = path.join(dirPath, 'cases');
+			if (!fs.existsSync(casesDir)) {
+				fs.mkdirSync(casesDir);
+			}
+
+			const updated_user = main_manager.actions.user.update(user, { project_initialized: 1 });
+			return resolve(updated_user);
+		} catch (err) {
+			return reject(`Failed to initialize user directory: ${err}`);
 		}
 	});
 });
@@ -79,22 +145,34 @@ ipcMain.handle('csv:open-file', async () => {
 		const filename = path.basename(filepath);
 
 		try {
-			const metadata = manager.openFile(filename, filepath);
+			const user = main_manager.actions.user.read();
+			if (!user?.dir) {
+				return reject('No project directory set for user');
+			}
+			const manager = requireProjectManager();
+			const casedata = manager.openFile(filename, filepath);
 
-			return resolve(metadata);
+			// Create case folder under user.dir/cases/FILENAME without extension
+			const caseDir = path.join(user.dir, 'cases', path.parse(filename).name);
+			if (!fs.existsSync(caseDir)) {
+				fs.mkdirSync(caseDir);
+			}
+
+			return resolve(casedata);
 		} catch (err) {
 			return reject(`Failed to open file: ${err}`);
 		}
 	});
 });
 
-// Handles the csv:read-metadata request.
+// Handles the csv:read-casedata request.
 // Reads the metadata for a given file from the database and returns it
-ipcMain.handle('csv:read-metadata', async (_, filename) => {
+ipcMain.handle('csv:read-casedata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const metadata = manager.actions.case.read(filename);
-			return resolve(metadata);
+			const manager = requireProjectManager();
+			const casedata = manager.actions.case.read(filename);
+			return resolve(casedata);
 		} catch (err) {
 			return reject(`Failed to read metadata for file: ${filename}. Error: ${err}`);
 		}
@@ -106,6 +184,7 @@ ipcMain.handle('csv:read-metadata', async (_, filename) => {
 ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
+			const manager = requireProjectManager();
 			manager.actions.case.resetCleaning(file);
 
 			return resolve();
@@ -150,11 +229,13 @@ async function exportToCSV(file: CaseData, outputPath: string) {
 			let csvContent = '';
 			let exportedRows = 0;
 
+			const manager = requireProjectManager();
 			const stream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
 			const metadata = manager.actions.case.read(file.name);
 
 			// Add header row
-			csvContent += metadata.header;
+			const header = metadata.header.endsWith('\n') ? metadata.header : `${metadata.header}\n`;
+			stream.write(header);
 
 			const streamkey = await manager.startStream("CSVData", file);
 			const data = manager.getStream(streamkey);
@@ -176,6 +257,13 @@ async function exportToCSV(file: CaseData, outputPath: string) {
 			manager.cancelStream(streamkey);
 			stream.end();
 
+			await new Promise<void>((resolve, reject) => {
+				stream.on('finish', resolve);
+				stream.on('error', reject);
+			});
+
+			const fileSize = fs.existsSync(outputPath) ? fs.statSync(outputPath).size : 0;
+
 			console.log('export complete.');
 
 			return resolve({
@@ -184,7 +272,7 @@ async function exportToCSV(file: CaseData, outputPath: string) {
 				stats: {
 					totalExported: exportedRows,
 					filePath: outputPath,
-					fileSize: csvContent.length
+					fileSize
 				}
 			});
 		} catch (err) {
@@ -309,12 +397,14 @@ ipcMain.handle('vr:video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }
 // Starts a new stream for the given type and file (if applicable).
 // Returns a unique stream key to identify the stream in subsequent calls
 ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => {
+	const manager = requireProjectManager();
 	return await manager.startStream(type, file);
 })
 
 // Pulls the next chunk of data for a stream. The callback sends the data back
 // to the renderer in batches until the stream is done
 ipcMain.handle('stream:pull', async (event, { key, count }) => {
+	const manager = requireProjectManager();
 	await manager.pullStream(key, count, (rows, progress) => {
 		event.sender.send('stream:data', { key, rows, progress });
 	});
@@ -322,6 +412,7 @@ ipcMain.handle('stream:pull', async (event, { key, count }) => {
 
 // Cancels an active stream, freeing up any associated resources
 ipcMain.on('stream:cancel', (_, { key }) => {
+	const manager = requireProjectManager();
 	manager.cancelStream(key);
 });
 

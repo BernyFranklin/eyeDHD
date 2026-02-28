@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
 import { useSelector, useDispatch } from '../store/hooks';
-import { selectProjectDir, setProjectDir } from '../store/features/user';
+import { showAlert } from '../store/features/global';
+import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '../store/features/user';
 import Button from './Button';
 
 type Props = {
@@ -11,24 +12,50 @@ type Props = {
 export default function DirPrompt(props: Props) {
 	const dispatch = useDispatch();
 	const projectDir = useSelector(selectProjectDir);
+	const projectInitialized = useSelector(selectProjectInitialized);
 
 	const [hidden, setHidden] = useState(true);
 
 	const selectDir = async () => {
 		try {
-			let user = await window.electron.user.read();
-			user = await window.electron.user.selectDirectory(user);
+			const user = await window.electron.user.read();
+			const updatedUser = await window.electron.user.selectDirectory(user);
 
-			dispatch(setProjectDir(user.dir));
+			if (!updatedUser) {
+				return;
+			}
+
+			if (updatedUser.dir) {
+				dispatch(setProjectDir(updatedUser.dir));
+			}
+			dispatch(setProjectInitialized(!!updatedUser.project_initialized));
 		} catch (err) {
-			// TODO: switch to alert window fuctionality
-			console.error('Error selecting directory:', err);
+			dispatch(showAlert({
+				color: 'red',
+				message: `Error selecting directory: ${err.message}` }
+			));
 		}
 	}
 
-	const handleConfirm = () => {
-		if (projectDir) {
+	const handleConfirm = async () => {
+		if (!projectDir) {
+			return;
+		}
+
+		try {
+			const user = await window.electron.user.read();
+			const updatedUser = await window.electron.user.initializeDirectory(user);
+
+			if (updatedUser.dir) {
+				dispatch(setProjectDir(updatedUser.dir));
+			}
+			dispatch(setProjectInitialized(!!updatedUser.project_initialized));
 			setHidden(true);
+		} catch (err) {
+			dispatch(showAlert({
+				color: 'red',
+				message: `Error initializing directory: ${err.message}`
+			}));
 		}
 	};
 
@@ -37,8 +64,8 @@ export default function DirPrompt(props: Props) {
 			return;
 		}
 
-		setHidden(!!projectDir);
-	}, [props.loading]);
+		setHidden(!!projectDir && !!projectInitialized);
+	}, [props.loading, projectDir, projectInitialized]);
 
 	if (hidden) {
 		return null;

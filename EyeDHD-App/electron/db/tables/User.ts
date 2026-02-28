@@ -6,6 +6,7 @@ export type User = {
 	id: number;
 	name: string;
 	dir?: string;
+	project_initialized?: number;
 	created_at: string;
 	updated_at: string;
 };
@@ -21,6 +22,7 @@ export function createUserTable(db: Database) {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT UNIQUE NOT NULL,
 			dir TEXT,
+			project_initialized INTEGER DEFAULT 0,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
@@ -106,6 +108,7 @@ function update(db: Database, user: User, updates: Partial<User>): User {
     	UPDATE user
 		SET
 			dir = @dir,
+			project_initialized = @project_initialized,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE name = @name;
 		`)

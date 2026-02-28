@@ -8,8 +8,8 @@ import csvActions, { type CSVData, createCSVTable, deleteCSVTable } from './tabl
 import userActions, { type User, createUserTable } from './tables/User';
 
 type DBOptions = {
-	logging: boolean;
-	temporary: boolean;
+	logging?: boolean;
+	temporary?: boolean;
 	path?: string;
 };
 
@@ -32,7 +32,7 @@ type CSVDataActions = {
 
 /**
  * DatabaseManager class that manages the SQLite database connection, provides methods
- * for interacting with the metadata, csv, and saccade tables, and handles data streaming
+ * for interacting with the casedata, csv, and saccade tables, and handles data streaming
  * through DataStream instances.
  *
  * It also manages DataCleaner instances for each opened file to perform data cleaning
@@ -112,28 +112,28 @@ export default class DatabaseManager {
 	}
 
 	/**
-	 * Opens a CSV file and returns its metadata. If the file has been opened before, it
+	 * Opens a CSV file and returns its casedata. If the file has been opened before, it
 	 * reads the existing metadata from the database. If the file is new, it creates a
-	 * new metadata entry, initializes a DataCleaner for the file, and creates the
+	 * new casedata entry, initializes a DataCleaner for the file, and creates the
 	 * necessary tables for storing cleaned data and analysis results.
 	 */
 	openFile(filename: string, filepath: string): CaseData {
 		if (this.actions.case.exists(filename)) {
-			const metadata = caseActions.read(this.db, filename);
-			if (!metadata.completed) {
-				this.actions.case.resetCleaning(metadata);
+			const casedata = caseActions.read(this.db, filename);
+			if (!casedata.completed) {
+				this.actions.case.resetCleaning(casedata);
 			}
-			this.createCleaner(metadata);
+			this.createCleaner(casedata);
 
-			return metadata;
+			return casedata;
 		}
 
-		const metadata = caseActions.create(this.db, filename, filepath);
+		const casedata = caseActions.create(this.db, filename, filepath);
 
-		this.createCleaner(metadata);
-		createCSVTable(this.db, metadata.name);
+		this.createCleaner(casedata);
+		createCSVTable(this.db, casedata.name);
 
-		return metadata;
+		return casedata;
 	}
 
 	/**

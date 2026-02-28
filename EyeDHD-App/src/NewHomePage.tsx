@@ -3,15 +3,17 @@ import React, { useEffect, useState } from 'react';
 import DirPrompt from './components/DirPrompt';
 import CaseList from './components/CaseList';
 
-import { useDispatch } from './store/hooks';
+import { useDispatch, useSelector } from './store/hooks';
 import { showAlert } from './store/features/global';
-import { setCases, setProjectDir } from './store/features/user';
+import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from './store/features/user';
 import RemoteStream from './data/RemoteStream';
 import { CaseData } from './types';
 import LoadingOverlay from './components/LoadingOverlay';
 
 export default function HomePage() {
 	const dispatch = useDispatch();
+	const user_dir = useSelector(selectProjectDir);
+	const projectInitialized = useSelector(selectProjectInitialized);
 
 	const [loading, setLoading] = useState(true);
 
@@ -19,10 +21,27 @@ export default function HomePage() {
 		dispatch(showAlert({ color: 'red', message: `Error loading user data: ${err.message}` }));
 	};
 
-	// Loads user data on startup into the redux store
+	// Keeps redux in sync with user database
 	const loadUserData = async () => {
 		const user = await window.electron.user.read();
-		dispatch(setProjectDir(user.dir));
+
+		if (user?.dir && user?.dir !== user_dir) {
+			dispatch(setProjectDir(user.dir));
+		}
+		if (!!user?.project_initialized !== !!projectInitialized) {
+			dispatch(setProjectInitialized(!!user.project_initialized));
+		}
+
+		if (!user?.dir || !user.project_initialized) {
+			dispatch(setCases([]));
+			return;
+		}
+
+		const initializedUser = await window.electron.user.initializeDirectory(user);
+		if (initializedUser?.dir && initializedUser?.dir !== user_dir) {
+			dispatch(setProjectDir(initializedUser.dir));
+		}
+		dispatch(setProjectInitialized(!!initializedUser.project_initialized));
 
 		const stream = await RemoteStream.create('CaseData', {});
 		const cases = await stream.collect<CaseData>();
@@ -65,7 +84,7 @@ export default function HomePage() {
 
 	useEffect(() => {
 		loadUserData().catch(handleError).then(() => setLoading(false));
-	}, []);
+	}, [user_dir, projectInitialized]);
 
 	return (
 		<>
