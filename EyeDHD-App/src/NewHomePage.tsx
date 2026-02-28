@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
+import LoadingOverlay from './components/LoadingOverlay';
 import DirPrompt from './components/DirPrompt';
 import CaseList from './components/CaseList';
 
+import RemoteStream from './data/RemoteStream';
+import { CaseData } from './types';
 import { useDispatch, useSelector } from './store/hooks';
 import { showAlert } from './store/features/global';
 import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from './store/features/user';
-import RemoteStream from './data/RemoteStream';
-import { CaseData } from './types';
-import LoadingOverlay from './components/LoadingOverlay';
-import FileImportWindow from './components/FileImportWindow';
 
 export default function HomePage() {
 	const dispatch = useDispatch();
@@ -47,40 +46,7 @@ export default function HomePage() {
 			const stream = await RemoteStream.create('CaseData', {});
 			const cases = await stream.collect<CaseData>();
 
-			const testing = [
-				{
-					id: 0,
-					name: 'ID.001.csv',
-					path: '/path/to/ID.001.csv',
-					header: 'header,stuff',
-					cleaned: 0,
-					cleaned_rows: 0,
-					created_at: Date.now().toString(),
-					updated_at: Date.now().toString()
-				},
-				{
-					id: 1,
-					name: 'ID.002.csv',
-					path: '/path/to/ID.002.csv',
-					header: 'header,stuff',
-					cleaned: 0,
-					cleaned_rows: 0,
-					created_at: Date.now().toString(),
-					updated_at: Date.now().toString()
-				},
-				{
-					id: 2,
-					name: 'ID.003.csv',
-					path: '/path/to/ID.003.csv',
-					header: 'header,stuff',
-					cleaned: 0,
-					cleaned_rows: 0,
-					created_at: Date.now().toString(),
-					updated_at: Date.now().toString()
-				}
-			];
-
-			dispatch(setCases(testing));
+			dispatch(setCases(cases));
 		} catch (err) {
 			handleError(err);
 		}
@@ -95,7 +61,6 @@ export default function HomePage() {
 			<LoadingOverlay isLoading={loading} />
 			<DirPrompt loading={loading} />
 			<div>
-				<FileImportWindow />
 				<CaseList loading={loading} />
 			</div>
 

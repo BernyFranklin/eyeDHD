@@ -161,30 +161,44 @@ ipcMain.handle('case:create-new', async (_, caseName) => {
 	});
 });
 
-ipcMain.handle('case:import-csv', async (_, casedata: CaseData) => {
+ipcMain.handle('case:select-csv', async () => {
 	return new Promise(async (resolve, reject) => {
-		const { canceled, filePaths } = await dialog.showOpenDialog({
-			properties: ['openFile'],
-			filters: [{ name: 'CSV Files', extensions: ['csv'] }]
-		});
+		try {
+			const { canceled, filePaths } = await dialog.showOpenDialog({
+				properties: ['openFile'],
+				filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+			});
 
-		if (canceled) {
-			return resolve(null);
+			if (canceled) {
+				return resolve(null);
+			}
+
+			return resolve(filePaths[0] ?? null);
+		} catch (err) {
+			return reject(`Failed to select CSV: ${err}`);
 		}
+	});
+});
 
-		const filepath = filePaths[0];
+ipcMain.handle('case:import-csv', async (_, args: { file: CaseData; filepath: string }) => {
+	return new Promise(async (resolve, reject) => {
+		const { file, filepath } = args || {};
+
+		if (!filepath) {
+			return reject('No file path provided for import');
+		}
 
 		try {
 			const user = main_manager.actions.user.read();
 			if (!user.dir) {
 				return reject('No project directory set for user');
 			}
-			if (!casedata) {
+			if (!file) {
 				return reject('No case provided for import');
 			}
 
 			const manager = requireProjectManager();
-			const storedCase = manager.actions.case.read(casedata.name);
+			const storedCase = manager.actions.case.read(file.name);
 
 			const importPath = caseImportCsvPath(storedCase);
 			const importDir = path.dirname(importPath);

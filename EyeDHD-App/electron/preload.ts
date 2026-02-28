@@ -19,7 +19,8 @@ declare interface Electron {
 	case: {
 		createNew(caseName: string): Promise<CaseData>;
 		read(filename: string): Promise<CaseData>;
-		importCsv(file: CaseData): Promise<CaseData | null>;
+		selectCsv(): Promise<string | null>;
+		importCsv(file: CaseData, filepath: string): Promise<CaseData>;
 	};
 
 	csv: {
@@ -89,10 +90,16 @@ const electron: Electron = {
 			return await ipcRenderer.invoke('case:read-casedata', name);
 		},
 		/**
-		 * Prompts for a CSV file and copies it into the case imports folder.
+		 * Prompts for a CSV file and returns the selected path.
 		 */
-		importCsv: async (file: CaseData): Promise<CaseData | null> => {
-			return await ipcRenderer.invoke('case:import-csv', file);
+		selectCsv: async (): Promise<string | null> => {
+			return await ipcRenderer.invoke('case:select-csv');
+		},
+		/**
+		 * Copies the selected CSV file into the case imports folder.
+		 */
+		importCsv: async (file: CaseData, filepath: string): Promise<CaseData> => {
+			return await ipcRenderer.invoke('case:import-csv', { file, filepath });
 		}
 	},
 

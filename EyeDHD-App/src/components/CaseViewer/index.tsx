@@ -1,23 +1,34 @@
-import { useEffect } from "react";
+import { useState } from "react";
 
-import { useDispatch } from "../../store/hooks";
+import FileImportWindow from "../FileImportWindow";
+import Button from "../Button";
+import { useDispatch, useSelector } from "../../store/hooks";
 import { showAlert } from "../../store/features/global";
+import { selectSelectedCase } from "../../store/features/user";
 
 export default function CaseViewer() {
 	const dispatch = useDispatch();
+	const selectedCase = useSelector(selectSelectedCase);
+	const [showFileImport, setShowFileImport] = useState(false);
 
 	const handleError = (err: Error) => {
 		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
 	};
 
-	useEffect(() => {
-		handleError(new Error('Case viewer functionality not implemented yet'));
-	}, []);
-
 	return (
 		<>
 			<div>
-				Tasks
+				<FileImportWindow
+					isOpen={showFileImport}
+					onClose={() => setShowFileImport(false)}
+				/>
+				<Button
+					onClick={() => setShowFileImport(true)}
+					style={{ marginLeft: '12px' }}
+				>
+					Import Files +
+				</Button>
+				{selectedCase.name}
 				<ul className='task-list'>
 					<li className='task-item active-task'>
 						<span className='task-name'>Cleaning data...</span>

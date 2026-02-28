@@ -38,11 +38,14 @@ export const userSlice = createSlice({
 		},
 		setCases: (state, action: PayloadAction<CaseData[]>) => {
 			state.cases = action.payload;
+		},
+		setSelectedCase: (state, action: PayloadAction<CaseData | null>) => {
+			state.selectedCase = action.payload;
 		}
 	}
 });
 
-export const { setProjectDir, setProjectInitialized, setCases } = userSlice.actions;
+export const { setProjectDir, setProjectInitialized, setCases, setSelectedCase } = userSlice.actions;
 
 export const selectProjectDir = (state: RootState) => state.user.projectDir;
 export const selectProjectInitialized = (state: RootState) => state.user.projectInitialized;
