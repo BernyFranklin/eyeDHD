@@ -1,8 +1,12 @@
 # UI Rework TODO List
 
 ## More Important
+- If main.db has a selected project folder, on start check if folder is set up correctly and if error and prompt for new folder selection
+- When selecting a project folder, it should check if folder is empty first and error if it is not and prompt for new folder selection
+- Simplify cleaned csv streaming so that it reads from the saved _Cleaned.csv file
 - Add functionality to the tasks
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
+- When case name is entered, check whether that case has been created already
 
 ## Less Important
 - Work on eye dilation chart

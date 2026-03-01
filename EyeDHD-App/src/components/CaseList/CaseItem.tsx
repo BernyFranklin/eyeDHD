@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React from 'react';
 
 import { type CaseData } from '../../types';
 import { useDispatch } from '../../store/hooks';
@@ -12,11 +12,6 @@ type Props = {
 export default function Case(props: Props) {
 	const dispatch = useDispatch();
 
-	const name = useMemo(() => {
-		const nameWithoutExtension = props.file.name.replace(/\.[^/.]+$/, '');
-		return nameWithoutExtension;
-	}, [props.file]);
-
 	return (
 		<>
 			<div className='case-item'>
@@ -27,11 +22,14 @@ export default function Case(props: Props) {
 						props.onClick(props.file);
 					}}
 				>
-					{name}
+					{props.file.name}
 				</a>
 				<div
 					className='case-options'
-					onClick={() => dispatch(showAlert({ color: 'red', message: 'Not implemented' }))}
+					onClick={() => dispatch(showAlert({
+						color: 'red',
+						message: 'Not implemented'
+					}))}
 				>
 					...
 				</div>

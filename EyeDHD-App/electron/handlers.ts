@@ -74,50 +74,57 @@ ipcMain.handle('user:select-directory', async (_, user: User) => {
 
 		const dirPath = filePaths[0];
 		try {
-			const initialized = isProjectInitialized(dirPath);
-			project_manager = null;
-			project_dir = null;
-			const new_user = main_manager.actions.user.update(user, {
+			// const initialized = isProjectInitialized(dirPath);
+			// project_manager = null;
+			// project_dir = null;
+			// const new_user = main_manager.actions.user.update(user, {
+			// 	dir: dirPath,
+			// 	project_initialized: initialized ? 1 : 0
+			// });
+			// return resolve(new_user);
+			return resolve({
 				dir: dirPath,
-				project_initialized: initialized ? 1 : 0
-			});
-			return resolve(new_user);
+				status: {
+
+				}
+			})
 		} catch (err) {
 			return reject(`Failed to set project directory: ${err}`);
 		}
 	});
 });
 
-ipcMain.handle('user:initialize-directory', async (_, user: User) => {
+ipcMain.handle('user:initialize-directory', async (_, dir: string, user: User) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const dirPath = user.dir;
-			if (!dirPath) {
-				return reject('No directory set for user');
+			if (!fs.existsSync(dir)) {
+				return reject(`Directory does not exist: ${dir}`);
 			}
 
-			if (!fs.existsSync(dirPath)) {
-				return reject(`Directory does not exist: ${dirPath}`);
-			}
-
-			if (project_manager && project_dir === dirPath && isProjectInitialized(dirPath)) {
-				const updated_user = main_manager.actions.user.update(user, { project_initialized: 1 });
+			if (project_manager && project_dir === dir && isProjectInitialized(dir)) {
+				const updated_user = main_manager.actions.user.update(user, {
+					dir,
+					project_initialized: 1
+				});
 				return resolve(updated_user);
 			}
 
 			// Initialize project manager with project directory
 			project_manager = new DatabaseManager({
-				path: path.join(dirPath, 'project.db')
+				path: path.join(dir, 'project.db')
 			});
-			project_dir = dirPath;
+			project_dir = dir;
 
 			// Create dirPath/cases directory
-			const casesDir = path.join(dirPath, 'cases');
+			const casesDir = path.join(dir, 'cases');
 			if (!fs.existsSync(casesDir)) {
 				fs.mkdirSync(casesDir);
 			}
 
-			const updated_user = main_manager.actions.user.update(user, { project_initialized: 1 });
+			const updated_user = main_manager.actions.user.update(user, {
+				dir,
+				project_initialized: 1
+			});
 			return resolve(updated_user);
 		} catch (err) {
 			return reject(`Failed to initialize user directory: ${err}`);

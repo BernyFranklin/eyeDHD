@@ -44,6 +44,7 @@ export function CreateCaseWindow(props: Props) {
 			}
 
 			setCsvLabel(filepath);
+			setCsvStatus('success');
 		} catch (err) {
 			dispatch(showAlert({
 				color: 'red',
@@ -66,10 +67,18 @@ export function CreateCaseWindow(props: Props) {
 
 		try {
 			setIsSubmitting(true);
+			setCaseNameStatus('waiting');
 			setCsvStatus('waiting');
 			setVrStatus('waiting');
-			const createdCase = await window.electron.case.createNew(trimmedName);
+
+			const createdCase = await window.electron.case
+				.createNew(trimmedName)
+				.catch(err => {
+					setCaseNameStatus('error');
+					throw err;
+				});
 			dispatch(setSelectedCase(createdCase));
+			setCaseNameStatus('success');
 
 			const updatedCase = await window.electron.case.importCsv(
 				createdCase,
@@ -148,6 +157,10 @@ export function CreateCaseWindow(props: Props) {
 					/>
 				</div>
 				<div className='import-file-col'>
+					{/*
+						These need disclaimer that file will be renamed to match chosen
+						case name
+					*/}
 					<div className='create-case-title'>
 						Import case files
 					</div>
@@ -157,7 +170,7 @@ export function CreateCaseWindow(props: Props) {
 								`create-case-input cursor-pointer ${getImportBorder(csvStatus)}`
 							}
 							onClick={handleSelectCsv}
-							value={csvLabel}
+							value={csvLabel.split('\\').slice(-1)[0] || ''}
 							readOnly
 							aria-label='Select a CSV file'
 							placeholder='Select a CSV file'
@@ -169,7 +182,7 @@ export function CreateCaseWindow(props: Props) {
 							className={
 								`create-case-input cursor-pointer ${getImportBorder(vrStatus)}`
 							}
-							value={vrLabel}
+							value={vrLabel.split('\\').slice(-1)[0] || ''}
 							readOnly
 							aria-label='VR video selection coming soon'
 							placeholder='VR video selection coming soon'

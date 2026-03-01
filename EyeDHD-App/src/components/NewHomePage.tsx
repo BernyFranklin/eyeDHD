@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
 import LoadingOverlay from './LoadingOverlay';
-import ChooseDirWindow from './ChooseDirWindow';
 import CaseList from './CaseList';
 import { CreateCaseWindow } from './CreateCaseWindow';
 import Button from './Button';
@@ -10,12 +9,10 @@ import RemoteStream from '../data/RemoteStream';
 import { CaseData } from '../types';
 import { useDispatch, useSelector } from '../store/hooks';
 import { showAlert } from '../store/features/global';
-import { selectCases, selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from '../store/features/user';
+import { selectCases, setCases, setProjectDir, setProjectInitialized } from '../store/features/user';
 
 export default function HomePage() {
 	const dispatch = useDispatch();
-	const user_dir = useSelector(selectProjectDir);
-	const projectInitialized = useSelector(selectProjectInitialized);
 	const cases = useSelector(selectCases);
 
 	const [loading, setLoading] = useState(true);
@@ -25,27 +22,13 @@ export default function HomePage() {
 		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
 	};
 
-	const loadUserData = async () => {
+	const refresh = async () => {
 		try {
+			setLoading(true);
+
 			const user = await window.electron.user.read();
-
-			if (user.dir && user.dir !== user_dir) {
-				dispatch(setProjectDir(user.dir));
-			}
-			if (!!user.project_initialized !== !!projectInitialized) {
-				dispatch(setProjectInitialized(!!user.project_initialized));
-			}
-
-			if (!user.dir || !user.project_initialized) {
-				dispatch(setCases([]));
-				return;
-			}
-
-			const initializedUser = await window.electron.user.initializeDirectory(user);
-			if (initializedUser.dir && initializedUser.dir !== user_dir) {
-				dispatch(setProjectDir(initializedUser.dir));
-			}
-			dispatch(setProjectInitialized(!!initializedUser.project_initialized));
+			dispatch(setProjectDir(user.dir));
+			dispatch(setProjectInitialized(!!user.project_initialized));
 
 			const stream = await RemoteStream.create('CaseData', {});
 			const cases = await stream.collect<CaseData>();
@@ -57,12 +40,8 @@ export default function HomePage() {
 	};
 
 	useEffect(() => {
-		loadUserData().catch(handleError).then(() => setLoading(false));
-	}, [user_dir, projectInitialized]);
-
-	if (!user_dir || !projectInitialized) {
-		return <ChooseDirWindow loading={loading} />;
-	}
+		refresh().catch(handleError).then(() => setLoading(false));
+	}, []);
 
 	return (
 		<>
@@ -86,7 +65,6 @@ export default function HomePage() {
 						</Button>
 					</div>
 				</div>
-
 			</div>
 
 			<style>{`
@@ -114,8 +92,6 @@ export default function HomePage() {
 					padding-left: 100px;
 					padding-top: 100px;
 				}
-
-
 
 				.cases-col p {
 					margin: 10px 16px 0 0;
