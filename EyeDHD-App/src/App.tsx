@@ -15,7 +15,14 @@ function App() {
 				<Navbar />
 				<AlertWindow />
 				<main className="app-content">
-					<Outlet />
+					<img
+						className="app-background-logo"
+						src="./images/eyedhd-logo-transparent.png"
+						alt="EyeDHD logo"
+					/>
+					<div className="app-page">
+						<Outlet />
+					</div>
 				</main>
 			</Provider>
 		</>

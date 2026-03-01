@@ -86,13 +86,7 @@ export default function HomePage() {
 						</Button>
 					</div>
 				</div>
-				<div className='home-logo-col'>
-					<img
-						className='home-logo'
-						src='./images/eyedhd-logo-transparent.png'
-						alt='EyeDHD logo'
-					/>
-				</div>
+
 			</div>
 
 			<style>{`
@@ -107,7 +101,6 @@ export default function HomePage() {
 					box-sizing: border-box;
 					overflow: hidden;
 					min-height: 0;
-					background-color: #fff;
 				}
 
 				.cases-col {
@@ -122,26 +115,7 @@ export default function HomePage() {
 					padding-top: 100px;
 				}
 
-				.home-logo-col {
-					flex: 1;
-					height: 100%;
-					display: flex;
-					align-items: center;
-					justify-content: center;
-					align-self: center;
-					overflow: hidden;
-					min-height: 0;
-				}
 
-				.home-logo {
-					height: 90%;
-					max-height: 90%;
-					max-width: 100%;
-					width: auto;
-					opacity: 0.1;
-					object-fit: contain;
-					filter: grayscale(100%);
-				}
 
 				.cases-col p {
 					margin: 10px 16px 0 0;

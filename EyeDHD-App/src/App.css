@@ -36,14 +36,34 @@ body {
 	background-color: #fff;
 }
 
-
-
 .app-content {
 	flex: 1;
 	min-height: 0;
 	width: 100%;
+	display: block;
+	position: relative;
+}
+
+.app-background-logo {
+	position: absolute;
+	right: 50px;
+	bottom: 50px;
+	height: 115%;
+	width: auto;
+	opacity: 0.1;
+	object-fit: contain;
+	filter: grayscale(100%);
+	pointer-events: none;
+}
+
+.app-page {
+	position: relative;
+	z-index: 1;
+	min-height: 0;
 	display: flex;
 	flex-direction: column;
+	overflow: auto;
+	height: 100%;
 }
 
 .disabled {
