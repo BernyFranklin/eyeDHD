@@ -11,7 +11,7 @@ export interface AdapterOptions {
 }
 
 export interface AdapterDiagnostics {
-  totalRows: number;
+  totalRows:    number;
   includedRows: number;
   excludedRows: number;
   excludedByReason: {
@@ -71,21 +71,19 @@ export function adaptGazeRowsToAnalysisInput(
   
   const vectors: Vec3[] = includedRows.map(r => r.combinedGazeForward);        // Extract the combinedGazeForward vector from each included row
   const sourceRowIndices: number[] = includedRows.map(r => r.rowIndex);        // Keep track of the original row indices for the included rows
-  
-  const diagnostics: AdapterDiagnostics = {                                    // Compile diagnostics
-    totalRows: rows.length,
-    includedRows: includedRows.length,
-    excludedRows: rows.length - includedRows.length,
-    excludedByReason: {
-      gazeStatusFiltered: excludedByStatusFilter,
-    },
-    includedByGazeStatus,
-    excludedByGazeStatus,
-  };
 
   return {                                                                     // Return the adapted vectors along with diagnostics and source row indices
     vectors,
-    diagnostics,
+    diagnostics: {
+      totalRows: rows.length,
+      includedRows: includedRows.length,
+      excludedRows: rows.length - includedRows.length,
+      excludedByReason: {
+        gazeStatusFiltered: excludedByStatusFilter,
+      },
+      includedByGazeStatus,
+      excludedByGazeStatus,
+    },
     sourceRowIndices,
   };
 }
