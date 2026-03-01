@@ -166,7 +166,7 @@ export function CreateCaseWindow(props: Props) {
 								`create-case-input cursor-pointer ${getImportBorder(csvStatus)}`
 							}
 							onClick={handleSelectCsv}
-							value={csvLabel}
+							value={csvLabel.split('\\').slice(-1)[0] || ''}
 							readOnly
 							aria-label='Select a CSV file'
 							placeholder='Select a CSV file'
@@ -178,7 +178,7 @@ export function CreateCaseWindow(props: Props) {
 							className={
 								`create-case-input cursor-pointer ${getImportBorder(vrStatus)}`
 							}
-							value={vrLabel}
+							value={vrLabel.split('\\').slice(-1)[0] || ''}
 							readOnly
 							aria-label='VR video selection coming soon'
 							placeholder='VR video selection coming soon'
