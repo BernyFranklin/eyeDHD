@@ -44,6 +44,7 @@ export function CreateCaseWindow(props: Props) {
 			}
 
 			setCsvLabel(filepath);
+			setCsvStatus('success');
 		} catch (err) {
 			dispatch(showAlert({
 				color: 'red',
@@ -66,10 +67,18 @@ export function CreateCaseWindow(props: Props) {
 
 		try {
 			setIsSubmitting(true);
+			setCaseNameStatus('waiting');
 			setCsvStatus('waiting');
 			setVrStatus('waiting');
-			const createdCase = await window.electron.case.createNew(trimmedName);
+
+			const createdCase = await window.electron.case
+				.createNew(trimmedName)
+				.catch(err => {
+					setCaseNameStatus('error');
+					throw err;
+				});
 			dispatch(setSelectedCase(createdCase));
+			setCaseNameStatus('success');
 
 			const updatedCase = await window.electron.case.importCsv(
 				createdCase,

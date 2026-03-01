@@ -1,7 +1,7 @@
 :root {
 	--action-bg: #13284c;
 	--action-bg-hover: #27395c;
-	--action-bg-disabled: #33486c;
+	--action-bg-disabled: #63789c;
 	--action-text: #fff;
 	--action-radius: 10px;
 }
