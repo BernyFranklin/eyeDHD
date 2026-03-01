@@ -22,9 +22,6 @@ export default function CaseList(props: Props) {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 
-
-
-
 	const openCase = async (file: CaseData) => {
 		dispatch(setSelectedCase(file));
 		navigate('/case');
