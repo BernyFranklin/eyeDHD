@@ -3,6 +3,7 @@
 ## More Important
 - Add functionality to the tasks
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
+- When case name is entered, check whether that case has been created already
 
 ## Less Important
 - Work on eye dilation chart
