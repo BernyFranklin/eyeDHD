@@ -1,6 +1,8 @@
 {
   "name": "eyedhd-app",
   "productName": "eyedhd",
+  "author": "EyeDHD",
+  "description": "A desktop application for analyzing eye-tracking data.",
   "version": "0.0.0",
   "main": ".vite/build/main.js",
   "private": true,

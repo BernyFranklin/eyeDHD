@@ -14,8 +14,6 @@ export default defineConfig({
       // If the plugin complains about dynamic requires, list the .node targets
       // Adjust these globs/paths to where the .node files actually live in your project
       dynamicRequireTargets: [
-        // absolute path to the built native (the one shown in your error)
-        '/Users/dwclake/learning/test/test/build/better_sqlite3.node',
         // and a glob for typical node_modules locations for this package
         path.resolve(__dirname, 'node_modules/better-sqlite3/build/**')
       ]

@@ -5,13 +5,17 @@ import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
+import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true
   },
-  rebuildConfig: {},
+  rebuildConfig: {
+  	force: true,
+   	onlyModules: ['better-sqlite3']
+  },
   makers: [
     new MakerSquirrel({}),
     new MakerZIP({}, ['darwin']),
@@ -42,6 +46,7 @@ const config: ForgeConfig = {
         }
       ]
     }),
+    new AutoUnpackNativesPlugin({}),
     // Fuses are used to enable/disable various Electron functionality
     // at package time, before code signing the application
     new FusesPlugin({
