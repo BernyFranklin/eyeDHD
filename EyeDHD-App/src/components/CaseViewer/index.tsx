@@ -22,6 +22,7 @@ export default function CaseViewer() {
 					isOpen={showFileImport}
 					onClose={() => setShowFileImport(false)}
 				/>
+				{/* Here will display file import status */}
 				<Button
 					onClick={() => setShowFileImport(true)}
 					style={{ marginLeft: '12px' }}

@@ -1,6 +1,8 @@
 - Work on eye dilation chart
 - Animation generation progress bar
 - UI Rework / UX Simplification
+- Display status of required file imports and display in CaseViewer
+- Add functionality to the tasks
 - CSS Styling
 - Change so the user selects a projects directory which the app stores the database, user settings, and a folder that contains the folders for each case / trial. Each case / trial folder would contain: backups of user imported file like the csv and vr video incase it is needed again; all the generated outputs like animations, side-by-sides, images of graphs, etc which will be copied out when the user exports them
 
@@ -15,7 +17,7 @@ path_to_folder/
 				ID_011.csv
 				ID_011.mp4
 				...
-			out/
+			outputs/
 				ID_011_Animation.mp4
 				ID_011_Cleaned.csv
 				ID_011_SideBySide.mp4
