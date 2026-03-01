@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import LoadingOverlay from './LoadingOverlay';
-import DirPrompt from './DirPrompt';
+import ChooseDirWindow from './ChooseDirWindow';
 import CaseList from './CaseList';
 import { CreateCaseWindow } from './CreateCaseWindow';
 import Button from './Button';
@@ -61,7 +61,7 @@ export default function HomePage() {
 	}, [user_dir, projectInitialized]);
 
 	if (!user_dir || !projectInitialized) {
-		return <DirPrompt loading={loading} />;
+		return <ChooseDirWindow loading={loading} />;
 	}
 
 	return (

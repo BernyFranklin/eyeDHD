@@ -1,7 +1,5 @@
-import { useState } from "react";
+import React from "react";
 
-import FileImportWindow from "../FileImportWindow";
-import Button from "../Button";
 import { useDispatch, useSelector } from "../../store/hooks";
 import { showAlert } from "../../store/features/global";
 import { selectSelectedCase } from "../../store/features/user";
@@ -9,7 +7,6 @@ import { selectSelectedCase } from "../../store/features/user";
 export default function CaseViewer() {
 	const dispatch = useDispatch();
 	const selectedCase = useSelector(selectSelectedCase);
-	const [showFileImport, setShowFileImport] = useState(false);
 
 	const handleError = (err: Error) => {
 		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
@@ -18,17 +15,6 @@ export default function CaseViewer() {
 	return (
 		<>
 			<div>
-				<FileImportWindow
-					isOpen={showFileImport}
-					onClose={() => setShowFileImport(false)}
-				/>
-				{/* Here will display file import status */}
-				<Button
-					onClick={() => setShowFileImport(true)}
-					style={{ marginLeft: '12px' }}
-				>
-					Import Files +
-				</Button>
 				{selectedCase.name}
 				<ul className='task-list'>
 					<li className='task-item active-task'>

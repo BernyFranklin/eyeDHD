@@ -9,7 +9,7 @@ type Props = {
 	loading: boolean;
 }
 
-export default function DirPrompt(props: Props) {
+export default function ChooseDirWindow(props: Props) {
 	const dispatch = useDispatch();
 	const projectDir = useSelector(selectProjectDir);
 	const projectInitialized = useSelector(selectProjectInitialized);
