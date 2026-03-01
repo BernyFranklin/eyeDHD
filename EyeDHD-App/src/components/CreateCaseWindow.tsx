@@ -157,6 +157,10 @@ export function CreateCaseWindow(props: Props) {
 					/>
 				</div>
 				<div className='import-file-col'>
+					{/*
+						These need disclaimer that file will be renamed to match chosen
+						case name
+					*/}
 					<div className='create-case-title'>
 						Import case files
 					</div>
