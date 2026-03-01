@@ -6,14 +6,22 @@ import { type Progress, type DataType, type StreamKey, type StreamType } from '.
 
 export { Electron, Renderer };
 
+type ProjectDir = {
+	dir?: string,
+	status: {
+		empty: boolean,
+		initialized: boolean
+	}
+}
+
 /**
  * Declares the API that the backend exposes to the frontend through the preload script
  */
 declare interface Electron {
 	user: {
 		read(): Promise<User>;
-		selectDirectory(user: User): Promise<User | null>;
-		initializeDirectory(user: User): Promise<User>;
+		selectDirectory(user: User): Promise<ProjectDir | null>;
+		initializeDirectory(dir: string, user: User): Promise<User>;
 	},
 	// COPILOT: This should be renamed to case
 	case: {
@@ -69,11 +77,11 @@ const electron: Electron = {
 		 * @returns The full path of the selected directory, or null if the dialog was
 		 * canceled.
 		 */
-		selectDirectory: async (user: User): Promise<User | null> => {
+		selectDirectory: async (user: User): Promise<ProjectDir | null> => {
 			return await ipcRenderer.invoke('user:select-directory', user);
 		},
-		initializeDirectory: async (user: User): Promise<User> => {
-			return await ipcRenderer.invoke('user:initialize-directory', user);
+		initializeDirectory: async (dir: string, user: User): Promise<User> => {
+			return await ipcRenderer.invoke('user:initialize-directory', dir, user);
 		}
 	},
 	case: {

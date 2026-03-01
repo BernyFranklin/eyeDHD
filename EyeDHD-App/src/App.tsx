@@ -1,30 +1,96 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Provider } from 'react-redux';
 import { Outlet } from 'react-router';
 
-import { store } from './store';
 
 import './App.css';
 import Navbar from './components/Navbar';
 import AlertWindow from './components/AlertWindow';
+import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from './store/features/user';
+import { useDispatch, useSelector } from './store/hooks';
+import RemoteStream from './data/RemoteStream';
+import { CaseData } from './types';
+import ChooseDirWindow from './components/ChooseDirWindow';
+import LoadingOverlay from './components/LoadingOverlay';
+import { showAlert } from './store/features/global';
 
 function App() {
-	return (
-		<>
-			<Provider store={store}>
+	const dispatch = useDispatch();
+
+	const user_dir = useSelector(selectProjectDir);
+	const projectInitialized = useSelector(selectProjectInitialized);
+
+	const [loading, setLoading] = useState(true);
+
+	const handleError = (err: Error) => {
+		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
+	};
+
+	const loadUserData = async () => {
+		const user = await window.electron.user.read();
+
+		if (!user.dir || !user.project_initialized) {
+			// We should prompt user for project folder at this point
+			dispatch(setCases([]));
+			return;
+		}
+
+		const initializedUser = await window.electron.user.initializeDirectory(
+			user.dir,
+			user
+		);
+		if (initializedUser.dir) {
+			dispatch(setProjectDir(initializedUser.dir));
+		}
+		dispatch(setProjectInitialized(!!initializedUser.project_initialized));
+
+
+		const stream = await RemoteStream.create('CaseData', {});
+		const cases = await stream.collect<CaseData>();
+
+		dispatch(setCases(cases));
+
+		setLoading(false);
+	};
+
+	useEffect(() => {
+		loadUserData().catch(handleError).then(() => setLoading(false));
+	}, []);
+
+	if (loading || !user_dir || !projectInitialized) {
+		return (
+			<>
 				<Navbar />
 				<AlertWindow />
 				<main className="app-content">
+					<LoadingOverlay isLoading={loading} />
 					<img
 						className="app-background-logo"
 						src="./images/eyedhd-logo-transparent.png"
 						alt="EyeDHD logo"
 					/>
 					<div className="app-page">
-						<Outlet />
+						<ChooseDirWindow loading={loading} />
 					</div>
 				</main>
-			</Provider>
+			</>
+		);
+	}
+
+	return (
+		<>
+			<Navbar />
+			<AlertWindow />
+			<main className="app-content">
+				<img
+					className="app-background-logo"
+					src="./images/eyedhd-logo-transparent.png"
+					alt="EyeDHD logo"
+				/>
+				<div className="app-page">
+					<Outlet />
+				</div>
+			</main>
 		</>
 	);
 }

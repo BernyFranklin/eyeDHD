@@ -9,26 +9,33 @@ type Props = {
 	loading: boolean;
 }
 
+type SelectStatus = 'waiting' | 'success' | 'error';
+
 export default function ChooseDirWindow(props: Props) {
 	const dispatch = useDispatch();
 	const projectDir = useSelector(selectProjectDir);
 	const projectInitialized = useSelector(selectProjectInitialized);
 
+	const [selectStatus, setSelectStatus] = useState<SelectStatus>('waiting');
 	const [hidden, setHidden] = useState(true);
 
 	const selectDir = async () => {
 		try {
-			const user = await window.electron.user.read();
-			const updatedUser = await window.electron.user.selectDirectory(user);
+			setSelectStatus('waiting');
 
-			if (!updatedUser) {
+			const user = await window.electron.user.read();
+			const project = await window.electron.user.selectDirectory(user);
+
+			if (!project) {
+				setSelectStatus('error');
 				return;
 			}
 
-			if (updatedUser.dir) {
-				dispatch(setProjectDir(updatedUser.dir));
+			if (project.dir) {
+				dispatch(setProjectDir(project.dir));
+				setSelectStatus('success');
 			}
-			dispatch(setProjectInitialized(!!updatedUser.project_initialized));
+			dispatch(setProjectInitialized(!!project.status.initialized));
 		} catch (err) {
 			dispatch(showAlert({
 				color: 'red',
@@ -44,7 +51,10 @@ export default function ChooseDirWindow(props: Props) {
 
 		try {
 			const user = await window.electron.user.read();
-			const updatedUser = await window.electron.user.initializeDirectory(user);
+			const updatedUser = await window.electron.user.initializeDirectory(
+				projectDir,
+				user
+			);
 
 			if (updatedUser.dir) {
 				dispatch(setProjectDir(updatedUser.dir));
@@ -58,6 +68,10 @@ export default function ChooseDirWindow(props: Props) {
 			}));
 		}
 	};
+
+	const getSelectBorder = (status: SelectStatus) => {
+		return `select-${status}`;
+	}
 
 	useEffect(() => {
 		if (props.loading) {
@@ -83,7 +97,9 @@ export default function ChooseDirWindow(props: Props) {
 					Project folder needed!
 				</div>
 				<textarea
-					className='project-dir-input'
+					className={
+						`project-dir-input ${getSelectBorder(selectStatus)}`
+					}
 					onClick={selectDir}
 					value={projectDir ?? 'Please select a folder'}
 					readOnly
@@ -134,7 +150,6 @@ export default function ChooseDirWindow(props: Props) {
 						min-height: 80px;
 						padding: 10px;
 						border-radius: 8px;
-						border: 1px solid #444;
 						resize: none;
 						cursor: pointer;
 						align-self: stretch;
@@ -146,6 +161,24 @@ export default function ChooseDirWindow(props: Props) {
 						display: flex;
 						justify-content: flex-end;
 						width: 100%;
+					}
+
+					.select-waiting {
+						border: 2px solid #7A7A7A;
+					}
+
+					.select-success {
+						border: 2px solid #00A000;
+					}
+
+					.select-error {
+						border: 2px solid #B1102B;
+					}
+
+					.project-dir-input:focus,
+					.project-dir-input:focus-visible {
+						outline: none;
+						box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
 					}
 				`}
 			</style>
