@@ -1,6 +1,7 @@
 # UI Rework TODO List
 
 ## More Important
+- If main.db has a selected project folder, on start check if folder is set up correctly and if not initialize it
 - Add functionality to the tasks
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
 - When case name is entered, check whether that case has been created already
