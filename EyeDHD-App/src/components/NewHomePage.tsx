@@ -71,43 +71,89 @@ export default function HomePage() {
 				isOpen={showCreateCase}
 				onClose={() => setShowCreateCase(false)}
 			/>
-			<div className='cases-row'>
-				<p>Open Cases</p>
-				<div className={`cases-list-wrapper${cases.length === 0 ? ' cases-list-wrapper--empty' : ''}`}>
-					<CaseList loading={loading} />
-					<Button
-						onClick={() => setShowCreateCase(true)}
-						height='45px'
-						padding='10px 16px'
-						style={{ marginLeft: '10px' }}
-					>
-						+
-					</Button>
+			<div className='home-layout'>
+				<div className='cases-col'>
+					<p>Open Cases</p>
+					<div className={`cases-list-wrapper${cases.length === 0 ? ' cases-list-wrapper--empty' : ''}`}>
+						<CaseList loading={loading} />
+						<Button
+							onClick={() => setShowCreateCase(true)}
+							height='45px'
+							padding='10px 16px'
+							style={{ marginLeft: '10px' }}
+						>
+							+
+						</Button>
+					</div>
+				</div>
+				<div className='home-logo-col'>
+					<img
+						className='home-logo'
+						src='./images/eyedhd-logo-transparent.png'
+						alt='EyeDHD logo'
+					/>
 				</div>
 			</div>
 
 			<style>{`
-				.cases-row {
+				.home-layout {
+					display: flex;
+					align-items: stretch;
+					width: 100%;
+					height: 100%;
+					flex: 1;
+					gap: 24px;
+					padding: 15px;
+					box-sizing: border-box;
+					overflow: hidden;
+					min-height: 0;
+					background-color: #fff;
+				}
+
+				.cases-col {
 					display: flex;
 					justify-content: center;
 					align-items: flex-start;
+					align-self: flex-start;
 					gap: 0;
-					width: 100%;
 					height: 100%;
-					padding: 15px;
+					flex: 0 0 auto;
+					padding-left: 100px;
+					padding-top: 100px;
 				}
 
-				.cases-row p {
+				.home-logo-col {
+					flex: 1;
+					height: 100%;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					align-self: center;
+					overflow: hidden;
+					min-height: 0;
+				}
+
+				.home-logo {
+					height: 90%;
+					max-height: 90%;
+					max-width: 100%;
+					width: auto;
+					opacity: 0.1;
+					object-fit: contain;
+					filter: grayscale(100%);
+				}
+
+				.cases-col p {
 					margin: 10px 16px 0 0;
 				}
 
 				.cases-list-wrapper {
 					display: flex;
 					width: 20%;
-					min-width: 280px;
+					min-width: 400px;
 					min-height: 60px;
 					align-items: flex-start;
-					border: 1px solid #ccc;
+					border: 2px solid #ccc;
 					padding: 10px;
 				}
 

@@ -14,7 +14,9 @@ function App() {
 			<Provider store={store}>
 				<Navbar />
 				<AlertWindow />
-				<Outlet />
+				<main className="app-content">
+					<Outlet />
+				</main>
 			</Provider>
 		</>
 	);
