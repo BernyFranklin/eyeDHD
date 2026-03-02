@@ -1,6 +1,6 @@
 /**
- * Re-exports types from the Electron main process to be accessed easier in the React
- * renderer code.
+ * Rexports types commonly used by the frontend from the electron and data directories,
+ * as well as a custom Error type.
  */
 
 export { type User } from '../electron/db/tables/User';

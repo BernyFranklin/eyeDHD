@@ -9,6 +9,11 @@ type Props = {
 	onClick: (file: CaseData) => void
 };
 
+/**
+ * Component for displaying a single case in the case list, shows case name and
+ * an options button (not implemented). Clicking on the case name calls onClick
+ * callback with the case data so the case list knows which item to select.
+ */
 export default function Case(props: Props) {
 	const dispatch = useDispatch();
 

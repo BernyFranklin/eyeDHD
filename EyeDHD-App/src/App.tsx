@@ -11,6 +11,11 @@ import { showAlert } from './data/features/global';
 import { CaseData } from './types';
 import RemoteStream from './data/RemoteStream';
 
+/**
+ * Main app component, handles loading user data on startup and showing either the
+ * directory selection window or the main app content based on whether a project directory
+ * is set and initialized. Also renders global alert window and navbar.
+ */
 function App() {
 	const dispatch = useDispatch();
 
@@ -27,23 +32,20 @@ function App() {
 		const user = await window.electron.user.read();
 
 		if (!user.dir || !user.project_initialized) {
-			// We should prompt user for project folder at this point
-			dispatch(setCases([]));
+			// We should prompt user for a new project folder at this point
 			return;
 		}
 
-		const initializedUser = await window.electron.user.initializeDirectory(
-			user.dir,
-			user
-		);
-		if (initializedUser.dir) {
-			dispatch(setProjectDir(initializedUser.dir));
-		}
-		dispatch(setProjectInitialized(!!initializedUser.project_initialized));
+		console.log('Dir exists and initialized');
 
+		await window.electron.user.initializeManager(user);
+		dispatch(setProjectDir(user.dir));
+		dispatch(setProjectInitialized(!!user.project_initialized));
 
 		const stream = await RemoteStream.create('CaseData', {});
 		const cases = await stream.collect<CaseData>();
+
+		console.log('Cases loaded', cases);
 
 		dispatch(setCases(cases));
 

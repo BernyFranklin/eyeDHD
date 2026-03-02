@@ -10,6 +10,10 @@ const AUTO_DISMISS_MS = 4000;
  * AlertWindow component that displays an alert message with a close button.
  * It uses the alert context to determine visibility, message, and color.
  * The alert will auto-dismiss after a set duration or can be closed manually.
+ *
+ * The AlertWindow is a global component rendered once in App.tsx that can be triggered
+ * from anywhere in the app by dispatching the showAlert action with the appropriate
+ * message and color. It listens to changes in the alert state and displays accordingly.
  */
 export default function AlertWindow() {
 	const dispatch = useDispatch();

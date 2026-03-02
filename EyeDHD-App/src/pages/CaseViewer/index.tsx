@@ -4,6 +4,11 @@ import { useDispatch, useSelector } from "../../data/hooks";
 import { showAlert } from "../../data/features/global";
 import { selectSelectedCase } from "../../data/features/user";
 
+/**
+ * Page for viewing a case, shows progress of data processing as a list of tasks
+ * and will show a preview window of the active task. When processing is complete
+ * an organized display of visualizations will be shown.
+ */
 export default function CaseViewer() {
 	const dispatch = useDispatch();
 	const selectedCase = useSelector(selectSelectedCase);

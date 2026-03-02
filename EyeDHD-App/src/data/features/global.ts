@@ -29,6 +29,13 @@ const initialState: GlobalState = {
 	}
 };
 
+/**
+ * Redux slice for global app state, including things like button disabled states and
+ * alerts.
+ *
+ * Provides actions for setting these values and selectors for accessing them from
+ * components.
+ */
 export const globalSlice = createSlice({
 	name: 'global',
 	initialState,

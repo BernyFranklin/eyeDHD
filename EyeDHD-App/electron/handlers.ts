@@ -10,26 +10,34 @@ import { type StreamKey } from './db/DataStream';
 import { type CaseData, caseImportCsvPath, caseOutputCsvPath } from './db/tables/CaseData';
 import { type User } from './db/tables/User';
 
+const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
 // TODO: consider creating another database that is stored in the project folder which
 // will contain the csv data rows, or don't store any csv in database and go straight
 // to csv.
 
-// Main database setup
-// The main database keeps track of user settings like project directory
-const appRoot = app.getAppPath();
+/**
+ * Main database setup
+ * The main database keeps track of user settings like project directory
+ */
 const main_manager = new DatabaseManager({
 	path: path.join(appRoot, 'main.db'),
 	temporary: false,
 	logging: false
 });
-// The project database in stored in the project folder and keeps track
-// of the opened csv files and their cleaning progress. This is initialized when the user
-// confims a selected project directory.
-let project_manager: DatabaseManager | null = null;
-let project_dir: string | null = null;
 
+/**
+ * The project database in stored in the project folder and keeps track
+ * of the opened csv files and their cleaning progress. This is initialized when the user
+ * confims a selected project directory.
+ */
+let project_manager: DatabaseManager | null = null;
+
+/**
+ * Helper function to get the project manager instance, which is required for most
+ * operations
+ */
 function requireProjectManager(): DatabaseManager {
 	if (!project_manager) {
 		throw new Error('Project database not initialized. Initialize a project directory first.');
@@ -37,20 +45,45 @@ function requireProjectManager(): DatabaseManager {
 	return project_manager;
 }
 
-function isProjectInitialized(dirPath: string): boolean {
-	const projectDbPath = path.join(dirPath, 'project.db');
-	const casesDir = path.join(dirPath, 'cases');
-
-	const projectDbExists = fs.existsSync(projectDbPath);
+/**
+ * Helper function to check if a directory is structured like a project directory by
+ * checking for the existence of the cases folder and the project.db. We use this to
+ * validate a existing project on startup
+ */
+function isProjectStructured(dir: string): boolean {
+	const casesDir = path.join(dir, 'cases');
 	const casesDirExists = fs.existsSync(casesDir) && fs.statSync(casesDir).isDirectory();
+	const dbPath = path.join(dir, 'project.db');
+	const dbExists = fs.existsSync(dbPath) && fs.statSync(dbPath).isFile();
 
-	return projectDbExists && casesDirExists;
+	return casesDirExists && dbExists;
+}
+
+/**
+ * Helper function to check if a directory is empty by checking if it exists, is a
+ * directory, and has no files in it. We use this to validate a selected project
+ * directory before initializing it, since we don't want to accidentally mess with an
+ * existing directory that has files in it.
+ */
+function isProjectEmpty(dir: string): boolean {
+	if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+		return true;
+	}
+
+	const files = fs.readdirSync(dir);
+	return files.length === 0;
 }
 
 /*
  * User handlers
  */
 
+/**
+ *  Handles the user:read request.
+ *
+ * Reads the user data from the main database, which includes the project directory
+ * and initialization status, and returns it to the renderer process.
+ */
 ipcMain.handle('user:read', async () => {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -62,6 +95,12 @@ ipcMain.handle('user:read', async () => {
 	});
 });
 
+/**
+ * Handles the user:select-directory request.
+ *
+ * Opens a native dialog to select a project directory and returns the selected path and
+ * its initialization status.
+ */
 ipcMain.handle('user:select-directory', async (_, user: User) => {
 	return new Promise(async (resolve, reject) => {
 		const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -73,19 +112,14 @@ ipcMain.handle('user:select-directory', async (_, user: User) => {
 		}
 
 		const dirPath = filePaths[0];
+
+		const empty = isProjectEmpty(dirPath);
+
 		try {
-			// const initialized = isProjectInitialized(dirPath);
-			// project_manager = null;
-			// project_dir = null;
-			// const new_user = main_manager.actions.user.update(user, {
-			// 	dir: dirPath,
-			// 	project_initialized: initialized ? 1 : 0
-			// });
-			// return resolve(new_user);
 			return resolve({
 				dir: dirPath,
 				status: {
-
+					empty
 				}
 			})
 		} catch (err) {
@@ -94,6 +128,43 @@ ipcMain.handle('user:select-directory', async (_, user: User) => {
 	});
 });
 
+/**
+ * Handles the user:initialize-directory request.
+ *
+ * Initializes the project manager with the selected directory, checks that the directory
+ * is properly structured, and creates the project database if it doesn't exist. This is
+ * used when the app starts up and a project directory is already set in the user data,
+ * so we can connect to the existing project database and read the cases.
+ */
+ipcMain.handle('user:initialize-manager', async (_, user: User) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			if (!fs.existsSync(user.dir)) {
+				return reject(`Directory does not exist: ${user.dir}`);
+			}
+
+			if (!isProjectStructured(user.dir)) {
+				return reject(`Saved directory is not initialized as a project: ${user.dir}`);
+			}
+
+			project_manager = new DatabaseManager({
+				path: path.join(user.dir, 'project.db')
+			});
+			return resolve({});
+		} catch (err) {
+			return reject(`Failed to initialize project manager: ${err}`);
+		}
+	});
+});
+
+/**
+ * Handles the user:initialize-directory request.
+ *
+ * Initializes the selected directory as the project directory by creating necessary
+ * folders and files, and updates the user data with the new directory and initialization
+ * status. This is used when the user selects a new project directory, so we set up the
+ * project database and folders for that directory.
+ */
 ipcMain.handle('user:initialize-directory', async (_, dir: string, user: User) => {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -101,19 +172,15 @@ ipcMain.handle('user:initialize-directory', async (_, dir: string, user: User) =
 				return reject(`Directory does not exist: ${dir}`);
 			}
 
-			if (project_manager && project_dir === dir && isProjectInitialized(dir)) {
-				const updated_user = main_manager.actions.user.update(user, {
-					dir,
-					project_initialized: 1
-				});
-				return resolve(updated_user);
+			// Check if directory is empty before proceeding
+			if (!isProjectEmpty(dir)) {
+				return reject(`Directory is not empty: ${dir}. Please select an empty directory or clear the contents before initializing.`);
 			}
 
 			// Initialize project manager with project directory
 			project_manager = new DatabaseManager({
 				path: path.join(dir, 'project.db')
 			});
-			project_dir = dir;
 
 			// Create dirPath/cases directory
 			const casesDir = path.join(dir, 'cases');
@@ -136,6 +203,13 @@ ipcMain.handle('user:initialize-directory', async (_, dir: string, user: User) =
  * Case handlers
  */
 
+/**
+ * Handles the case:create-new request.
+ *
+ * Creates a new case folder in the project directory with the given name, along with
+ * the necessary subfolders for imports, outputs, and graphs. Also creates a new
+ * metadata entry for the case in the project database. Returns the created casedata.
+ */
 ipcMain.handle('case:create-new', async (_, caseName) => {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -168,6 +242,13 @@ ipcMain.handle('case:create-new', async (_, caseName) => {
 	});
 });
 
+/**
+ * Handles the case:select-csv request.
+ *
+ * Opens a native file dialog to select a CSV file and returns the selected file path.
+ * This is used when importing a CSV into a case, so the user can select the file they
+ * want to import.
+ */
 ipcMain.handle('case:select-csv', async () => {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -187,10 +268,16 @@ ipcMain.handle('case:select-csv', async () => {
 	});
 });
 
-ipcMain.handle('case:import-csv', async (_, args: { file: CaseData; filepath: string }) => {
+/**
+ * Handles the case:import-csv request.
+ *
+ * Copies the selected CSV file into the case imports folder and creates a new entry
+ * for the imported file in the project database. Returns the updated casedata with
+ * the new file entry. This is used after the user selects a CSV to import, so we can
+ * copy it into the project and track it in the database.
+ */
+ipcMain.handle('case:import-csv', async (_, file: CaseData, filepath: string) => {
 	return new Promise(async (resolve, reject) => {
-		const { file, filepath } = args || {};
-
 		if (!filepath) {
 			return reject('No file path provided for import');
 		}
@@ -223,8 +310,13 @@ ipcMain.handle('case:import-csv', async (_, args: { file: CaseData; filepath: st
 	});
 });
 
-// Handles the case:read-casedata request.
-// Reads the metadata for a given file from the database and returns it
+/**
+ * Handles the case:read-casedata request.
+ *
+ * Reads the casedata for a given case name from the project database and returns it.
+ * This is used to get the latest casedata after changes have been made, so we can
+ * update the UI with the latest information about the case and its files.
+ */
 ipcMain.handle('case:read-casedata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -241,8 +333,13 @@ ipcMain.handle('case:read-casedata', async (_, filename) => {
  * CSV Handlers
  */
 
-// Handles the csv:reset-cleaning-progress request.
-// Resets the cleaning progress for a given file in the database
+/**
+ * Handles the csv:reset-cleaning-progress request.
+ *
+ * Resets the cleaning progress of a file in the database, allowing it to be cleaned
+ * again from the start. This is used when the user wants to redo the cleaning process
+ * for a file, so we reset any progress and allow them to start over.
+ */
 ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
@@ -256,6 +353,9 @@ ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	});
 });
 
+/**
+ * TODO: update this for new UI changes
+ */
 ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -305,8 +405,13 @@ ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
  * VR video and Animation side-by-side handlers
  */
 
-// Handles the select-video-file request. Opens a file selector for video files
-// and returns the selected file path
+/**
+ * Handles the vr:select-video-file request.
+ *
+ * Opens a native file dialog to select a video file and returns the selected file path.
+ * This is used when selecting a VR video to sync with an Animation video, so the user
+ * can choose the VR video they want to use for syncing.
+ */
 ipcMain.handle('vr:select-video-file', async () => {
 	const result = await dialog.showOpenDialog({
 		properties: ['openFile'],
@@ -317,8 +422,11 @@ ipcMain.handle('vr:select-video-file', async () => {
 	return result.filePaths[0];
 });
 
-// Used by the video-sync-vr request handler to stitch together the VR and
-// Animation videos using FFMPEG
+/**
+ * Takes in the file paths for the VR and Animation videos, along with the offset in
+ * seconds, and processes them using ffmpeg to create a new side-by-side video with the
+ * specified offset. Returns the file path to the synced output video.
+ */
 function SidebySide(
 	vrFile: string,
 	animFile: string,
@@ -397,9 +505,13 @@ function SidebySide(
 	});
 }
 
-// Handles the video-sync-vr request. Takes in the VR and Animation video file paths
-// and the offset, calls SidebySide to process them, and returns the path to
-// the synced output video
+/**
+ * Handles the vr:video-sync-vr request.
+ *
+ * Takes in the file paths for the VR and Animation videos, along with the offset in
+ * seconds, and processes them using ffmpeg to create a new side-by-side video with the
+ * specified offset. Returns the file path to the synced output video.
+ */
 ipcMain.handle('vr:video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }) => {
 	// check what main gets from preload
 	console.log('main handler got offsetSeconds =', offsetSeconds);
@@ -410,15 +522,26 @@ ipcMain.handle('vr:video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }
  * Data stream handlers
  */
 
-// Starts a new stream for the given type and file (if applicable).
-// Returns a unique stream key to identify the stream in subsequent calls
+/**
+ * Handles the stream:start request.
+ *
+ * Starts a new data stream of the specified type, optionally associated with a file,
+ * and returns a unique stream key to the renderer process. The stream key is used
+ * for subsequent pull and cancel requests to identify the stream.
+ */
 ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => {
 	const manager = requireProjectManager();
 	return await manager.startStream(type, file);
 })
 
-// Pulls the next chunk of data for a stream. The callback sends the data back
-// to the renderer in batches until the stream is done
+/**
+ * Handles the stream:pull request.
+ *
+ * Pulls the next batch of data from the stream identified by the given key, and sends
+ * the data back to the renderer process in chunks using the 'stream:data' event. The
+ * count parameter specifies how many batches to pull in this request, allowing for
+ * efficient data retrieval without overwhelming memory.
+ */
 ipcMain.handle('stream:pull', async (event, { key, count }) => {
 	const manager = requireProjectManager();
 	await manager.pullStream(key, count, (rows, progress) => {
@@ -426,13 +549,22 @@ ipcMain.handle('stream:pull', async (event, { key, count }) => {
 	});
 });
 
-// Cancels an active stream, freeing up any associated resources
+/**
+ * Handles the stream:cancel request.
+ *
+ * Cancels the active stream identified by the given key, freeing up any resources
+ * associated with that stream. This is used when the renderer process no longer needs
+ * data from the stream, such as when a component unmounts or the user cancels an
+ * operation.
+ */
 ipcMain.on('stream:cancel', (_, { key }) => {
 	const manager = requireProjectManager();
 	manager.cancelStream(key);
 });
 
-// Handles the notify request. Creates an OS notification with the given message
+/**
+ * Handles the notify request.
+ */
 ipcMain.on('notify', (_, message) => {
 	new Notification({ title: 'EyeDHD', body: message }).show();
 });

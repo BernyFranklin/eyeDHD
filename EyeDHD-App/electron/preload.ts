@@ -9,8 +9,7 @@ export { Electron, Renderer };
 type ProjectDir = {
 	dir?: string,
 	status: {
-		empty: boolean,
-		initialized: boolean
+		empty: boolean
 	}
 }
 
@@ -21,9 +20,9 @@ declare interface Electron {
 	user: {
 		read(): Promise<User>;
 		selectDirectory(user: User): Promise<ProjectDir | null>;
+		initializeManager(user: User): Promise<void>;
 		initializeDirectory(dir: string, user: User): Promise<User>;
 	},
-	// COPILOT: This should be renamed to case
 	case: {
 		createNew(caseName: string): Promise<CaseData>;
 		read(filename: string): Promise<CaseData>;
@@ -67,6 +66,10 @@ declare interface Renderer {
  */
 const electron: Electron = {
 	user: {
+		/**
+		 * Reads the current user data, including project directory and initialization
+		 * status.
+		 */
 		read: async (): Promise<User> => {
 			return await ipcRenderer.invoke('user:read');
 		},
@@ -80,6 +83,13 @@ const electron: Electron = {
 		selectDirectory: async (user: User): Promise<ProjectDir | null> => {
 			return await ipcRenderer.invoke('user:select-directory', user);
 		},
+		initializeManager: async (user: User): Promise<void> => {
+			return await ipcRenderer.invoke('user:initialize-manager', user);
+		},
+		/**
+		 * Initializes the selected directory as the project directory by creating
+		 * necessary folders and files, and updates the user data with the new directory * and initialization status.
+		 */
 		initializeDirectory: async (dir: string, user: User): Promise<User> => {
 			return await ipcRenderer.invoke('user:initialize-directory', dir, user);
 		}
@@ -107,7 +117,7 @@ const electron: Electron = {
 		 * Copies the selected CSV file into the case imports folder.
 		 */
 		importCsv: async (file: CaseData, filepath: string): Promise<CaseData> => {
-			return await ipcRenderer.invoke('case:import-csv', { file, filepath });
+			return await ipcRenderer.invoke('case:import-csv', file, filepath);
 		}
 	},
 

@@ -26,6 +26,13 @@ const initialState: UserState = {
 	selectedCase: null,
 };
 
+/**
+ * Redux slice for user-specific data, including project directory, list of cases, and
+ * selected case.
+ *
+ * Provides actions for setting these values and selectors for accessing them from
+ * components.
+ */
 export const userSlice = createSlice({
 	name: 'user',
 	initialState,
