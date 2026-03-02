@@ -8,7 +8,7 @@ export interface GazeCsvPipelineOptions {
   parse: Partial<ParseGazeCsvOptions>;
   adapter: Partial<AdapterOptions>;
   detection: Partial<SaccadeDetectionOptions>;
-  metrics: SaccadeMetricsOptions;
+  metrics?: SaccadeMetricsOptions;
 }
 
 export interface GazeCsvPipelineResult {
