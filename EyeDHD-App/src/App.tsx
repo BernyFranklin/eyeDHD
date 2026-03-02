@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Provider } from 'react-redux';
 import { Outlet } from 'react-router';
 
 
@@ -11,7 +10,6 @@ import { useDispatch, useSelector } from './store/hooks';
 import RemoteStream from './data/RemoteStream';
 import { CaseData } from './types';
 import ChooseDirWindow from './components/ChooseDirWindow';
-import LoadingOverlay from './components/LoadingOverlay';
 import { showAlert } from './store/features/global';
 
 function App() {
@@ -57,26 +55,6 @@ function App() {
 		loadUserData().catch(handleError).then(() => setLoading(false));
 	}, []);
 
-	if (loading || !user_dir || !projectInitialized) {
-		return (
-			<>
-				<Navbar />
-				<AlertWindow />
-				<main className="app-content">
-					<LoadingOverlay isLoading={loading} />
-					<img
-						className="app-background-logo"
-						src="./images/eyedhd-logo-transparent.png"
-						alt="EyeDHD logo"
-					/>
-					<div className="app-page">
-						<ChooseDirWindow loading={loading} />
-					</div>
-				</main>
-			</>
-		);
-	}
-
 	return (
 		<>
 			<Navbar />
@@ -88,7 +66,10 @@ function App() {
 					alt="EyeDHD logo"
 				/>
 				<div className="app-page">
-					<Outlet />
+					{loading || !user_dir || !projectInitialized
+						? <ChooseDirWindow loading={loading} />
+						: <Outlet />
+					}
 				</div>
 			</main>
 		</>
