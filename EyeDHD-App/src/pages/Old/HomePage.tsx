@@ -1,8 +1,8 @@
 import React from 'react';
 
-import Button from './Button';
-import Card from './Card';
-import DoubleCard from './DoubleCard';
+import Button from '../../components/Button';
+import Card from '../../components/Card';
+import DoubleCard from '../../components/DoubleCard';
 
 type Props = {
 	setCurrent: (page: number) => void;

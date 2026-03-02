@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router';
 
-
 import './App.css';
-import Navbar from './components/Navbar';
-import AlertWindow from './components/AlertWindow';
-import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from './store/features/user';
-import { useDispatch, useSelector } from './store/hooks';
-import RemoteStream from './data/RemoteStream';
+import { AlertWindow, ChooseDirWindow, Navbar } from './components';
+
+import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from './data/features/user';
+import { useDispatch, useSelector } from './data/hooks';
+import { showAlert } from './data/features/global';
+
 import { CaseData } from './types';
-import ChooseDirWindow from './components/ChooseDirWindow';
-import { showAlert } from './store/features/global';
+import RemoteStream from './data/RemoteStream';
 
 function App() {
 	const dispatch = useDispatch();

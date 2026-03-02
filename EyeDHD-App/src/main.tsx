@@ -1,15 +1,14 @@
 import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { Provider } from 'react-redux';
 import { BrowserRouter, Route, Routes } from 'react-router';
 
 import './index.css';
 
-import { store } from './store';
+import { store } from './data';
 
 import App from './App';
-import HomePage from './components/NewHomePage';
-import CaseViewer from './components/CaseViewer';
-import { Provider } from 'react-redux';
+import { HomePage, CaseViewer } from './pages';
 // Old pages, functionality will be extracted into tasks for CaseViewer
 // import CsvFileImport from './components/CsvFileImport';
 // import AnimationGenerator from './components/AnimationGenerator';

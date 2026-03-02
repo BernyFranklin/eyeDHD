@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
-import LoadingOverlay from './LoadingOverlay';
+import { Button, LoadingOverlay } from '../../components';
 import CaseList from './CaseList';
-import { CreateCaseWindow } from './CreateCaseWindow';
-import Button from './Button';
+import CreateCaseWindow from './CreateCaseWindow';
 
-import RemoteStream from '../data/RemoteStream';
-import { CaseData } from '../types';
-import { useDispatch, useSelector } from '../store/hooks';
-import { showAlert } from '../store/features/global';
-import { selectCases, setCases, setProjectDir, setProjectInitialized } from '../store/features/user';
+import RemoteStream from '../../data/RemoteStream';
+import { CaseData } from '../../types';
+import { useDispatch, useSelector } from '../../data/hooks';
+import { showAlert } from '../../data/features/global';
+import { selectCases, setCases, setProjectDir, setProjectInitialized } from '../../data/features/user';
 
 export default function HomePage() {
 	const dispatch = useDispatch();

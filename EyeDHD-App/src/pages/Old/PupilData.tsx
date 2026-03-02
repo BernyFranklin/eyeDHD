@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { type CSVData } from '../types';
+import { type CSVData } from '../../types';
 
 type Props = {
 	csvData: CSVData[];

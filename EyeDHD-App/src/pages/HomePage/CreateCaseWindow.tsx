@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { useDispatch } from '../store/hooks';
-import { showAlert } from '../store/features/global';
-import { setSelectedCase } from '../store/features/user';
-import Button from './Button';
+import { useDispatch } from '../../data/hooks';
+import { showAlert } from '../../data/features/global';
+import { setSelectedCase } from '../../data/features/user';
+import Button from '../../components/Button';
 
 type Props = {
 	isOpen: boolean;
@@ -13,7 +13,7 @@ type Props = {
 
 type ImportStatus = 'waiting' | 'success' | 'error';
 
-export function CreateCaseWindow(props: Props) {
+export default function CreateCaseWindow(props: Props) {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const inputRef = useRef<HTMLInputElement | null>(null);

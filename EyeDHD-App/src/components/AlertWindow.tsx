@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
-import { useDispatch, useSelector } from '../store/hooks';
-import { selectAlert, hideAlert } from '../store/features/global';
+import { useDispatch, useSelector } from '../data/hooks';
+import { selectAlert, hideAlert } from '../data/features/global';
 import Button from './Button';
 
 const AUTO_DISMISS_MS = 4000;

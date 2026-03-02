@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
-import { useSelector, useDispatch } from '../store/hooks';
-import { showAlert } from '../store/features/global';
-import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '../store/features/user';
+import { useSelector, useDispatch } from '../data/hooks';
+import { showAlert } from '../data/features/global';
+import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '../data/features/user';
 import Button from './Button';
 
 type Props = {

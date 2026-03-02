@@ -1,7 +1,7 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit'
 
-import globalReducer from './features/global';
-import userReducer from './features/user';
+import globalReducer from '../data/features/global';
+import userReducer from '../data/features/user';
 
 const root = combineReducers({
   global: globalReducer,

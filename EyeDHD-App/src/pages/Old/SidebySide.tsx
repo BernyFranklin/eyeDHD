@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import Button from './Button';
+import Button from '../../components/Button';
 
 export default function SidebySide() {
 	const defaultStatus = 'Ready.';

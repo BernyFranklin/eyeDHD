@@ -1,8 +1,8 @@
 import React from "react";
 
-import { useDispatch, useSelector } from "../../store/hooks";
-import { showAlert } from "../../store/features/global";
-import { selectSelectedCase } from "../../store/features/user";
+import { useDispatch, useSelector } from "../../data/hooks";
+import { showAlert } from "../../data/features/global";
+import { selectSelectedCase } from "../../data/features/user";
 
 export default function CaseViewer() {
 	const dispatch = useDispatch();
