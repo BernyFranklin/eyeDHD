@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
+import { alias } from './vite.aliases';
 
 export default defineConfig({
 	test: {
@@ -7,8 +7,6 @@ export default defineConfig({
 		setupFiles: './src/tests/setup.ts'
 	},
 	resolve: {
-		alias: {
-			'@src': path.resolve(__dirname, 'src')
-		}
+		alias
 	}
 });

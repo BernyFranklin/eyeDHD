@@ -1,12 +1,11 @@
 import { defineConfig } from 'vite';
 import path from 'path';
+import { alias } from './vite.aliases';
 
 // https://vitejs.dev/config
 export default defineConfig({
 	resolve: {
-		alias: {
-			'@src': path.resolve(__dirname, 'src')
-		}
+		alias
 	},
 	build: {
 		target: 'node16', // or the node/electron target you need

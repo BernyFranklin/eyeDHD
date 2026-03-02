@@ -1,22 +1,24 @@
 {
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "commonjs",
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "noImplicitAny": true,
-    "sourceMap": true,
-    "outDir": "dist",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "jsx": "react-jsx",
-    "baseUrl": ".",
-    "paths": {
-    	"@src/*": ["src/*"]
-    }
-  },
-  "include": ["src/**/*", "electron/**/*", "saccades/**/*"],
-  "files": ["src/global.d.ts", "forge.env.d.ts"],
-  "exclude": ["node_modules", "dist", ".vite"]
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "commonjs",
+		"allowJs": true,
+		"skipLibCheck": true,
+		"esModuleInterop": true,
+		"noImplicitAny": true,
+		"sourceMap": true,
+		"outDir": "dist",
+		"moduleResolution": "node",
+		"resolveJsonModule": true,
+		"jsx": "react-jsx",
+		"baseUrl": ".",
+		"paths": {
+			"@src/*": ["src/*"],
+			"@electron/*": ["electron/*"],
+			"@saccades/*": ["saccades/*"]
+		}
+	},
+	"include": ["src/**/*", "electron/**/*", "saccades/**/*"],
+	"files": ["src/global.d.ts", "forge.env.d.ts"],
+	"exclude": ["node_modules", "dist", ".vite"]
 }
