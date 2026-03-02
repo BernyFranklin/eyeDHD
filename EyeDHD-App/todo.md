@@ -1,18 +1,23 @@
-# UI Rework TODO List
+# UI / Backend TODO List
 
-## More Important
-- Simplify cleaned csv streaming so that it reads from the saved _Cleaned.csv file
-- Refactor saving cleaned data to a file and reading cleaned data from that file by looping line by line splitting on commas and converting to CSVData objects
-- If main.db has a selected project folder, on start check if folder is set up correctly and if error and prompt for new folder selection
-- When case name is entered / csv chosen, check whether that case has been created already
-- Add functionality to the tasks
-- Progress bars / wheels and estimated time for tasks
+## Need to be done now
+- Simplify cleaned csv streaming so that it reads from the saved _Cleaned.csv file.
+- Refactor saving cleaned data to a file and reading cleaned data from that file by. looping line by line splitting on commas and converting to CSVData objects.
+- Add functionality to the tasks.
 
-## Less Important
+## Things / Ideas for later
+- Reusable UI components like progress wheels, status symbols like green checkmarks / red xs.
+- Estimated time until all tasks complete.
 - Preview window for running task on the right of the task list
-- Work on eye dilation chart
-- CSS Styling
+- Eye dilation chart.
+- Saccade chart.
+- CSS Styling.
+- More complete error checking:
+	- When case name is entered / csv chosen, check whether that case has been created already
+	- If main.db has a selected project folder, on start check if folder is set up correctly and if error and prompt for new folder selection
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
+- Custom title bar.
+- Select multiple cases and compare.
 
 Project folder example:
 

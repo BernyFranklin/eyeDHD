@@ -37,7 +37,7 @@ export default function ChooseDirWindow(props: Props) {
 			if (!project || !project.status.empty) {
 				setSelectStatus('error');
 
-				if (!project.status.empty) {
+				if (project && !project.status.empty) {
 					setPlaceholder('Selected folder is not empty');
 				}
 				return;
