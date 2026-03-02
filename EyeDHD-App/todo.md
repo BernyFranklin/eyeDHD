@@ -9,6 +9,7 @@
 - Preview window for running task on the right of the task list
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
 - When case name is entered, check whether that case has been created already
+- Consider having case name chosen purely by imported csv file name
 
 ## Less Important
 - Work on eye dilation chart
