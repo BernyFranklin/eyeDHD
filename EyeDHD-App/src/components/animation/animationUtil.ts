@@ -1,4 +1,4 @@
-import { CSVData } from "../types";
+import { CSVData } from "../../types";
 
 // Calculate pitch angle from forward vector
 export function GetPitch(x: number, y: number, z: number) { return Math.atan2(-y, Math.sqrt(x * x + z * z)); }

@@ -1,21 +1,25 @@
 import React, { useEffect, useState } from 'react';
 
 import CaseItem from "./CaseItem";
+import { LoadingOverlay } from '../../../components';
 
-import LoadingOverlay from '../LoadingOverlay';
+import { type CaseData } from '../../../types';
+import { useSelector, useDispatch } from '../../../data/hooks';
+import { showAlert } from '../../../data/features/global';
+import { selectCases, selectProjectDir, setCases, setSelectedCase } from '../../../data/features/user';
 
-import { type CaseData } from '../../types';
-import { useSelector, useDispatch } from '../../store/hooks';
-import { showAlert } from '../../store/features/global';
-import { selectCases, selectProjectDir, setCases, setSelectedCase } from '../../store/features/user';
-
-import RemoteStream from '../../data/RemoteStream';
+import RemoteStream from '../../../data/RemoteStream';
 import { useNavigate } from 'react-router';
 
 type Props = {
 	loading: boolean;
 };
 
+/**
+ * Component for displaying list of cases on the home page, allows user to click
+ * on a case to open it. Refreshes list of cases when project directory is set
+ * or when loading state changes.
+ */
 export default function CaseList(props: Props) {
 	const dir = useSelector(selectProjectDir);
 	const cases = useSelector(selectCases);

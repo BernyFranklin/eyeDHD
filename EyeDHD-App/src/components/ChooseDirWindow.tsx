@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
-import { useSelector, useDispatch } from '../store/hooks';
-import { showAlert } from '../store/features/global';
-import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '../store/features/user';
+import { useSelector, useDispatch } from '../data/hooks';
+import { showAlert } from '../data/features/global';
+import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '../data/features/user';
 import Button from './Button';
 
 type Props = {
@@ -11,11 +11,18 @@ type Props = {
 
 type SelectStatus = 'waiting' | 'success' | 'error';
 
+/**
+ * Modal window that prompts user to select a project directory if one is not set
+ * or initialized. Shows status of directory selection and initialization as a border
+ * around the textarea. Once a directory is selected, user can confirm to initialize
+ * it as the project directory.
+ */
 export default function ChooseDirWindow(props: Props) {
 	const dispatch = useDispatch();
 	const projectDir = useSelector(selectProjectDir);
 	const projectInitialized = useSelector(selectProjectInitialized);
 
+	const [placeholder, setPlaceholder] = useState('Please select an empty folder');
 	const [selectStatus, setSelectStatus] = useState<SelectStatus>('waiting');
 	const [hidden, setHidden] = useState(true);
 
@@ -26,8 +33,12 @@ export default function ChooseDirWindow(props: Props) {
 			const user = await window.electron.user.read();
 			const project = await window.electron.user.selectDirectory(user);
 
-			if (!project) {
+			if (!project || !project.status.empty) {
 				setSelectStatus('error');
+
+				if (!project.status.empty) {
+					setPlaceholder('Selected folder is not empty');
+				}
 				return;
 			}
 
@@ -35,7 +46,6 @@ export default function ChooseDirWindow(props: Props) {
 				dispatch(setProjectDir(project.dir));
 				setSelectStatus('success');
 			}
-			dispatch(setProjectInitialized(!!project.status.initialized));
 		} catch (err) {
 			dispatch(showAlert({
 				color: 'red',
@@ -56,10 +66,9 @@ export default function ChooseDirWindow(props: Props) {
 				user
 			);
 
-			if (updatedUser.dir) {
-				dispatch(setProjectDir(updatedUser.dir));
-			}
+			dispatch(setProjectDir(updatedUser.dir));
 			dispatch(setProjectInitialized(!!updatedUser.project_initialized));
+
 			setHidden(true);
 		} catch (err) {
 			dispatch(showAlert({
@@ -101,13 +110,13 @@ export default function ChooseDirWindow(props: Props) {
 						`project-dir-input ${getSelectBorder(selectStatus)}`
 					}
 					onClick={selectDir}
-					value={projectDir ?? 'Please select a folder'}
+					value={projectDir ?? placeholder}
 					readOnly
 				/>
 				<div className='dir-prompt-actions'>
 					<Button
 						onClick={handleConfirm}
-						disabled={!projectDir}
+						disabled={selectStatus === 'error' || !projectDir}
 					>
 						confirm
 					</Button>

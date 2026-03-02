@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Provider } from 'react-redux';
 import { Outlet } from 'react-router';
 
-
 import './App.css';
-import Navbar from './components/Navbar';
-import AlertWindow from './components/AlertWindow';
-import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from './store/features/user';
-import { useDispatch, useSelector } from './store/hooks';
-import RemoteStream from './data/RemoteStream';
-import { CaseData } from './types';
-import ChooseDirWindow from './components/ChooseDirWindow';
-import LoadingOverlay from './components/LoadingOverlay';
-import { showAlert } from './store/features/global';
+import { AlertWindow, ChooseDirWindow, Navbar } from './components';
 
+import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from './data/features/user';
+import { useDispatch, useSelector } from './data/hooks';
+import { showAlert } from './data/features/global';
+
+import { CaseData } from './types';
+import RemoteStream from './data/RemoteStream';
+
+/**
+ * Main app component, handles loading user data on startup and showing either the
+ * directory selection window or the main app content based on whether a project directory
+ * is set and initialized. Also renders global alert window and navbar.
+ */
 function App() {
 	const dispatch = useDispatch();
 
@@ -30,23 +32,20 @@ function App() {
 		const user = await window.electron.user.read();
 
 		if (!user.dir || !user.project_initialized) {
-			// We should prompt user for project folder at this point
-			dispatch(setCases([]));
+			// We should prompt user for a new project folder at this point
 			return;
 		}
 
-		const initializedUser = await window.electron.user.initializeDirectory(
-			user.dir,
-			user
-		);
-		if (initializedUser.dir) {
-			dispatch(setProjectDir(initializedUser.dir));
-		}
-		dispatch(setProjectInitialized(!!initializedUser.project_initialized));
+		console.log('Dir exists and initialized');
 
+		await window.electron.user.initializeManager(user);
+		dispatch(setProjectDir(user.dir));
+		dispatch(setProjectInitialized(!!user.project_initialized));
 
 		const stream = await RemoteStream.create('CaseData', {});
 		const cases = await stream.collect<CaseData>();
+
+		console.log('Cases loaded', cases);
 
 		dispatch(setCases(cases));
 
@@ -56,26 +55,6 @@ function App() {
 	useEffect(() => {
 		loadUserData().catch(handleError).then(() => setLoading(false));
 	}, []);
-
-	if (loading || !user_dir || !projectInitialized) {
-		return (
-			<>
-				<Navbar />
-				<AlertWindow />
-				<main className="app-content">
-					<LoadingOverlay isLoading={loading} />
-					<img
-						className="app-background-logo"
-						src="./images/eyedhd-logo-transparent.png"
-						alt="EyeDHD logo"
-					/>
-					<div className="app-page">
-						<ChooseDirWindow loading={loading} />
-					</div>
-				</main>
-			</>
-		);
-	}
 
 	return (
 		<>
@@ -88,7 +67,10 @@ function App() {
 					alt="EyeDHD logo"
 				/>
 				<div className="app-page">
-					<Outlet />
+					{loading || !user_dir || !projectInitialized
+						? <ChooseDirWindow loading={loading} />
+						: <Outlet />
+					}
 				</div>
 			</main>
 		</>

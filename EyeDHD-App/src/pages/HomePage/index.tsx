@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 
-import LoadingOverlay from './LoadingOverlay';
+import { Button, LoadingOverlay } from '../../components';
 import CaseList from './CaseList';
-import { CreateCaseWindow } from './CreateCaseWindow';
-import Button from './Button';
+import CreateCaseWindow from './CreateCaseWindow';
 
-import RemoteStream from '../data/RemoteStream';
-import { CaseData } from '../types';
-import { useDispatch, useSelector } from '../store/hooks';
-import { showAlert } from '../store/features/global';
-import { selectCases, setCases, setProjectDir, setProjectInitialized } from '../store/features/user';
+import RemoteStream from '../../data/RemoteStream';
+import { CaseData } from '../../types';
+import { useDispatch, useSelector } from '../../data/hooks';
+import { showAlert } from '../../data/features/global';
+import { selectCases, setCases } from '../../data/features/user';
 
+/**
+ * Home page of the app, shows list of cases and allows user to create new cases
+ * or open existing ones. Refreshes data from the backend on refresh/page load.
+ */
 export default function HomePage() {
 	const dispatch = useDispatch();
 	const cases = useSelector(selectCases);
@@ -26,16 +29,14 @@ export default function HomePage() {
 		try {
 			setLoading(true);
 
-			const user = await window.electron.user.read();
-			dispatch(setProjectDir(user.dir));
-			dispatch(setProjectInitialized(!!user.project_initialized));
-
 			const stream = await RemoteStream.create('CaseData', {});
 			const cases = await stream.collect<CaseData>();
 
 			dispatch(setCases(cases));
+			setLoading(false);
 		} catch (err) {
 			handleError(err);
+			setLoading(false);
 		}
 	};
 

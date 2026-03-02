@@ -1,14 +1,14 @@
 import React, { useState, useEffect, ReactEventHandler } from 'react';
 
-import { useSelector, useDispatch } from '../store/hooks';
-import { showAlert, selectButtons, enableButtons, disableButtons } from '../store/features/global';
+import { useSelector, useDispatch } from '../../data/hooks';
+import { showAlert, selectButtons, enableButtons, disableButtons } from '../../data/features/global';
 
-import LoadingOverlay from './LoadingOverlay';
-import Button from './Button';
-import CanvasRecorder from './CanvasRecorder';
+import LoadingOverlay from '../../components/LoadingOverlay';
+import Button from '../../components/Button';
+import CanvasRecorder from '../../components/CanvasRecorder';
 
-import { type Error, type CSVData, type CaseData } from '../types';
-import RemoteStream from '../data/RemoteStream';
+import { type Error, type CSVData, type CaseData } from '../../types';
+import RemoteStream from '../../data/RemoteStream';
 
 export default function AnimationGenerator() {
 	const [files, setFiles] = useState<CaseData[]>([]);

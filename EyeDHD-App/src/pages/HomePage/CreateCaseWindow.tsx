@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { useDispatch } from '../store/hooks';
-import { showAlert } from '../store/features/global';
-import { setSelectedCase } from '../store/features/user';
-import Button from './Button';
+import { useDispatch } from '../../data/hooks';
+import { showAlert } from '../../data/features/global';
+import { setSelectedCase } from '../../data/features/user';
+import { Button } from '../../components';
 
 type Props = {
 	isOpen: boolean;
@@ -13,13 +13,17 @@ type Props = {
 
 type ImportStatus = 'waiting' | 'success' | 'error';
 
-export function CreateCaseWindow(props: Props) {
+/**
+ * Modal window for creating a new case, allows user to input case name and select
+ * a CSV/VR file to import. Shows import status for each step as a border around
+ * the textareas.
+ */
+export default function CreateCaseWindow(props: Props) {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
 	const [caseName, setCaseName] = useState('');
-	const [caseNameStatus, setCaseNameStatus] = useState<ImportStatus>('waiting');
 
 	const [csvLabel, setCsvLabel] = useState('');
 	const [csvStatus, setCsvStatus] = useState<ImportStatus>('waiting');
@@ -44,6 +48,7 @@ export function CreateCaseWindow(props: Props) {
 			}
 
 			setCsvLabel(filepath);
+			setCaseName(filepath.split('\\').slice(-1)[0].replace('.csv', ''));
 			setCsvStatus('success');
 		} catch (err) {
 			dispatch(showAlert({
@@ -67,18 +72,13 @@ export function CreateCaseWindow(props: Props) {
 
 		try {
 			setIsSubmitting(true);
-			setCaseNameStatus('waiting');
 			setCsvStatus('waiting');
 			setVrStatus('waiting');
 
 			const createdCase = await window.electron.case
 				.createNew(trimmedName)
-				.catch(err => {
-					setCaseNameStatus('error');
-					throw err;
-				});
+				.catch(err => {throw err});
 			dispatch(setSelectedCase(createdCase));
-			setCaseNameStatus('success');
 
 			const updatedCase = await window.electron.case.importCsv(
 				createdCase,
@@ -126,48 +126,29 @@ export function CreateCaseWindow(props: Props) {
 				className='create-case-window'
 				onClick={(event) => !isSubmitting && event.stopPropagation()}
 			>
-				<div className='create-case-col'>
-					<div className='create-case-title'>
-						Create a new case
+				<div className='case-name-col'>
+					<div className='case-name-title'>
+						Case name
 					</div>
-					<input
-						ref={inputRef}
-						className={
-							`create-case-input ${getImportBorder(caseNameStatus)}`
-						}
+					<textarea
+						className={`text-area-input case-name-input`}
 						value={caseName}
-						onChange={(event) => {
-							const nextValue = event.target.value;
-							setCaseName(nextValue.trim());
-
-							if (nextValue.trim() === '') {
-								setCaseNameStatus('error');
-							} else {
-								setCaseNameStatus('success');
-							}
-						}}
-						onKeyDown={(event) => {
-							if (event.key === 'Enter') {
-								event.preventDefault();
-								handleConfirm();
-							}
-						}}
-						placeholder='Enter case name'
+						aria-label='Select a CSV file'
+						placeholder='Select a CSV file'
+						readOnly
+						aria-readonly='true'
+						tabIndex={-1}
 						disabled={isSubmitting}
 					/>
 				</div>
 				<div className='import-file-col'>
-					{/*
-						These need disclaimer that file will be renamed to match chosen
-						case name
-					*/}
-					<div className='create-case-title'>
+					<div className='case-name-title'>
 						Import case files
 					</div>
 					<div className='import-file-row'>
 						<textarea
 							className={
-								`create-case-input cursor-pointer ${getImportBorder(csvStatus)}`
+								`text-area-input import-input ${getImportBorder(csvStatus)}`
 							}
 							onClick={handleSelectCsv}
 							value={csvLabel.split('\\').slice(-1)[0] || ''}
@@ -180,7 +161,7 @@ export function CreateCaseWindow(props: Props) {
 					<div className='import-file-row'>
 						<textarea
 							className={
-								`create-case-input cursor-pointer ${getImportBorder(vrStatus)}`
+								`text-area-input import-input ${getImportBorder(vrStatus)}`
 							}
 							value={vrLabel.split('\\').slice(-1)[0] || ''}
 							readOnly
@@ -225,18 +206,18 @@ export function CreateCaseWindow(props: Props) {
 						gap: 16px 24px;
 					}
 
-					.create-case-col {
+					.case-name-col {
 						display: flex;
 						flex-direction: column;
 						gap: 12px;
 					}
 
-					.create-case-title {
+					.case-name-title {
 						font-size: 16px;
 						font-weight: 600;
 					}
 
-					.create-case-input {
+					.text-area-input {
 						width: 100%;
 						height: 44px;
 						padding: 10px;
@@ -246,6 +227,21 @@ export function CreateCaseWindow(props: Props) {
 						margin: 0;
 						box-sizing: border-box;
 						font-size: 14px;
+					}
+
+					.text-area-input:focus,
+					.text-area-input:focus-visible {
+						outline: none;
+						box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+					}
+
+					.case-name-input {
+						cursor: default;
+						pointer-events: none;
+					}
+
+					.import-input {
+						cursor: pointer;
 					}
 
 					.import-waiting {
@@ -282,12 +278,6 @@ export function CreateCaseWindow(props: Props) {
 
 					.cursor-pointer {
 						cursor: pointer;
-					}
-
-					.create-case-input:focus,
-					.create-case-input:focus-visible {
-						outline: none;
-						box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
 					}
 				`}
 			</style>
