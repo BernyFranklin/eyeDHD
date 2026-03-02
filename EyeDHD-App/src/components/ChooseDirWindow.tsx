@@ -34,19 +34,25 @@ export default function ChooseDirWindow(props: Props) {
 			const user = await window.electron.user.read();
 			const project = await window.electron.user.selectDirectory(user);
 
-			if (!project || !project.status.empty) {
+			if (!project) {
 				setSelectStatus('error');
-
-				if (project && !project.status.empty) {
-					setPlaceholder('Selected folder is not empty');
-				}
 				return;
 			}
 
-			if (project.dir) {
-				dispatch(setProjectDir(project.dir));
-				setSelectStatus('success');
+			if (!project.dir) {
+				setSelectStatus('error');
+				setPlaceholder('No folder selected');
+				return;
 			}
+
+			if (!project.status.empty) {
+				setSelectStatus('error');
+				setPlaceholder('Selected folder is not empty');
+				return;
+			}
+
+			dispatch(setProjectDir(project.dir));
+			setSelectStatus('success');
 		} catch (err) {
 			dispatch(showAlert({
 				color: 'red',
