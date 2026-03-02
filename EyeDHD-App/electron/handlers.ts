@@ -138,6 +138,10 @@ ipcMain.handle('user:select-directory', async (_, user: User) => {
  */
 ipcMain.handle('user:initialize-manager', async (_, user: User) => {
 	return new Promise(async (resolve, reject) => {
+		if (project_manager) {
+			return resolve({});
+		}
+
 		try {
 			if (!fs.existsSync(user.dir)) {
 				return reject(`Directory does not exist: ${user.dir}`);

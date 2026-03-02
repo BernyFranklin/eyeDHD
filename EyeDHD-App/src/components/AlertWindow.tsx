@@ -47,9 +47,11 @@ export default function AlertWindow() {
 					padding: 1rem;
 					border: 1px solid;
 					border-radius: 4px;
-					position: absolute;
+					position: fixed;
 					top: 12px;
 					right: 12px;
+					z-index: 10000;
+					pointer-events: auto;
 					animation: fadeInOut 4s ease-in-out forwards;
 				}
 
