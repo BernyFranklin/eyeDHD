@@ -71,7 +71,19 @@ function isProjectEmpty(dir: string): boolean {
 	}
 
 	const files = fs.readdirSync(dir);
-	return files.length === 0;
+	const visibleFiles = files.filter((name) => {
+		if (name === '.DS_Store' || name === '.localized' || name === 'Icon\r') {
+			return false;
+		}
+
+		if (name.startsWith('._')) {
+			return false;
+		}
+
+		return true;
+	});
+
+	return visibleFiles.length === 0;
 }
 
 /*
