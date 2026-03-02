@@ -13,7 +13,6 @@
 - Saccade chart.
 - CSS Styling.
 - More complete error checking:
-	- When case name is entered / csv chosen, check whether that case has been created already
 	- If main.db has a selected project folder, on start check if folder is set up correctly and if error and prompt for new folder selection
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
 - Custom title bar.

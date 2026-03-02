@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router';
 
 import { Button } from '@src/components';
 
-import { useDispatch } from '@src/data/hooks';
+import { useDispatch, useSelector } from '@src/data/hooks';
 import { showAlert } from '@src/data/features/global';
-import { setSelectedCase } from '@src/data/features/user';
+import { selectCases, setSelectedCase } from '@src/data/features/user';
 
 type Props = {
 	isOpen: boolean;
@@ -22,31 +22,24 @@ type ImportStatus = 'waiting' | 'success' | 'error';
 export default function CreateCaseWindow(props: Props) {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
-	const inputRef = useRef<HTMLInputElement | null>(null);
+	const cases = useSelector(selectCases);
 
-	const [caseName, setCaseName] = useState('');
+	const [casename, setCasename] = useState('');
 
 	const [csvLabel, setCsvLabel] = useState('');
 	const [csvStatus, setCsvStatus] = useState<ImportStatus>('waiting');
 
 	const [vrLabel, setVrLabel] = useState('');
-	const [vrStatus, setVrStatus] = useState<ImportStatus>('waiting');
+	const [vrStatus, setVrStatus] = useState<ImportStatus>('error');
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	useEffect(() => {
-		if (props.isOpen) {
-			setCaseName('');
-			requestAnimationFrame(() => inputRef.current?.focus());
-		}
-	}, [props.isOpen]);
-
-	const getFileName = (filePath: string) => {
-		return filePath.split(/[/\\]/).slice(-1)[0] || '';
+	const getFilename = (filepath: string) => {
+		return filepath.split(/[/\\]/).slice(-1)[0] || '';
 	};
 
-	const getCaseNameFromPath = (filePath: string) => {
-		const filename = getFileName(filePath);
+	const getCasename = (filepath: string) => {
+		const filename = getFilename(filepath);
 		return filename.replace(/\.csv$/i, '');
 	};
 
@@ -57,8 +50,14 @@ export default function CreateCaseWindow(props: Props) {
 				return;
 			}
 
+			if (cases.some(c => c.name === getCasename(filepath))) {
+				setCsvStatus('error');
+				setCsvLabel('A Case with this name already exists, select a different CSV');
+				return;
+			}
+
 			setCsvLabel(filepath);
-			setCaseName(getCaseNameFromPath(filepath));
+			setCasename(getCasename(filepath));
 			setCsvStatus('success');
 		} catch (err) {
 			dispatch(showAlert({
@@ -69,7 +68,7 @@ export default function CreateCaseWindow(props: Props) {
 	};
 
 	const handleConfirm = async () => {
-		const trimmedName = caseName.trim();
+		const trimmedName = casename.trim();
 
 		if (!csvLabel) {
 			dispatch(showAlert({
@@ -142,7 +141,7 @@ export default function CreateCaseWindow(props: Props) {
 					</div>
 					<textarea
 						className={`text-area-input case-name-input`}
-						value={caseName}
+						value={casename}
 						aria-label='Select a CSV file'
 						placeholder='Select a CSV file'
 						readOnly
@@ -153,7 +152,7 @@ export default function CreateCaseWindow(props: Props) {
 				</div>
 				<div className='import-file-col'>
 					<div className='case-name-title'>
-						Import case files
+						Import case files (Required)
 					</div>
 					<div className='import-file-row'>
 						<textarea
@@ -161,10 +160,10 @@ export default function CreateCaseWindow(props: Props) {
 								`text-area-input import-input ${getImportBorder(csvStatus)}`
 							}
 							onClick={handleSelectCsv}
-							value={getFileName(csvLabel)}
+							value={getFilename(csvLabel)}
 							readOnly
-							aria-label='Select a CSV file'
-							placeholder='Select a CSV file'
+							aria-label='Click to select a CSV file'
+							placeholder='Click to select a CSV file'
 							disabled={isSubmitting}
 						/>
 					</div>
@@ -173,7 +172,7 @@ export default function CreateCaseWindow(props: Props) {
 							className={
 								`text-area-input import-input ${getImportBorder(vrStatus)}`
 							}
-							value={getFileName(vrLabel)}
+							value={getFilename(vrLabel)}
 							readOnly
 							aria-label='VR video selection coming soon'
 							placeholder='VR video selection coming soon'
@@ -184,7 +183,7 @@ export default function CreateCaseWindow(props: Props) {
 				<div className='create-case-actions'>
 					<Button
 						onClick={handleConfirm}
-						disabled={isSubmitting || !caseName || !csvLabel}
+						disabled={isSubmitting || !casename || !csvLabel}
 					>
 						confirm
 					</Button>
@@ -248,6 +247,8 @@ export default function CreateCaseWindow(props: Props) {
 					.case-name-input {
 						cursor: default;
 						pointer-events: none;
+						background: #F0F0F0;
+						color: #5A5A5A;
 					}
 
 					.import-input {
