@@ -1,25 +1,36 @@
 {
-  "env": {
-    "browser": true,
-    "es6": true,
-    "node": true
-  },
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/eslint-recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:import/recommended",
-    "plugin:import/electron",
-    "plugin:import/typescript"
-  ],
-  "parser": "@typescript-eslint/parser",
-  "rules": {
-    "no-empty-pattern": "off",
-    "no-async-promise-executor": "off",
-    "no-empty-function": "off",
-    "@typescript-eslint/no-empty-function": "off",
-    "no-mixed-spaces-and-tabs": "off",
-    "@typescript-eslint/no-non-null-asserted-optional-chain": "off",
-    "no-unsafe-optional-chaining": "warn"
-  }
+	"env": {
+		"browser": true,
+		"es6": true,
+		"node": true
+	},
+	"extends": [
+		"eslint:recommended",
+		"plugin:@typescript-eslint/eslint-recommended",
+		"plugin:@typescript-eslint/recommended",
+		"plugin:import/recommended",
+		"plugin:import/electron",
+		"plugin:import/typescript"
+	],
+	"parser": "@typescript-eslint/parser",
+	"settings": {
+		"import/resolver": {
+			"typescript": {
+				"project": "./tsconfig.json"
+			}
+		}
+	},
+	"rules": {
+		"no-empty-pattern": "off",
+		"no-async-promise-executor": "off",
+
+		"@typescript-eslint/no-explicit-any": "warn",
+		"no-unused-vars": "warn",
+		"@typescript-eslint/no-unused-vars": "warn",
+		"@typescript-eslint/no-empty-function": "off",
+		"no-empty-function": "off",
+		"no-mixed-spaces-and-tabs": "off",
+		"@typescript-eslint/no-non-null-asserted-optional-chain": "off",
+		"no-unsafe-optional-chaining": "warn"
+	}
 }

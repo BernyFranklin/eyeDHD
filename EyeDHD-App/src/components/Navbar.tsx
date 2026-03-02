@@ -1,7 +1,7 @@
 import React from 'react';
 
-import { useSelector } from '../data/hooks';
-import { selectButtons } from '../data/features/global';
+import { useSelector } from '@src/data/hooks';
+import { selectButtons } from '@src/data/features/global';
 
 const disabledLinkProps = {
 	onClick: (e: React.MouseEvent<HTMLAnchorElement>) => e.preventDefault(),

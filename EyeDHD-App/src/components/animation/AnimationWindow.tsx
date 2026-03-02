@@ -12,8 +12,9 @@ import { Environment, OrthographicCamera } from '@react-three/drei';
 
 // Component to render and rotate the 3D eye model
 import RotatingModel from './ModelMovement';
-import { type CSVData } from '../../types';
-import RemoteStream from '../../data/RemoteStream';
+
+import { type CSVData } from '@src/data/types';
+import RemoteStream from '@src/data/RemoteStream';
 
 type Props = {
 	csvStream: RemoteStream;

@@ -1,8 +1,8 @@
 import React from "react";
 
-import { useDispatch, useSelector } from "../../data/hooks";
-import { showAlert } from "../../data/features/global";
-import { selectSelectedCase } from "../../data/features/user";
+import { useDispatch, useSelector } from "@src/data/hooks";
+import { showAlert } from "@src/data/features/global";
+import { selectSelectedCase } from "@src/data/features/user";
 
 /**
  * Page for viewing a case, shows progress of data processing as a list of tasks

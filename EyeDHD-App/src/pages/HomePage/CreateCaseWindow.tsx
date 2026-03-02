@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { useDispatch } from '../../data/hooks';
-import { showAlert } from '../../data/features/global';
-import { setSelectedCase } from '../../data/features/user';
-import { Button } from '../../components';
+import { Button } from '@src/components';
+
+import { useDispatch } from '@src/data/hooks';
+import { showAlert } from '@src/data/features/global';
+import { setSelectedCase } from '@src/data/features/user';
 
 type Props = {
 	isOpen: boolean;

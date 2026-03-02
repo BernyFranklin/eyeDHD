@@ -11,7 +11,7 @@ import {
 	CheckDataValidity
 } from './animationUtil';
 
-import { type CSVData } from '../../types';
+import { type CSVData } from '@src/data/types';
 
 type Props = {
 	csvData: CSVData | null;

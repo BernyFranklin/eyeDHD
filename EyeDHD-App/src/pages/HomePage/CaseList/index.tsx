@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router';
 
 import CaseItem from "./CaseItem";
-import { LoadingOverlay } from '../../../components';
+import { LoadingOverlay } from '@src/components';
 
-import { type CaseData } from '../../../types';
-import { useSelector, useDispatch } from '../../../data/hooks';
-import { showAlert } from '../../../data/features/global';
-import { selectCases, selectProjectDir, setCases, setSelectedCase } from '../../../data/features/user';
-
-import RemoteStream from '../../../data/RemoteStream';
-import { useNavigate } from 'react-router';
+import RemoteStream from '@src/data/RemoteStream';
+import { type CaseData } from '@src/data/types';
+import { useSelector, useDispatch } from '@src/data/hooks';
+import { showAlert } from '@src/data/features/global';
+import { selectCases, selectProjectDir, setCases, setSelectedCase } from '@src/data/features/user';
 
 type Props = {
 	loading: boolean;

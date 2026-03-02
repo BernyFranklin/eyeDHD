@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 
-import { useDispatch, useSelector } from '../data/hooks';
-import { selectAlert, hideAlert } from '../data/features/global';
 import Button from './Button';
+
+import { useDispatch, useSelector } from '@src/data/hooks';
+import { selectAlert, hideAlert } from '@src/data/features/global';
 
 const AUTO_DISMISS_MS = 4000;
 

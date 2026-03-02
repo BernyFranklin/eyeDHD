@@ -1,7 +1,7 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit'
 
-import globalReducer from '../data/features/global';
-import userReducer from '../data/features/user';
+import globalReducer from './features/global';
+import userReducer from './features/user';
 
 /**
  * Main data store for the app, combines reducers for global app state and user-specific

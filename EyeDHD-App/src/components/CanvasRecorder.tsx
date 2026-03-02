@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import AnimationWindow from "./animation/AnimationWindow";
-import RemoteStream from "../data/RemoteStream";
-import { type CaseData } from "../types";
+
+import { type CaseData } from "@src/data/types";
+import RemoteStream from "@src/data/RemoteStream";
 
 type Props = {
 	file: CaseData;

@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
-import { Button, LoadingOverlay } from '../../components';
 import CaseList from './CaseList';
 import CreateCaseWindow from './CreateCaseWindow';
+import { Button, LoadingOverlay } from '@src/components';
 
-import RemoteStream from '../../data/RemoteStream';
-import { CaseData } from '../../types';
-import { useDispatch, useSelector } from '../../data/hooks';
-import { showAlert } from '../../data/features/global';
-import { selectCases, setCases } from '../../data/features/user';
+import RemoteStream from '@src/data/RemoteStream';
+import { type CaseData } from '@src/data/types';
+import { useDispatch, useSelector } from '@src/data/hooks';
+import { showAlert } from '@src/data/features/global';
+import { selectCases, setCases } from '@src/data/features/user';
 
 /**
  * Home page of the app, shows list of cases and allows user to create new cases

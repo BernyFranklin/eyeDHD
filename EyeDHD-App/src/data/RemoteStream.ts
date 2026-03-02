@@ -4,7 +4,7 @@ import {
 	type StreamType,
 	type Progress,
 	type CaseData
-} from '../types';
+} from './types';
 
 /**
  * RemoteStream class that provides an async iterator interface for streaming data

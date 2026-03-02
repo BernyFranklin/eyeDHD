@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router';
 
-import './App.css';
-import { AlertWindow, ChooseDirWindow, Navbar } from './components';
+import '@src/App.css';
+import { AlertWindow, ChooseDirWindow, Navbar } from '@src/components';
 
-import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from './data/features/user';
-import { useDispatch, useSelector } from './data/hooks';
-import { showAlert } from './data/features/global';
-
-import { CaseData } from './types';
-import RemoteStream from './data/RemoteStream';
+import { CaseData } from '@src/data/types';
+import RemoteStream from '@src/data/RemoteStream';
+import { useDispatch, useSelector } from '@src/data/hooks';
+import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
+import { showAlert } from '@src/data/features/global';
 
 /**
  * Main app component, handles loading user data on startup and showing either the

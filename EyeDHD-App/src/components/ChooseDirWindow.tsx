@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 
-import { useSelector, useDispatch } from '../data/hooks';
-import { showAlert } from '../data/features/global';
-import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '../data/features/user';
 import Button from './Button';
+
+import { useSelector, useDispatch } from '@src/data/hooks';
+import { showAlert } from '@src/data/features/global';
+import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 
 type Props = {
 	loading: boolean;

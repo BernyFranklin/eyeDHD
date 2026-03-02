@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { type CaseData } from '../../../types';
-import { useDispatch } from '../../../data/hooks';
-import { showAlert } from '../../../data/features/global';
+import { type CaseData } from '@src/data/types';
+import { useDispatch } from '@src/data/hooks';
+import { showAlert } from '@src/data/features/global';
 
 type Props = {
 	file: CaseData,

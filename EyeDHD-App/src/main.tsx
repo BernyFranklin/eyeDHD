@@ -3,12 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter, Route, Routes } from 'react-router';
 
-import './index.css';
+import '@src/index.css';
 
-import { store } from './data';
+import { store } from '@src/data';
 
-import App from './App';
-import { HomePage, CaseViewer } from './pages';
+import App from '@src/App';
+import { HomePage, CaseViewer } from '@src/pages';
 // Old pages, functionality will be extracted into tasks for CaseViewer
 // import CsvFileImport from './components/CsvFileImport';
 // import AnimationGenerator from './components/AnimationGenerator';

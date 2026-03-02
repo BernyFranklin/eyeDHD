@@ -7,11 +7,14 @@
     "esModuleInterop": true,
     "noImplicitAny": true,
     "sourceMap": true,
-    "baseUrl": ".",
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+    	"@src/*": ["src/*"]
+    }
   },
   "include": ["src/**/*", "electron/**/*", "saccades/**/*"],
   "files": ["src/global.d.ts", "forge.env.d.ts"],
