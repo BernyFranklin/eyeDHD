@@ -7,7 +7,7 @@ import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
-import { type CaseData, caseImportCsvPath, caseOutputCsvPath } from './db/tables/CaseData';
+import { type CaseData, csvImportPath, csvOutputPath } from './db/tables/CaseData';
 import { type User } from './db/tables/User';
 
 const appRoot = app.getAppPath();
@@ -310,7 +310,7 @@ ipcMain.handle('case:import-csv', async (_, file: CaseData, filepath: string) =>
 			const manager = requireProjectManager();
 			const storedCase = manager.actions.case.read(file.name);
 
-			const importPath = caseImportCsvPath(storedCase);
+			const importPath = csvImportPath(storedCase);
 			const importDir = path.dirname(importPath);
 			if (!fs.existsSync(importDir)) {
 				fs.mkdirSync(importDir, { recursive: true });
@@ -392,7 +392,7 @@ ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
 
 			const manager = requireProjectManager();
 			const storedCase = manager.actions.case.read(file.name);
-			const sourcePath = caseOutputCsvPath(storedCase);
+			const sourcePath = csvOutputPath(storedCase);
 
 			if (!fs.existsSync(sourcePath)) {
 				return resolve({ success: false, message: `Cleaned CSV not found for ${file.name}` });

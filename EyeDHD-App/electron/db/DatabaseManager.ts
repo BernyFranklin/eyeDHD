@@ -3,7 +3,7 @@ import fs from 'fs';
 
 import DataCleaner from '../analysis/DataCleaner';
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
-import caseActions, { type CaseData, caseImportCsvPath, caseOutputCsvPath, createCaseDataTable } from './tables/CaseData';
+import caseActions, { type CaseData, csvImportPath, csvOutputPath, createCaseDataTable } from './tables/CaseData';
 
 import userActions, { type User, createUserTable } from './tables/User';
 
@@ -65,7 +65,7 @@ export default class DatabaseManager {
 				update: (file: CaseData, updates: Partial<CaseData>) => caseActions.update(this.db, file, updates),
 				resetCleaning: (file: CaseData) => {
 					this.resetCleaner(file);
-					const cleanedPath = caseOutputCsvPath(file);
+					const cleanedPath = csvOutputPath(file);
 					if (fs.existsSync(cleanedPath)) {
 						fs.unlinkSync(cleanedPath);
 					}
@@ -125,7 +125,7 @@ export default class DatabaseManager {
 	 * cleaners map.
 	 */
 	private createCleaner(file: CaseData) {
-		const cleaner = new DataCleaner({ path: caseImportCsvPath(file) });
+		const cleaner = new DataCleaner({ path: csvImportPath(file) });
 		this.cleaners.set(file.name, cleaner);
 	}
 

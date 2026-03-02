@@ -1,9 +1,8 @@
 import fs from "fs";
-import path from "path";
 import rl from "readline";
 
 import { type CSVData, toCSVData } from "./tables/CSVData";
-import metadataActions, { type CaseData, caseOutputCsvPath } from "./tables/CaseData";
+import metadataActions, { type CaseData, csvOutputPath } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
 
 export type DataType = CaseData | CSVData;
@@ -145,7 +144,7 @@ export default class DataStream {
 	private static async *csvDataIterator(
 		file: CaseData
 	): AsyncGenerator<DataType[], void, undefined> {
-		const cleanedPath = caseOutputCsvPath(file);
+		const cleanedPath = csvOutputPath(file);
 		if (!fs.existsSync(cleanedPath)) {
 			throw new Error(`Cleaned CSV not found for file: ${file.name}`);
 		}
@@ -188,7 +187,6 @@ export default class DataStream {
 		manager: DatabaseManager,
 		file: CaseData
 	): AsyncGenerator<DataType[], void, undefined> {
-		// Check over this code and simplify the dumb things copilot probably generated
 		let metadata = file;
 		let cleaner = manager.getCleaner(metadata);
 		if (!cleaner) {
@@ -204,7 +202,7 @@ export default class DataStream {
 			}
 		}
 
-		const outputPath = caseOutputCsvPath(metadata);
+		const outputPath = csvOutputPath(metadata);
 		const outputStream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
 
 		const header = cleaner.header + '\n';

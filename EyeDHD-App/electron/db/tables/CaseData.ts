@@ -8,12 +8,9 @@ export default {
 	iterate,
 	update,
 	remove,
-	caseFileBaseName,
-	caseImportsDir,
-	caseOutputsDir,
-	caseGraphsDir,
-	caseImportCsvPath,
-	caseOutputCsvPath
+	caseBaseName,
+	csvImportPath,
+	csvOutputPath
 };
 
 export type CaseData = {
@@ -195,7 +192,7 @@ function remove(db: Database, file: CaseData): CaseData {
 	return original;
 }
 
-export function caseFileBaseName(file: CaseData): string {
+export function caseBaseName(file: CaseData): string {
 	const lowerName = file.name.toLowerCase();
 	if (lowerName.endsWith('.csv')) {
 		return file.name.slice(0, -4);
@@ -203,24 +200,12 @@ export function caseFileBaseName(file: CaseData): string {
 	return file.name;
 }
 
-export function caseImportsDir(file: CaseData): string {
-	return path.join(file.path, 'imports');
-}
-
-export function caseOutputsDir(file: CaseData): string {
-	return path.join(file.path, 'outputs');
-}
-
-export function caseGraphsDir(file: CaseData): string {
-	return path.join(file.path, 'outputs', 'graphs');
-}
-
-export function caseImportCsvPath(file: CaseData): string {
-	const baseName = caseFileBaseName(file);
+export function csvImportPath(file: CaseData): string {
+	const baseName = caseBaseName(file);
 	return path.join(file.path, 'imports', `${baseName}.csv`);
 }
 
-export function caseOutputCsvPath(file: CaseData): string {
-	const baseName = caseFileBaseName(file);
+export function csvOutputPath(file: CaseData): string {
+	const baseName = caseBaseName(file);
 	return path.join(file.path, 'outputs', `${baseName}_Cleaned.csv`);
 }

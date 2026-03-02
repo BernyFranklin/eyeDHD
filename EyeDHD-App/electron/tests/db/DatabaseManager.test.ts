@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 
 import DatabaseManager from '../../db/DatabaseManager';
-import { caseImportCsvPath } from '../../db/tables/CaseData';
+import { csvImportPath } from '../../db/tables/CaseData';
 
 import { type Progress, type StreamKey, type DataType } from '../../db/DataStream';
 
@@ -93,7 +93,7 @@ describe('Database - Manager', () => {
 				fs.mkdirSync(path.join(caseDir, 'imports'), { recursive: true });
 
 				const metadata = dbmgr.createCase(caseName, caseDir);
-				const importPath = caseImportCsvPath(metadata);
+				const importPath = csvImportPath(metadata);
 				fs.copyFileSync(csv.filePath, importPath);
 
 				const readyMetadata = dbmgr.actions.case.resetCleaning(metadata);
