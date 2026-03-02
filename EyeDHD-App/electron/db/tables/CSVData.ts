@@ -42,3 +42,30 @@ export type CSVData = {
 	// FocusDistance: number;
 	// FocusStability: number;
 };
+
+export const toCSVData = (line: string): CSVData => {
+	const values = line.split(',');
+	if (values.length !== 17) {
+		throw new Error(`Invalid CSV line, expected 17 values but got ${values.length}`);
+	}
+
+	return {
+		Frame: Number(values[0]),
+		CaptureTime: Number(values[1]),
+		LogTime: Number(values[2]),
+		GazeStatus: values[3],
+		CombinedGazeForwardX: Number(values[4]),
+		CombinedGazeForwardY: Number(values[5]),
+		CombinedGazeForwardZ: Number(values[6]),
+		LeftEyeStatus: values[7],
+		LeftEyeForwardX: Number(values[8]),
+		LeftEyeForwardY: Number(values[9]),
+		LeftEyeForwardZ: Number(values[10]),
+		LeftPupilDiameterInMM: Number(values[11]),
+		RightEyeStatus: values[12],
+		RightEyeForwardX: Number(values[13]),
+		RightEyeForwardY: Number(values[14]),
+		RightEyeForwardZ: Number(values[15]),
+		RightPupilDiameterInMM: Number(values[16])
+	}
+}

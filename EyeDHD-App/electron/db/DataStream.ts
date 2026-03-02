@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import rl from "readline";
 
-import { type CSVData } from "./tables/CSVData";
+import { type CSVData, toCSVData } from "./tables/CSVData";
 import metadataActions, { type CaseData, caseOutputCsvPath } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
 
@@ -116,11 +116,19 @@ export default class DataStream {
 			}
 
 			case 'CSVData': {
+				if (!file) {
+					throw new Error('File must be provided for CSVData streams');
+				}
+
 				yield* DataStream.csvDataIterator(file);
 				break;
 			}
 
 			case 'Cleaning': {
+				if (!file) {
+					throw new Error('File must be provided for CSVData streams');
+				}
+
 				yield* DataStream.cleaningIterator(manager, file);
 				break;
 			}
@@ -150,31 +158,13 @@ export default class DataStream {
 		}
 	}
 
-	private static parseCsvValue(value: string): string | number {
-		const trimmed = value.trim();
-		if (trimmed.length === 0) {
-			return 0;
-		}
-
-		const numeric = Number(trimmed);
-		if (!Number.isNaN(numeric)) {
-			return numeric;
-		}
-
-		return trimmed;
-	}
-
 	/**
 	 * Private static method to create an async iterator for streaming cleaned CSV data
 	 * for a given file.
 	 */
 	private static async *csvDataIterator(
-		file?: CaseData
+		file: CaseData
 	): AsyncGenerator<DataType[], void, undefined> {
-		if (!file) {
-			throw new Error('File must be provided for CSVData streams');
-		}
-
 		const cleanedPath = caseOutputCsvPath(file);
 		if (!fs.existsSync(cleanedPath)) {
 			throw new Error(`Cleaned CSV not found for file: ${file.name}`);
@@ -185,30 +175,13 @@ export default class DataStream {
 		const iter = reader[Symbol.asyncIterator]();
 
 		try {
-			const headerResult = await iter.next();
-			if (headerResult.done || !headerResult.value) {
-				return;
-			}
-
-			const header = headerResult.value
-				.split(',')
-				.map((value) => value.trim())
-				.filter((value) => value.length > 0);
+			// Skip header row
+			await iter.next();
 
 			let batch: CSVData[] = [];
 			for await (const line of iter) {
-				if (!line) {
-					continue;
-				}
-
-				const values = line.split(',');
-				const row: Record<string, string | number> = {};
-
-				header.forEach((key, index) => {
-					row[key] = DataStream.parseCsvValue(values[index] ?? '');
-				});
-
-				batch.push(row as CSVData);
+				const data = toCSVData(line);
+				batch.push(data);
 
 				if (batch.length >= STREAM_BATCH_SIZE) {
 					yield batch;
@@ -233,12 +206,9 @@ export default class DataStream {
 	 */
 	private static async *cleaningIterator(
 		manager: DatabaseManager,
-		file?: CaseData
+		file: CaseData
 	): AsyncGenerator<DataType[], void, undefined> {
-		if (!file) {
-			throw new Error('File must be provided for Cleaning streams');
-		}
-
+		// Check over this code and simplify the dumb things copilot probably generated
 		let metadata = file;
 		let cleaner = manager.getCleaner(metadata);
 		if (!cleaner) {
