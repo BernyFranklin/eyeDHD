@@ -41,6 +41,15 @@ export default function CreateCaseWindow(props: Props) {
 		}
 	}, [props.isOpen]);
 
+	const getFileName = (filePath: string) => {
+		return filePath.split(/[/\\]/).slice(-1)[0] || '';
+	};
+
+	const getCaseNameFromPath = (filePath: string) => {
+		const filename = getFileName(filePath);
+		return filename.replace(/\.csv$/i, '');
+	};
+
 	const handleSelectCsv = async () => {
 		try {
 			const filepath = await window.electron.case.selectCsv();
@@ -49,7 +58,7 @@ export default function CreateCaseWindow(props: Props) {
 			}
 
 			setCsvLabel(filepath);
-			setCaseName(filepath.split('\\').slice(-1)[0].replace('.csv', ''));
+			setCaseName(getCaseNameFromPath(filepath));
 			setCsvStatus('success');
 		} catch (err) {
 			dispatch(showAlert({
@@ -152,7 +161,7 @@ export default function CreateCaseWindow(props: Props) {
 								`text-area-input import-input ${getImportBorder(csvStatus)}`
 							}
 							onClick={handleSelectCsv}
-							value={csvLabel.split('\\').slice(-1)[0] || ''}
+							value={getFileName(csvLabel)}
 							readOnly
 							aria-label='Select a CSV file'
 							placeholder='Select a CSV file'
@@ -164,7 +173,7 @@ export default function CreateCaseWindow(props: Props) {
 							className={
 								`text-area-input import-input ${getImportBorder(vrStatus)}`
 							}
-							value={vrLabel.split('\\').slice(-1)[0] || ''}
+							value={getFileName(vrLabel)}
 							readOnly
 							aria-label='VR video selection coming soon'
 							placeholder='VR video selection coming soon'
