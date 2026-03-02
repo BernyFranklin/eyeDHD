@@ -13,10 +13,6 @@ import { type User } from './db/tables/User';
 const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
-// TODO: consider creating another database that is stored in the project folder which
-// will contain the csv data rows, or don't store any csv in database and go straight
-// to csv.
-
 /**
  * Main database setup
  * The main database keeps track of user settings like project directory
@@ -226,20 +222,17 @@ ipcMain.handle('user:initialize-directory', async (_, dir: string, user: User) =
  * the necessary subfolders for imports, outputs, and graphs. Also creates a new
  * metadata entry for the case in the project database. Returns the created casedata.
  */
-ipcMain.handle('case:create-new', async (_, caseName) => {
+ipcMain.handle('case:create-new', async (_, casename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const user = main_manager.actions.user.read();
 			if (!user.dir) {
 				return reject('No project directory set for user');
 			}
-			if (!caseName || typeof caseName !== 'string') {
-				return reject('Case name is required');
-			}
 
 			const manager = requireProjectManager();
 
-			const caseDir = path.join(user.dir, 'cases', caseName);
+			const caseDir = path.join(user.dir, 'cases', casename);
 			const importsDir = path.join(caseDir, 'imports');
 			const outputsDir = path.join(caseDir, 'outputs');
 			const graphsDir = path.join(outputsDir, 'graphs');
@@ -250,7 +243,7 @@ ipcMain.handle('case:create-new', async (_, caseName) => {
 				}
 			});
 
-			const casedata = manager.createCase(caseName, caseDir);
+			const casedata = manager.createCase(casename, caseDir);
 			return resolve(casedata);
 		} catch (err) {
 			return reject(`Failed to create case: ${err}`);
@@ -382,7 +375,7 @@ ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
 			// Show save dialog
 			const { canceled, filePath } = await dialog.showSaveDialog({
 				title: 'Export Cleaned CSV',
-				defaultPath: path.join(os.homedir(), `${path.parse(file.name).name}_cleaned.csv`),
+				defaultPath: path.join(os.homedir(), `${path.parse(file.name).name}_Cleaned.csv`),
 				filters: [{ name: 'CSV Files', extensions: ['csv'] }]
 			});
 
