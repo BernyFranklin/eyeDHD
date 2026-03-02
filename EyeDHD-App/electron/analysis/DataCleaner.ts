@@ -136,8 +136,7 @@ export default class DataCleaner {
 			const fileStats = fs.statSync(path);
 			this.progress.totalBytes = fileStats.size;
 		} catch (err) {
-			//console.warn('Could not get file size:', err);
-			this.progress.totalBytes = 0;
+			throw new Error(`Could not get file size: ${err.message}`);
 		}
 
 		// Optimize buffer size based on available memory
@@ -172,7 +171,9 @@ export default class DataCleaner {
 				// Validate header structure
 				const headerValidation = this.validateHeader();
 				if (!headerValidation.isValid) {
-					//console.warn('Header validation issues detected:', headerValidation);
+					throw new Error(
+						`Header validation issues detected: ${headerValidation}`
+					);
 				}
 
 				this.performance.startTime = Date.now();

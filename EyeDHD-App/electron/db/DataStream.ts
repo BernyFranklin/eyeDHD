@@ -23,26 +23,6 @@ export type Progress = {
 const STREAM_BATCH_SIZE = 1000;
 const CLEANING_BATCH_SIZE = 1000;
 
-const CLEANED_FIELDS: Array<keyof CSVData> = [
-	'Frame',
-	'CaptureTime',
-	'LogTime',
-	'GazeStatus',
-	'CombinedGazeForwardX',
-	'CombinedGazeForwardY',
-	'CombinedGazeForwardZ',
-	'LeftEyeStatus',
-	'LeftEyeForwardX',
-	'LeftEyeForwardY',
-	'LeftEyeForwardZ',
-	'LeftPupilDiameterInMM',
-	'RightEyeStatus',
-	'RightEyeForwardX',
-	'RightEyeForwardY',
-	'RightEyeForwardZ',
-	'RightPupilDiameterInMM'
-];
-
 /**
  * DataStream class that provides an async iterator interface for streaming data
  * from the database.
@@ -225,13 +205,9 @@ export default class DataStream {
 		}
 
 		const outputPath = caseOutputCsvPath(metadata);
-		const outputDir = path.dirname(outputPath);
-		if (!fs.existsSync(outputDir)) {
-			fs.mkdirSync(outputDir, { recursive: true });
-		}
-
 		const outputStream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
-		const header = CLEANED_FIELDS.join(',') + '\n';
+
+		const header = cleaner.header + '\n';
 		outputStream.write(header);
 		metadata = manager.actions.case.update(metadata, { header });
 
@@ -239,11 +215,8 @@ export default class DataStream {
 		for await (const row of cleaner) {
 			batch.push(row);
 
-			const csvLine = CLEANED_FIELDS.map((field) => {
-				const value = row[field];
-				return value ?? 0;
-			}).join(',') + '\n';
-			outputStream.write(csvLine);
+			const line = Object.values(row).map(String).join(',') + '\n';
+			outputStream.write(line);
 
 			if (batch.length >= CLEANING_BATCH_SIZE) {
 				yield batch;
@@ -257,11 +230,6 @@ export default class DataStream {
 
 		cleaner.close();
 		outputStream.end();
-
-		await new Promise<void>((resolve, reject) => {
-			outputStream.on('finish', resolve);
-			outputStream.on('error', reject);
-		});
 
 		manager.actions.case.update(metadata, {
 			cleaned_rows: cleaner.progress.currentRow,
