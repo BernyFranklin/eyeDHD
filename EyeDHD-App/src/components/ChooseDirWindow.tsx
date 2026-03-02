@@ -180,9 +180,13 @@ export default function ChooseDirWindow(props: Props) {
 					}
 
 					.select-waiting {
-						border: 2px solid #5A5A5A;
+						border: 1px solid #7A7A7A;
 						animation: select-waiting-pulse 1.4s ease-in-out infinite;
-						box-shadow: 0 0 0 0 rgba(90, 90, 90, 0.45);
+						box-shadow: 0 0 0 1px color-mix(
+							in srgb,
+							var(--action-bg) 45%,
+							transparent
+						);
 					}
 
 					.select-success {
@@ -195,16 +199,25 @@ export default function ChooseDirWindow(props: Props) {
 
 					@keyframes select-waiting-pulse {
 						0% {
-							border-color: #5A5A5A;
-							box-shadow: 0 0 0 0 rgba(90, 90, 90, 0.45);
+							box-shadow: 0 0 0 1px color-mix(
+								in srgb,
+								var(--action-bg) 45%,
+								transparent
+							);
 						}
 						50% {
-							border-color: #2F2F2F;
-							box-shadow: 0 0 0 6px rgba(90, 90, 90, 0.3);
+							box-shadow: 0 0 0 2px color-mix(
+								in srgb,
+								var(--action-bg) 85%,
+								transparent
+							);
 						}
 						100% {
-							border-color: #5A5A5A;
-							box-shadow: 0 0 0 0 rgba(90, 90, 90, 0.45);
+							box-shadow: 0 0 0 1px color-mix(
+								in srgb,
+								var(--action-bg) 45%,
+								transparent
+							);
 						}
 					}
 
