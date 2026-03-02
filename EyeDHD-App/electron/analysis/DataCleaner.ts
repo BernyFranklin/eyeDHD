@@ -237,7 +237,7 @@ export default class DataCleaner {
 			this.status.reading = true;
 
 			while (this.buf.length < count) {
-				const { value, done } = await this.iter?.next()!;
+				const { value, done } = await this.iter.next();
 				if (done) {
 					this.status.done = true;
 					// Only set reading to false if we weren't already in a cleaning process
@@ -339,7 +339,7 @@ export default class DataCleaner {
 		} catch (error) {
 			console.warn(`ERROR cleaning row: ${error.message}`);
 			// Return a minimal valid row structure to prevent crashes
-			const errorRow: any = {};
+			const errorRow: Record<string, string | number> = undefined;
 			this.header.forEach((column) => {
 				const trimmedColumn = column.trim();
 				if (allowedFields.has(trimmedColumn)) {
@@ -347,7 +347,7 @@ export default class DataCleaner {
 				}
 			});
 			errorRow._error = error.message;
-			return errorRow;
+			return errorRow as CSVData;
 		}
 	}
 
@@ -414,7 +414,7 @@ export default class DataCleaner {
 	/**
 	* Validates and sanitizes eye tracking data
 	*/
-	validateRow(row: Record<string, any>): CSVData {
+	validateRow(row: Record<string, string | number>): CSVData {
 		// Validate eye tracking specific fields
 		const eyePositions = ['Left', 'Right'];
 		const coordinates = ['X', 'Y', 'Z'];
@@ -424,7 +424,7 @@ export default class DataCleaner {
 			coordinates.forEach((coord) => {
 				const field = `${position}EyeForward${coord}`;
 				if (row[field] !== undefined && row[field] !== null) {
-					const value = this.sanitizeEyeCoordinate(row[field]);
+					const value = this.sanitizeEyeCoordinate(row[field] as number);
 					row[field] = value;
 				}
 			});
@@ -433,7 +433,7 @@ export default class DataCleaner {
 			coordinates.forEach((coord) => {
 				const field = `${position}EyePosition${coord}`;
 				if (row[field] !== undefined && row[field] !== null) {
-					const value = this.sanitizeEyeCoordinate(row[field]);
+					const value = this.sanitizeEyeCoordinate(row[field] as number);
 					row[field] = value;
 				}
 			});
@@ -441,13 +441,13 @@ export default class DataCleaner {
 			// Validate eye status
 			const statusField = `${position}EyeStatus`;
 			if (row[statusField] !== undefined) {
-				row[statusField] = this.sanitizeEyeStatus(row[statusField]);
+				row[statusField] = this.sanitizeEyeStatus(row[statusField] as string);
 			}
 		});
 
 		// Validate timestamp fields
 		if (row.Timestamp !== undefined && row.Timestamp !== null) {
-			row.Timestamp = this.sanitizeTimestamp(row.Timestamp);
+			row.Timestamp = this.sanitizeTimestamp(row.Timestamp as number);
 		}
 
 		return row as CSVData;
@@ -456,7 +456,7 @@ export default class DataCleaner {
 	/**
 		* Sanitizes eye coordinate values
 		*/
-	private sanitizeEyeCoordinate(value: any) {
+	private sanitizeEyeCoordinate(value: number) {
 		if (value === null || value === undefined) return 0.0;
 
 		if (typeof value === 'number') {
@@ -482,7 +482,7 @@ export default class DataCleaner {
 	/**
 	* Sanitizes eye status values
 	*/
-	private sanitizeEyeStatus(value: any) {
+	private sanitizeEyeStatus(value: string) {
 		if (value === null || value === undefined) return 'INVALID';
 
 		const stringValue = String(value).toUpperCase().trim();
@@ -493,7 +493,7 @@ export default class DataCleaner {
 		}
 
 		// Try to map common variations
-		const statusMapping: any = {
+		const statusMapping: Record<string, string> = {
 			TRUE: 'VALID',
 			FALSE: 'INVALID',
 			1: 'VALID',
@@ -510,7 +510,7 @@ export default class DataCleaner {
 	/**
 	* Sanitizes timestamp values
 	*/
-	private sanitizeTimestamp(value: any) {
+	private sanitizeTimestamp(value: number) {
 		if (value === null || value === undefined) return 0;
 
 		// If it's already a number, assume it's a valid timestamp
@@ -584,9 +584,9 @@ export default class DataCleaner {
 	/**
 		* Enhanced data validation specifically for eye tracking data
 		*/
-	private validateEyeTrackingRow(row: Record<string, any>) {
+	private validateEyeTrackingRow(row: Record<string, string | number | string[]>) {
 		let isValid = true;
-		const issues: any[] = [];
+		const issues: string[] = [];
 
 		// Check required eye tracking fields
 		this.eyeTrackingConfig.requiredFields.forEach((field) => {
@@ -614,7 +614,7 @@ export default class DataCleaner {
 			const statusField = `${eye}EyeStatus`;
 			if (
 				row[statusField] &&
-				!this.eyeTrackingConfig.validStatuses.includes(row[statusField])
+				!this.eyeTrackingConfig.validStatuses.includes(row[statusField] as string)
 			) {
 				issues.push(`Invalid ${statusField}: ${row[statusField]}`);
 				isValid = false;

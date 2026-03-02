@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { Button } from '@src/components';
@@ -29,7 +29,7 @@ export default function CreateCaseWindow(props: Props) {
 	const [csvLabel, setCsvLabel] = useState('');
 	const [csvStatus, setCsvStatus] = useState<ImportStatus>('waiting');
 
-	const [vrLabel, setVrLabel] = useState('');
+	const [vrLabel] = useState('');
 	const [vrStatus, setVrStatus] = useState<ImportStatus>('error');
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
