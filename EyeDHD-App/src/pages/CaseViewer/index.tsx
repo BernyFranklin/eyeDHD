@@ -3,6 +3,8 @@ import React from "react";
 import { useDispatch, useSelector } from "../../data/hooks";
 import { showAlert } from "../../data/features/global";
 import { selectSelectedCase } from "../../data/features/user";
+import { LoadingCircle } from "../../../src/components/extra/LoadingCircle/LoadingCircle";
+import { ProgressCircle } from "../../../src/components/extra/ProgressCircle/ProgressCircle";
 
 /**
  * Page for viewing a case, shows progress of data processing as a list of tasks
@@ -23,20 +25,28 @@ export default function CaseViewer() {
 				{selectedCase.name}
 				<ul className='task-list'>
 					<li className='task-item active-task'>
-						<span className='task-name'>Cleaning data...</span>
-						<div className='task-progress'>()</div>
+						<span className='task-name'>Cleaning data</span>
+						<div className='task-progress'>
+							<LoadingCircle size={30} />
+						</div>
 					</li>
 					<li className='task-item'>
 						<span className='task-name'>Generate animation</span>
-						<div className='task-progress'>()</div>
+						<div className='task-progress'>
+							<ProgressCircle value={0.0} size={30}/>
+						</div>
 					</li>
 					<li className='task-item'>
 						<span className='task-name'>Detect saccades</span>
-						<div className='task-progress'>()</div>
+						<div className='task-progress'>
+							<ProgressCircle value={0.0} size={30}/>
+						</div>
 					</li>
 					<li className='task-item'>
 						<span className='task-name'>Create visuals</span>
-						<div className='task-progress'>()</div>
+						<div className='task-progress'>
+							<ProgressCircle value={0.0} size={30}/>
+						</div>
 					</li>
 				</ul>
 			</div>

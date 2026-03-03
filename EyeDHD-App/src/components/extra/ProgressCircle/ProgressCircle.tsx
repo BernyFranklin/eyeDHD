@@ -12,7 +12,7 @@ type ProgressCircleProp = {
 export function ProgressCircle({
     value,  // 
     size = 120, 
-    thickness = 8, 
+    thickness = 4, 
     min = 0, 
     max = 1
 } : ProgressCircleProp) {
