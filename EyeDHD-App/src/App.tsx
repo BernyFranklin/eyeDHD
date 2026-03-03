@@ -3,11 +3,12 @@ import { Outlet } from 'react-router';
 
 import '@src/App.css';
 import { AlertWindow, Navbar } from '@src/components';
+import { AlertControls } from '@src/components/AlertWindow';
 
 import { CaseData } from '@src/data/types';
 import RemoteStream from '@src/data/RemoteStream';
 import { useDispatch } from '@src/data/hooks';
-import { showAlert, setLoading } from '@src/data/features/global';
+import { setLoading } from '@src/data/features/global';
 import { setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 
 /**
@@ -19,7 +20,7 @@ function App() {
 	const dispatch = useDispatch();
 
 	const handleError = (err: Error) => {
-		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
+		AlertControls.show(`Error: ${err.message}`, 'red');
 	};
 
 	const loadUserData = async () => {
