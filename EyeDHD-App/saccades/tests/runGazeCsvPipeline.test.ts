@@ -47,7 +47,7 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
   });
 
   it("O2) Adapter policy passthrough: forwards selection.includeGazeStatuses and ordering", () => {
-    const header = [
+    const header = [                                          // Set up headers that match what the adapter expects
       "CaptureTime",
       "GazeStatus",
       "CombinedGazeForwardX",
@@ -55,7 +55,7 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
       "CombinedGazeForwardZ",
     ];
 
-    const csvText = makeCsv({
+    const csvText = makeCsv({                                 // Create a CSV with a mix of VALID and INVALID gaze statuses to test selection filtering.
       header,
       rows: [
         { CaptureTime: 0, GazeStatus: "VALID",   CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
@@ -64,19 +64,20 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
       ],
     });
 
-    const options = {
+    const options = {                                         // Configure adapter options to include only VALID gaze statuses and order by capture time.
       adapter: {
         ordering: "byCaptureTime",
         selection: { includeGazeStatuses: ["VALID"] },
       },
     } as const;
 
-    const result = runGazeCsvPipeline(csvText, options);
-    
+    const result = runGazeCsvPipeline(csvText, options);      // Run the pipeline with the specified adapter options.
+
     // Expect only VALID rows included
-    expect(result.adapter.diagnostics.includedRows).toBe(2);
-    expect(result.adapter.diagnostics.excludedRows).toBe(1);
-    expect(result.adapter.sourceRowIndices.length).toBe(2);
+    expect(result.adapter.diagnostics.includedRows).toBe(2);  // Only the 1st and 3rd rows should be included based on gaze status filter.
+    expect(result.adapter.diagnostics.excludedRows).toBe(1);  // The 2nd row should be excluded.
+    expect(result.adapter.sourceRowIndices.length).toBe(2);   // sourceRowIndices should reflect the number of included rows.
+    expect(result.adapter.sourceRowIndices).toEqual([0, 2]);  // The included rows should be the 1st and 3rd rows (0-based indices).
   });
 
   it("O3) Parse passthrough: forwards parse options to parseGazeCsvSession", () => {
