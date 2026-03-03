@@ -2,7 +2,7 @@ import type { Vec3 } from "../index";
 import type { RawGazeRow } from "../ingest/csv/types";
 
 export interface AdapterSelectionPolicy {
-  includeGazeStatuses?: string[];
+  includeGazeStatuses?: readonly string[];
 }
 
 export interface AdapterOptions {

@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import type { Vec3 } from "../../index"; 
-import type { RawGazeRow } from "../../ingest/csv/types";
-import { adaptGazeRowsToAnalysisInput } from "../adapter";
-import { parseGazeCsvSession } from "../../ingest/csv/index";
-import { analyzeSaccadesFromVectors } from "../../index";
+import type { Vec3 } from "../index"; 
+import type { RawGazeRow } from "../ingest/csv/types";
+import { adaptGazeRowsToAnalysisInput } from "../adapt/adapter";
+import { parseGazeCsvSession } from "../ingest/csv/index";
+import { analyzeSaccadesFromVectors } from "../index";
 
 function row(
   rowIndex: number,
