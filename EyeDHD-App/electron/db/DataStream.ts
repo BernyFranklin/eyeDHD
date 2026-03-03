@@ -226,10 +226,20 @@ export default class DataStream {
 			yield batch;
 		}
 
-		// Save file as read-only
-
 		cleaner.close();
-		outputStream.end();
+
+		// End writing stream and set file to read-only
+		outputStream.end((err: Error) => {
+			if (err) {
+				throw err;
+			}
+
+			fs.chmod(outputPath, 0o444, (chmodErr) => {
+				if (chmodErr) {
+					throw chmodErr;
+				}
+			});
+		});
 
 		manager.actions.case.update(metadata, {
 			cleaned_rows: cleaner.progress.currentRow,
