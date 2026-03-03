@@ -29,8 +29,8 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
       header,
       rows: [
         { CaptureTime: 0,   GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
-        { CaptureTime: 5e6, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
-        { CaptureTime: 1e7, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
       ],
     });
 
@@ -58,9 +58,9 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
     const csvText = makeCsv({
       header,
       rows: [
-        { CaptureTime: 1e7, GazeStatus: "VALID",   CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
-        { CaptureTime: 0,   GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
-        { CaptureTime: 5e6, GazeStatus: "VALID",   CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 0, GazeStatus: "VALID",   CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000,   GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "VALID",   CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
       ],
     });
 
@@ -72,7 +72,7 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
     } as const;
 
     const result = runGazeCsvPipeline(csvText, options);
-
+    
     // Expect only VALID rows included
     expect(result.adapter.diagnostics.includedRows).toBe(2);
     expect(result.adapter.diagnostics.excludedRows).toBe(1);

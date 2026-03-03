@@ -11,13 +11,15 @@ export interface GazeCsvPipelineOptions {
   metrics?: SaccadeMetricsOptions;
 }
 
+
+
 export interface GazeCsvPipelineResult {
   parse: {
     meta: ParseMeta;
     diagnostics: ParseDiagnostics;
   };
   adapter: {
-    diagnostics: AdapterDiagnostics;
+    diagnostics: AdapterDiagnostics,
     sourceRowIndices: number[];
   };
   analysis: AnalyzeSaccadesResult;
