@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseGazeCsvSession } from '../csv/parseGazeCsvSession';
+import { parseGazeCsvSession } from '../ingest/csv/parseGazeCsvSession';
 
 
 // -------------------------
