@@ -22,7 +22,7 @@ export default function Card({ title, img, className }: Props) {
 					background-color: #13284c;
 					color: #fff;
 					font-weight: bold;
-					border-radius: 10%;
+					border-radius: var(--action-radius);
 					margin: 20px;
 					padding: 10px;
 				}

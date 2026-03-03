@@ -10,7 +10,7 @@ export default function Preview() {
 				{`
 					.preview-window {
 						border: 1px solid black;
-						border-radius: 5px;
+						border-radius: var(--action-radius);
 						width: 100%;
 						height: 100%;
 						background: rgba(200, 200, 200, 0.8);

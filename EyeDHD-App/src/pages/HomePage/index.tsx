@@ -105,6 +105,7 @@ export default function HomePage() {
 					min-height: 60px;
 					align-items: flex-start;
 					border: 2px solid #ccc;
+					border-radius: var(--action-radius);
 					padding: 10px;
 				}
 

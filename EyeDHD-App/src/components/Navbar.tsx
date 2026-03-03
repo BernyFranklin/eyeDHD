@@ -53,10 +53,12 @@ export default function Navbar() {
 				}
 
 				.navbar-icon {
-					width: 50px;
+					width: 32px;
+					height: 32px;
 					color: white;
 					filter: brightness(0) invert(1);
-					margin-top: 5px;
+					margin: 0;
+					display: block;
 				}
 
 				.navbar-links {
@@ -68,6 +70,11 @@ export default function Navbar() {
 					color: var(--action-text);
 					text-decoration: none;
 					font-weight: 600;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					width: 100%;
+					height: 100%;
 				}
 
 				.navbar-links a:hover {
@@ -88,10 +95,14 @@ export default function Navbar() {
 				.navbar-link {
 					background-color: var(--action-bg);
 					border-radius: var(--action-radius);
-					padding: 2px;
-					display: inline-block;
+					padding: 0;
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
 					cursor: pointer;
-					transition: ease background-color 0.3s;
+					transition: background-color 0.3s ease;
+					width: 54px;
+					height: 54px;
 				}
 
 				.navbar-link:hover {

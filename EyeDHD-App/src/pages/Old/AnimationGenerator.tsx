@@ -7,7 +7,7 @@ import LoadingOverlay from '../../components/LoadingOverlay';
 import Button from '../../components/Button';
 import CanvasRecorder from '../../components/CanvasRecorder';
 
-import { type Error, type CSVData, type CaseData } from '../../types';
+import { type Error, type CSVData, type CaseData } from '../../data/types';
 import RemoteStream from '../../data/RemoteStream';
 
 export default function AnimationGenerator() {

@@ -47,7 +47,7 @@ export default function Case(props: Props) {
 					padding: 10px;
 					width: 200px;
 					border: 1px solid #ccc;
-					border-radius: 5px;
+					border-radius: var(--action-radius);
 					margin-bottom: 10px;
 					transition: background-color 0.2s ease;
 				}

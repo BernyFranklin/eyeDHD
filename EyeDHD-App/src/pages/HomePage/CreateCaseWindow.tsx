@@ -205,7 +205,7 @@ export default function CreateCaseWindow(props: Props) {
 						max-width: 92vw;
 						padding: 24px;
 						background: #fff;
-						border-radius: 12px;
+						border-radius: var(--action-radius);
 						box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 						display: grid;
 						grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -228,7 +228,7 @@ export default function CreateCaseWindow(props: Props) {
 						width: 100%;
 						height: 44px;
 						padding: 10px;
-						border-radius: 8px;
+						border-radius: var(--action-radius);
 						resize: none;
 						align-self: stretch;
 						margin: 0;

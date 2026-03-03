@@ -38,7 +38,7 @@ select {
 	font-size: 1rem;
 	color: #000;
 	border: 1px solid #ccc;
-	border-radius: 4px;
+	border-radius: var(--action-radius);
 	padding: 1rem;
 	background-color: #f9f9f9;
 	margin-top: 1rem;

@@ -63,9 +63,9 @@ export default function TaskList() {
 					align-items: center;
 					justify-content: space-between;
 					padding: 10px;
-					width: 200px;
+					width: 250px;
 					border: 1px solid #ccc;
-					border-radius: 5px;
+					border-radius: var(--action-radius);
 					margin-bottom: 10px;
 					transition: background-color 0.2s ease;
 				}

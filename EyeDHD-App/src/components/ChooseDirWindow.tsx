@@ -148,7 +148,7 @@ export default function ChooseDirWindow(props: Props) {
 						max-width: 90vw;
 						padding: 24px;
 						background: #fff;
-						border-radius: 12px;
+						border-radius: var(--action-radius);
 						box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 						display: flex;
 						flex-direction: column;
@@ -166,7 +166,7 @@ export default function ChooseDirWindow(props: Props) {
 						width: 100%;
 						min-height: 80px;
 						padding: 10px;
-						border-radius: 8px;
+						border-radius: var(--action-radius);
 						resize: none;
 						cursor: pointer;
 						align-self: stretch;

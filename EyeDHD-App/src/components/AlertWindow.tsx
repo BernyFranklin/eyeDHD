@@ -47,7 +47,7 @@ export default function AlertWindow() {
 					margin-top: 0;
 					padding: 1rem;
 					border: 1px solid;
-					border-radius: 4px;
+					border-radius: var(--action-radius);
 					position: fixed;
 					top: 12px;
 					right: 12px;

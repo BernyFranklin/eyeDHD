@@ -26,7 +26,7 @@ export default function DoubleCard({ title, img1, img2, className }: Props) {
 					background-color: #13284c;
 					color: #fff;
 					font-weight: bold;
-					border-radius: 10%;
+					border-radius: var(--action-radius);
 					box-shadow: 0 4px 8px rgba(0, 0, 0, 0.9);
 					margin: 20px;
 					padding: 10px;

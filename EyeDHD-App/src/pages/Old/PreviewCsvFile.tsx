@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 
-import { type CSVData } from '../../types';
+import { type CSVData } from '../../data/types';
 
 type Props = {
 	fileName: string;
