@@ -1,8 +1,6 @@
 # UI / Backend TODO List
 
 ## Need to be done now
-- Simplify cleaned csv streaming so that it reads from the saved _Cleaned.csv file.
-- Refactor saving cleaned data to a file and reading cleaned data from that file by. looping line by line splitting on commas and converting to CSVData objects.
 - Add functionality to the tasks.
 
 ## Things / Ideas for later
@@ -17,6 +15,7 @@
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
 - Custom title bar.
 - Select multiple cases and compare.
+- Add ability to switch project folders.
 
 Project folder example:
 

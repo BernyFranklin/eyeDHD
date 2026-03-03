@@ -7,9 +7,6 @@ import { useDispatch, useSelector } from "@src/data/hooks";
 import { selectSelectedCase } from "@src/data/features/user";
 
 export default function TaskList() {
-	const dispatch = useDispatch();
-	const selectedCase = useSelector(selectSelectedCase);
-
 	const handleError = (err: Error) => {
 		AlertControls.show(`Error: ${err.message}`, 'red');
 	};
@@ -17,7 +14,6 @@ export default function TaskList() {
 	return (
 		<>
 			<div>
-				{selectedCase.name}
 				<ul className='task-list'>
 					<li className='task-item active-task'>
 						<span className='task-name'>Cleaning data</span>
