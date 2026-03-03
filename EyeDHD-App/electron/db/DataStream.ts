@@ -228,18 +228,21 @@ export default class DataStream {
 
 		cleaner.close();
 
-		// End writing stream and set file to read-only
-		outputStream.end((err: Error) => {
-			if (err) {
+		// End writing stream and wait for it to complete
+		await new Promise<void>((resolve, reject) => {
+			outputStream.once('error', reject);
+			outputStream.once('finish', resolve);
+			outputStream.end();
+		});
+
+		// Set output file to read-only
+		try {
+			await fs.promises.chmod(outputPath, 0o444);
+		} catch (err) {
+			if (err.code !== 'ENOENT') {
 				throw err;
 			}
-
-			fs.chmod(outputPath, 0o444, (chmodErr) => {
-				if (chmodErr) {
-					throw chmodErr;
-				}
-			});
-		});
+		}
 
 		manager.actions.case.update(metadata, {
 			cleaned_rows: cleaner.progress.currentRow,
