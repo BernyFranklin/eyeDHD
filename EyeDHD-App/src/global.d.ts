@@ -1,5 +1,7 @@
 import { type Electron, type Renderer } from '../electron/preload';
 
+declare module "*.css";
+
 export {};
 
 /**
