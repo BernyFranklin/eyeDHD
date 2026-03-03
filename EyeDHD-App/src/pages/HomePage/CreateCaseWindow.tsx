@@ -84,9 +84,7 @@ export default function CreateCaseWindow(props: Props) {
 			setCsvStatus('waiting');
 			setVrStatus('waiting');
 
-			const createdCase = await window.electron.case
-				.createNew(trimmedName)
-				.catch(err => {throw err});
+			const createdCase = await window.electron.case.createNew(trimmedName);
 			dispatch(setSelectedCase(createdCase));
 
 			const updatedCase = await window.electron.case.importCsv(
