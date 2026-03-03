@@ -245,8 +245,8 @@ export default function CreateCaseWindow(props: Props) {
 					.case-name-input {
 						cursor: default;
 						pointer-events: none;
-						background: #F0F0F0;
-						color: #5A5A5A;
+						background: none;
+						color: black;
 					}
 
 					.import-input {
