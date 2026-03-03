@@ -4,14 +4,14 @@
 - Add functionality to the tasks.
 
 ## Things / Ideas for later
-- Reusable UI components like progress wheels, status symbols like green checkmarks / red xs.
+- More reusable UI components like status symbols (green checkmarks / red xs).
 - Estimated time until all tasks complete.
 - Preview window for running task on the right of the task list
 - Eye dilation chart.
 - Saccade chart.
 - CSS Styling.
 - More complete error checking:
-	- If main.db has a selected project folder, on start check if folder is set up correctly and if error and prompt for new folder selection
+	- If main.db has a selected project folder, on start check if folder is set up correctly and if error and prompt for new folder selection if not
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
 - Custom title bar.
 - Select multiple cases and compare.
