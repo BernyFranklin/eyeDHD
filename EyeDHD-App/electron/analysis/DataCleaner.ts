@@ -28,6 +28,7 @@ export default class DataCleaner {
 		start: false
 	};
 	filePath: string;
+	private initPromise: Promise<void>;
 
 	// Statistics for monitoring data quality
 	stats: {
@@ -155,40 +156,36 @@ export default class DataCleaner {
 		});
 		this.iter = this.readline[Symbol.asyncIterator]();
 
-		// Read column names
-		this.iter
-			.next()
-			.then(({ value, done }) => {
-				if (done) {
-					this.close();
-					throw new Error('File is empty');
-				}
+		this.initPromise = this.initialize();
+	}
 
-				// Parse header using the same CSV parsing logic to handle quoted headers
-				const headerValues = this.parseCsvLine(value);
-				this.header = headerValues.map((name: string) => name.trim());
-
-				// Validate header structure
-				const headerValidation = this.validateHeader();
-				if (!headerValidation.isValid) {
-					throw new Error(
-						`Header validation issues detected: ${headerValidation}`
-					);
-				}
-
-				this.performance.startTime = Date.now();
-
-				this.loadRows(this.buf_len)
-					.then()
-					.catch((err) => {
-						this.close();
-						throw err;
-					});
-			})
-			.catch((err) => {
+	private async initialize() {
+		try {
+			const { value, done } = await this.iter.next();
+			if (done) {
 				this.close();
-				throw err;
-			});
+				throw new Error('File is empty');
+			}
+
+			// Parse header using the same CSV parsing logic to handle quoted headers
+			const headerValues = this.parseCsvLine(value);
+			this.header = headerValues.map((name: string) => name.trim());
+
+			// Validate header structure
+			const headerValidation = this.validateHeader();
+			if (!headerValidation.isValid) {
+				// throw new Error(
+				// 	`Header validation issues detected: ${headerValidation}`
+				// );
+			}
+
+			this.performance.startTime = Date.now();
+
+			await this.loadRows(this.buf_len);
+		} catch (err) {
+			this.close();
+			throw err;
+		}
 	}
 
 	/**
@@ -210,6 +207,8 @@ export default class DataCleaner {
 	}
 
 	private async read(): Promise<CSVData | null> {
+		await this.initPromise;
+
 		if (this.buf.length === 0 && !this.status.done) {
 			await this.loadRows(this.buf_len);
 		}

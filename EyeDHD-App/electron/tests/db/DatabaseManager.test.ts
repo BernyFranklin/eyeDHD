@@ -91,6 +91,7 @@ describe('Database - Manager', () => {
 				const caseName = path.parse(csv.filename).name;
 				caseDir = path.join(os.tmpdir(), `case_${Date.now()}_${Math.random().toString(36).slice(2)}`);
 				fs.mkdirSync(path.join(caseDir, 'imports'), { recursive: true });
+				fs.mkdirSync(path.join(caseDir, 'outputs'), { recursive: true });
 
 				const metadata = dbmgr.createCase(caseName, caseDir);
 				const importPath = csvImportPath(metadata);
