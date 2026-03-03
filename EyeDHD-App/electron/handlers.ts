@@ -31,17 +31,6 @@ const main_manager = new DatabaseManager({
 let project_manager: DatabaseManager | null = null;
 
 /**
- * Helper function to get the project manager instance, which is required for most
- * operations
- */
-function requireProjectManager(): DatabaseManager {
-	if (!project_manager) {
-		throw new Error('Project database not initialized. Initialize a project directory first.');
-	}
-	return project_manager;
-}
-
-/**
  * Helper function to check if a directory is structured like a project directory by
  * checking for the existence of the cases folder and the project.db. We use this to
  * validate a existing project on startup
@@ -230,8 +219,6 @@ ipcMain.handle('case:create-new', async (_, casename) => {
 				return reject('No project directory set for user');
 			}
 
-			const manager = requireProjectManager();
-
 			const caseDir = path.join(user.dir, 'cases', casename);
 			const importsDir = path.join(caseDir, 'imports');
 			const outputsDir = path.join(caseDir, 'outputs');
@@ -243,7 +230,7 @@ ipcMain.handle('case:create-new', async (_, casename) => {
 				}
 			});
 
-			const casedata = manager.createCase(casename, caseDir);
+			const casedata = project_manager.createCase(casename, caseDir);
 			return resolve(casedata);
 		} catch (err) {
 			return reject(`Failed to create case: ${err}`);
@@ -300,8 +287,7 @@ ipcMain.handle('case:import-csv', async (_, file: CaseData, filepath: string) =>
 				return reject('No case provided for import');
 			}
 
-			const manager = requireProjectManager();
-			const storedCase = manager.actions.case.read(file.name);
+			const storedCase = project_manager.actions.case.read(file.name);
 
 			const importPath = csvImportPath(storedCase);
 			const importDir = path.dirname(importPath);
@@ -311,7 +297,7 @@ ipcMain.handle('case:import-csv', async (_, file: CaseData, filepath: string) =>
 
 			fs.copyFileSync(filepath, importPath);
 
-			const updatedCase = manager.actions.case.resetCleaning(storedCase);
+			const updatedCase = project_manager.actions.case.resetCleaning(storedCase);
 			return resolve(updatedCase);
 		} catch (err) {
 			return reject(`Failed to import CSV: ${err}`);
@@ -329,8 +315,7 @@ ipcMain.handle('case:import-csv', async (_, file: CaseData, filepath: string) =>
 ipcMain.handle('case:read-casedata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const manager = requireProjectManager();
-			const casedata = manager.actions.case.read(filename);
+			const casedata = project_manager.actions.case.read(filename);
 			return resolve(casedata);
 		} catch (err) {
 			return reject(`Failed to read metadata for file: ${filename}. Error: ${err}`);
@@ -352,8 +337,7 @@ ipcMain.handle('case:read-casedata', async (_, filename) => {
 ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
-			const manager = requireProjectManager();
-			manager.actions.case.resetCleaning(file);
+			project_manager.actions.case.resetCleaning(file);
 
 			return resolve();
 		} catch (err) {
@@ -383,8 +367,7 @@ ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
 				return resolve({ success: false, message: 'Export canceled' });
 			}
 
-			const manager = requireProjectManager();
-			const storedCase = manager.actions.case.read(file.name);
+			const storedCase = project_manager.actions.case.read(file.name);
 			const sourcePath = csvOutputPath(storedCase);
 
 			if (!fs.existsSync(sourcePath)) {
@@ -539,8 +522,7 @@ ipcMain.handle('vr:video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }
  * for subsequent pull and cancel requests to identify the stream.
  */
 ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => {
-	const manager = requireProjectManager();
-	return await manager.startStream(type, file);
+	return await project_manager.startStream(type, file);
 })
 
 /**
@@ -552,8 +534,7 @@ ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => 
  * efficient data retrieval without overwhelming memory.
  */
 ipcMain.handle('stream:pull', async (event, { key, count }) => {
-	const manager = requireProjectManager();
-	await manager.pullStream(key, count, (rows, progress) => {
+	await project_manager.pullStream(key, count, (rows, progress) => {
 		event.sender.send('stream:data', { key, rows, progress });
 	});
 });
@@ -567,8 +548,7 @@ ipcMain.handle('stream:pull', async (event, { key, count }) => {
  * operation.
  */
 ipcMain.on('stream:cancel', (_, { key }) => {
-	const manager = requireProjectManager();
-	manager.cancelStream(key);
+	project_manager.cancelStream(key);
 });
 
 /**

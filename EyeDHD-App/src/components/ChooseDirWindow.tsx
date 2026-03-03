@@ -36,6 +36,7 @@ export default function ChooseDirWindow(props: Props) {
 
 			if (!project) {
 				setSelectStatus('error');
+				setPlaceholder('No folder selected');
 				return;
 			}
 

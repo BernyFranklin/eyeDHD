@@ -1,10 +1,7 @@
 import React from "react";
 
-import { useDispatch, useSelector } from "@src/data/hooks";
-import { showAlert } from "@src/data/features/global";
-import { selectSelectedCase } from "@src/data/features/user";
-import { LoadingCircle } from "@src/components/extra/LoadingCircle/LoadingCircle";
-import { ProgressCircle } from "@src/components/extra/ProgressCircle/ProgressCircle";
+import TaskList from "./TaskList";
+import Preview from "./Preview";
 
 /**
  * Page for viewing a case, shows progress of data processing as a list of tasks
@@ -12,87 +9,56 @@ import { ProgressCircle } from "@src/components/extra/ProgressCircle/ProgressCir
  * an organized display of visualizations will be shown.
  */
 export default function CaseViewer() {
-	const dispatch = useDispatch();
-	const selectedCase = useSelector(selectSelectedCase);
-
-	const handleError = (err: Error) => {
-		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
-	};
 
 	return (
 		<>
-			<div>
-				{selectedCase.name}
-				<ul className='task-list'>
-					<li className='task-item active-task'>
-						<span className='task-name'>Cleaning data</span>
-						<div className='task-progress'>
-							<LoadingCircle size={30} />
-						</div>
-					</li>
-					<li className='task-item'>
-						<span className='task-name'>Generate animation</span>
-						<div className='task-progress'>
-							<ProgressCircle value={0.0} size={30}/>
-						</div>
-					</li>
-					<li className='task-item'>
-						<span className='task-name'>Detect saccades</span>
-						<div className='task-progress'>
-							<ProgressCircle value={0.0} size={30}/>
-						</div>
-					</li>
-					<li className='task-item'>
-						<span className='task-name'>Create visuals</span>
-						<div className='task-progress'>
-							<ProgressCircle value={0.0} size={30}/>
-						</div>
-					</li>
-				</ul>
+			<div className="case-viewer-layout">
+				<div className="case-viewer-task-pane">
+					<div className="case-viewer-task-list">
+						<TaskList />
+					</div>
+				</div>
+				<div className="case-viewer-preview-pane">
+					<div className="case-viewer-preview">
+						<Preview />
+					</div>
+				</div>
 			</div>
-			<style>{`
-				.task-list {
-					display: flex;
-					flex-direction: column;
-					width: 100%;
-					justify-content: center;
-					align-items: center;
-					gap: 0.5rem;
-					padding: 10px;
-					margin: 0;
-					list-style: none;
-				}
+			<style>
+				{`
+					.case-viewer-layout {
+						display: grid;
+						grid-template-columns: 1fr 2fr;
+						width: 100%;
+						height: 100%;
+					}
 
-				.task-item {
-					display: flex;
-					align-items: center;
-					justify-content: space-between;
-					padding: 10px;
-					width: 200px;
-					border: 1px solid #ccc;
-					border-radius: 5px;
-					margin-bottom: 10px;
-					transition: background-color 0.2s ease;
-				}
+					.case-viewer-task-pane {
+						display: flex;
+						justify-content: center;
+						align-items: flex-start;
+						padding: 24px 16px;
+					}
 
-				.active-task {
-					background-color: #e0e0e0;
-					font-weight: bold;
-					color: #333;
-					border-color: #999;
-					box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-					animation: pulse 2s infinite;
-				}
+					.case-viewer-task-list {
+						width: 100%;
+						max-width: 360px;
+					}
 
-				.task-name {
-					padding-left: 5px;
-				}
+					.case-viewer-preview-pane {
+						display: flex;
+						align-items: center;
+						justify-content: stretch;
+						padding: 24px 24px 24px 16px;
+					}
 
-				.task-progress {
-					margin-left: auto;
-					padding-right: 5px;
-				}
-			`}</style>
+					.case-viewer-preview {
+						width: 100%;
+						height: 100%;
+						padding: 24px;
+					}
+				`}
+			</style>
 		</>
 	);
 }
