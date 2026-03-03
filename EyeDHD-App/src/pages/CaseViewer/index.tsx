@@ -37,7 +37,7 @@ export default function CaseViewer() {
 						display: flex;
 						justify-content: center;
 						align-items: flex-start;
-						padding: 24px 16px;
+						padding: 48px;
 					}
 
 					.case-viewer-task-list {
@@ -49,13 +49,12 @@ export default function CaseViewer() {
 						display: flex;
 						align-items: center;
 						justify-content: stretch;
-						padding: 24px 24px 24px 16px;
+						padding: 48px;
 					}
 
 					.case-viewer-preview {
 						width: 100%;
 						height: 100%;
-						padding: 24px;
 					}
 				`}
 			</style>
