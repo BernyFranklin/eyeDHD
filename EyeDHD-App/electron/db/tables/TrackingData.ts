@@ -1,4 +1,4 @@
-export type CSVData = {
+export type TrackingData = {
 	Frame: number; // Keep
 	CaptureTime: number; // Keep
 	LogTime: number; // Keep
@@ -43,7 +43,7 @@ export type CSVData = {
 	// FocusStability: number;
 };
 
-export const toCSVData = (line: string): CSVData => {
+export const fromCSV = (line: string): TrackingData => {
 	const values = line.split(',');
 	if (values.length !== 17) {
 		throw new Error(`Invalid CSV line, expected 17 values but got ${values.length}`);
@@ -68,4 +68,26 @@ export const toCSVData = (line: string): CSVData => {
 		RightEyeForwardZ: Number(values[15]),
 		RightPupilDiameterInMM: Number(values[16])
 	}
+}
+
+export const toCSV = (data: TrackingData): string => {
+	return [
+		data.Frame,
+		data.CaptureTime,
+		data.LogTime,
+		data.GazeStatus,
+		data.CombinedGazeForwardX,
+		data.CombinedGazeForwardY,
+		data.CombinedGazeForwardZ,
+		data.LeftEyeStatus,
+		data.LeftEyeForwardX,
+		data.LeftEyeForwardY,
+		data.LeftEyeForwardZ,
+		data.LeftPupilDiameterInMM,
+		data.RightEyeStatus,
+		data.RightEyeForwardX,
+		data.RightEyeForwardY,
+		data.RightEyeForwardZ,
+		data.RightPupilDiameterInMM
+	].join(',');
 }

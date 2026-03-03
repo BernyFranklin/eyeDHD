@@ -15,7 +15,8 @@ type GlobalState = {
 	buttons: {
 		disabled: boolean
 	},
-	alert: AlertState
+	alert: AlertState,
+	loading: boolean
 }
 
 const initialState: GlobalState = {
@@ -27,7 +28,8 @@ const initialState: GlobalState = {
 		color: 'green',
 		message: '',
 		key: 0
-	}
+	},
+	loading: true
 };
 
 /**
@@ -56,13 +58,17 @@ export const globalSlice = createSlice({
 		hideAlert: (state) => {
 			state.alert.isVisible = false;
 			state.alert.message = '';
+		},
+		setLoading: (state, action: PayloadAction<boolean>) => {
+			state.loading = action.payload;
 		}
 	}
 });
 
-export const { enableButtons, disableButtons, showAlert, hideAlert } = globalSlice.actions;
+export const { enableButtons, disableButtons, showAlert, hideAlert, setLoading } = globalSlice.actions;
 
 export const selectButtons = (state: RootState) => state.global.buttons;
 export const selectAlert = (state: RootState) => state.global.alert;
+export const selectLoading = (state: RootState) => state.global.loading;
 
 export default globalSlice.reducer;

@@ -25,7 +25,7 @@ export default function Navbar() {
 			<span className="navbar-links">
 				<div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
 					<a
-						href='/'
+						href='/home'
 						className="home-link"
 						title="Home"
 						{...disabledAnchorProps}

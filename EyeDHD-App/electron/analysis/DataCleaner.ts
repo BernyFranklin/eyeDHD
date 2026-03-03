@@ -1,7 +1,7 @@
 import fs from 'fs';
 import rl from 'readline';
 
-import { type CSVData } from '../db/tables/CSVData';
+import { type TrackingData } from '../db/tables/TrackingData';
 
 /**
 * Reads and cleans a CSV file at the given path. Cleans data lazyily,
@@ -14,7 +14,7 @@ export default class DataCleaner {
 	readline;
 	iter;
 	buf_len = 0;
-	buf: CSVData[] = [];
+	buf: TrackingData[] = [];
 	header: string[] = [];
 	status: {
 		reading: boolean;
@@ -206,7 +206,7 @@ export default class DataCleaner {
 		this.status.start = true;
 	}
 
-	private async read(): Promise<CSVData | null> {
+	private async read(): Promise<TrackingData | null> {
 		await this.initPromise;
 
 		if (this.buf.length === 0 && !this.status.done) {
@@ -269,7 +269,7 @@ export default class DataCleaner {
 		* Cleans a row of CSV data, converting it from a string to JSON
 		* Implements proper CSV parsing with type conversion and validation
 		*/
-	private cleanRow(raw: string): CSVData {
+	private cleanRow(raw: string): TrackingData {
 		const allowedFields = new Set([
 			'Frame',
 			'CaptureTime',
@@ -302,7 +302,7 @@ export default class DataCleaner {
 				cleaned[trimmedColumn] = this.cleanValue(values[index]);
 			});
 
-			const defaults: CSVData = {
+			const defaults: TrackingData = {
 				Frame: 0,
 				CaptureTime: 0,
 				LogTime: 0,
@@ -322,8 +322,8 @@ export default class DataCleaner {
 				RightPupilDiameterInMM: 0
 			};
 
-			const cleanedRow = cleaned as Record<keyof CSVData, string | number>;
-			(Object.keys(defaults) as Array<keyof CSVData>).forEach((key) => {
+			const cleanedRow = cleaned as Record<keyof TrackingData, string | number>;
+			(Object.keys(defaults) as Array<keyof TrackingData>).forEach((key) => {
 				if (cleanedRow[key] === undefined || cleanedRow[key] === null) {
 					cleanedRow[key] = defaults[key];
 				}
@@ -346,7 +346,7 @@ export default class DataCleaner {
 				}
 			});
 			errorRow._error = error.message;
-			return errorRow as CSVData;
+			return errorRow as TrackingData;
 		}
 	}
 
@@ -413,7 +413,7 @@ export default class DataCleaner {
 	/**
 	* Validates and sanitizes eye tracking data
 	*/
-	validateRow(row: Record<string, string | number>): CSVData {
+	validateRow(row: Record<string, string | number>): TrackingData {
 		// Validate eye tracking specific fields
 		const eyePositions = ['Left', 'Right'];
 		const coordinates = ['X', 'Y', 'Z'];
@@ -449,7 +449,7 @@ export default class DataCleaner {
 			row.Timestamp = this.sanitizeTimestamp(row.Timestamp as number);
 		}
 
-		return row as CSVData;
+		return row as TrackingData;
 	}
 
 	/**

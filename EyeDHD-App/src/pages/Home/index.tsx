@@ -3,18 +3,18 @@ import React, { useEffect, useState } from 'react';
 import CaseList from './CaseList';
 import CreateCaseWindow from './CreateCaseWindow';
 import { Button, LoadingOverlay } from '@src/components';
+import { AlertControls } from '@src/components/AlertWindow';
 
 import RemoteStream from '@src/data/RemoteStream';
 import { type CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
-import { showAlert } from '@src/data/features/global';
 import { selectCases, setCases } from '@src/data/features/user';
 
 /**
  * Home page of the app, shows list of cases and allows user to create new cases
  * or open existing ones. Refreshes data from the backend on refresh/page load.
  */
-export default function HomePage() {
+export default function Home() {
 	const dispatch = useDispatch();
 	const cases = useSelector(selectCases);
 
@@ -22,7 +22,7 @@ export default function HomePage() {
 	const [showCreateCase, setShowCreateCase] = useState(false);
 
 	const handleError = (err: Error) => {
-		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
+		AlertControls.show(`Error: ${err.message}`, 'red');
 	};
 
 	const refresh = async () => {

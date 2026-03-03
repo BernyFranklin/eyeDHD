@@ -2,7 +2,7 @@ import type { Database } from 'better-sqlite3';
 
 export default { create, read, exists, update };
 
-export type User = {
+export type UserData = {
 	id: number;
 	name: string;
 	dir?: string;
@@ -45,14 +45,14 @@ export function deleteUserTable(db: Database) {
 function create(
 	db: Database,
 	dir?: string
-): User {
-  	const result = db.prepare<[string, string | null], User>(`
+): UserData {
+  	const result = db.prepare<[string, string | null], UserData>(`
 	   		INSERT INTO user (name, dir)
 	     	VALUES (?, ?);
       	`)
     	.run(NAME, dir ?? null);
 
-  	const user = db.prepare<[number | bigint], User>(`
+  	const user = db.prepare<[number | bigint], UserData>(`
 	      	SELECT * FROM user WHERE id = ?;
 		`)
     	.get(result.lastInsertRowid);
@@ -65,7 +65,7 @@ function create(
 }
 
 function exists(db: Database): boolean {
-	const user = db.prepare<string, User>(`
+	const user = db.prepare<string, UserData>(`
 		SELECT * FROM user WHERE name = ?;
 	`)
 	.get(NAME);
@@ -76,8 +76,8 @@ function exists(db: Database): boolean {
 /**
  *
  */
-function read(db: Database): User {
-  	const user = db.prepare<string, User>(`
+function read(db: Database): UserData {
+  	const user = db.prepare<string, UserData>(`
     	SELECT * FROM user WHERE name = ?;
 	`)
     .get(NAME);
@@ -92,12 +92,12 @@ function read(db: Database): User {
 /**
  *
  */
-function update(db: Database, user: User, updates: Partial<User>): User {
+function update(db: Database, user: UserData, updates: Partial<UserData>): UserData {
 	if (updates.id !== undefined || updates.name !== undefined) {
 		throw new Error('Cannot update id or name fields for user');
 	}
 
-	const merged: User = {
+	const merged: UserData = {
 		id: user.id,
 		name: user.name,
 		...user,

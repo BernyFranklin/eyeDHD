@@ -1,8 +1,9 @@
 import React from 'react';
 
+import { AlertControls } from '@src/components/AlertWindow';
+
 import { type CaseData } from '@src/data/types';
 import { useDispatch } from '@src/data/hooks';
-import { showAlert } from '@src/data/features/global';
 
 type Props = {
 	file: CaseData,
@@ -31,10 +32,7 @@ export default function Case(props: Props) {
 				</a>
 				<div
 					className='case-options'
-					onClick={() => dispatch(showAlert({
-						color: 'red',
-						message: 'Not implemented'
-					}))}
+					onClick={() => AlertControls.show('Not implemented', 'red')}
 				>
 					...
 				</div>

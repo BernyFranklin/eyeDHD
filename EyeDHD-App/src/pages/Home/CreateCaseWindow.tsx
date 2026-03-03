@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { Button } from '@src/components';
+import { AlertControls } from '@src/components/AlertWindow';
 
 import { useDispatch, useSelector } from '@src/data/hooks';
-import { showAlert } from '@src/data/features/global';
 import { selectCases, setSelectedCase } from '@src/data/features/user';
 
 type Props = {
@@ -60,10 +60,7 @@ export default function CreateCaseWindow(props: Props) {
 			setCasename(getCasename(filepath));
 			setCsvStatus('success');
 		} catch (err) {
-			dispatch(showAlert({
-				color: 'red',
-				message: `Error selecting CSV: ${err.message}`
-			}));
+			AlertControls.show(`Error selecting CSV: ${err.message}`, 'red');
 		}
 	};
 
@@ -71,10 +68,7 @@ export default function CreateCaseWindow(props: Props) {
 		const trimmedName = casename.trim();
 
 		if (!csvLabel) {
-			dispatch(showAlert({
-				color: 'red',
-				message: 'Please select a CSV file before confirming.'
-			}));
+			AlertControls.show('Please select a CSV file before confirming.', 'red');
 
 			return;
 		}
@@ -104,10 +98,7 @@ export default function CreateCaseWindow(props: Props) {
 
 			navigate('/case');
 		} catch (err) {
-			dispatch(showAlert({
-				color: 'red',
-				message: `Error creating case: ${err.message}`
-			}));
+			AlertControls.show(`Error creating case: ${err.message}`, 'red');
 
 			setIsSubmitting(false);
 		}

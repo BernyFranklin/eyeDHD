@@ -5,7 +5,7 @@ import DataCleaner from '../analysis/DataCleaner';
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
 import caseActions, { type CaseData, csvImportPath, csvOutputPath, createCaseDataTable } from './tables/CaseData';
 
-import userActions, { type User, createUserTable } from './tables/User';
+import userActions, { type UserData, createUserTable } from './tables/UserData';
 
 type DBOptions = {
 	logging?: boolean;
@@ -14,8 +14,8 @@ type DBOptions = {
 };
 
 type UserActions = {
-	read: () => User;
-	update: (user: User, updates: Partial<User>) => User;
+	read: () => UserData;
+	update: (user: UserData, updates: Partial<UserData>) => UserData;
 }
 
 type CaseDataActions = {
@@ -80,7 +80,7 @@ export default class DatabaseManager {
 
 			user: {
 				read: () => userActions.read(this.db),
-				update: (user: User, updates: Partial<User>) => userActions.update(this.db, user, updates)
+				update: (user: UserData, updates: Partial<UserData>) => userActions.update(this.db, user, updates)
 			}
 		};
 

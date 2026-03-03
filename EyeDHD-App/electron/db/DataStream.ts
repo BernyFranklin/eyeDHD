@@ -1,11 +1,11 @@
 import fs from "fs";
 import rl from "readline";
 
-import { type CSVData, toCSVData } from "./tables/CSVData";
+import { type TrackingData, fromCSV, toCSV } from "./tables/TrackingData";
 import metadataActions, { type CaseData, csvOutputPath } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
 
-export type DataType = CaseData | CSVData;
+export type DataType = CaseData | TrackingData;
 export type StreamType = 'CaseData' | 'CSVData' | 'Cleaning';
 export type StreamKey = {
 	id: number;
@@ -157,9 +157,9 @@ export default class DataStream {
 			// Skip header row
 			await iter.next();
 
-			let batch: CSVData[] = [];
+			let batch: TrackingData[] = [];
 			for await (const line of iter) {
-				const data = toCSVData(line);
+				const data = fromCSV(line);
 				batch.push(data);
 
 				if (batch.length >= STREAM_BATCH_SIZE) {
@@ -209,11 +209,11 @@ export default class DataStream {
 		outputStream.write(header);
 		metadata = manager.actions.case.update(metadata, { header });
 
-		let batch: CSVData[] = [];
+		let batch: TrackingData[] = [];
 		for await (const row of cleaner) {
 			batch.push(row);
 
-			const line = Object.values(row).map(String).join(',') + '\n';
+			const line = toCSV(row) + '\n';
 			outputStream.write(line);
 
 			if (batch.length >= CLEANING_BATCH_SIZE) {
@@ -225,6 +225,8 @@ export default class DataStream {
 		if (batch.length > 0) {
 			yield batch;
 		}
+
+		// Save file as read-only
 
 		cleaner.close();
 		outputStream.end();

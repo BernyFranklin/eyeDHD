@@ -1,8 +1,10 @@
 export { default as AlertWindow } from "./AlertWindow";
 export { default as Button } from "./Button";
 export { default as Card } from "./Card";
-export { default as ChooseDirWindow } from "./ChooseDirWindow";
+export { default as ChooseDirWindow } from "../pages/Login";
 export { default as DoubleCard } from "./DoubleCard";
 export { default as LineChart } from "./visualization/LineChart";
 export { default as LoadingOverlay } from "./LoadingOverlay";
 export { default as Navbar } from "./Navbar";
+export { LoadingCircle } from "./extra/LoadingCircle/LoadingCircle";
+export { ProgressCircle } from "./extra/ProgressCircle/ProgressCircle";

@@ -1,3 +1,5 @@
+import { disableButtons, enableButtons } from '@src/data/features/global';
+import { useDispatch } from '@src/data/hooks';
 import React from 'react';
 
 type Props = {
@@ -12,6 +14,17 @@ type Props = {
 	height?: React.CSSProperties['height'];
 	padding?: React.CSSProperties['padding'];
 };
+
+export const ButtonControls = {
+	disable: () => {
+		const dispatch = useDispatch();
+		dispatch(disableButtons());
+	},
+	enable: () => {
+		const dispatch = useDispatch();
+		dispatch(enableButtons());
+	}
+}
 
 export default function Button({
 	onClick,

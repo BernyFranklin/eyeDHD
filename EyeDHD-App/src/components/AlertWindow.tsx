@@ -3,9 +3,16 @@ import React, { useEffect } from 'react';
 import Button from './Button';
 
 import { useDispatch, useSelector } from '@src/data/hooks';
-import { selectAlert, hideAlert } from '@src/data/features/global';
+import { selectAlert, hideAlert, showAlert } from '@src/data/features/global';
 
 const AUTO_DISMISS_MS = 4000;
+
+export const AlertControls = {
+	show: (message: string, color: 'green' | 'red' = 'green') => {
+		const dispatch = useDispatch();
+		dispatch(showAlert({ message, color }));
+	}
+}
 
 /**
  * AlertWindow component that displays an alert message with a close button.

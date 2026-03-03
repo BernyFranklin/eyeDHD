@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router';
 
 import CaseItem from "./CaseItem";
 import { LoadingOverlay } from '@src/components';
+import { AlertControls } from '@src/components/AlertWindow';
 
 import RemoteStream from '@src/data/RemoteStream';
 import { type CaseData } from '@src/data/types';
 import { useSelector, useDispatch } from '@src/data/hooks';
-import { showAlert } from '@src/data/features/global';
 import { selectCases, selectProjectDir, setCases, setSelectedCase } from '@src/data/features/user';
 
 type Props = {
@@ -41,10 +41,7 @@ export default function CaseList(props: Props) {
 				const cases = await stream.collect<CaseData>();
 				dispatch(setCases(cases));
 			} catch (err) {
-				dispatch(showAlert({
-					color: 'red',
-					message: `Error loading cases: ${err.message}`
-				}));
+				AlertControls.show(`Error loading cases: ${err.message}`, 'red');
 			}
 		};
 

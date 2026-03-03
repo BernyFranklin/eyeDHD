@@ -1,17 +1,17 @@
 import React from "react";
 
+import { LoadingCircle, ProgressCircle } from "@src/components";
+import { AlertControls } from "@src/components/AlertWindow";
+
 import { useDispatch, useSelector } from "@src/data/hooks";
-import { showAlert } from "@src/data/features/global";
 import { selectSelectedCase } from "@src/data/features/user";
-import { LoadingCircle } from "@src/components/extra/LoadingCircle/LoadingCircle";
-import { ProgressCircle } from "@src/components/extra/ProgressCircle/ProgressCircle";
 
 export default function TaskList() {
 	const dispatch = useDispatch();
 	const selectedCase = useSelector(selectSelectedCase);
 
 	const handleError = (err: Error) => {
-		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
+		AlertControls.show(`Error: ${err.message}`, 'red');
 	};
 
 	return (

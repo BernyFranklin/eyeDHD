@@ -4,7 +4,7 @@ import os from 'os';
 import path from 'path';
 
 import DataCleaner from '../../analysis/DataCleaner';
-import { type CSVData } from '../../db/tables/CSVData';
+import { type TrackingData } from '../../db/tables/TrackingData';
 
 const HEADER = 'Frame,LeftEyeStatus,LeftEyeForwardX,LeftEyeForwardY,LeftEyeForwardZ';
 const ROWS = [
@@ -35,7 +35,7 @@ describe('Data Analysis - DataCleaner', () => {
   		it('A1) yields cleaned rows and closes after completion', async () => {
     		const cleaner = new DataCleaner({ path: tempFile });
 
-      		const results: CSVData[] = [];
+      		const results: TrackingData[] = [];
         	for await (const row of cleaner) {
          		results.push(row);
          	}

@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 
-import Button from './Button';
+import { Button } from '@src/components';
+import { AlertControls } from '@src/components/AlertWindow';
 
 import { useSelector, useDispatch } from '@src/data/hooks';
-import { showAlert } from '@src/data/features/global';
+import { selectLoading } from '@src/data/features/global';
 import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '@src/data/features/user';
-
-type Props = {
-	loading: boolean;
-}
 
 type SelectStatus = 'waiting' | 'success' | 'error';
 
@@ -18,14 +16,16 @@ type SelectStatus = 'waiting' | 'success' | 'error';
  * around the textarea. Once a directory is selected, user can confirm to initialize
  * it as the project directory.
  */
-export default function ChooseDirWindow(props: Props) {
+export default function Login() {
 	const dispatch = useDispatch();
 	const projectDir = useSelector(selectProjectDir);
 	const projectInitialized = useSelector(selectProjectInitialized);
+	const loading = useSelector(selectLoading);
+
+	const navigate = useNavigate();
 
 	const [placeholder, setPlaceholder] = useState('Please select an empty folder');
 	const [selectStatus, setSelectStatus] = useState<SelectStatus>('waiting');
-	const [hidden, setHidden] = useState(true);
 
 	const selectDir = async () => {
 		try {
@@ -55,10 +55,7 @@ export default function ChooseDirWindow(props: Props) {
 			dispatch(setProjectDir(project.dir));
 			setSelectStatus('success');
 		} catch (err) {
-			dispatch(showAlert({
-				color: 'red',
-				message: `Error selecting directory: ${err.message}` }
-			));
+			AlertControls.show(`Error selecting directory: ${err.message}`, 'red');
 		}
 	}
 
@@ -76,13 +73,8 @@ export default function ChooseDirWindow(props: Props) {
 
 			dispatch(setProjectDir(updatedUser.dir));
 			dispatch(setProjectInitialized(!!updatedUser.project_initialized));
-
-			setHidden(true);
 		} catch (err) {
-			dispatch(showAlert({
-				color: 'red',
-				message: `Error initializing directory: ${err.message}`
-			}));
+			AlertControls.show(`Error initializing directory: ${err.message}`, 'red');
 		}
 	};
 
@@ -91,14 +83,12 @@ export default function ChooseDirWindow(props: Props) {
 	}
 
 	useEffect(() => {
-		if (props.loading) {
-			return;
+		if (projectDir && projectInitialized) {
+			navigate('/home');
 		}
+	}, [projectDir, projectInitialized]);
 
-		setHidden(!!projectDir && !!projectInitialized);
-	}, [props.loading, projectDir, projectInitialized]);
-
-	if (hidden) {
+	if (loading) {
 		return null;
 	}
 

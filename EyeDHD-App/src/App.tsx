@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Outlet } from 'react-router';
 
 import '@src/App.css';
-import { AlertWindow, ChooseDirWindow, Navbar } from '@src/components';
+import { AlertWindow, Navbar } from '@src/components';
 
 import { CaseData } from '@src/data/types';
 import RemoteStream from '@src/data/RemoteStream';
-import { useDispatch, useSelector } from '@src/data/hooks';
-import { selectProjectDir, selectProjectInitialized, setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
-import { showAlert } from '@src/data/features/global';
+import { useDispatch } from '@src/data/hooks';
+import { showAlert, setLoading } from '@src/data/features/global';
+import { setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 
 /**
  * Main app component, handles loading user data on startup and showing either the
@@ -17,11 +17,6 @@ import { showAlert } from '@src/data/features/global';
  */
 function App() {
 	const dispatch = useDispatch();
-
-	const user_dir = useSelector(selectProjectDir);
-	const projectInitialized = useSelector(selectProjectInitialized);
-
-	const [loading, setLoading] = useState(true);
 
 	const handleError = (err: Error) => {
 		dispatch(showAlert({ color: 'red', message: `Error: ${err.message}` }));
@@ -47,12 +42,10 @@ function App() {
 		console.log('Cases loaded', cases);
 
 		dispatch(setCases(cases));
-
-		setLoading(false);
 	};
 
 	useEffect(() => {
-		loadUserData().catch(handleError).then(() => setLoading(false));
+		loadUserData().catch(handleError).then(() => dispatch(setLoading(false)));
 	}, []);
 
 	return (
@@ -66,10 +59,7 @@ function App() {
 					alt="EyeDHD logo"
 				/>
 				<div className="app-page">
-					{loading || !user_dir || !projectInitialized
-						? <ChooseDirWindow loading={loading} />
-						: <Outlet />
-					}
+					<Outlet />
 				</div>
 			</main>
 		</>

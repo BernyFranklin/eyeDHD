@@ -8,7 +8,7 @@ import ffmpegPath from 'ffmpeg-static';
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
 import { type CaseData, csvImportPath, csvOutputPath } from './db/tables/CaseData';
-import { type User } from './db/tables/User';
+import { type UserData } from './db/tables/UserData';
 
 const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
@@ -98,7 +98,7 @@ ipcMain.handle('user:read', async () => {
  * Opens a native dialog to select a project directory and returns the selected path and
  * its initialization status.
  */
-ipcMain.handle('user:select-directory', async (_, user: User) => {
+ipcMain.handle('user:select-directory', async (_, user: UserData) => {
 	return new Promise(async (resolve, reject) => {
 		const { canceled, filePaths } = await dialog.showOpenDialog({
 			properties: ['openDirectory']
@@ -133,7 +133,7 @@ ipcMain.handle('user:select-directory', async (_, user: User) => {
  * used when the app starts up and a project directory is already set in the user data,
  * so we can connect to the existing project database and read the cases.
  */
-ipcMain.handle('user:initialize-manager', async (_, user: User) => {
+ipcMain.handle('user:initialize-manager', async (_, user: UserData) => {
 	return new Promise(async (resolve, reject) => {
 		if (project_manager) {
 			return resolve({});
@@ -166,7 +166,7 @@ ipcMain.handle('user:initialize-manager', async (_, user: User) => {
  * status. This is used when the user selects a new project directory, so we set up the
  * project database and folders for that directory.
  */
-ipcMain.handle('user:initialize-directory', async (_, dir: string, user: User) => {
+ipcMain.handle('user:initialize-directory', async (_, dir: string, user: UserData) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			if (!fs.existsSync(dir)) {

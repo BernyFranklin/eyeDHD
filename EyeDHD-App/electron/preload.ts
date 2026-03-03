@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-import { type User } from './db/tables/User';
+import { type UserData } from './db/tables/UserData';
 import { type CaseData } from './db/tables/CaseData';
 import { type Progress, type DataType, type StreamKey, type StreamType } from './db/DataStream';
 
@@ -18,10 +18,10 @@ type ProjectDir = {
  */
 declare interface Electron {
 	user: {
-		read(): Promise<User>;
-		selectDirectory(user: User): Promise<ProjectDir | null>;
-		initializeManager(user: User): Promise<void>;
-		initializeDirectory(dir: string, user: User): Promise<User>;
+		read(): Promise<UserData>;
+		selectDirectory(user: UserData): Promise<ProjectDir | null>;
+		initializeManager(user: UserData): Promise<void>;
+		initializeDirectory(dir: string, user: UserData): Promise<UserData>;
 	},
 	case: {
 		createNew(casename: string): Promise<CaseData>;
@@ -70,7 +70,7 @@ const electron: Electron = {
 		 * Reads the current user data, including project directory and initialization
 		 * status.
 		 */
-		read: async (): Promise<User> => {
+		read: async (): Promise<UserData> => {
 			return await ipcRenderer.invoke('user:read');
 		},
 		/**
@@ -80,17 +80,17 @@ const electron: Electron = {
 		 * @returns The full path of the selected directory, or null if the dialog was
 		 * canceled.
 		 */
-		selectDirectory: async (user: User): Promise<ProjectDir | null> => {
+		selectDirectory: async (user: UserData): Promise<ProjectDir | null> => {
 			return await ipcRenderer.invoke('user:select-directory', user);
 		},
-		initializeManager: async (user: User): Promise<void> => {
+		initializeManager: async (user: UserData): Promise<void> => {
 			return await ipcRenderer.invoke('user:initialize-manager', user);
 		},
 		/**
 		 * Initializes the selected directory as the project directory by creating
 		 * necessary folders and files, and updates the user data with the new directory * and initialization status.
 		 */
-		initializeDirectory: async (dir: string, user: User): Promise<User> => {
+		initializeDirectory: async (dir: string, user: UserData): Promise<UserData> => {
 			return await ipcRenderer.invoke('user:initialize-directory', dir, user);
 		}
 	},
