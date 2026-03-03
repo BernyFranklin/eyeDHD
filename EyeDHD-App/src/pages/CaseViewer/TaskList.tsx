@@ -38,7 +38,7 @@ export default function TaskList() {
 						</div>
 					</li>
 					<li className='task-item'>
-						<span className='task-name'>Create visuals</span>
+						<span className='task-name'>Generate visuals</span>
 						<div className='task-progress'>
 							<ProgressCircle value={0.0} size={30}/>
 						</div>
