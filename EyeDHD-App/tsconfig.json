@@ -19,6 +19,15 @@
 		}
 	},
 	"include": ["src/**/*", "electron/**/*", "saccades/**/*"],
-	"files": ["src/global.d.ts", "forge.env.d.ts", ".eslintrc.cjs", "vite.aliases.ts"],
+	"files": [
+		"src/global.d.ts",
+		"forge.env.d.ts",
+		".eslintrc.cjs",
+		"vite.aliases.ts",
+		"vite.main.config.ts",
+		"vite.preload.config.ts",
+		"vite.renderer.config.ts",
+		"vitest.config.ts"
+	],
 	"exclude": ["node_modules", "dist", ".vite"]
 }
