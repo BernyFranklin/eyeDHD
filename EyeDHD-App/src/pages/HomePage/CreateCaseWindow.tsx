@@ -260,7 +260,7 @@ export default function CreateCaseWindow(props: Props) {
 						animation: import-waiting-pulse 1.4s ease-in-out infinite;
 						box-shadow: 0 0 0 1px color-mix(
 							in srgb,
-							var(--action-bg) 45%,
+							blue 45%,
 							transparent
 						);
 					}
@@ -308,7 +308,7 @@ export default function CreateCaseWindow(props: Props) {
 						50% {
 							box-shadow: 0 0 0 2px color-mix(
 								in srgb,
-								var(--action-bg) 85%,
+								blue 55%,
 								transparent
 							);
 						}
