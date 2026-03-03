@@ -82,9 +82,9 @@ export default function CaseList(props: Props) {
 					flex-direction: column;
 					width: 100%;
 					justify-content: center;
-					align-items: center;
+					align-items: flex-start;
 					gap: 0.5rem;
-					padding: 10px;
+					padding: 0;
 					margin: 0;
 					list-style: none;
 				}

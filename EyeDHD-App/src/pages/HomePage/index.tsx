@@ -59,8 +59,8 @@ export default function HomePage() {
 						<Button
 							onClick={() => setShowCreateCase(true)}
 							height='45px'
+							width='45px'
 							padding='10px 16px'
-							style={{ marginLeft: '10px' }}
 						>
 							+
 						</Button>
@@ -68,59 +68,62 @@ export default function HomePage() {
 				</div>
 			</div>
 
-			<style>{`
-				.home-layout {
-					display: flex;
-					align-items: stretch;
-					width: 100%;
-					height: 100%;
-					flex: 1;
-					gap: 24px;
-					padding: 15px;
-					box-sizing: border-box;
-					overflow: hidden;
-					min-height: 0;
-				}
+			<style>
+				{`
+					.home-layout {
+						display: flex;
+						align-items: stretch;
+						width: 100%;
+						height: 100%;
+						flex: 1;
+						gap: 24px;
+						padding: 15px;
+						box-sizing: border-box;
+						overflow: hidden;
+						min-height: 0;
+					}
 
-				.cases-col {
-					display: flex;
-					justify-content: center;
-					align-items: flex-start;
-					align-self: flex-start;
-					gap: 0;
-					height: 100%;
-					flex: 0 0 auto;
-					padding-left: 100px;
-					padding-top: 100px;
-				}
+					.cases-col {
+						display: flex;
+						justify-content: center;
+						align-items: flex-start;
+						align-self: flex-start;
+						gap: 0;
+						height: 100%;
+						flex: 0 0 auto;
+						padding-left: 100px;
+						padding-top: 100px;
+					}
 
-				.cases-col p {
-					margin: 10px 16px 0 0;
-				}
+					.cases-col p {
+						margin: 10px 16px 0 0;
+					}
 
-				.cases-list-wrapper {
-					display: flex;
-					width: 20%;
-					min-width: 400px;
-					min-height: 60px;
-					align-items: flex-start;
-					border: 2px solid #ccc;
-					border-radius: var(--action-radius);
-					padding: 10px;
-				}
+					.cases-list-wrapper {
+						display: flex;
+						width: 20%;
+						min-width: 400px;
+						min-height: 60px;
+						justify-content: space-between;
+						align-items: flex-start;
+						border: 2px solid #ccc;
+						border-radius: var(--action-radius);
+						padding: 24px;
+					}
 
-				.cases-list-wrapper .btn {
-					margin-top: 10px;
-				}
+					.cases-list-wrapper .btn {
+						margin-top: 0;
+					}
 
-				.cases-list-wrapper--empty {
-					align-items: center;
-				}
+					.cases-list-wrapper--empty {
+						align-items: center;
+					}
 
-				.cases-list-wrapper--empty .btn {
-					margin-top: 0;
-				}
-			`}</style>
+					.cases-list-wrapper--empty .btn {
+						margin-top: 0;
+					}
+				`}
+			</style>
 		</>
 	);
 }
