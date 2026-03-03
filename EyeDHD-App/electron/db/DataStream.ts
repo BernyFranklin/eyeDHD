@@ -6,7 +6,7 @@ import metadataActions, { type CaseData, csvOutputPath } from "./tables/CaseData
 import DatabaseManager from "./DatabaseManager";
 
 export type DataType = CaseData | TrackingData;
-export type StreamType = 'CaseData' | 'CSVData' | 'Cleaning';
+export type StreamType = 'CaseData' | 'TrackingData' | 'Cleaning';
 export type StreamKey = {
 	id: number;
 	type: StreamType;
@@ -94,7 +94,7 @@ export default class DataStream {
 				break;
 			}
 
-			case 'CSVData': {
+			case 'TrackingData': {
 				if (!file) {
 					throw new Error('File must be provided for CSVData streams');
 				}

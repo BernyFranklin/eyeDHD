@@ -45,7 +45,7 @@ export default function AnimationGenerator() {
 			return;
 		}
 
-		setCsvStream(await RemoteStream.create("CSVData", { file }));
+		setCsvStream(await RemoteStream.create("TrackingData", { file }));
 	};
 
 	const handleError = (err: Error) => {
