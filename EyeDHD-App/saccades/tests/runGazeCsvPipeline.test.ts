@@ -287,20 +287,34 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
   });
 
   it("O7) No mutation: does not mutate options object", () => {
-    const csvText = "TODO";
+    const header = [                          // Define the required headers for the CSV input
+      "CaptureTime",
+      "GazeStatus",
+      "CombinedGazeForwardX",
+      "CombinedGazeForwardY",
+      "CombinedGazeForwardZ",
+    ];
+    const csvText = makeCsv({                 // Create a CSV string with a mix of VALID and INVALID gaze statuses to test that options are not mutated during processing.
+      header,
+      rows: [
+        { CaptureTime: 0, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+      ],  
+    });
 
-    const options = {
-      parse: { /* TODO */ },
+    const options = {                         // Define options with nested objects to verify that they are not mutated by the pipeline.
+      parse: {},
       adapter: {
-        ordering: "asParsed",
+        ordering: "byCaptureTime",
         selection: { includeGazeStatuses: ["VALID"] },
-      } as const,
-      detection: { /* TODO */ },
-    };
+      },
+      detection: {},
+    } as const;
 
-    const before = structuredClone(options);
-    runGazeCsvPipeline(csvText, options);
-    expect(options).toEqual(before);
+    const before = structuredClone(options);  // Deep clone the options object before running the pipeline to compare against after execution.
+    runGazeCsvPipeline(csvText, options);     // Run the pipeline with the specified CSV text and options
+    expect(options).toEqual(before);          // The options object should remain unchanged after the pipeline runs, confirming that there is no mutation.
   });
 
   it("O8) Traceability invariants: sourceRowIndices length matches includedRows and is stable", () => {
