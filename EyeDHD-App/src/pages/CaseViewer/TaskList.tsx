@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-import TaskItem, { type Task } from "./TaskItem";
-
+import TaskItem from "./TaskItem";
 import { AlertControls } from "@src/components/AlertWindow";
 
 const waitForPaint = () => new Promise<void>((resolve) => {
