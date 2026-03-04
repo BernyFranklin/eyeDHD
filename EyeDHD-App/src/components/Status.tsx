@@ -17,6 +17,13 @@ const ICONS: Record<ResultState, React.ReactElement> = {
 	success: <Check size={SIZE} strokeWidth={WIDTH} />
 };
 
+/**
+ * Reusable component for displaying a status icon based on a given state. The
+ * state can be 'pending', 'error', or 'success', which will determine the
+ * icon and color displayed.
+ *
+ * The component also accepts an optional padding prop to adjust spacing around the icon.
+ */
 export default function Status({
 	state,
 	padding,

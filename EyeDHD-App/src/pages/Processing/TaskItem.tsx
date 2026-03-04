@@ -10,23 +10,33 @@ type Props = {
 	task: Task
 };
 
+/**
+ * Component for displaying the status of an individual task, including progress and
+ * error states.
+ *
+ * Listens to changes in the current task and updates its state accordingly.
+ */
 export default function TaskItem({ task }: Props) {
 	const dispatch = useDispatch();
 	const current = useSelector(selectCurrentTask);
 	const progress = useSelector(selectTaskProgress);
 
+	const [active, setActive] = useState(false);
 	const [failed, setFailed] = useState(false);
 	const [complete, setComplete] = useState(false);
 
 	const handleError = (err: Error) => {
 		setFailed(true);
+		setActive(false);
 		dispatch(setTaskError(err));
 	}
 
 	useEffect(() => {
 		if (current === task.name) {
+			setActive(true);
 			task.fn(dispatch)
 				.then(() => {
+					setActive(false);
 					setComplete(true);
 					dispatch(setNextTask());
 				})
@@ -59,10 +69,12 @@ export default function TaskItem({ task }: Props) {
 
 	return (
 		<>
-			<div className={`task-item
-				${failed ? 'failed-task' : undefined}
-				${!failed && current === task.name ? 'active-task' : undefined}
-			`}>
+			<div className={[
+				'task-item',
+				failed && 'failed-task',
+				complete && 'success-task',
+				active && 'active-task'
+			].filter(Boolean).join(' ')}>
 				<span className='task-name'>{getTaskName()}</span>
 				<div className='task-progress'>
 					{getStatus()}
@@ -98,6 +110,15 @@ export default function TaskItem({ task }: Props) {
 						font-weight: bold;
 						color: #a00;
 						border-color: #900;
+						box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+						animation: pulse 2s infinite;
+					}
+
+					.success-task {
+						background-color: #e0ffe0;
+						font-weight: bold;
+						color: #0a0;
+						border-color: #090;
 						box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 						animation: pulse 2s infinite;
 					}

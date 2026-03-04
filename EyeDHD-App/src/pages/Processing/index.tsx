@@ -11,7 +11,7 @@ import { selectSelectedCase } from "@src/data/features/user";
  * and will show a preview window of the active task. When processing is complete
  * an organized display of visualizations will be shown.
  */
-export default function CaseViewer() {
+export default function Processing() {
 	const selectedCase = useSelector(selectSelectedCase);
 
 	return (

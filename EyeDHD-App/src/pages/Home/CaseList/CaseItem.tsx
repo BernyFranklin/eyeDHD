@@ -20,7 +20,6 @@ export default function Case(props: Props) {
 		<>
 			<div className='case-item'>
 				<a
-					href='/case'
 					onClick={(event) => {
 						event.preventDefault();
 						props.onClick(props.file);

@@ -9,6 +9,13 @@ import { selectCurrentTask, initializeTask, setNextTask, selectTaskError } from 
 import { TASKS } from './tasks';
 import TaskItem from "./TaskItem";
 
+/**
+ * Component for displaying the list of tasks that need to be completed to process a case,
+ * as well as a button to start processing.
+ *
+ * Listens to changes in the current task and updates the button text and error states
+ * accordingly.
+ */
 export default function TaskList() {
 	const dispatch = useDispatch();
 	const current = useSelector(selectCurrentTask);

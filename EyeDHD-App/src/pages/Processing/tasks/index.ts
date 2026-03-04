@@ -6,6 +6,17 @@ import { visualizeTask } from './visualize';
 import { animateTask } from './animate';
 import { stitchTask } from './stitch';
 
+/**
+ * Defines the list of tasks that need to be completed to process a case, as well as the
+ * order they should be completed in.
+ *
+ * Each task includes a display name for both waiting and running states, a unique name
+ * for tracking progress, and a function that performs the task.
+ *
+ * The TASKORDER array defines the order in which tasks should be completed, and is used
+ * to track progress and update the UI accordingly.
+ */
+
 export const TASKS = [
 	cleanTask,
 	detectTask,

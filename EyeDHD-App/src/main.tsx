@@ -8,12 +8,7 @@ import '@src/index.css';
 import { store } from '@src/data';
 
 import App from '@src/App';
-import { Login, Home, CaseViewer } from '@src/pages';
-// Old pages, functionality will be extracted into tasks for CaseViewer
-// import CsvFileImport from './components/CsvFileImport';
-// import AnimationGenerator from './components/AnimationGenerator';
-// import Visualization from './components/Visualization';
-// import SidebySide from './components/SidebySide';
+import { Login, Home, Processing } from '@src/pages';
 
 createRoot(document.getElementById('root')).render(
 	<StrictMode>
@@ -26,7 +21,7 @@ createRoot(document.getElementById('root')).render(
 				}>
 					<Route index element={<Login />} />
 					<Route path='home' element={<Home />} />
-					<Route path='case' element={<CaseViewer />} />
+					<Route path='processing' element={<Processing />} />
 				</Route>
 			</Routes>
 		</BrowserRouter>
