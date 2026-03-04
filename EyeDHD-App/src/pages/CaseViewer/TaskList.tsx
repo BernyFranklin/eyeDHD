@@ -2,17 +2,22 @@ import React, { useEffect } from "react";
 
 import { AlertControls } from "@src/components/AlertWindow";
 import { useDispatch, useSelector } from "@src/data/hooks";
-import { selectCurrentTask, setNextTask } from "@src/data/features/task";
+import { selectCurrentTask, initializeTask, setNextTask } from "@src/data/features/task";
 
 import { TASKS } from './tasks';
 import TaskItem from "./TaskItem";
+import { Button } from "@src/components";
 
 export default function TaskList() {
 	const dispatch = useDispatch();
 	const current = useSelector(selectCurrentTask);
 
-	useEffect(() => {
+	const onclick = () => {
 		dispatch(setNextTask());
+	}
+
+	useEffect(() => {
+		dispatch(initializeTask());
 	}, []);
 
 	useEffect(() => {
@@ -23,7 +28,7 @@ export default function TaskList() {
 
 	return (
 		<>
-			<div>
+			<div className='task-list-container'>
 				<ul className='task-list'>
 					{TASKS.map(task => {
 						return (
@@ -33,17 +38,36 @@ export default function TaskList() {
 						);
 					})}
 				</ul>
+				<div className='task-button'>
+					<Button onClick={onclick}
+						disabled={current !== 'none'}
+					>
+						Start processing
+					</Button>
+				</div>
 			</div>
 			<style>
 				{`
+					.task-list-container {
+						display: flex;
+						flex-direction: column;
+						align-items: center;
+					}
+
+					.task-button {
+						width: 300px;
+						display: flex;
+						justify-content: flex-start;
+					}
+
 					.task-list {
 						display: flex;
 						flex-direction: column;
-						width: 100%;
+						width: 300px;
 						justify-content: center;
 						align-items: center;
 						gap: 0.5rem;
-						padding: 10px;
+						padding: 10px 0;
 						margin: 0;
 						list-style: none;
 					}

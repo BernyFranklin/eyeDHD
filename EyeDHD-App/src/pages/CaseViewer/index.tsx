@@ -46,13 +46,17 @@ export default function CaseViewer() {
 					}
 
 					.case-viewer-task-list {
-						width: 100%;
-						max-width: 360px;
+						width: 300px;
+						display: flex;
+						flex-direction: column;
+						align-items: center;
 					}
 
 					.case-name-header {
+						width: 300px;
+						text-align: left;
 						font-size: 1.5rem;
-						margin-bottom: 1rem;
+						margin: 0 0 1rem 0;
 					}
 
 					.case-viewer-preview-pane {

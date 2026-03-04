@@ -9,7 +9,7 @@ type TaskState = {
 }
 
 const initialState: TaskState = {
-	current: 'none',
+	current: TASKORDER[0],
 	progress: 0.0
 };
 
@@ -24,6 +24,10 @@ export const taskSlice = createSlice({
 	name: 'task',
 	initialState,
 	reducers: {
+		initializeTask: (state) => {
+			state.current = TASKORDER[0];
+			state.progress = 0.0;
+		},
 		setNextTask: (state) => {
 			const index = TASKORDER.indexOf(state.current) + 1;
 			const next = TASKORDER[index];
@@ -32,13 +36,17 @@ export const taskSlice = createSlice({
 				state.progress = 0.0;
 			}
 		},
+		setCurrentTask: (state, action: PayloadAction<TaskName>) => {
+			state.current = action.payload;
+			state.progress = 0.0;
+		},
 		setTaskProgress: (state, action: PayloadAction<number>) => {
 			state.progress = Math.max(0.0, Math.min(1.0, action.payload));
 		}
 	}
 });
 
-export const { setNextTask, setTaskProgress } = taskSlice.actions;
+export const { initializeTask, setNextTask, setCurrentTask, setTaskProgress } = taskSlice.actions;
 
 export const selectCurrentTask = (state: RootState) => state.task.current;
 export const selectTaskProgress = (state: RootState) => state.task.progress;

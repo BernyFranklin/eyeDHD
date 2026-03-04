@@ -17,6 +17,7 @@
 - Select multiple cases and compare.
 - Add ability to switch project folders.
 - Add checks to AlertWindow so error alerts cant be overridden and don't dismiss automatically.
+- Keep track of task completion in the CaseData table.
 
 Project folder example:
 
