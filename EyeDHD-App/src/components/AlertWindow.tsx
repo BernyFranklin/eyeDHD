@@ -28,14 +28,14 @@ export default function AlertWindow() {
 	const alert = useSelector(selectAlert);
 
 	useEffect(() => {
-		if (!alert.isVisible) return;
+		if (!alert.isVisible || alert.color === 'red') return;
 
 		const timeout = setTimeout(() => {
 			dispatch(hideAlert());
 		}, AUTO_DISMISS_MS);
 
 		return () => clearTimeout(timeout);
-	}, [alert.isVisible, alert.key, dispatch]);
+	}, [alert.isVisible, alert.key, alert.color, dispatch]);
 
 	if (!alert.isVisible) {
 		return null;
@@ -45,7 +45,11 @@ export default function AlertWindow() {
 		<div
 			key={alert.key}
 			className={`alert-window ${alert.color}`}
-			onAnimationEnd={() => dispatch(hideAlert())}
+			onAnimationEnd={() => {
+				if (alert.color === 'green') {
+					dispatch(hideAlert());
+				}
+			}}
 		>
 			<p>{alert.message}</p>
 			<Button onClick={() => dispatch(hideAlert())}>Close</Button>
@@ -60,13 +64,14 @@ export default function AlertWindow() {
 					right: 14px;
 					z-index: 10000;
 					pointer-events: auto;
-					animation: fadeInOut 4s ease-in-out forwards;
+
 				}
 
 				.alert-window.green {
 					background-color: #d4edda;
 					color: #155724;
 					border-color: 1px solid #c3e6cb;
+					animation: fadeInOut 4s ease-in-out forwards;
 				}
 
 				.alert-window.red {

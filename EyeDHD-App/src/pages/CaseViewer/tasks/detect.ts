@@ -15,7 +15,7 @@ const fn: TaskFn = async (dispatch) => {
 		await delay(10);
 
 		if (percent > 0.5) {
-			throw new Error('Error during saccade detection');
+			throw new Error('this is an error');
 		}
 
 		percent = percent + 0.01;
