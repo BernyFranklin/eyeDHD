@@ -3,10 +3,6 @@ import React, { useEffect, useState } from "react";
 import TaskItem from "./TaskItem";
 import { AlertControls } from "@src/components/AlertWindow";
 
-const waitForPaint = () => new Promise<void>((resolve) => {
-	requestAnimationFrame(() => resolve());
-});
-
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
 });
@@ -22,8 +18,9 @@ export default function TaskList() {
 	const [detectProgress, setDetectProgress] = useState(0);
 
 	const [startVisualizing, setStartVisualizing] = useState(false);
-
 	const [visualsProgress, setVisualsProgress] = useState(0);
+
+	const [suiteComplete, setSuiteComplete] = useState(false);
 
 	const handleError = (err: Error) => {
 		AlertControls.show(`Error: ${err.message}`, 'red');
@@ -40,11 +37,7 @@ export default function TaskList() {
 			setCleanProgress(percent);
 		}
 
-
-		await waitForPaint();
 		await delay(150);
-
-		AlertControls.show('Data cleaned successfully!', 'green');
 
 		setStartCleaning(false);
 		setStartAnimating(true);
@@ -61,11 +54,7 @@ export default function TaskList() {
 			setAnimateProgress(percent);
 		}
 
-
-		await waitForPaint();
 		await delay(150);
-
-		AlertControls.show('Animation generated successfully!', 'green');
 
 		setStartAnimating(false);
 		setStartDetecting(true);
@@ -82,11 +71,7 @@ export default function TaskList() {
 			setDetectProgress(percent);
 		}
 
-
-		await waitForPaint();
 		await delay(150);
-
-		AlertControls.show('Saccades detected successfully!', 'green');
 
 		setStartDetecting(false);
 		setStartVisualizing(true);
@@ -103,18 +88,21 @@ export default function TaskList() {
 			setVisualsProgress(percent);
 		}
 
-
-		await waitForPaint();
 		await delay(150);
 
-		AlertControls.show('Visuals generated successfully!', 'green');
-
 		setStartVisualizing(false);
+		setSuiteComplete(true);
 	}};
 
 	useEffect(() => {
 		setStartCleaning(true);
 	}, []);
+
+	useEffect(() => {
+		if (suiteComplete) {
+			AlertControls.show('All tasks completed successfully!', 'green');
+		}
+	}, [suiteComplete]);
 
 	return (
 		<>
