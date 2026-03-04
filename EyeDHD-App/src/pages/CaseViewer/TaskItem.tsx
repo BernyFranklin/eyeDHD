@@ -57,7 +57,7 @@ export default function TaskItem({ task }: Props) {
 						align-items: center;
 						justify-content: space-between;
 						padding: 10px;
-						width: 250px;
+						width: 300px;
 						border: 1px solid #ccc;
 						border-radius: var(--action-radius);
 						margin-bottom: 10px;

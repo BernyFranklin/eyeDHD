@@ -24,13 +24,16 @@ export const taskSlice = createSlice({
 	name: 'task',
 	initialState,
 	reducers: {
-		setNextTask: (state, action: PayloadAction<TaskName>) => {
-			const next = TASKORDER.indexOf(action.payload) + 1;
-			state.current = TASKORDER[next] || 'complete';
-			state.progress = 0.0;
+		setNextTask: (state) => {
+			const index = TASKORDER.indexOf(state.current) + 1;
+			const next = TASKORDER[index];
+			if (next) {
+				state.current = next;
+				state.progress = 0.0;
+			}
 		},
 		setTaskProgress: (state, action: PayloadAction<number>) => {
-			state.progress = action.payload;
+			state.progress = Math.max(0.0, Math.min(1.0, action.payload));
 		}
 	}
 });
