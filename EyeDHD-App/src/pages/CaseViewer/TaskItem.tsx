@@ -61,6 +61,9 @@ export default function TaskItem(props: Props) {
 					.task-progress {
 						margin-left: auto;
 						padding-right: 5px;
+						display: flex;
+						align-items: center;
+						height: 100%;
 					}
 				`}
 			</style>
