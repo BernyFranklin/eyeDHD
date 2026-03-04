@@ -54,35 +54,35 @@ export default function CsvFileImport() {
 
 		// Request backend to open a file selector, wait for filename
 		try {
-			const selectedFile = await window.electron.csv.openFile();
-			if (!selectedFile) {
-				setIsLoading(false);
-				return;
-			}
+			// const selectedFile = await window.electron.csv.openFile();
+			// if (!selectedFile) {
+			// 	setIsLoading(false);
+			// 	return;
+			// }
 
-			setFile(selectedFile);
+			// setFile(selectedFile);
 
-			if (selectedFile.cleaned) {
-				setCleaningProgress({
-					progressPercent: 100,
-					isComplete: true,
-					isReading: false,
-					rowsProcessed: selectedFile.cleaned_rows ?? 0
-				});
+			// if (selectedFile.cleaned) {
+			// 	setCleaningProgress({
+			// 		progressPercent: 100,
+			// 		isComplete: true,
+			// 		isReading: false,
+			// 		rowsProcessed: selectedFile.cleaned_rows ?? 0
+			// 	});
 
-				// Get a stream, load 10 rows and cancel it
-				const stream = await RemoteStream.create('TrackingData', { file: selectedFile });
-				const rows: TrackingData[] = [];
-				for await (const row of stream) {
-					if (rows.length >= 10) {
-						break;
-					}
-					rows.push(row as TrackingData);
-				}
-				stream.cancel();
+			// 	// Get a stream, load 10 rows and cancel it
+			// 	const stream = await RemoteStream.create('TrackingData', { file: selectedFile });
+			// 	const rows: TrackingData[] = [];
+			// 	for await (const row of stream) {
+			// 		if (rows.length >= 10) {
+			// 			break;
+			// 		}
+			// 		rows.push(row as TrackingData);
+			// 	}
+			// 	stream.cancel();
 
-				setCsvData(rows);
-			}
+			// 	setCsvData(rows);
+			// }
 		} catch (err) {
 			handleError(err as Error);
 		} finally {
@@ -173,18 +173,18 @@ export default function CsvFileImport() {
 
 		try {
 			setIsLoading(true);
-			const result = await window.electron.csv.exportData(file);
+			//const result = await window.electron.csv.exportData(file);
 
-			if (result.success) {
-				dispatch(showAlert({
-					color: 'green',
-					message: `Successfully exported ${result.stats.totalExported} rows to ${result.stats.filePath
-						.split('\\\\')
-						.pop()}`
-				}));
-			} else {
-				dispatch(showAlert({ color: 'red', message: result.message || 'Export failed' }));
-			}
+			// if (result.success) {
+			// 	dispatch(showAlert({
+			// 		color: 'green',
+			// 		message: `Successfully exported ${result.stats.totalExported} rows to ${result.stats.filePath
+			// 			.split('\\\\')
+			// 			.pop()}`
+			// 	}));
+			// } else {
+			// 	dispatch(showAlert({ color: 'red', message: result.message || 'Export failed' }));
+			// }
 		} catch (err) {
 			dispatch(showAlert({ color: 'red', message: err.message }));
 		} finally {
@@ -232,7 +232,7 @@ export default function CsvFileImport() {
 								<div className="csv-progress-bar">
 									<div
 										className="csv-progress-fill"
-										style={{ ['--progress-width' as any]: `${cleaningProgress.progressPercent}%` }}
+										style={{ ['--progress-width' as string]: `${cleaningProgress.progressPercent}%` }}
 									/>
 								</div>
 								<p>{cleaningProgress.progressPercent.toFixed(1)}% Complete</p>
