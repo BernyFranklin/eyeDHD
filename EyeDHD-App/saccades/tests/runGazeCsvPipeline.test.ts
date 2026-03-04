@@ -81,14 +81,14 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
   });
 
   it("O3) Parse passthrough: forwards parse options to parseGazeCsvSession", async () => {
-    vi.resetModules();  // Reset module registry to ensure fresh imports
-    const parseSpy = vi.fn(() => ({  // Mock parseGazeCsvSession output
+    vi.resetModules();                                                                // Reset module registry to ensure fresh imports
+    const parseSpy = vi.fn(() => ({                                                   // Mock parseGazeCsvSession output
       rows: [],
       meta: {} as any,
       diagnostics: {} as any,
     }));
 
-    const adapterSpy = vi.fn(() => ({  // Mock adaptGazeRowsToAnalysisInput output
+    const adapterSpy = vi.fn(() => ({                                                 // Mock adaptGazeRowsToAnalysisInput output
       vectors: [],
       sourceRowIndices: [],
       diagnostics: {
@@ -101,7 +101,7 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
       },
     }));
 
-    const analyzeSpy = vi.fn(() => ({ 
+    const analyzeSpy = vi.fn(() => ({                                                 // Mock analyzeSaccadesFromVectors output
       detection: {} as any,
       metrics: {} as any, 
     }));
@@ -124,15 +124,13 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
     const { runGazeCsvPipeline }  = await import ("../pipeline/runGazeCsvPipeline");  // Import the function under test after setting up mocks
 
     const csvText = "CaptureTime,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ\n";
-    const parseOptions = { someParseOption: 123 } as any;  // Example parse options to verify passthrough
+    const parseOptions = { someParseOption: 123 } as any;                             // Example parse options to verify passthrough
 
-    runGazeCsvPipeline(csvText, { parse: parseOptions }); // Run the pipeline with the specified parse options
+    runGazeCsvPipeline(csvText, { parse: parseOptions });                             // Run the pipeline with the specified parse options
 
-    expect(parseSpy).toHaveBeenCalledTimes(1); // Verify parseGazeCsvSession was called once
-    expect(parseSpy).toHaveBeenCalledWith(csvText, parseOptions); // Verify it was called with the correct CSV text and parse options
+    expect(parseSpy).toHaveBeenCalledTimes(1);                                        // Verify parseGazeCsvSession was called once
+    expect(parseSpy).toHaveBeenCalledWith(csvText, parseOptions);                     // Verify it was called with the correct CSV text and parse options
   });
-
-
     
   it("O4) Detection passthrough: forwards detectionOptions to analyzeSaccadesFromVectors", () => {
     // TODO: craft vectors via CSV that produce at least one saccade under certain detectionOptions.
