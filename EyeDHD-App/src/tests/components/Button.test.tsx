@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ReactElement } from 'react';
 import { Provider } from 'react-redux';
 import { store } from '@src/data';
-import Button, { ButtonControls } from '../../components/Button';
+import Button, { ButtonControls } from '@src/components/Button';
 
-const renderWithProvider = (ui: JSX.Element) => render(
+const renderWithProvider = (ui: ReactElement) => render(
 	<Provider store={store}>
 		{ui}
 	</Provider>
