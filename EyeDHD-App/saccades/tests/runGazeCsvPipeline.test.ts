@@ -253,23 +253,37 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
       undefined,                                                                    // Detection options are not provided in this test case
       metricsOptions                                                                // Metrics options should be passed through correctly
     );
-
-
   });
 
   it("O6) Determinism: same input + options yields identical output", () => {
-    const csvText = "TODO";
-
-    const options = {
-      parse: { /* TODO */ },
-      adapter: { /* TODO */ },
-      detection: { /* TODO */ },
+    const header = [                                 // Define the required headers for the CSV input
+      "CaptureTime",
+      "GazeStatus",
+      "CombinedGazeForwardX",
+      "CombinedGazeForwardY",
+      "CombinedGazeForwardZ",
+    ];
+    const csvText = makeCsv({                        // Create a CSV string with multiple rows of valid gaze data to test determinism across multiple data points.
+      header,
+      rows: [
+        { CaptureTime: 0, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 15000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+      ],
+    });
+    const options = {                                // Define adapter options that will be used in both runs to ensure they are identical for the determinism test.
+      adapter: {
+        ordering: "byCaptureTime",
+        selection: { includeGazeStatuses: ["VALID"] },
+      },
     } as const;
 
-    const a = runGazeCsvPipeline(csvText, options as any);
-    const b = runGazeCsvPipeline(csvText, options as any);
+    const a = runGazeCsvPipeline(csvText, options);  // First run of the pipeline with the specified CSV text and options
+    const b = runGazeCsvPipeline(csvText, options);  // Second run of the pipeline with the same CSV text and options
 
-    expect(a).toEqual(b);
+    expect(a).toEqual(b);                            // The outputs of both runs should be deeply equal, confirming determinism.
+    expect(a).not.toBe(b);                           // The outputs should not be the same reference, ensuring that the function is not returning cached results.
   });
 
   it("O7) No mutation: does not mutate options object", () => {
