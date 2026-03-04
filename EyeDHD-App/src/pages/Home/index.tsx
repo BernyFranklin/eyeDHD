@@ -53,7 +53,7 @@ export default function Home() {
 			/>
 			<div className='home-layout'>
 				<div className='cases-col'>
-					<p>Open Cases</p>
+					<h1>Open Cases</h1>
 					<div className={`cases-list-wrapper${cases.length === 0 ? ' cases-list-wrapper--empty' : ''}`}>
 						<CaseList loading={loading} />
 						<Button
@@ -95,7 +95,7 @@ export default function Home() {
 						padding-top: 100px;
 					}
 
-					.cases-col p {
+					.cases-col h1 {
 						margin: 10px 16px 0 0;
 					}
 

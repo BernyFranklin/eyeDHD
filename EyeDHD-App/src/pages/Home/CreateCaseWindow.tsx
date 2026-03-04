@@ -217,7 +217,7 @@ export default function CreateCaseWindow(props: Props) {
 
 					.text-area-input {
 						background: #F0F0F0;
-						color: #A0A0A0;
+						color: black;
 						width: 100%;
 						height: 44px;
 						padding: 10px;
