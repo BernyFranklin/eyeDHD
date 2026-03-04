@@ -7,5 +7,6 @@ export { default as DoubleCard } from "./DoubleCard";
 export { default as LineChart } from "./visualization/LineChart";
 export { default as LoadingOverlay } from "./LoadingOverlay";
 export { default as Navbar } from "./Navbar";
+export { default as Status } from "./Status";
 export { LoadingCircle } from "./extra/LoadingCircle/LoadingCircle";
 export { ProgressCircle } from "./extra/ProgressCircle/ProgressCircle";

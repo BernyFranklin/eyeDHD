@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 
+import { Button } from "@src/components";
 import { AlertControls } from "@src/components/AlertWindow";
+
 import { useDispatch, useSelector } from "@src/data/hooks";
 import { selectCurrentTask, initializeTask, setNextTask, selectTaskError } from "@src/data/features/task";
 
 import { TASKS } from './tasks';
 import TaskItem from "./TaskItem";
-import { Button } from "@src/components";
 
 export default function TaskList() {
 	const dispatch = useDispatch();
@@ -25,6 +26,7 @@ export default function TaskList() {
 
 	useEffect(() => {
 		if (error) {
+			setButtonText('Processing failed!');
 			AlertControls.show(
 				`Task ${current} had an error: ${error.message}`,
 				'red'

@@ -4,7 +4,6 @@
 - Add functionality to the tasks.
 
 ## Things / Ideas for later
-- More reusable UI components like status symbols (green checkmarks / red xs).
 - Estimated time until all tasks complete.
 - Preview window for running task on the right of the task list
 - Eye dilation chart.

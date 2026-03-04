@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
-import { ProgressCircle } from '@src/components';
+import { ProgressCircle, Status } from '@src/components';
 
 import { Task } from './tasks/index';
 import { useDispatch, useSelector } from '@src/data/hooks';
@@ -15,7 +15,11 @@ export default function TaskItem({ task }: Props) {
 	const current = useSelector(selectCurrentTask);
 	const progress = useSelector(selectTaskProgress);
 
+	const [failed, setFailed] = useState(false);
+	const [complete, setComplete] = useState(false);
+
 	const handleError = (err: Error) => {
+		setFailed(true);
 		dispatch(setTaskError(err));
 	}
 
@@ -23,6 +27,7 @@ export default function TaskItem({ task }: Props) {
 		if (current === task.name) {
 			task.fn(dispatch)
 				.then(() => {
+					setComplete(true);
 					dispatch(setNextTask());
 				})
 				.catch(handleError);
@@ -36,17 +41,31 @@ export default function TaskItem({ task }: Props) {
 		return task.display.waiting;
 	}
 
+	const getStatus = () => {
+		if (failed) {
+			return <Status state='error' />;
+		}
+
+		if (complete) {
+			return <Status state='success' />;
+		}
+
+		if (current === task.name) {
+			return <ProgressCircle value={progress} size={30} />;
+		}
+
+		return <Status state='pending' />;
+	}
+
 	return (
 		<>
-			<div className={`task-item ${current === task.name
-				? 'active-task'
-				: undefined}
+			<div className={`task-item
+				${failed ? 'failed-task' : undefined}
+				${!failed && current === task.name ? 'active-task' : undefined}
 			`}>
 				<span className='task-name'>{getTaskName()}</span>
 				<div className='task-progress'>
-					{current === task.name &&
-						<ProgressCircle value={progress} size={30} />
-					}
+					{getStatus()}
 				</div>
 			</div>
 			<style>
@@ -70,6 +89,15 @@ export default function TaskItem({ task }: Props) {
 						font-weight: bold;
 						color: #333;
 						border-color: #999;
+						box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+						animation: pulse 2s infinite;
+					}
+
+					.failed-task {
+						background-color: #ffe0e0;
+						font-weight: bold;
+						color: #a00;
+						border-color: #900;
 						box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 						animation: pulse 2s infinite;
 					}
