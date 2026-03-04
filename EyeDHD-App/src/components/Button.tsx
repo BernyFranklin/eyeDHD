@@ -1,6 +1,8 @@
-import { disableButtons, enableButtons } from '@src/data/features/global';
-import { store } from '@src/data';
 import React from 'react';
+
+import { store } from '@src/data';
+import { useSelector } from '@src/data/hooks';
+import { disableButtons, enableButtons, selectButtons } from '@src/data/features/global';
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 	width?: React.CSSProperties['width'];
@@ -31,6 +33,8 @@ export default function Button({
 	children,
 	...rest
 }: Props) {
+	const global = useSelector(selectButtons);
+
 	const combinedClassName = ['btn', className].filter(Boolean).join(' ');
 	const mergedStyle: React.CSSProperties = {
 		...(width !== undefined ? { width } : {}),
@@ -44,35 +48,38 @@ export default function Button({
 				type={type}
 				className={combinedClassName}
 				style={mergedStyle}
+				disabled={global.disabled || rest.disabled}
 				{...rest}
 			>
 				{children}
 			</button>
-			<style>{`
-				.btn {
-					display: block;
-					background-color: var(--action-bg);
-					color: var(--action-text);
-					border: none;
-					padding: 1rem;
-					border-radius: var(--action-radius);
-					cursor: pointer;
-					font-weight: 600;
-					font-size: 1rem;
-					transition: ease background-color 0.3s;
-					margin-top: 1rem;
-					width: fit-content;
-				}
+			<style>
+				{`
+					.btn {
+						display: block;
+						background-color: var(--action-bg);
+						color: var(--action-text);
+						border: none;
+						padding: 1rem;
+						border-radius: var(--action-radius);
+						cursor: pointer;
+						font-weight: 600;
+						font-size: 1rem;
+						transition: ease background-color 0.3s;
+						margin-top: 1rem;
+						width: fit-content;
+					}
 
-				.btn:hover {
-					background-color: var(--action-bg-hover);
-				}
+					.btn:hover {
+						background-color: var(--action-bg-hover);
+					}
 
-				.btn:disabled {
-					background-color: var(--action-bg-disabled);
-					cursor: not-allowed;
-				}
-			`}</style>
+					.btn:disabled {
+						background-color: var(--action-bg-disabled);
+						cursor: not-allowed;
+					}
+				`}
+			</style>
 		</>
 	);
 }
