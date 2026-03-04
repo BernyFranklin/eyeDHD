@@ -37,6 +37,8 @@ export default function Case(props: Props) {
 			</div>
 			<style>{`
 				.case-item {
+					background: #F0F0F0;
+					color: #A0A0A0;
 					display: flex;
 					align-items: center;
 					justify-content: space-between;

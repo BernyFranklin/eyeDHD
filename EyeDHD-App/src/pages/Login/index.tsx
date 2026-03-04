@@ -153,6 +153,8 @@ export default function Login() {
 					}
 
 					.project-dir-input {
+						background: #F0F0F0;
+						color: #A0A0A0;
 						width: 100%;
 						min-height: 80px;
 						padding: 10px;

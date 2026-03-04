@@ -159,7 +159,7 @@ export default function CreateCaseWindow(props: Props) {
 					<div className='import-file-row'>
 						<textarea
 							className={
-								`text-area-input import-input ${getImportBorder(vrStatus)}`
+								`text-area-input import-input ${getImportBorder(vrStatus)} text-area-disabled`
 							}
 							value={getFilename(vrLabel)}
 							readOnly
@@ -216,6 +216,8 @@ export default function CreateCaseWindow(props: Props) {
 					}
 
 					.text-area-input {
+						background: #F0F0F0;
+						color: #A0A0A0;
 						width: 100%;
 						height: 44px;
 						padding: 10px;
@@ -233,11 +235,18 @@ export default function CreateCaseWindow(props: Props) {
 						box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
 					}
 
+					.text-area-disabled {
+						background: #F0F0F0;
+						color: #A0A0A0;
+						border: 1px solid #D0D0D0;
+						box-shadow: none;
+						cursor: not-allowed;
+						pointer-events: none;
+					}
+
 					.case-name-input {
 						cursor: default;
 						pointer-events: none;
-						background: none;
-						color: black;
 					}
 
 					.import-input {

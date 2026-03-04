@@ -34,6 +34,8 @@ export default function TaskItem(props: Props) {
 			<style>
 				{`
 					.task-item {
+						background: #F0F0F0;
+						color: #A0A0A0;
 						display: flex;
 						align-items: center;
 						justify-content: space-between;
