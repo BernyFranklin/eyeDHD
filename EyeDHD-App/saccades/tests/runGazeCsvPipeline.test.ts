@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { runGazeCsvPipeline } from "../pipeline/runGazeCsvPipeline";
 
 // Helper: build CSV text fixtures
@@ -47,7 +47,7 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
   });
 
   it("O2) Adapter policy passthrough: forwards selection.includeGazeStatuses and ordering", () => {
-    const header = [
+    const header = [                                          // Set up headers that match what the adapter expects
       "CaptureTime",
       "GazeStatus",
       "CombinedGazeForwardX",
@@ -55,7 +55,7 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
       "CombinedGazeForwardZ",
     ];
 
-    const csvText = makeCsv({
+    const csvText = makeCsv({                                 // Create a CSV with a mix of VALID and INVALID gaze statuses to test selection filtering.
       header,
       rows: [
         { CaptureTime: 0, GazeStatus: "VALID",   CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
@@ -64,79 +64,226 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
       ],
     });
 
-    const options = {
+    const options = {                                         // Configure adapter options to include only VALID gaze statuses and order by capture time.
       adapter: {
         ordering: "byCaptureTime",
         selection: { includeGazeStatuses: ["VALID"] },
       },
     } as const;
 
-    const result = runGazeCsvPipeline(csvText, options);
-    
+    const result = runGazeCsvPipeline(csvText, options);      // Run the pipeline with the specified adapter options.
+
     // Expect only VALID rows included
-    expect(result.adapter.diagnostics.includedRows).toBe(2);
-    expect(result.adapter.diagnostics.excludedRows).toBe(1);
-    expect(result.adapter.sourceRowIndices.length).toBe(2);
+    expect(result.adapter.diagnostics.includedRows).toBe(2);  // Only the 1st and 3rd rows should be included based on gaze status filter.
+    expect(result.adapter.diagnostics.excludedRows).toBe(1);  // The 2nd row should be excluded.
+    expect(result.adapter.sourceRowIndices.length).toBe(2);   // sourceRowIndices should reflect the number of included rows.
+    expect(result.adapter.sourceRowIndices).toEqual([0, 2]);  // The included rows should be the 1st and 3rd rows (0-based indices).
   });
 
-  it("O3) Parse passthrough: forwards parse options to parseGazeCsvSession", () => {
-    // TODO: pick ONE real parse option you support in Step 1 (e.g., delimiter/trim/header handling/etc.)
-    // and craft a CSV that behaves differently with/without it.
-    const csvText = "TODO";
+  it("O3) Parse passthrough: forwards parse options to parseGazeCsvSession", async () => {
+    vi.resetModules();                                                                // Reset module registry to ensure fresh imports
+    const parseSpy = vi.fn(() => ({                                                   // Mock parseGazeCsvSession output
+      rows: [],
+      meta: {} as any,
+      diagnostics: {} as any,
+    }));
 
-    const resultDefault = runGazeCsvPipeline(csvText);
-    const resultWithOpt = runGazeCsvPipeline(csvText, {
-      parse: {
-        // TODO: put real option(s) here
+    const adapterSpy = vi.fn(() => ({                                                 // Mock adaptGazeRowsToAnalysisInput output
+      vectors: [],
+      sourceRowIndices: [],
+      diagnostics: {
+        totalRows: 0,
+        includedRows: 0,
+        excludedRows: 0,
+        excludedByReason: { gazeStatusFiltered: 0 },
+        includedByGazeStatus: {},
+        excludedByGazeStatus: {},
       },
-    });
+    }));
 
-    // TODO: assert a deterministic difference in parse meta/diagnostics
-    expect(resultDefault.parse.diagnostics).not.toEqual(resultWithOpt.parse.diagnostics);
+    const analyzeSpy = vi.fn(() => ({                                                 // Mock analyzeSaccadesFromVectors output
+      detection: {} as any,
+      metrics: {} as any, 
+    }));
+
+    // Mock Step 1
+    vi.doMock("../ingest/csv/parseGazeCsvSession", () => ({
+      parseGazeCsvSession: parseSpy,
+    }));
+
+    // Mock Step 2
+    vi.doMock("../adapt/adapter", () => ({
+      adaptGazeRowsToAnalysisInput: adapterSpy,
+    }));
+
+    // Mock analysis entry point
+    vi.doMock("../index", () => ({
+      analyzeSaccadesFromVectors: analyzeSpy,
+    }));
+
+    const { runGazeCsvPipeline }  = await import ("../pipeline/runGazeCsvPipeline");  // Import the function under test after setting up mocks
+
+    const csvText = "CaptureTime,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ\n";
+    const parseOptions = { someParseOption: 123 } as any;                             // Example parse options to verify passthrough
+
+    runGazeCsvPipeline(csvText, { parse: parseOptions });                             // Run the pipeline with the specified parse options
+
+    expect(parseSpy).toHaveBeenCalledTimes(1);                                        // Verify parseGazeCsvSession was called once
+    expect(parseSpy).toHaveBeenCalledWith(csvText, parseOptions);                     // Verify it was called with the correct CSV text and parse options
+  });
+    
+  it("O4) Detection passthrough: forwards detectionOptions to analyzeSaccadesFromVectors", async () => {
+    vi.resetModules();                                                              // Reset module registry to ensure fresh imports
+    const parseSpy = vi.fn(() => ({                                                 // Mock parseGazeCsvSession output
+      rows: [{ 
+        captureTimeNs: 0,
+        gazeStatus: "VALID",
+        combinedGazeForward: {
+          x: 0,
+          y: 0,
+          z: 1,
+        },
+        rowIndex: 0,
+      }],
+      meta: {} as any,
+      diagnostics: {} as any,
+    }));  
+    const adapterSpy = vi.fn(() => ({                                               // Mock adaptGazeRowsToAnalysisInput output
+      vectors: [{ x: 0, y: 0, z: 1 }],
+      sourceRowIndices: [0],
+      diagnostics: {
+        totalRows: 1,
+        includedRows: 1,
+        excludedRows: 0,
+        excludedByReason: { gazeStatusFiltered: 0 },
+        includedByGazeStatus: { VALID: 1 },
+        excludedByGazeStatus: {},
+       },    
+    }));
+
+    const analyzeSpy = vi.fn(() => ({                                               // Mock analyzeSaccadesFromVectors output
+      detection: {} as any,
+      metrics: {} as any,
+    }));
+
+    // Mock Step 1
+    vi.doMock("../ingest/csv/parseGazeCsvSession", () => ({
+      parseGazeCsvSession: parseSpy,
+    }));
+
+    // Mock Step 2
+    vi.doMock("../adapt/adapter", () => ({
+      adaptGazeRowsToAnalysisInput: adapterSpy,
+    }));
+
+    // Mock analysis entry point
+    vi.doMock("../index", () => ({
+      analyzeSaccadesFromVectors: analyzeSpy,
+    }));
+
+    const { runGazeCsvPipeline } = await import("../pipeline/runGazeCsvPipeline");  // Import the function under test after setting up mocks
+    const csvText = "CaptureTime,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ\n" +
+                    "0,VALID,0,0,1\n";
+
+    const detectionOptions = { velocityThresholdDegPerSec: 999 } as any;            // Example detection options to verify passthrough
+    runGazeCsvPipeline(csvText, { detection: detectionOptions });                   // Run the pipeline with the specified detection options
+
+    expect(analyzeSpy).toHaveBeenCalledTimes(1);                                    // Verify analyzeSaccadesFromVectors was called once
+    
+    // Signature: (vectors, detectionOptions?, metricsOptions?)
+    expect(analyzeSpy).toHaveBeenCalledWith(
+      [{ x: 0, y: 0, z: 1 }],                                                       // Vectors adapted from the single CSV row
+      detectionOptions,                                                             // Detection options should be passed through correctly
+      undefined                                                                     // Metrics options are not provided in this test case
+    );
   });
 
-  it("O4) Detection passthrough: forwards detectionOptions to analyzeSaccadesFromVectors", () => {
-    // TODO: craft vectors via CSV that produce at least one saccade under certain detectionOptions.
-    const csvText = "TODO";
+  it("O5) Metrics passthrough: forwards metricsOptions to analyzeSaccadesFromVectors", async () => {
+    vi.resetModules();                                                              // Reset module registry to ensure fresh imports
 
-    const base = runGazeCsvPipeline(csvText);
-    const alt = runGazeCsvPipeline(csvText, {
-      detection: {
-        // TODO: adjust a threshold that changes detection deterministically
+    const parseSpy = vi.fn(() => ({                                                 // Mock parseGazeCsvSession output
+      rows: [
+        { captureTimeNs: 0, gazeStatus: "VALID", combinedGazeForward: { x: 0, y: 0, z: 1 }, rowIndex: 0 },
+      ],
+      meta: {} as any,
+      diagnostics: {} as any,
+    }));
+    const adapterSpy = vi.fn(() => ({                                               // Mock adaptGazeRowsToAnalysisInput output
+      vectors: [{ x: 0, y: 0, z: 1 }],
+      sourceRowIndices: [0],
+      diagnostics: {
+        totalRows: 1,
+        includedRows: 1,
+        excludedRows: 0,
+        excludedByReason: { gazeStatusFiltered: 0 },
+        includedByGazeStatus: { VALID: 1 },
+        excludedByGazeStatus: {},
       },
-    });
+    }));
+    const analyzeSpy = vi.fn(() => ({                                               // Mock analyzeSaccadesFromVectors output
+      detection: {} as any,
+      metrics: {} as any,
+    }));
 
-    // TODO: assert detection differs deterministically
-    // e.g., saccade count or timestamps differ
-    expect(base.analysis.detection).not.toEqual(alt.analysis.detection);
-  });
+    //Mock Step 1
+    vi.doMock("../ingest/csv/parseGazeCsvSession", () => ({
+      parseGazeCsvSession: parseSpy,
+    }));
 
-  it("O5) Metrics passthrough: forwards metricsOptions to analyzeSaccadesFromVectors", () => {
-    const csvText = "TODO";
+    // Mock Step 2
+    vi.doMock("../adapt/adapter", () => ({
+      adaptGazeRowsToAnalysisInput: adapterSpy,
+    }));
 
-    const base = runGazeCsvPipeline(csvText);
-    const alt = runGazeCsvPipeline(csvText, {
-      metrics: {
-        // TODO: adjust a metrics option that changes computed metrics deterministically
-      } as any,
-    });
+    // Mock analysis entry point
+    vi.doMock("../index", () => ({
+      analyzeSaccadesFromVectors: analyzeSpy,
+    }));
 
-    expect(base.analysis.metrics).not.toEqual(alt.analysis.metrics);
+    const { runGazeCsvPipeline } = await import("../pipeline/runGazeCsvPipeline");  // Import the function under test after setting up mocks
+    const csvText = 
+      "CaptureTime,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ\n" +
+      "0,VALID,0,0,1\n";
+    const metricsOptions = { someMetricsOption: true } as any;                      // Example metrics options to verify passthrough
+    runGazeCsvPipeline(csvText, { metrics: metricsOptions });                       // Run the pipeline with the specified metrics options
+
+    expect(analyzeSpy).toHaveBeenCalledTimes(1);                                    // Verify analyzeSaccadesFromVectors was called once
+    expect(analyzeSpy).toHaveBeenCalledWith(
+      [{ x: 0, y: 0, z: 1 }],                                                       // Vectors adapted from the single CSV row
+      undefined,                                                                    // Detection options are not provided in this test case
+      metricsOptions                                                                // Metrics options should be passed through correctly
+    );
   });
 
   it("O6) Determinism: same input + options yields identical output", () => {
-    const csvText = "TODO";
-
-    const options = {
-      parse: { /* TODO */ },
-      adapter: { /* TODO */ },
-      detection: { /* TODO */ },
+    const header = [                                 // Define the required headers for the CSV input
+      "CaptureTime",
+      "GazeStatus",
+      "CombinedGazeForwardX",
+      "CombinedGazeForwardY",
+      "CombinedGazeForwardZ",
+    ];
+    const csvText = makeCsv({                        // Create a CSV string with multiple rows of valid gaze data to test determinism across multiple data points.
+      header,
+      rows: [
+        { CaptureTime: 0, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 15000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+      ],
+    });
+    const options = {                                // Define adapter options that will be used in both runs to ensure they are identical for the determinism test.
+      adapter: {
+        ordering: "byCaptureTime",
+        selection: { includeGazeStatuses: ["VALID"] },
+      },
     } as const;
 
-    const a = runGazeCsvPipeline(csvText, options as any);
-    const b = runGazeCsvPipeline(csvText, options as any);
+    const a = runGazeCsvPipeline(csvText, options);  // First run of the pipeline with the specified CSV text and options
+    const b = runGazeCsvPipeline(csvText, options);  // Second run of the pipeline with the same CSV text and options
 
-    expect(a).toEqual(b);
+    expect(a).toEqual(b);                            // The outputs of both runs should be deeply equal, confirming determinism.
+    expect(a).not.toBe(b);                           // The outputs should not be the same reference, ensuring that the function is not returning cached results.
   });
 
   it("O7) No mutation: does not mutate options object", () => {
