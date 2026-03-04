@@ -44,6 +44,8 @@ export default function TaskList() {
 		await waitForPaint();
 		await delay(150);
 
+		AlertControls.show('Data cleaned successfully!', 'green');
+
 		setStartCleaning(false);
 		setStartAnimating(true);
 	}};
@@ -62,6 +64,8 @@ export default function TaskList() {
 
 		await waitForPaint();
 		await delay(150);
+
+		AlertControls.show('Animation generated successfully!', 'green');
 
 		setStartAnimating(false);
 		setStartDetecting(true);
@@ -82,6 +86,8 @@ export default function TaskList() {
 		await waitForPaint();
 		await delay(150);
 
+		AlertControls.show('Saccades detected successfully!', 'green');
+
 		setStartDetecting(false);
 		setStartVisualizing(true);
 	}};
@@ -100,6 +106,8 @@ export default function TaskList() {
 
 		await waitForPaint();
 		await delay(150);
+
+		AlertControls.show('Visuals generated successfully!', 'green');
 
 		setStartVisualizing(false);
 	}};
