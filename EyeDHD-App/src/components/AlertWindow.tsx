@@ -9,8 +9,11 @@ import { selectAlert, hideAlert, showAlert } from '@src/data/features/global';
 const AUTO_DISMISS_MS = 4000;
 
 export const AlertControls = {
-	show: (message: string, color: 'green' | 'red' = 'green') => {
-		store.dispatch(showAlert({ message, color }));
+	error: (message: string) => {
+		store.dispatch(showAlert({ message, color: 'red' }));
+	},
+	success: (message: string) => {
+		store.dispatch(showAlert({ message, color: 'green' }));
 	}
 }
 

@@ -55,7 +55,7 @@ export default function Login() {
 			dispatch(setProjectDir(project.dir));
 			setSelectStatus('success');
 		} catch (err) {
-			AlertControls.show(`Error selecting directory: ${err.message}`, 'red');
+			AlertControls.error(`Error selecting directory: ${err.message}`);
 		}
 	}
 
@@ -74,7 +74,7 @@ export default function Login() {
 			dispatch(setProjectDir(updatedUser.dir));
 			dispatch(setProjectInitialized(!!updatedUser.project_initialized));
 		} catch (err) {
-			AlertControls.show(`Error initializing directory: ${err.message}`, 'red');
+			AlertControls.error(`Error initializing directory: ${err.message}`);
 		}
 	};
 

@@ -25,7 +25,7 @@ export default function Home() {
 	const [showCreateCase, setShowCreateCase] = useState(false);
 
 	const handleError = (err: Error) => {
-		AlertControls.show(`Error: ${err.message}`, 'red');
+		AlertControls.error(`Error: ${err.message}`);
 	};
 
 	const refresh = async () => {
@@ -37,7 +37,9 @@ export default function Home() {
 			dispatch(setProjectInitialized(!!user.project_initialized));
 
 			if (!user.dir || !user.project_initialized) {
-				AlertControls.show('Project directory not set or initialized, please select a project directory.', 'red');
+				AlertControls.error(
+					'Project directory not set or initialized, please select a project directory.'
+				);
 
 				navigate('/');
 				return;

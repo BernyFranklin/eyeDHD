@@ -29,7 +29,7 @@ export default function Case(props: Props) {
 				</a>
 				<div
 					className='case-options'
-					onClick={() => AlertControls.show('Not implemented', 'red')}
+					onClick={() => AlertControls.error('Not implemented')}
 				>
 					...
 				</div>

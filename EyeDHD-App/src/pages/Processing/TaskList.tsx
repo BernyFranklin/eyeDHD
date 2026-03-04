@@ -34,10 +34,10 @@ export default function TaskList() {
 	useEffect(() => {
 		if (error) {
 			setButtonText('Processing failed!');
-			AlertControls.show(
-				`Task ${current} had an error: ${error.message}`,
-				'red'
-			);
+			AlertControls.error(`
+				Task ${current.toUpperCase()} had an error:
+				${error.message}
+			`);
 			return;
 		}
 
