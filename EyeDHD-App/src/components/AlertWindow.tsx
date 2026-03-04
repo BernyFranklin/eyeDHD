@@ -3,14 +3,14 @@ import React, { useEffect } from 'react';
 import Button from './Button';
 
 import { useDispatch, useSelector } from '@src/data/hooks';
+import { store } from '@src/data';
 import { selectAlert, hideAlert, showAlert } from '@src/data/features/global';
 
 const AUTO_DISMISS_MS = 4000;
 
 export const AlertControls = {
 	show: (message: string, color: 'green' | 'red' = 'green') => {
-		const dispatch = useDispatch();
-		dispatch(showAlert({ message, color }));
+		store.dispatch(showAlert({ message, color }));
 	}
 }
 

@@ -3,7 +3,7 @@ import React from 'react';
 import { AlertControls } from '@src/components/AlertWindow';
 
 import { type CaseData } from '@src/data/types';
-import { useDispatch } from '@src/data/hooks';
+
 
 type Props = {
 	file: CaseData,
@@ -16,8 +16,6 @@ type Props = {
  * callback with the case data so the case list knows which item to select.
  */
 export default function Case(props: Props) {
-	const dispatch = useDispatch();
-
 	return (
 		<>
 			<div className='case-item'>

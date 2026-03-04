@@ -13,7 +13,7 @@ import { Environment, OrthographicCamera } from '@react-three/drei';
 // Component to render and rotate the 3D eye model
 import RotatingModel from './ModelMovement';
 
-import { type CSVData } from '@src/data/types';
+import { type TrackingData } from '@src/data/types';
 import RemoteStream from '@src/data/RemoteStream';
 
 type Props = {
@@ -30,7 +30,7 @@ const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({
 	finished,
 	setFinished
 }: Props, ref) => {
-	const [csvData, setCSVData] = useState<CSVData | null>(null);
+	const [csvData, setCSVData] = useState<TrackingData | null>(null);
 
 	useEffect(() => {
 		// If not playing or no data, skip
@@ -49,7 +49,7 @@ const AnimationWindow = forwardRef<HTMLCanvasElement, Props>(({
 					return;
 				}
 
-				setCSVData(value as CSVData);
+				setCSVData(value as TrackingData);
 			});
 		}, 1000 / targetFps); // Read data at fps target
 

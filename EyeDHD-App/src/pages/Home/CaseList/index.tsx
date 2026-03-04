@@ -66,7 +66,7 @@ export default function CaseList(props: Props) {
 						deleting the case
 					*/}
 					{cases.map(file => {
-						return <li>
+						return <li key={file.id}>
 							<CaseItem file={file} onClick={openCase} />
 						</li>
 					})}

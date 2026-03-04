@@ -11,10 +11,10 @@ import {
 	CheckDataValidity
 } from './animationUtil';
 
-import { type CSVData } from '@src/data/types';
+import { type TrackingData } from '@src/data/types';
 
 type Props = {
-	csvData: CSVData | null;
+	csvData: TrackingData | null;
 	eyePosition: 'Left' | 'Right';
 	position?: [number, number, number];
 };

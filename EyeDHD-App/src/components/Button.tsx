@@ -1,5 +1,5 @@
 import { disableButtons, enableButtons } from '@src/data/features/global';
-import { useDispatch } from '@src/data/hooks';
+import { store } from '@src/data';
 import React from 'react';
 
 type Props = {
@@ -17,12 +17,10 @@ type Props = {
 
 export const ButtonControls = {
 	disable: () => {
-		const dispatch = useDispatch();
-		dispatch(disableButtons());
+		store.dispatch(disableButtons());
 	},
 	enable: () => {
-		const dispatch = useDispatch();
-		dispatch(enableButtons());
+		store.dispatch(enableButtons());
 	}
 }
 

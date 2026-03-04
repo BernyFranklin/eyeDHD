@@ -1,4 +1,4 @@
-import { type CSVData } from "@src/data/types";
+import { type TrackingData } from "@src/data/types";
 
 // Calculate pitch angle from forward vector
 export function GetPitch(x: number, y: number, z: number) { return Math.atan2(-y, Math.sqrt(x * x + z * z)); }
@@ -20,7 +20,7 @@ export function NormalizePupilDilation(dilationInMM: number, minMM = 1, maxMM = 
 }
 
 // Check data validity for angle and required fields
-export function CheckDataValidity(angle: number, row: CSVData) {
+export function CheckDataValidity(angle: number, row: TrackingData) {
     let isValid = true;
 
     // Validate angle
