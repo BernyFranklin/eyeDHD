@@ -4,24 +4,27 @@ import TaskItem, { type Task } from "./TaskItem";
 
 import { AlertControls } from "@src/components/AlertWindow";
 
+const waitForPaint = () => new Promise<void>((resolve) => {
+	requestAnimationFrame(() => resolve());
+});
+
+const delay = (ms: number) => new Promise<void>((resolve) => {
+	setTimeout(resolve, ms);
+});
+
 export default function TaskList() {
-	const [clean, setClean] = useState(false);
-	const [animate, setAnimate] = useState(false);
-	const [detect, setDetect] = useState(false);
-	const [visualize, setVisuals] = useState(false);
-
+	const [startCleaning, setStartCleaning] = useState(false);
 	const [cleanProgress, setCleanProgress] = useState(0);
+
+	const [startAnimating, setStartAnimating] = useState(false);
 	const [animateProgress, setAnimateProgress] = useState(0);
+
+	const [startDetecting, setStartDetecting] = useState(false);
 	const [detectProgress, setDetectProgress] = useState(0);
+
+	const [startVisualizing, setStartVisualizing] = useState(false);
+
 	const [visualsProgress, setVisualsProgress] = useState(0);
-
-	const waitForPaint = () => new Promise<void>((resolve) => {
-		requestAnimationFrame(() => resolve());
-	});
-
-	const delay = (ms: number) => new Promise<void>((resolve) => {
-		setTimeout(resolve, ms);
-	});
 
 	const handleError = (err: Error) => {
 		AlertControls.show(`Error: ${err.message}`, 'red');
@@ -42,8 +45,8 @@ export default function TaskList() {
 		await waitForPaint();
 		await delay(150);
 
-		setClean(false);
-		setAnimate(true);
+		setStartCleaning(false);
+		setStartAnimating(true);
 	}};
 
 	const generateAnimation = { name: 'Generate animation', fn: async () => {
@@ -61,8 +64,8 @@ export default function TaskList() {
 		await waitForPaint();
 		await delay(150);
 
-		setAnimate(false);
-		setDetect(true);
+		setStartAnimating(false);
+		setStartDetecting(true);
 	}};
 
 	const detectSaccades = { name: 'Detect saccades', fn: async () => {
@@ -80,8 +83,8 @@ export default function TaskList() {
 		await waitForPaint();
 		await delay(150);
 
-		setDetect(false);
-		setVisuals(true);
+		setStartDetecting(false);
+		setStartVisualizing(true);
 	}};
 
 	const generateVisuals = { name: 'Generate visuals', fn: async () => {
@@ -99,11 +102,11 @@ export default function TaskList() {
 		await waitForPaint();
 		await delay(150);
 
-		setVisuals(false);
+		setStartVisualizing(false);
 	}};
 
 	useEffect(() => {
-		setClean(true);
+		setStartCleaning(true);
 	}, []);
 
 	return (
@@ -112,22 +115,22 @@ export default function TaskList() {
 				<ul className='task-list'>
 					<TaskItem
 						task={cleanData}
-						start={clean}
+						start={startCleaning}
 						progress={cleanProgress}
 					/>
 					<TaskItem
 						task={generateAnimation}
-						start={animate}
+						start={startAnimating}
 						progress={animateProgress}
 					/>
 					<TaskItem
 						task={detectSaccades}
-						start={detect}
+						start={startDetecting}
 						progress={detectProgress}
 					/>
 					<TaskItem
 						task={generateVisuals}
-						start={visualize}
+						start={startVisualizing}
 						progress={visualsProgress}
 					/>
 				</ul>
