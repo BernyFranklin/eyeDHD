@@ -8,7 +8,8 @@ import { AlertControls } from '@src/components/AlertWindow';
 import RemoteStream from '@src/data/RemoteStream';
 import { type CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
-import { selectCases, setCases } from '@src/data/features/user';
+import { selectCases, setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
+import { useNavigate } from 'react-router';
 
 /**
  * Home page of the app, shows list of cases and allows user to create new cases
@@ -16,6 +17,7 @@ import { selectCases, setCases } from '@src/data/features/user';
  */
 export default function Home() {
 	const dispatch = useDispatch();
+	const navigate = useNavigate();
 	const cases = useSelector(selectCases);
 
 	const [loading, setLoading] = useState(true);
@@ -28,6 +30,17 @@ export default function Home() {
 	const refresh = async () => {
 		try {
 			setLoading(true);
+
+			const user = await window.electron.user.read();
+			dispatch(setProjectDir(user.dir));
+			dispatch(setProjectInitialized(!!user.project_initialized));
+
+			if (!user.dir || !user.project_initialized) {
+				AlertControls.show('Project directory not set or initialized, please select a project directory.', 'red');
+
+				navigate('/');
+				return;
+			}
 
 			const stream = await RemoteStream.create('CaseData', {});
 			const cases = await stream.collect<CaseData>();

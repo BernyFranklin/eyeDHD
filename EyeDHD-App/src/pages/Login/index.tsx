@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { Button } from '@src/components';
+import { Button, Textarea } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
 
 import { useSelector, useDispatch } from '@src/data/hooks';
@@ -78,9 +78,7 @@ export default function Login() {
 		}
 	};
 
-	const getSelectBorder = (status: SelectStatus) => {
-		return `select-${status}`;
-	}
+
 
 	useEffect(() => {
 		if (projectDir && projectInitialized) {
@@ -103,12 +101,12 @@ export default function Login() {
 				<div className='dir-prompt-title'>
 					Project folder needed!
 				</div>
-				<textarea
-					className={
-						`project-dir-input ${getSelectBorder(selectStatus)}`
-					}
+				<Textarea
+					variant='tall-clickable'
+					status={selectStatus}
 					onClick={selectDir}
-					value={projectDir ?? placeholder}
+					value={projectDir}
+					placeholder={placeholder}
 					readOnly
 				/>
 				<div className='dir-prompt-actions'>
@@ -152,73 +150,13 @@ export default function Login() {
 						text-align: center;
 					}
 
-					.project-dir-input {
-						background: #F0F0F0;
-						color: #A0A0A0;
-						width: 100%;
-						min-height: 80px;
-						padding: 10px;
-						border-radius: var(--action-radius);
-						resize: none;
-						cursor: pointer;
-						align-self: stretch;
-						margin: 0;
-						box-sizing: border-box;
-					}
-
 					.dir-prompt-actions {
 						display: flex;
 						justify-content: flex-end;
 						width: 100%;
 					}
 
-					.select-waiting {
-						border: 1px solid #7A7A7A;
-						animation: select-waiting-pulse 1.4s ease-in-out infinite;
-						box-shadow: 0 0 0 1px color-mix(
-							in srgb,
-							blue 45%,
-							transparent
-						);
-					}
 
-					.select-success {
-						border: 2px solid #00A000;
-					}
-
-					.select-error {
-						border: 2px solid #B1102B;
-					}
-
-					@keyframes select-waiting-pulse {
-						0% {
-							box-shadow: 0 0 0 1px color-mix(
-								in srgb,
-								var(--action-bg) 45%,
-								transparent
-							);
-						}
-						50% {
-							box-shadow: 0 0 0 2px color-mix(
-								in srgb,
-								blue 55%,
-								transparent
-							);
-						}
-						100% {
-							box-shadow: 0 0 0 1px color-mix(
-								in srgb,
-								var(--action-bg) 45%,
-								transparent
-							);
-						}
-					}
-
-					.project-dir-input:focus,
-					.project-dir-input:focus-visible {
-						outline: none;
-						box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
-					}
 				`}
 			</style>
 		</div>

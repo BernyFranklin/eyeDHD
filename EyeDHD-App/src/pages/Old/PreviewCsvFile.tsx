@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 
-import { type CSVData } from '../../data/types';
+import { Textarea } from '@src/components';
+import { type TrackingData } from '@src/data/types';
 
 type Props = {
 	fileName: string;
-	csvData: CSVData[];
+	csvData: TrackingData[];
 };
 
 export default function PreviewCsvFile({ fileName, csvData }: Props) {
@@ -36,7 +37,7 @@ export default function PreviewCsvFile({ fileName, csvData }: Props) {
 	return (
 		<div className="preview-csv-file-container">
 			<p className="preview-title">Preview of {fileName}</p>
-			<textarea readOnly className="csv-textarea" value={displayText} />
+			<Textarea readOnly className="csv-textarea" value={displayText} />
 			<style>{`
 				.preview-csv-file-container {
 					width: 100%;

@@ -11,4 +11,6 @@ import type { RootState, AppDispatch } from '.'
  */
 
 export const useDispatch = reduxDispatch.withTypes<AppDispatch>()
+export type Dispatch = ReturnType<typeof useDispatch>;
+
 export const useSelector = reduxSelector.withTypes<RootState>()

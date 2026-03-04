@@ -16,6 +16,7 @@
 - Custom title bar.
 - Select multiple cases and compare.
 - Add ability to switch project folders.
+- Keep track of task completion in the CaseData table.
 
 Project folder example:
 
@@ -24,20 +25,20 @@ path_to_folder/
 	project.db (storing list of open cases, progress for each case, etc.)
 	settings.json (maybe, user configurations)
 	cases/
-		ID_011/
+		ID.011/
 			imports/
-				ID_011.csv
-				ID_011.mp4
+				ID.011.csv
+				ID.011.mp4
 				...
 			outputs/
-				ID_011_Animation.mp4
-				ID_011_Cleaned.csv
-				ID_011_SideBySide.mp4
+				ID.011_Animation.mp4
+				ID.011_Cleaned.csv
+				ID.011_SideBySide.mp4
 				graphs/
-					ID_011_Saccades.png
+					ID.011_Saccades.png
 				...
-		ID_005/
+		ID.005/
 			...
-		.../
-.../
+		...
+...
 ```

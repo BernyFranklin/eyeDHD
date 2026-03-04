@@ -1,33 +1,51 @@
-import { ProgressCircle } from '@src/components';
 import React, { useEffect } from 'react';
 
-export type Task = {
-	name: string,
-	fn: TaskFn
-}
+import { ProgressCircle } from '@src/components';
 
-export type TaskFn = () => void | Promise<void>;
+import { Task } from './tasks/index';
+import { useDispatch, useSelector } from '@src/data/hooks';
+import { selectCurrentTask, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
 
 type Props = {
-	task: Task,
-	progress: number,
-	start: boolean
+	task: Task
 };
 
-export default function TaskItem(props: Props) {
+export default function TaskItem({ task }: Props) {
+	const dispatch = useDispatch();
+	const current = useSelector(selectCurrentTask);
+	const progress = useSelector(selectTaskProgress);
+
+	const handleError = (err: Error) => {
+		dispatch(setTaskError(err));
+	}
+
 	useEffect(() => {
-		if (props.start) {
-			props.task.fn();
+		if (current === task.name) {
+			task.fn(dispatch)
+				.then(() => {
+					dispatch(setNextTask());
+				})
+				.catch(handleError);
 		}
-	}, [props.start]);
+	}, [current]);
+
+	const getTaskName = () => {
+		if (current === task.name) {
+			return task.display.running;
+		}
+		return task.display.waiting;
+	}
 
 	return (
 		<>
-			<div className={`task-item ${props.start ? 'active-task' : undefined}`}>
-				<span className='task-name'>{props.task.name}</span>
+			<div className={`task-item ${current === task.name
+				? 'active-task'
+				: undefined}
+			`}>
+				<span className='task-name'>{getTaskName()}</span>
 				<div className='task-progress'>
-					{props.start &&
-						<ProgressCircle value={props.progress} size={30} max={100} />
+					{current === task.name &&
+						<ProgressCircle value={progress} size={30} />
 					}
 				</div>
 			</div>
@@ -40,7 +58,7 @@ export default function TaskItem(props: Props) {
 						align-items: center;
 						justify-content: space-between;
 						padding: 10px;
-						width: 250px;
+						width: 300px;
 						border: 1px solid #ccc;
 						border-radius: var(--action-radius);
 						margin-bottom: 10px;

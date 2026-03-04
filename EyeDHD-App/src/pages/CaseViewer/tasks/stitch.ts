@@ -1,0 +1,28 @@
+import { setTaskProgress } from '@src/data/features/task';
+import { Task, TaskFn } from '.';
+
+const NAME = 'stitch';
+const WAITING = 'Stitch side by side';
+const RUNNING = 'Stitching side by side...';
+
+const delay = (ms: number) => new Promise<void>((resolve) => {
+	setTimeout(resolve, ms);
+});
+
+const fn: TaskFn = async (dispatch) => {
+	let percent = 0.0;
+	while (percent < 1.0) {
+		await delay(10);
+
+		percent = percent + 0.01;
+		dispatch(setTaskProgress(percent));
+	}
+
+	await delay(150);
+}
+
+export const stitchTask: Task = {
+	display: { waiting: WAITING, running: RUNNING },
+	name: NAME,
+	fn
+}
