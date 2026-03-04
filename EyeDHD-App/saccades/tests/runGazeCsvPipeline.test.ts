@@ -132,20 +132,70 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
     expect(parseSpy).toHaveBeenCalledWith(csvText, parseOptions);                     // Verify it was called with the correct CSV text and parse options
   });
     
-  it("O4) Detection passthrough: forwards detectionOptions to analyzeSaccadesFromVectors", () => {
-    // TODO: craft vectors via CSV that produce at least one saccade under certain detectionOptions.
-    const csvText = "TODO";
+  it("O4) Detection passthrough: forwards detectionOptions to analyzeSaccadesFromVectors", async () => {
+    vi.resetModules();                                                              // Reset module registry to ensure fresh imports
+    const parseSpy = vi.fn(() => ({                                                 // Mock parseGazeCsvSession output
+      rows: [{ 
+        captureTimeNs: 0,
+        gazeStatus: "VALID",
+        combinedGazeForward: {
+          x: 0,
+          y: 0,
+          z: 1,
+        },
+        rowIndex: 0,
+      }],
+      meta: {} as any,
+      diagnostics: {} as any,
+    }));  
+    const adapterSpy = vi.fn(() => ({                                               // Mock adaptGazeRowsToAnalysisInput output
+      vectors: [{ x: 0, y: 0, z: 1 }],
+      sourceRowIndices: [0],
+      diagnostics: {
+        totalRows: 1,
+        includedRows: 1,
+        excludedRows: 0,
+        excludedByReason: { gazeStatusFiltered: 0 },
+        includedByGazeStatus: { VALID: 1 },
+        excludedByGazeStatus: {},
+       },    
+    }));
 
-    const base = runGazeCsvPipeline(csvText);
-    const alt = runGazeCsvPipeline(csvText, {
-      detection: {
-        // TODO: adjust a threshold that changes detection deterministically
-      },
-    });
+    const analyzeSpy = vi.fn(() => ({                                               // Mock analyzeSaccadesFromVectors output
+      detection: {} as any,
+      metrics: {} as any,
+    }));
 
-    // TODO: assert detection differs deterministically
-    // e.g., saccade count or timestamps differ
-    expect(base.analysis.detection).not.toEqual(alt.analysis.detection);
+    // Mock Step 1
+    vi.doMock("../ingest/csv/parseGazeCsvSession", () => ({
+      parseGazeCsvSession: parseSpy,
+    }));
+
+    // Mock Step 2
+    vi.doMock("../adapt/adapter", () => ({
+      adaptGazeRowsToAnalysisInput: adapterSpy,
+    }));
+
+    // Mock analysis entry point
+    vi.doMock("../index", () => ({
+      analyzeSaccadesFromVectors: analyzeSpy,
+    }));
+
+    const { runGazeCsvPipeline } = await import("../pipeline/runGazeCsvPipeline");  // Import the function under test after setting up mocks
+    const csvText = "CaptureTime,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ\n" +
+                    "0,VALID,0,0,1\n";
+
+    const detectionOptions = { velocityThresholdDegPerSec: 999 } as any;            // Example detection options to verify passthrough
+    runGazeCsvPipeline(csvText, { detection: detectionOptions });                   // Run the pipeline with the specified detection options
+
+    expect(analyzeSpy).toHaveBeenCalledTimes(1);                                    // Verify analyzeSaccadesFromVectors was called once
+    
+    // Signature: (vectors, detectionOptions?, metricsOptions?)
+    expect(analyzeSpy).toHaveBeenCalledWith(
+      [{ x: 0, y: 0, z: 1 }],                                                       // Vectors adapted from the single CSV row
+      detectionOptions,                                                             // Detection options should be passed through correctly
+      undefined                                                                     // Metrics options are not provided in this test case
+    );
   });
 
   it("O5) Metrics passthrough: forwards metricsOptions to analyzeSaccadesFromVectors", () => {
