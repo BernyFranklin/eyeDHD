@@ -1,12 +1,8 @@
-import { ProgressCircle } from '@src/components';
 import React, { useEffect } from 'react';
 
-export type Task = {
-	name: string,
-	fn: TaskFn
-}
+import { ProgressCircle } from '@src/components';
 
-export type TaskFn = () => void | Promise<void>;
+import { Task } from './tasks/index';
 
 type Props = {
 	task: Task,
@@ -21,10 +17,17 @@ export default function TaskItem(props: Props) {
 		}
 	}, [props.start]);
 
+	const getTaskName = () => {
+		if (props.start) {
+			return props.task.names.running;
+		}
+		return props.task.names.waiting;
+	}
+
 	return (
 		<>
 			<div className={`task-item ${props.start ? 'active-task' : undefined}`}>
-				<span className='task-name'>{props.task.name}</span>
+				<span className='task-name'>{getTaskName()}</span>
 				<div className='task-progress'>
 					{props.start &&
 						<ProgressCircle value={props.progress} size={30} max={100} />

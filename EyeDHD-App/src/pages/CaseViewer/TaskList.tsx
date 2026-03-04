@@ -100,7 +100,7 @@ export default function TaskList() {
 
 	useEffect(() => {
 		if (suiteComplete) {
-			AlertControls.show('All tasks completed successfully!', 'green');
+			AlertControls.show('All tasks complete!', 'green');
 		}
 	}, [suiteComplete]);
 

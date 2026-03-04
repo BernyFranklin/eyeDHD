@@ -2,6 +2,7 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit'
 
 import globalReducer from './features/global';
 import userReducer from './features/user';
+import taskReducer from './features/task';
 
 /**
  * Main data store for the app, combines reducers for global app state and user-specific
@@ -15,7 +16,8 @@ import userReducer from './features/user';
 
 const root = combineReducers({
   global: globalReducer,
-  user: userReducer
+  user: userReducer,
+  task: taskReducer
 })
 
 export const store = configureStore({
