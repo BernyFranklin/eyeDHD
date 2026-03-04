@@ -40,7 +40,8 @@ export type TaskName = typeof TASKORDER[number];
 export type Task = {
 	display: {
 		waiting: string,
-		running: string
+		running: string,
+		completed: string
 	},
 	name: TaskName,
 	fn: TaskFn

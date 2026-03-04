@@ -4,6 +4,7 @@ import { Task, TaskFn } from '.';
 const NAME = 'visualize';
 const WAITING = 'Visualize data';
 const RUNNING = 'Visualizing data...';
+const COMPLETED = 'Visualized data';
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
@@ -22,7 +23,11 @@ const fn: TaskFn = async (dispatch) => {
 }
 
 export const visualizeTask: Task = {
-	display: { waiting: WAITING, running: RUNNING },
+	display: {
+		waiting: WAITING,
+		running: RUNNING,
+		completed: COMPLETED
+	},
 	name: NAME,
 	fn
 }

@@ -4,6 +4,7 @@ import { Task, TaskFn } from '.';
 const NAME = 'animate';
 const WAITING = 'Animate eye movements';
 const RUNNING = 'Animating eye movements...';
+const COMPLETED = 'Animated eye movements';
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
@@ -22,7 +23,11 @@ const fn: TaskFn = async (dispatch) => {
 }
 
 export const animateTask: Task = {
-	display: { waiting: WAITING, running: RUNNING },
+	display: {
+		waiting: WAITING,
+		running: RUNNING,
+		completed: COMPLETED
+	},
 	name: NAME,
 	fn
 }

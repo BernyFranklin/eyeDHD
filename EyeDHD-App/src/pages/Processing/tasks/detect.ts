@@ -4,6 +4,7 @@ import { Task, TaskFn } from '.';
 const NAME = 'detect';
 const WAITING = 'Detect saccades';
 const RUNNING = 'Detecting saccades...';
+const COMPLETED = 'Detected saccades';
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
@@ -26,7 +27,11 @@ const fn: TaskFn = async (dispatch) => {
 }
 
 export const detectTask: Task = {
-	display: { waiting: WAITING, running: RUNNING },
+	display: {
+		waiting: WAITING,
+		running: RUNNING,
+		completed: COMPLETED
+	},
 	name: NAME,
 	fn
 }

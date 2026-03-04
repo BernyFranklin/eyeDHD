@@ -47,6 +47,8 @@ export default function TaskItem({ task }: Props) {
 	const getTaskName = () => {
 		if (current === task.name) {
 			return task.display.running;
+		} else if (complete) {
+			return task.display.completed;
 		}
 		return task.display.waiting;
 	}

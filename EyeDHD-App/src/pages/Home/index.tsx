@@ -10,6 +10,7 @@ import { type CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
 import { selectCases, setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 import { useNavigate } from 'react-router';
+import { ClipboardPlus } from 'lucide-react';
 
 /**
  * Home page of the app, shows list of cases and allows user to create new cases
@@ -73,9 +74,8 @@ export default function Home() {
 							onClick={() => setShowCreateCase(true)}
 							height='45px'
 							width='45px'
-							padding='10px 16px'
 						>
-							+
+							<ClipboardPlus size={35} strokeWidth={2} />
 						</Button>
 					</div>
 				</div>
