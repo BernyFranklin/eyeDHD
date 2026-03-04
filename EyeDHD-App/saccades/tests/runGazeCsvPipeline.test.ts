@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { runGazeCsvPipeline } from "../pipeline/runGazeCsvPipeline";
 
 // Helper: build CSV text fixtures
@@ -80,22 +80,60 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
     expect(result.adapter.sourceRowIndices).toEqual([0, 2]);  // The included rows should be the 1st and 3rd rows (0-based indices).
   });
 
-  it("O3) Parse passthrough: forwards parse options to parseGazeCsvSession", () => {
-    // TODO: pick ONE real parse option you support in Step 1 (e.g., delimiter/trim/header handling/etc.)
-    // and craft a CSV that behaves differently with/without it.
-    const csvText = "TODO";
+  it("O3) Parse passthrough: forwards parse options to parseGazeCsvSession", async () => {
+    vi.resetModules();  // Reset module registry to ensure fresh imports
+    const parseSpy = vi.fn(() => ({  // Mock parseGazeCsvSession output
+      rows: [],
+      meta: {} as any,
+      diagnostics: {} as any,
+    }));
 
-    const resultDefault = runGazeCsvPipeline(csvText);
-    const resultWithOpt = runGazeCsvPipeline(csvText, {
-      parse: {
-        // TODO: put real option(s) here
+    const adapterSpy = vi.fn(() => ({  // Mock adaptGazeRowsToAnalysisInput output
+      vectors: [],
+      sourceRowIndices: [],
+      diagnostics: {
+        totalRows: 0,
+        includedRows: 0,
+        excludedRows: 0,
+        excludedByReason: { gazeStatusFiltered: 0 },
+        includedByGazeStatus: {},
+        excludedByGazeStatus: {},
       },
-    });
+    }));
 
-    // TODO: assert a deterministic difference in parse meta/diagnostics
-    expect(resultDefault.parse.diagnostics).not.toEqual(resultWithOpt.parse.diagnostics);
+    const analyzeSpy = vi.fn(() => ({ 
+      detection: {} as any,
+      metrics: {} as any, 
+    }));
+
+    // Mock Step 1
+    vi.doMock("../ingest/csv/parseGazeCsvSession", () => ({
+      parseGazeCsvSession: parseSpy,
+    }));
+
+    // Mock Step 2
+    vi.doMock("../adapt/adapter", () => ({
+      adaptGazeRowsToAnalysisInput: adapterSpy,
+    }));
+
+    // Mock analysis entry point
+    vi.doMock("../index", () => ({
+      analyzeSaccadesFromVectors: analyzeSpy,
+    }));
+
+    const { runGazeCsvPipeline }  = await import ("../pipeline/runGazeCsvPipeline");  // Import the function under test after setting up mocks
+
+    const csvText = "CaptureTime,GazeStatus,CombinedGazeForwardX,CombinedGazeForwardY,CombinedGazeForwardZ\n";
+    const parseOptions = { someParseOption: 123 } as any;  // Example parse options to verify passthrough
+
+    runGazeCsvPipeline(csvText, { parse: parseOptions }); // Run the pipeline with the specified parse options
+
+    expect(parseSpy).toHaveBeenCalledTimes(1); // Verify parseGazeCsvSession was called once
+    expect(parseSpy).toHaveBeenCalledWith(csvText, parseOptions); // Verify it was called with the correct CSV text and parse options
   });
 
+
+    
   it("O4) Detection passthrough: forwards detectionOptions to analyzeSaccadesFromVectors", () => {
     // TODO: craft vectors via CSV that produce at least one saccade under certain detectionOptions.
     const csvText = "TODO";
