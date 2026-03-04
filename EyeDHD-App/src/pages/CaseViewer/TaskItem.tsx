@@ -1,36 +1,50 @@
 import React, { useEffect } from 'react';
 
 import { ProgressCircle } from '@src/components';
+import { AlertControls } from '@src/components/AlertWindow';
 
 import { Task } from './tasks/index';
+import { useDispatch, useSelector } from '@src/data/hooks';
+import { selectCurrentTask, selectTaskProgress, setNextTask } from '@src/data/features/task';
 
 type Props = {
-	task: Task,
-	progress: number,
-	start: boolean
+	task: Task
 };
 
-export default function TaskItem(props: Props) {
+export default function TaskItem({ task }: Props) {
+	const dispatch = useDispatch();
+	const current = useSelector(selectCurrentTask);
+	const progress = useSelector(selectTaskProgress);
+
+	const handleError = (err: Error) => {
+		AlertControls.show(`Task ${task.name} had error: ${err.message}`, 'red');
+	}
+
 	useEffect(() => {
-		if (props.start) {
-			props.task.fn();
+		if (current === task.name) {
+			task.fn(dispatch).catch(handleError).then(() => {
+				dispatch(setNextTask());
+			});
 		}
-	}, [props.start]);
+	}, [current]);
 
 	const getTaskName = () => {
-		if (props.start) {
-			return props.task.names.running;
+		if (current === task.name) {
+			return task.display.running;
 		}
-		return props.task.names.waiting;
+		return task.display.waiting;
 	}
 
 	return (
 		<>
-			<div className={`task-item ${props.start ? 'active-task' : undefined}`}>
+			<div className={`task-item ${current === task.name
+				? 'active-task'
+				: undefined}
+			`}>
 				<span className='task-name'>{getTaskName()}</span>
 				<div className='task-progress'>
-					{props.start &&
-						<ProgressCircle value={props.progress} size={30} max={100} />
+					{current === task.name &&
+						<ProgressCircle value={progress} size={30} />
 					}
 				</div>
 			</div>

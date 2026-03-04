@@ -1,9 +1,9 @@
 import { setTaskProgress } from '@src/data/features/task';
 import { Task, TaskFn } from '.';
 
-const NAME = 'visualize';
-const WAITING = 'Visualize data';
-const RUNNING = 'Visualizing data...';
+const NAME = 'animate';
+const WAITING = 'Animate eye movements';
+const RUNNING = 'Animating eye movements...';
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
@@ -21,7 +21,7 @@ const fn: TaskFn = async (dispatch) => {
 	await delay(150);
 }
 
-export const visualizeTask: Task = {
+export const animateTask: Task = {
 	display: { waiting: WAITING, running: RUNNING },
 	name: NAME,
 	fn

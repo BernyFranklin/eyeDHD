@@ -1,9 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 import type { RootState } from '..'
+import { TASKORDER, type TaskName } from '@src/pages/CaseViewer/tasks';
 
 type TaskState = {
-	current: 'none' | 'clean' | 'detect' | 'animate' | 'visualize' | 'stitch',
+	current: TaskName,
 	progress: number
 }
 
@@ -23,8 +24,9 @@ export const taskSlice = createSlice({
 	name: 'task',
 	initialState,
 	reducers: {
-		setCurrentTask: (state, action: PayloadAction<TaskState['current']>) => {
-			state.current = action.payload;
+		setNextTask: (state, action: PayloadAction<TaskName>) => {
+			const next = TASKORDER.indexOf(action.payload) + 1;
+			state.current = TASKORDER[next] || 'complete';
 			state.progress = 0.0;
 		},
 		setTaskProgress: (state, action: PayloadAction<number>) => {
@@ -33,7 +35,7 @@ export const taskSlice = createSlice({
 	}
 });
 
-export const { setCurrentTask, setTaskProgress } = taskSlice.actions;
+export const { setNextTask, setTaskProgress } = taskSlice.actions;
 
 export const selectCurrentTask = (state: RootState) => state.task.current;
 export const selectTaskProgress = (state: RootState) => state.task.progress;

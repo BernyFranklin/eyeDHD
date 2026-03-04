@@ -14,4 +14,3 @@ export const useDispatch = reduxDispatch.withTypes<AppDispatch>()
 export type Dispatch = ReturnType<typeof useDispatch>;
 
 export const useSelector = reduxSelector.withTypes<RootState>()
-export type SelectorHook = typeof useSelector;

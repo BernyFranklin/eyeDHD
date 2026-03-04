@@ -1,133 +1,37 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 
-import TaskItem from "./TaskItem";
 import { AlertControls } from "@src/components/AlertWindow";
+import { useDispatch, useSelector } from "@src/data/hooks";
+import { selectCurrentTask, setNextTask } from "@src/data/features/task";
 
-const delay = (ms: number) => new Promise<void>((resolve) => {
-	setTimeout(resolve, ms);
-});
+import { TASKS } from './tasks';
+import TaskItem from "./TaskItem";
 
 export default function TaskList() {
-	const [startCleaning, setStartCleaning] = useState(false);
-	const [cleanProgress, setCleanProgress] = useState(0);
-
-	const [startAnimating, setStartAnimating] = useState(false);
-	const [animateProgress, setAnimateProgress] = useState(0);
-
-	const [startDetecting, setStartDetecting] = useState(false);
-	const [detectProgress, setDetectProgress] = useState(0);
-
-	const [startVisualizing, setStartVisualizing] = useState(false);
-	const [visualsProgress, setVisualsProgress] = useState(0);
-
-	const [suiteComplete, setSuiteComplete] = useState(false);
-
-	const handleError = (err: Error) => {
-		AlertControls.show(`Error: ${err.message}`, 'red');
-	};
-
-	const cleanData = { name: 'Cleaning data', fn: async () => {
-		setCleanProgress(0);
-
-		let percent = 0;
-		while (percent < 100) {
-			await delay(10);
-
-			percent = percent + 1;
-			setCleanProgress(percent);
-		}
-
-		await delay(150);
-
-		setStartCleaning(false);
-		setStartAnimating(true);
-	}};
-
-	const generateAnimation = { name: 'Generate animation', fn: async () => {
-		setAnimateProgress(0);
-
-		let percent = 0;
-		while (percent < 100) {
-			await delay(10);
-
-			percent = percent + 1;
-			setAnimateProgress(percent);
-		}
-
-		await delay(150);
-
-		setStartAnimating(false);
-		setStartDetecting(true);
-	}};
-
-	const detectSaccades = { name: 'Detect saccades', fn: async () => {
-		setDetectProgress(0);
-
-		let percent = 0;
-		while (percent < 100) {
-			await delay(10);
-
-			percent = percent + 1;
-			setDetectProgress(percent);
-		}
-
-		await delay(150);
-
-		setStartDetecting(false);
-		setStartVisualizing(true);
-	}};
-
-	const generateVisuals = { name: 'Generate visuals', fn: async () => {
-		setVisualsProgress(0);
-
-		let percent = 0;
-		while (percent < 100) {
-			await delay(10);
-
-			percent = percent + 1;
-			setVisualsProgress(percent);
-		}
-
-		await delay(150);
-
-		setStartVisualizing(false);
-		setSuiteComplete(true);
-	}};
+	const dispatch = useDispatch();
+	const current = useSelector(selectCurrentTask);
 
 	useEffect(() => {
-		setStartCleaning(true);
+		dispatch(setNextTask());
 	}, []);
 
 	useEffect(() => {
-		if (suiteComplete) {
+		if (current === 'complete') {
 			AlertControls.show('All tasks complete!', 'green');
 		}
-	}, [suiteComplete]);
+	}, [current]);
 
 	return (
 		<>
 			<div>
 				<ul className='task-list'>
-					<TaskItem
-						task={cleanData}
-						start={startCleaning}
-						progress={cleanProgress}
-					/>
-					<TaskItem
-						task={generateAnimation}
-						start={startAnimating}
-						progress={animateProgress}
-					/>
-					<TaskItem
-						task={detectSaccades}
-						start={startDetecting}
-						progress={detectProgress}
-					/>
-					<TaskItem
-						task={generateVisuals}
-						start={startVisualizing}
-						progress={visualsProgress}
-					/>
+					{TASKS.map(task => {
+						return (
+							<li key={task.name}>
+								<TaskItem task={task} />
+							</li>
+						);
+					})}
 				</ul>
 			</div>
 			<style>
