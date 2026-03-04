@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
-import { type CSVData } from '../../types';
+import { type TrackingData } from '@src/data/types';
 
 type Props = {
-	csvData: CSVData[];
+	csvData: TrackingData[];
 	currentIndex: number;
 	isPlaying: boolean;
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { Button } from '@src/components';
+import { Button, Textarea } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
 
 import { useDispatch, useSelector } from '@src/data/hooks';
@@ -104,9 +104,7 @@ export default function CreateCaseWindow(props: Props) {
 		}
 	};
 
-	const getImportBorder = (status: ImportStatus) => {
-		return `import-${status}`;
-	}
+
 
 	if (!props.isOpen) {
 		return null;
@@ -128,15 +126,15 @@ export default function CreateCaseWindow(props: Props) {
 					<div className='case-name-title'>
 						Case name
 					</div>
-					<textarea
-						className={`text-area-input case-name-input`}
+					<Textarea
+						variant='compact-static'
 						value={casename}
 						aria-label='Select a CSV file'
 						placeholder='Select a CSV file'
-						readOnly
 						aria-readonly='true'
 						tabIndex={-1}
 						disabled={isSubmitting}
+						readOnly
 					/>
 				</div>
 				<div className='import-file-col'>
@@ -144,28 +142,26 @@ export default function CreateCaseWindow(props: Props) {
 						Import case files (Required)
 					</div>
 					<div className='import-file-row'>
-						<textarea
-							className={
-								`text-area-input import-input ${getImportBorder(csvStatus)}`
-							}
+						<Textarea
+							variant='compact-clickable'
+							status={csvStatus}
 							onClick={handleSelectCsv}
 							value={getFilename(csvLabel)}
-							readOnly
 							aria-label='Click to select a CSV file'
 							placeholder='Click to select a CSV file'
 							disabled={isSubmitting}
+							readOnly
 						/>
 					</div>
 					<div className='import-file-row'>
-						<textarea
-							className={
-								`text-area-input import-input ${getImportBorder(vrStatus)} text-area-disabled`
-							}
+						<Textarea
+							variant='compact-static'
+							status={vrStatus}
 							value={getFilename(vrLabel)}
-							readOnly
 							aria-label='VR video selection coming soon'
 							placeholder='VR video selection coming soon'
-							disabled={isSubmitting}
+							disabled={true}
+							readOnly
 						/>
 					</div>
 				</div>
@@ -215,62 +211,6 @@ export default function CreateCaseWindow(props: Props) {
 						font-weight: 600;
 					}
 
-					.text-area-input {
-						background: #F0F0F0;
-						color: black;
-						width: 100%;
-						height: 44px;
-						padding: 10px;
-						border-radius: var(--action-radius);
-						resize: none;
-						align-self: stretch;
-						margin: 0;
-						box-sizing: border-box;
-						font-size: 14px;
-					}
-
-					.text-area-input:focus,
-					.text-area-input:focus-visible {
-						outline: none;
-						box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
-					}
-
-					.text-area-disabled {
-						background: #F0F0F0;
-						color: #A0A0A0;
-						border: 1px solid #D0D0D0;
-						box-shadow: none;
-						cursor: not-allowed;
-						pointer-events: none;
-					}
-
-					.case-name-input {
-						cursor: default;
-						pointer-events: none;
-					}
-
-					.import-input {
-						cursor: pointer;
-					}
-
-					.import-waiting {
-						border: 1px solid #7A7A7A;
-						animation: import-waiting-pulse 1.4s ease-in-out infinite;
-						box-shadow: 0 0 0 1px color-mix(
-							in srgb,
-							blue 45%,
-							transparent
-						);
-					}
-
-					.import-success {
-						border: 2px solid #00A000;
-					}
-
-					.import-error {
-						border: 2px solid #B1102B;
-					}
-
 					.create-case-actions {
 						grid-column: 1 / -1;
 						display: flex;
@@ -289,34 +229,6 @@ export default function CreateCaseWindow(props: Props) {
 						display: flex;
 						flex-direction: column;
 						gap: 6px;
-					}
-
-					.cursor-pointer {
-						cursor: pointer;
-					}
-
-					@keyframes import-waiting-pulse {
-						0% {
-							box-shadow: 0 0 0 1px color-mix(
-								in srgb,
-								var(--action-bg) 45%,
-								transparent
-							);
-						}
-						50% {
-							box-shadow: 0 0 0 2px color-mix(
-								in srgb,
-								blue 55%,
-								transparent
-							);
-						}
-						100% {
-							box-shadow: 0 0 0 1px color-mix(
-								in srgb,
-								var(--action-bg) 45%,
-								transparent
-							);
-						}
 					}
 				`}
 			</style>

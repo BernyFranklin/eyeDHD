@@ -1,5 +1,6 @@
 export { default as AlertWindow } from "./AlertWindow";
 export { default as Button } from "./Button";
+export { default as Textarea } from "./Textarea";
 export { default as Card } from "./Card";
 export { default as ChooseDirWindow } from "../pages/Login";
 export { default as DoubleCard } from "./DoubleCard";

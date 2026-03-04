@@ -1,13 +1,13 @@
 import React, { useState, useEffect, ReactEventHandler } from 'react';
 
-import { useSelector, useDispatch } from '../../data/hooks';
-import { showAlert, selectButtons, enableButtons, disableButtons } from '../../data/features/global';
+import { useSelector, useDispatch } from '@src/data/hooks';
+import { showAlert, selectButtons, enableButtons, disableButtons } from '@src/data/features/global';
 
-import LoadingOverlay from '../../components/LoadingOverlay';
-import Button from '../../components/Button';
-import CanvasRecorder from '../../components/CanvasRecorder';
+import LoadingOverlay from '@src/components/LoadingOverlay';
+import Button from '@src/components/Button';
+import CanvasRecorder from '@src/components/CanvasRecorder';
 
-import { type Error, type CSVData, type CaseData } from '../../data/types';
+import { type Error, type TrackingData, type CaseData } from '@src/data/types';
 import RemoteStream from '../../data/RemoteStream';
 
 export default function AnimationGenerator() {

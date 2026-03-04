@@ -2,14 +2,7 @@ import { disableButtons, enableButtons } from '@src/data/features/global';
 import { store } from '@src/data';
 import React from 'react';
 
-type Props = {
-	onClick?: (() => Promise<void>) | (() => void) | ((e: Event) => void);
-	className?: string;
-	title?: string;
-	style?: React.CSSProperties;
-	children: React.ReactNode;
-	disabled?: boolean;
-	type?: 'submit' | 'reset' | 'button' | undefined;
+type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 	width?: React.CSSProperties['width'];
 	height?: React.CSSProperties['height'];
 	padding?: React.CSSProperties['padding'];
@@ -24,21 +17,22 @@ export const ButtonControls = {
 	}
 }
 
+/**
+ * Reusable Button component with built-in styles and support for custom class names,
+ * inline styles, and disabled state. Accepts an onClick handler that can be async or
+ * sync. When disabled, the button shows a distinct style and prevents interaction.
+ */
 export default function Button({
-	onClick,
 	className = '',
-	title,
-	style,
-	children,
-	disabled = false,
 	type = 'button',
 	width,
 	height,
-	padding
+	padding,
+	children,
+	...rest
 }: Props) {
 	const combinedClassName = ['btn', className].filter(Boolean).join(' ');
 	const mergedStyle: React.CSSProperties = {
-		...style,
 		...(width !== undefined ? { width } : {}),
 		...(height !== undefined ? { height } : {}),
 		...(padding !== undefined ? { padding } : {})
@@ -49,10 +43,8 @@ export default function Button({
 			<button
 				type={type}
 				className={combinedClassName}
-				title={title}
 				style={mergedStyle}
-				onClick={onClick as () => void}
-				disabled={disabled}
+				{...rest}
 			>
 				{children}
 			</button>

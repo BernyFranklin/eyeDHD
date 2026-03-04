@@ -76,15 +76,50 @@ function isProjectEmpty(dir: string): boolean {
  */
 
 /**
- *  Handles the user:read request.
+ * Handles the user:read request.
  *
  * Reads the user data from the main database, which includes the project directory
- * and initialization status, and returns it to the renderer process.
+ * and initialization status, and returns it to the renderer process. Verifies if
+ * the selected folder is setup properly and updates initialization status if necessary.
  */
 ipcMain.handle('user:read', async () => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const user = main_manager.actions.user.read();
+
+			// Check if folder is structured properly if dir is set, and update
+			// initialization status if needed. This is in case the project gets messed up
+			// during runtime or while app is closed
+			//
+			// Should adjust to prompt user to select new directory if project gets
+			// messed up, but for now just reset
+			if (user.dir) {
+				const structured = isProjectStructured(user.dir);
+				const empty = isProjectEmpty(user.dir);
+
+				if (user.project_initialized) {
+					if (!structured || empty) {
+						const updated_user = main_manager.actions.user.update(user, {
+							dir: '',
+							project_initialized: 0
+						});
+						return resolve(updated_user);
+					}
+				} else {
+					if (structured) {
+						const updated_user = main_manager.actions.user.update(user, {
+							project_initialized: 1
+						});
+						return resolve(updated_user);
+					}
+				}
+			} else if (user.project_initialized) {
+				const updated_user = main_manager.actions.user.update(user, {
+					project_initialized: 0
+				});
+				return resolve(updated_user);
+			}
+
 			return resolve(user);
 		} catch (err) {
 			return reject(`Failed to read user data: ${err}`);
