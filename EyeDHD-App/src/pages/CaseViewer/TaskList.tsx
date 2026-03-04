@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 import { AlertControls } from "@src/components/AlertWindow";
 import { useDispatch, useSelector } from "@src/data/hooks";
-import { selectCurrentTask, initializeTask, setNextTask } from "@src/data/features/task";
+import { selectCurrentTask, initializeTask, setNextTask, selectTaskError } from "@src/data/features/task";
 
 import { TASKS } from './tasks';
 import TaskItem from "./TaskItem";
@@ -11,6 +11,9 @@ import { Button } from "@src/components";
 export default function TaskList() {
 	const dispatch = useDispatch();
 	const current = useSelector(selectCurrentTask);
+	const error = useSelector(selectTaskError);
+
+	const [buttonText, setButtonText] = useState('Start processing');
 
 	const onclick = () => {
 		dispatch(setNextTask());
@@ -21,10 +24,22 @@ export default function TaskList() {
 	}, []);
 
 	useEffect(() => {
-		if (current === 'complete') {
-			AlertControls.show('All tasks complete!', 'green');
+		if (error) {
+			AlertControls.show(
+				`Task ${current} had an error: ${error.message}`,
+				'red'
+			);
+			return;
 		}
-	}, [current]);
+
+		if (current === 'complete') {
+			setButtonText('All tasks complete!');
+		} else if (current === 'none') {
+			setButtonText('Start processing');
+		} else {
+			setButtonText('Processing...');
+		}
+	}, [current, error]);
 
 	return (
 		<>
@@ -42,7 +57,7 @@ export default function TaskList() {
 					<Button onClick={onclick}
 						disabled={current !== 'none'}
 					>
-						Start processing
+						{buttonText}
 					</Button>
 				</div>
 			</div>

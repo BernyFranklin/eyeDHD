@@ -5,7 +5,8 @@ import { TASKORDER, type TaskName } from '@src/pages/CaseViewer/tasks';
 
 type TaskState = {
 	current: TaskName,
-	progress: number
+	progress: number,
+	error?: Error
 }
 
 const initialState: TaskState = {
@@ -27,6 +28,7 @@ export const taskSlice = createSlice({
 		initializeTask: (state) => {
 			state.current = TASKORDER[0];
 			state.progress = 0.0;
+			state.error = null;
 		},
 		setNextTask: (state) => {
 			const index = TASKORDER.indexOf(state.current) + 1;
@@ -36,8 +38,8 @@ export const taskSlice = createSlice({
 				state.progress = 0.0;
 			}
 		},
-		setCurrentTask: (state, action: PayloadAction<TaskName>) => {
-			state.current = action.payload;
+		setTaskError: (state, action: PayloadAction<Error>) => {
+			state.error = action.payload;
 			state.progress = 0.0;
 		},
 		setTaskProgress: (state, action: PayloadAction<number>) => {
@@ -46,9 +48,10 @@ export const taskSlice = createSlice({
 	}
 });
 
-export const { initializeTask, setNextTask, setCurrentTask, setTaskProgress } = taskSlice.actions;
+export const { initializeTask, setNextTask, setTaskError, setTaskProgress } = taskSlice.actions;
 
 export const selectCurrentTask = (state: RootState) => state.task.current;
 export const selectTaskProgress = (state: RootState) => state.task.progress;
+export const selectTaskError = (state: RootState) => state.task.error;
 
 export default taskSlice.reducer;

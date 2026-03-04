@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
 
 import { ProgressCircle } from '@src/components';
-import { AlertControls } from '@src/components/AlertWindow';
 
 import { Task } from './tasks/index';
 import { useDispatch, useSelector } from '@src/data/hooks';
-import { selectCurrentTask, selectTaskProgress, setNextTask } from '@src/data/features/task';
+import { selectCurrentTask, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
 
 type Props = {
 	task: Task
@@ -17,14 +16,16 @@ export default function TaskItem({ task }: Props) {
 	const progress = useSelector(selectTaskProgress);
 
 	const handleError = (err: Error) => {
-		AlertControls.show(`Task ${task.name} had error: ${err.message}`, 'red');
+		dispatch(setTaskError(err));
 	}
 
 	useEffect(() => {
 		if (current === task.name) {
-			task.fn(dispatch).catch(handleError).then(() => {
-				dispatch(setNextTask());
-			});
+			task.fn(dispatch)
+				.then(() => {
+					dispatch(setNextTask());
+				})
+				.catch(handleError);
 		}
 	}, [current]);
 
