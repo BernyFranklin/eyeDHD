@@ -1,3 +1,4 @@
+# SIGHT (Saccadic Interpretation and Gaze Heuristic Tool Kit)
 # eyeDHD
 This is the eye tracking tool to be used for the Psych Department in diagnosing ADHD with objective data.
 
