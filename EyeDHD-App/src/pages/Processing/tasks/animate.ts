@@ -1,7 +1,7 @@
 import { setTaskProgress } from '@src/data/features/task';
 import { Task, TaskFn } from '.';
 
-const NAME = 'animate';
+const NAME = 'animating';
 const WAITING = 'Animate eye movements';
 const RUNNING = 'Animating eye movements...';
 const COMPLETED = 'Animated eye movements';

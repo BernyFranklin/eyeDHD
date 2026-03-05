@@ -1,7 +1,7 @@
 import { setTaskProgress } from '@src/data/features/task';
 import { Task, TaskFn } from '.';
 
-const NAME = 'detect';
+const NAME = 'detecting';
 const WAITING = 'Detect saccades';
 const RUNNING = 'Detecting saccades...';
 const COMPLETED = 'Detected saccades';

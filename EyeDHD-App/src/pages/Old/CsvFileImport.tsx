@@ -62,7 +62,7 @@ export default function CsvFileImport() {
 
 			// setFile(selectedFile);
 
-			// if (selectedFile.cleaned) {
+			// if (selectedFile.completed?.cleaning) {
 			// 	setCleaningProgress({
 			// 		progressPercent: 100,
 			// 		isComplete: true,
@@ -144,7 +144,7 @@ export default function CsvFileImport() {
 			// 	isReading: false
 			// }));
 
-			// setFile({ ...file, cleaned: 1 });
+			// setFile({ ...file, completed: { ...file.completed, cleaning: true } });
 			// setCsvData(previewCSV);
 
 			// setIsCleaning(false);
@@ -165,11 +165,11 @@ export default function CsvFileImport() {
 			return;
 		}
 
-		// Check if cleaning is complete
-		if (!cleaningProgress.isComplete && !file.cleaned) {
-			dispatch(showAlert({ color: 'red', message: 'No cleaned data available. Please clean the data first.' }));
-			return;
-		}
+		// // Check if cleaning is complete
+		// if (!cleaningProgress.isComplete && !file.cleaned) {
+		// 	dispatch(showAlert({ color: 'red', message: 'No cleaned data available. Please clean the data first.' }));
+		// 	return;
+		// }
 
 		try {
 			setIsLoading(true);

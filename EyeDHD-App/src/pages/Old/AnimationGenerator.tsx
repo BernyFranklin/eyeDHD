@@ -25,16 +25,16 @@ export default function AnimationGenerator() {
 
 		if (files.length > 0) return;
 
-		const stream = await RemoteStream.create("CaseData", {});
-		try {
-			const files = await stream.collect<CaseData>();
-			const cleaned = files.filter((metadata: CaseData) => metadata.cleaned);
+		// const stream = await RemoteStream.create("CaseData", {});
+		// try {
+		// 	const files = await stream.collect<CaseData>();
+		// 	const cleaned = files.filter((metadata: CaseData) => metadata.completed?.cleaning);
 
-			setFiles(cleaned);
-		} catch (err) {
-			stream.cancel();
-			handleError(err);
-		}
+		// 	setFiles(cleaned);
+		// } catch (err) {
+		// 	stream.cancel();
+		// 	handleError(err);
+		// }
 
 		setIsLoading(false);
 	};
@@ -45,7 +45,7 @@ export default function AnimationGenerator() {
 			return;
 		}
 
-		setCsvStream(await RemoteStream.create("TrackingData", { file }));
+		// setCsvStream(await RemoteStream.create("TrackingData", { file }));
 	};
 
 	const handleError = (err: Error) => {

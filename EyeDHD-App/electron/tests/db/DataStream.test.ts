@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import DataStream, { type DataType } from '../../db/DataStream';
-import DatabaseManager from '../../db/DatabaseManager';
+
 
 type Batch = DataType[];
 
@@ -25,25 +25,25 @@ describe('Database - DataStream', () => {
       			[null, null],
          		[null]
       		];
-      		const manager = {} as unknown as DatabaseManager;
+
 	       	const stream = DataStream.testStream(
-				'CSVData',
+				'TrackingData',
 				makeBatchIterator(batches)
 			);
 
-	        const first = await stream.next(manager);
+	        const first = await stream.next();
 	        expect(first.done).toBe(false);
 	        expect(first.value).toHaveLength(2);
 	        expect(stream.progress.rows).toBe(2);
 	        expect(stream.progress.done).toBe(false);
 
-	        const second = await stream.next(manager);
+	        const second = await stream.next();
 	        expect(second.done).toBe(false);
 	        expect(second.value).toHaveLength(1);
 	        expect(stream.progress.rows).toBe(3);
 	        expect(stream.progress.done).toBe(false);
 
-	        const third = await stream.next(manager);
+	        const third = await stream.next();
 	        expect(third.done).toBe(true);
 	        expect(stream.progress.done).toBe(true);
 		});

@@ -9,6 +9,7 @@ import { selectCurrentTask, initializeTask, setNextTask, selectTaskError } from 
 import { TASKS } from './tasks';
 import TaskItem from "./TaskItem";
 
+
 /**
  * Component for displaying the list of tasks that need to be completed to process a case,
  * as well as a button to start processing.
@@ -28,8 +29,10 @@ export default function TaskList() {
 	}
 
 	useEffect(() => {
-		dispatch(initializeTask());
-	}, []);
+		if (current === null && !error) {
+			dispatch(initializeTask());
+		}
+	}, [current, error, dispatch]);
 
 	useEffect(() => {
 		if (error) {
@@ -43,7 +46,7 @@ export default function TaskList() {
 
 		if (current === 'complete') {
 			setButtonText('All tasks complete!');
-		} else if (current === 'none') {
+		} else if (current === null) {
 			setButtonText('Start processing');
 		} else {
 			setButtonText('Processing...');
@@ -54,9 +57,9 @@ export default function TaskList() {
 		<>
 			<div className='task-list-container'>
 				<ul className='task-list'>
-					{TASKS.map(task => {
+					{TASKS.map((task, i) => {
 						return (
-							<li key={task.name}>
+							<li key={i}>
 								<TaskItem task={task} />
 							</li>
 						);
@@ -64,7 +67,7 @@ export default function TaskList() {
 				</ul>
 				<div className='task-button'>
 					<Button onClick={onclick}
-						disabled={current !== 'none'}
+						disabled={current !== null}
 					>
 						{buttonText}
 					</Button>

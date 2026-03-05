@@ -17,6 +17,7 @@
 - Select multiple cases and compare.
 - Add ability to switch project folders.
 - Keep track of task completion in the CaseData table.
+- Update backend tests that are failing now.
 
 Project folder example:
 
