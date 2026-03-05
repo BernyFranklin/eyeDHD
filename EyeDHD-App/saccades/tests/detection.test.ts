@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { detectSaccadesFromVectors } from '../detection';
-import type { Vec3 } from '../velocities';
+import { detectSaccadesFromVectors } from '../core/detection';
+import type { Vec3 } from '../core/velocities';
 
 // Passed to testing functions
 const defaultThresholds = {

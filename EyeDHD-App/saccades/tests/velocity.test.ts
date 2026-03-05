@@ -4,7 +4,7 @@ import {
     angularVelocityDegPerSec,
     computeAngularVelocitiesDegPerSec,
     type Vec3,
-} from '../velocities';
+} from '../core/velocities';
 
 const DT_200HZ = 1/200; // 0.005s
 const EPS = 1e-6;       // Epsilon for floating-point comparisons

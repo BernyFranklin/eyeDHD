@@ -96,6 +96,16 @@ typings/
 out/
 !/example_project/**/*/out/
 
+# Prevent accidental package-lock.json files in subdirectories
+# (only the main package-lock.json should exist)
+**/*/package-lock.json
+!package-lock.json
+
+# Prevent accidental node_modules in subdirectories
+# (only the main node_modules should exist)
+**/*/node_modules/
+!node_modules/
+
 # Misc files
 *.mp4
 !/example_project/**/*.mp4

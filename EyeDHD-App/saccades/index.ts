@@ -1,8 +1,8 @@
-import type { Vec3 } from "./velocities";
+import type { Vec3 } from "./core/velocities";
 import type { SaccadeDetectionOptions } from "./schema";
 import type { SaccadeMetricsOptions, SaccadeMetricsInput, SaccadeMetricsResult } from "./metrics";
 
-import { detectSaccadesFromVectors } from "./detection";
+import { detectSaccadesFromVectors } from "./core/detection";
 import { computeSaccadeMetrics } from "./metrics";
 
 // Public schema + defaults (events, options)
@@ -18,16 +18,16 @@ export {
 } from "./schema"
 
 // Public velocities API (vector + velocity helpers)
-export type { Vec3 } from "./velocities";
+export type { Vec3 } from "./core/velocities";
 export {
     angularDisplacementDeg,
     angularVelocityDegPerSec,
     computeAngularVelocitiesDegPerSec,
-} from "./velocities";
+} from "./core/velocities";
 
 // Public detection API
-export type {DetectSaccadeResult } from "./detection";
-export { detectSaccadesFromVectors } from "./detection";
+export type {DetectSaccadeResult } from "./core/detection";
+export { detectSaccadesFromVectors } from "./core/detection";
 
 // Public metrics API
 export { computeSaccadeMetrics } from "./metrics";

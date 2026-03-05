@@ -1,6 +1,6 @@
 import type { ParseGazeCsvOptions, ParseMeta, ParseDiagnostics } from "../ingest/csv/types";
 import type { AdapterOptions, AdapterDiagnostics } from "../adapt/adapter";
-import type { SaccadeDetectionOptions } from "../schema";
+import type { SaccadeDetectionOptions } from "../core/schema";
 import type { SaccadeMetricsOptions } from "../metrics/types";
 import type { AnalyzeSaccadesResult } from "../index";
 

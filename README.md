@@ -47,8 +47,16 @@ This is the eye tracking tool to be used for the Psych Department in diagnosing 
 <h3>Starting Application</h3>
 <ol>
   <li>Make sure you have node.js set up on your device.</li>
-  <li>Make sure you are in /EyeDHD-App by using <code>cd .\EyeDHD-App\</code> for windows and <code>cd ./EyeDHD-App/</code> for Mac</li>
+  <li><strong>IMPORTANT:</strong> Make sure you are in /EyeDHD-App by using <code>cd .\EyeDHD-App\</code> for windows and <code>cd ./EyeDHD-App/</code> for Mac</li>
   <li>Use <code>npm install</code> to download the project dependencies</li>
   <li>Next use <code>npm run dev</code> to start the application</li>
   <li>Don't break it :]</li>
 </ol>
+
+<h4>⚠️ Team Note: NPM Commands</h4>
+<p><strong>Always run npm commands (install, start, build, etc.) from the EyeDHD-App directory only.</strong></p>
+<ul>
+  <li>✅ Correct: <code>cd EyeDHD-App</code> then <code>npm install</code></li>
+  <li>❌ Incorrect: Running <code>npm install</code> from subdirectories like saccades/, src/, etc.</li>
+</ul>
+<p>This prevents accidental package-lock.json files in subdirectories.</p>
