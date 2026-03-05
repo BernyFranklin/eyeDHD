@@ -203,13 +203,11 @@ export default class DataCleaner {
 		this.status.closed = true;
 	}
 
-	start() {
-		this.status.start = true;
+	async ready() {
+		await this.initPromise;
 	}
 
 	private async read(): Promise<TrackingData | null> {
-		await this.initPromise;
-
 		if (this.buf.length === 0 && !this.status.done) {
 			await this.loadRows(this.buf_len);
 		}

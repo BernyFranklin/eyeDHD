@@ -21,6 +21,11 @@ export default function Navbar() {
 					src="./images/fs-logo-white.png"
 					alt="Logo"
 				/>
+				<img
+					className="navbar-logo-image"
+					src="./images/eyedhd-logo.png"
+					alt="EyeDHD Logo"
+				/>
 			</span>
 			<span className="navbar-links">
 				<div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
@@ -51,6 +56,12 @@ export default function Navbar() {
 					display: flex;
 					align-items: center;
 					justify-content: space-between;
+				}
+
+				.navbar-logo {
+					display: flex;
+					align-items: center;
+					gap: 10px;
 				}
 
 				.navbar-logo-image {

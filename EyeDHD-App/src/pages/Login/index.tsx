@@ -30,7 +30,13 @@ export default function Login() {
 	const canContinue = Boolean(projectDir && projectInitialized);
 	const confirmLabel = canContinue ? 'continue' : 'confirm';
 
-	dispatch(disableButtons());
+	useEffect(() => {
+		dispatch(disableButtons());
+
+		return () => {
+			dispatch(enableButtons());
+		};
+	}, [dispatch]);
 
 	useEffect(() => {
 		if (canContinue) {
@@ -72,7 +78,6 @@ export default function Login() {
 
 	const handleConfirm = async () => {
 		if (canContinue) {
-			dispatch(enableButtons());
 			navigate('/home');
 			return;
 		}
@@ -90,6 +95,10 @@ export default function Login() {
 
 			dispatch(setProjectDir(updatedUser.dir));
 			dispatch(setProjectInitialized(!!updatedUser.project_initialized));
+
+			if (updatedUser.project_initialized) {
+				navigate('/home');
+			}
 		} catch (err) {
 			AlertControls.error(`Error initializing directory: ${err.message}`);
 		}
