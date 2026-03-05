@@ -1,4 +1,4 @@
-import type { Vec3 } from '../../core/velocities';
+import type { Vec3 } from '@saccades/core/velocities';
 
 export interface RawGazeRow {
   rowIndex:            number;    // 0-based data row index (excluding header)
