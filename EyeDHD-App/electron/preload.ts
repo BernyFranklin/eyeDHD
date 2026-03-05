@@ -25,15 +25,13 @@ declare interface Electron {
 	},
 	case: {
 		createNew(casename: string): Promise<CaseData>;
-		read(filename: string): Promise<CaseData>;
+		read(casename: string): Promise<CaseData>;
 		selectCsv(): Promise<string | null>;
-		importCsv(file: CaseData, filepath: string): Promise<CaseData>;
+		importCsv(trial: CaseData, filepath: string): Promise<CaseData>;
 	};
 
 	csv: {
-		resetCleaningProgress(file: CaseData): Promise<void>;
-		cleanData(file: CaseData): Promise<void>;
-		exportData(file: CaseData): Promise<void>;
+		resetCleaningProgress(trial: CaseData): Promise<void>;
 	};
 
 	video: {
@@ -116,8 +114,8 @@ const electron: Electron = {
 		/**
 		 * Copies the selected CSV file into the case imports folder.
 		 */
-		importCsv: async (file: CaseData, filepath: string): Promise<CaseData> => {
-			return await ipcRenderer.invoke('case:import-csv', file, filepath);
+		importCsv: async (trial: CaseData, filepath: string): Promise<CaseData> => {
+			return await ipcRenderer.invoke('case:import-csv', trial, filepath);
 		}
 	},
 
@@ -127,20 +125,8 @@ const electron: Electron = {
 		 * Resets the cleaning progress of a file, allowing it to be cleaned
 		 * again from the start.
 		 */
-		resetCleaningProgress: async (file: CaseData): Promise<void> => {
-			return await ipcRenderer.invoke('csv:reset-cleaning-progress', file);
-		},
-		/**
-		 * Initiates data cleaning process for the specified file
-		 */
-		cleanData: async (file: CaseData) => {
-			return await ipcRenderer.invoke('csv:clean-data', file);
-		},
-		/**
-		 * Exports cleaned CSV data to a new file
-		 */
-		exportData: async (file: CaseData) => {
-			return await ipcRenderer.invoke('csv:export-data', file);
+		resetCleaningProgress: async (trial: CaseData): Promise<void> => {
+			return await ipcRenderer.invoke('csv:reset-cleaning-progress', trial);
 		}
 	},
 
@@ -177,8 +163,8 @@ const electron: Electron = {
 		/**
 		 * Starts a new stream of the specified type, optionally associated with a file.
 		 */
-		start: async (type: StreamType, file?: CaseData): Promise<StreamKey> => {
-			return await ipcRenderer.invoke('stream:start', { type, file })
+		start: async (type: StreamType, trial?: CaseData): Promise<StreamKey> => {
+			return await ipcRenderer.invoke('stream:start', { type, trial })
 		},
 		/**
 		 * Pulls the next N batches from the stream.

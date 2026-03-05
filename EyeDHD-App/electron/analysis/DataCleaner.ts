@@ -2,6 +2,7 @@ import fs from 'fs';
 import rl from 'readline';
 
 import { type TrackingData } from '../db/tables/TrackingData';
+import { csvImportPath } from '@electron/db/tables/CaseData';
 
 /**
 * Reads and cleans a CSV file at the given path. Cleans data lazyily,

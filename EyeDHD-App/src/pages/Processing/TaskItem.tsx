@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 
 import { ProgressCircle, Status } from '@src/components';
 
-import { Task } from './tasks/index';
 import { useDispatch, useSelector } from '@src/data/hooks';
 import { selectCurrentTask, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
+
+import { Task } from './tasks/index';
+import { selectSelectedCase } from '@src/data/features/user';
 
 type Props = {
 	task: Task
@@ -18,6 +20,7 @@ type Props = {
  */
 export default function TaskItem({ task }: Props) {
 	const dispatch = useDispatch();
+	const trial = useSelector(selectSelectedCase);
 	const current = useSelector(selectCurrentTask);
 	const progress = useSelector(selectTaskProgress);
 
@@ -34,7 +37,7 @@ export default function TaskItem({ task }: Props) {
 	useEffect(() => {
 		if (current === task.name) {
 			setActive(true);
-			task.fn(dispatch)
+			task.fn(trial, dispatch)
 				.then(() => {
 					setActive(false);
 					setComplete(true);

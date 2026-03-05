@@ -2,8 +2,9 @@ import fs from "fs";
 import rl from "readline";
 
 import { type TrackingData, fromCSV, toCSV } from "./tables/TrackingData";
-import metadataActions, { type CaseData, csvOutputPath } from "./tables/CaseData";
+import metadataActions, { type CaseData, csvImportPath, csvOutputPath } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
+import DataCleaner from "@electron/analysis/DataCleaner";
 
 export type DataType = CaseData | TrackingData;
 export type StreamType = 'CaseData' | 'TrackingData' | 'Cleaning';
@@ -28,7 +29,8 @@ const CLEANING_BATCH_SIZE = 1000;
  */
 export default class DataStream {
 	type: StreamType;
-	file?: CaseData;
+	trial?: CaseData;
+	path?: string;
 	iterator: AsyncIterator<DataType[]>;
 	progress: Progress = {
 		done: false,
@@ -37,40 +39,34 @@ export default class DataStream {
 		totalBytes: 0
 	};
 
-	/**
-	 * Private constructor to enforce the use of the static new method
-	 * for creating instances
-	 */
-	private constructor(
-		type: StreamType,
-		iterator: AsyncIterator<DataType[]>,
-		file?: CaseData
-	) {
-		this.type = type;
-		this.iterator = iterator;
-		this.file = file;
+	constructor() {
+		this.type = undefined;
+		this.trial = undefined;
+		this.path = undefined;
+		this.iterator = undefined;
 	}
 
-	/**
-	 * Static method to create a new DataStream instance. It initializes the
-	 * async iterator based on the stream type and file (if applicable).
-	 */
-	static new(manager: DatabaseManager, type: StreamType, file?: CaseData): DataStream {
-		const iterator = DataStream.createIterator(manager, type, file);
-		const stream = new DataStream(type, iterator, file);
+	of(type: StreamType) {
+		this.type = type;
+		return this;
+	}
 
-		return stream;
+	with(trial?: CaseData) {
+		this.trial = trial;
+		return this;
+	}
+
+	start(manager: DatabaseManager) {
+		this.iterator = DataStream.createIterator(this, manager);
+		return this;
 	}
 
 	/**
 	 * Static method to create a test DataStream instance with a provided async iterator.
 	 */
 	static testStream(
-		type: StreamType,
-		iterator: AsyncIterator<DataType[]>,
-		file?: CaseData
 	): DataStream {
-		return new DataStream(type, iterator, file);
+		return undefined;
 	}
 
 	/**
@@ -78,9 +74,8 @@ export default class DataStream {
 	 * the stream type and file.
 	 */
 	private static async *createIterator(
-		manager: DatabaseManager,
-		type: StreamType,
-		file?: CaseData
+		self: DataStream,
+		manager: DatabaseManager
 	): AsyncGenerator<DataType[], void, undefined> {
 		// We switch on the `type` to determine which iterator code to run
 		//
@@ -88,27 +83,27 @@ export default class DataStream {
 		// until all data has been streamed.
 		//
 		// The batch size is determined by the STREAM_BATCH_SIZE constant.
-		switch (type) {
+		switch (self.type) {
 			case 'CaseData': {
 				yield* DataStream.caseDataIterator(manager);
 				break;
 			}
 
 			case 'TrackingData': {
-				if (!file) {
+				if (!self.trial) {
 					throw new Error('File must be provided for CSVData streams');
 				}
 
-				yield* DataStream.csvDataIterator(file);
+				yield* DataStream.csvDataIterator(self.trial);
 				break;
 			}
 
 			case 'Cleaning': {
-				if (!file) {
+				if (!self.trial) {
 					throw new Error('File must be provided for CSVData streams');
 				}
 
-				yield* DataStream.cleaningIterator(manager, file);
+				yield* DataStream.cleaningIterator(self, manager);
 				break;
 			}
 		}
@@ -142,11 +137,11 @@ export default class DataStream {
 	 * for a given file.
 	 */
 	private static async *csvDataIterator(
-		file: CaseData
+		trial: CaseData
 	): AsyncGenerator<DataType[], void, undefined> {
-		const cleanedPath = csvOutputPath(file);
+		const cleanedPath = csvOutputPath(trial);
 		if (!fs.existsSync(cleanedPath)) {
-			throw new Error(`Cleaned CSV not found for file: ${file.name}`);
+			throw new Error(`Cleaned CSV not found for file: ${trial.name}`);
 		}
 
 		const stream = fs.createReadStream(cleanedPath, { encoding: 'utf-8' });
@@ -184,34 +179,26 @@ export default class DataStream {
 	 * we go.
 	 */
 	private static async *cleaningIterator(
-		manager: DatabaseManager,
-		file: CaseData
+		self: DataStream,
+		manager: DatabaseManager
 	): AsyncGenerator<DataType[], void, undefined> {
-		let metadata = file;
-		let cleaner = manager.getCleaner(metadata);
-		if (!cleaner) {
-			throw new Error(`No cleaner found for file: ${metadata.name}`);
-		}
+		self.trial = manager.actions.case.resetCleaning(self.trial);
+		const cleaner = new DataCleaner({ path: csvImportPath(self.trial) });
 
-		// If progress has been made restart
-		if (cleaner.status.start) {
-			metadata = manager.actions.case.resetCleaning(metadata);
-			cleaner = manager.getCleaner(metadata);
-			if (!cleaner) {
-				throw new Error(`No cleaner found for file: ${metadata.name}`);
-			}
-		}
-
-		const outputPath = csvOutputPath(metadata);
+		const outputPath = csvOutputPath(self.trial);
 		const outputStream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
 
 		const header = cleaner.header + '\n';
 		outputStream.write(header);
-		metadata = manager.actions.case.update(metadata, { header });
+		self.trial = manager.actions.case.update(self.trial, { header });
 
 		let batch: TrackingData[] = [];
 		for await (const row of cleaner) {
 			batch.push(row);
+
+			self.progress.bytesRead = cleaner.progress.bytesRead;
+			self.progress.totalBytes = cleaner.progress.totalBytes;
+			self.progress.rows++;
 
 			const line = toCSV(row) + '\n';
 			outputStream.write(line);
@@ -244,7 +231,7 @@ export default class DataStream {
 			}
 		}
 
-		manager.actions.case.update(metadata, {
+		manager.actions.case.update(self.trial, {
 			cleaned_rows: cleaner.progress.currentRow,
 			cleaned: 1
 		});
@@ -264,8 +251,6 @@ export default class DataStream {
 			}
 
 			const batch = value ?? [];
-			this.progress.rows += batch.length;
-
 			yield batch;
 		}
 	}
@@ -302,7 +287,7 @@ export default class DataStream {
 	 * allowing you to have more control over when data is pulled and how progress is
 	 * updated.
 	 */
-	async next(manager: DatabaseManager): Promise<IteratorResult<DataType[]>> {
+	async next(): Promise<IteratorResult<DataType[]>> {
 		const result = await this.iterator.next();
 		const { done, value } = result;
 
@@ -312,15 +297,7 @@ export default class DataStream {
 		}
 
 		const batch = value ?? [];
-		if (this.type === 'Cleaning') {
-			const cleaner = manager.getCleaner(this.file);
-			if (cleaner) {
-				this.progress.bytesRead = cleaner.progress.bytesRead;
-				this.progress.totalBytes = cleaner.progress.totalBytes;
-			}
-		} else {
-			this.progress.rows += batch.length;
-		}
+		this.progress.rows += batch.length;
 
 		return result;
 	}

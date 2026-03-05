@@ -90,7 +90,7 @@ export default function CreateCaseWindow(props: Props) {
 			props.onClose();
 			setIsSubmitting(false);
 
-			navigate('/case');
+			navigate('/processing');
 		} catch (err) {
 			AlertControls.error(`Error creating case: ${err.message}`);
 

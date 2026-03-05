@@ -110,46 +110,46 @@ export default function CsvFileImport() {
 			setShowCleaningResults(true);
 
 			// Start the cleaning process
-			const stream = await RemoteStream.create('Cleaning', { file });
+			// const stream = await RemoteStream.create('Cleaning', { file });
 
-			const previewCSV: TrackingData[] = [];
-			for await (const row of stream) {
-				const { rows, bytesRead, totalBytes } = stream.progress;
-				const rowsProcessed = rows ?? 0;
+			// const previewCSV: TrackingData[] = [];
+			// for await (const row of stream) {
+			// 	const { rows, bytesRead, totalBytes } = stream.progress;
+			// 	const rowsProcessed = rows ?? 0;
 
-				if (previewCSV.length < 10) {
-					previewCSV.push(row as TrackingData);
-				}
+			// 	if (previewCSV.length < 10) {
+			// 		previewCSV.push(row as TrackingData);
+			// 	}
 
-				let progressPercent = 0;
-				if (totalBytes && bytesRead) {
-					progressPercent = Math.min((bytesRead / totalBytes) * 100, 100);
-				} else {
-					const estimatedTotalRows = Math.max(file.cleaned_rows || 0, rowsProcessed, 1);
-					progressPercent = Math.min((rowsProcessed / estimatedTotalRows) * 100, 100);
-				}
+			// 	let progressPercent = 0;
+			// 	if (totalBytes && bytesRead) {
+			// 		progressPercent = Math.min((bytesRead / totalBytes) * 100, 100);
+			// 	} else {
+			// 		const estimatedTotalRows = Math.max(file.cleaned_rows || 0, rowsProcessed, 1);
+			// 		progressPercent = Math.min((rowsProcessed / estimatedTotalRows) * 100, 100);
+			// 	}
 
-				setCleaningProgress({
-					progressPercent,
-					isComplete: false,
-					isReading: true,
-					rowsProcessed
-				});
-			}
+			// 	setCleaningProgress({
+			// 		progressPercent,
+			// 		isComplete: false,
+			// 		isReading: true,
+			// 		rowsProcessed
+			// 	});
+			// }
 
-			setCleaningProgress((prev) => ({
-				...prev,
-				progressPercent: 100,
-				isComplete: true,
-				isReading: false
-			}));
+			// setCleaningProgress((prev) => ({
+			// 	...prev,
+			// 	progressPercent: 100,
+			// 	isComplete: true,
+			// 	isReading: false
+			// }));
 
-			setFile({ ...file, cleaned: 1 });
-			setCsvData(previewCSV);
+			// setFile({ ...file, cleaned: 1 });
+			// setCsvData(previewCSV);
 
-			setIsCleaning(false);
-			dispatch(enableButtons());
-			dispatch(showAlert({ color: 'green', message: 'Data cleaning complete!' }));
+			// setIsCleaning(false);
+			// dispatch(enableButtons());
+			// dispatch(showAlert({ color: 'green', message: 'Data cleaning complete!' }));
 		} catch (err) {
 			dispatch(enableButtons());
 			setIsCleaning(false);

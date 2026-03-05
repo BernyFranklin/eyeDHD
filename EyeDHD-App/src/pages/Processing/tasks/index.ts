@@ -5,6 +5,7 @@ import { detectTask } from './detect';
 import { visualizeTask } from './visualize';
 import { animateTask } from './animate';
 import { stitchTask } from './stitch';
+import { CaseData } from '@src/data/types';
 
 /**
  * Defines the list of tasks that need to be completed to process a case, as well as the
@@ -47,4 +48,4 @@ export type Task = {
 	fn: TaskFn
 }
 
-export type TaskFn = (dispatch: Dispatch) => Promise<void>;
+export type TaskFn = (trial: CaseData, dispatch: Dispatch) => Promise<void>;

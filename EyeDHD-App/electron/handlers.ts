@@ -265,8 +265,8 @@ ipcMain.handle('case:create-new', async (_, casename) => {
 				}
 			});
 
-			const casedata = project_manager.createCase(casename, caseDir);
-			return resolve(casedata);
+			const trial = project_manager.createCase(casename, caseDir);
+			return resolve(trial);
 		} catch (err) {
 			return reject(`Failed to create case: ${err}`);
 		}
@@ -307,7 +307,7 @@ ipcMain.handle('case:select-csv', async () => {
  * the new file entry. This is used after the user selects a CSV to import, so we can
  * copy it into the project and track it in the database.
  */
-ipcMain.handle('case:import-csv', async (_, file: CaseData, filepath: string) => {
+ipcMain.handle('case:import-csv', async (_, trial: CaseData, filepath: string) => {
 	return new Promise(async (resolve, reject) => {
 		if (!filepath) {
 			return reject('No file path provided for import');
@@ -318,11 +318,11 @@ ipcMain.handle('case:import-csv', async (_, file: CaseData, filepath: string) =>
 			if (!user.dir) {
 				return reject('No project directory set for user');
 			}
-			if (!file) {
+			if (!trial) {
 				return reject('No case provided for import');
 			}
 
-			const storedCase = project_manager.actions.case.read(file.name);
+			const storedCase = project_manager.actions.case.read(trial.name);
 
 			const importPath = csvImportPath(storedCase);
 			const importDir = path.dirname(importPath);
@@ -332,8 +332,8 @@ ipcMain.handle('case:import-csv', async (_, file: CaseData, filepath: string) =>
 
 			fs.copyFileSync(filepath, importPath);
 
-			const updatedCase = project_manager.actions.case.resetCleaning(storedCase);
-			return resolve(updatedCase);
+			const updated = project_manager.actions.case.resetCleaning(storedCase);
+			return resolve(updated);
 		} catch (err) {
 			return reject(`Failed to import CSV: ${err}`);
 		}
@@ -350,8 +350,8 @@ ipcMain.handle('case:import-csv', async (_, file: CaseData, filepath: string) =>
 ipcMain.handle('case:read-casedata', async (_, filename) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const casedata = project_manager.actions.case.read(filename);
-			return resolve(casedata);
+			const trial = project_manager.actions.case.read(filename);
+			return resolve(trial);
 		} catch (err) {
 			return reject(`Failed to read metadata for file: ${filename}. Error: ${err}`);
 		}
@@ -369,14 +369,14 @@ ipcMain.handle('case:read-casedata', async (_, filename) => {
  * again from the start. This is used when the user wants to redo the cleaning process
  * for a file, so we reset any progress and allow them to start over.
  */
-ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
+ipcMain.handle('csv:reset-cleaning-progress', async (_, trial) => {
 	return new Promise<void>(async (resolve, reject) => {
 		try {
-			project_manager.actions.case.resetCleaning(file);
+			project_manager.actions.case.resetCleaning(trial);
 
 			return resolve();
 		} catch (err) {
-			return reject(`Failed to reset reading progress for file: ${file.name}. Error: ${err}`);
+			return reject(`Failed to reset reading progress for file: ${trial.name}. Error: ${err}`);
 		}
 	});
 });
@@ -384,17 +384,17 @@ ipcMain.handle('csv:reset-cleaning-progress', async (_, file) => {
 /**
  * TODO: update this for new UI changes
  */
-ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
+ipcMain.handle('csv:export-data', async (_, trial: CaseData) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			if (!file.cleaned) {
-				return reject(`File: ${file.name} hasn't been cleaned yet. Clean the file first.`);
+			if (!trial.cleaned) {
+				return reject(`File: ${trial.name} hasn't been cleaned yet. Clean the file first.`);
 			}
 
 			// Show save dialog
 			const { canceled, filePath } = await dialog.showSaveDialog({
 				title: 'Export Cleaned CSV',
-				defaultPath: path.join(os.homedir(), `${path.parse(file.name).name}_Cleaned.csv`),
+				defaultPath: path.join(os.homedir(), `${path.parse(trial.name).name}_Cleaned.csv`),
 				filters: [{ name: 'CSV Files', extensions: ['csv'] }]
 			});
 
@@ -402,11 +402,11 @@ ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
 				return resolve({ success: false, message: 'Export canceled' });
 			}
 
-			const storedCase = project_manager.actions.case.read(file.name);
-			const sourcePath = csvOutputPath(storedCase);
+			const storedTrial = project_manager.actions.case.read(trial.name);
+			const sourcePath = csvOutputPath(storedTrial);
 
 			if (!fs.existsSync(sourcePath)) {
-				return resolve({ success: false, message: `Cleaned CSV not found for ${file.name}` });
+				return resolve({ success: false, message: `Cleaned CSV not found for ${trial.name}` });
 			}
 
 			fs.copyFileSync(sourcePath, filePath);
@@ -415,15 +415,15 @@ ipcMain.handle('csv:export-data', async (_, file: CaseData) => {
 
 			return resolve({
 				success: true,
-				message: `Successfully exported ${storedCase.cleaned_rows ?? 0} cleaned rows to ${filePath}`,
+				message: `Successfully exported ${storedTrial.cleaned_rows ?? 0} cleaned rows to ${filePath}`,
 				stats: {
-					totalExported: storedCase.cleaned_rows ?? 0,
+					totalExported: storedTrial.cleaned_rows ?? 0,
 					filePath,
 					fileSize
 				}
 			});
 		} catch (err) {
-			return reject(`Failed to export file: ${file.name}. Error: ${err}`);
+			return reject(`Failed to export file: ${trial.name}. Error: ${err}`);
 		}
 	});
 });
@@ -556,8 +556,8 @@ ipcMain.handle('vr:video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }
  * and returns a unique stream key to the renderer process. The stream key is used
  * for subsequent pull and cancel requests to identify the stream.
  */
-ipcMain.handle('stream:start', async (_, { type, file }): Promise<StreamKey> => {
-	return await project_manager.startStream(type, file);
+ipcMain.handle('stream:start', async (_, { type, trial }): Promise<StreamKey> => {
+	return await project_manager.startStream(type, trial);
 })
 
 /**

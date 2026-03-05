@@ -10,7 +10,7 @@ const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
 });
 
-const fn: TaskFn = async (dispatch) => {
+const fn: TaskFn = async (trial, dispatch) => {
 	let percent = 0.0;
 	while (percent < 1.0) {
 		await delay(10);
