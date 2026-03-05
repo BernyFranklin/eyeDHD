@@ -352,7 +352,7 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
   });
   
   it("O9) All rows filtered: adapter returns empty vectors and analysis is still returned deterministically", () => {
-    const header = [
+    const header = [                                          // Define the required headers for the CSV input
       "CaptureTime",
       "GazeStatus",
       "CombinedGazeForwardX",
@@ -360,24 +360,23 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
       "CombinedGazeForwardZ",
     ];
 
-    const csvText = makeCsv({
+    const csvText = makeCsv({                                 // Create a CSV string where all rows have INVALID gaze status, which should filter out.
       header,
       rows: [
         { CaptureTime: 0,   GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
-        { CaptureTime: 5e6, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
       ],
     });
 
-    const result = runGazeCsvPipeline(csvText, {
+    const result = runGazeCsvPipeline(csvText, {              // Run the pipeline with adapter options that filter out all rows based on gaze status
       adapter: { selection: { includeGazeStatuses: ["VALID"] } },
     });
 
-    expect(result.adapter.diagnostics.includedRows).toBe(0);
-    expect(result.adapter.sourceRowIndices).toEqual([]);
-    expect(result).toHaveProperty("analysis");
-
-    // TODO: define expected empty-input behavior for analyzeSaccadesFromVectors
-    // e.g., no saccades
-    // expect(result.analysis.detection.saccades).toEqual([]);
+    expect(result.adapter.diagnostics.includedRows).toBe(0);  // All rows should be excluded based on gaze status filter
+    expect(result.adapter.sourceRowIndices).toEqual([]);      // sourceRowIndices should be empty since no rows are included
+    expect(result.analysis).toHaveProperty("detection");      // Analysis should still be returned even if no vectors are included
+    expect(result.analysis).toHaveProperty("metrics");        // Metrics should also be returned (even if empty) to confirm that analysis step runs without input vectors
+    expect(result.analysis.detection.saccades).toEqual([]);   // No saccades should be detected with no input vectors
   });
 });
