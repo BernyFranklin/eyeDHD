@@ -17,7 +17,7 @@ import TaskItem from "./TaskItem";
  * Listens to changes in the current task and updates the button text and error states
  * accordingly.
  */
-export default function TaskList() {
+export default function TaskSuite() {
 	const dispatch = useDispatch();
 	const current = useSelector(selectCurrentTask);
 	const error = useSelector(selectTaskError);
