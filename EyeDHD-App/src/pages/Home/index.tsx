@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { FilePlusCorner } from 'lucide-react';
 
-import CaseList from './CaseList';
-import CreateCaseWindow from './CreateCaseWindow';
 import { Button, LoadingOverlay } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
 
@@ -9,8 +9,9 @@ import RemoteStream from '@src/data/RemoteStream';
 import { type CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
 import { selectCases, setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
-import { useNavigate } from 'react-router';
-import { FilePlusCorner } from 'lucide-react';
+
+import CaseList from './CaseList';
+import CreateCaseWindow from './CreateCaseWindow';
 
 /**
  * Home page of the app, shows list of cases and allows user to create new cases

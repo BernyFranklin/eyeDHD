@@ -41,12 +41,14 @@ export default function Status({
 	};
 
 	return (
-		<div
-			className={combinedClassName}
-			style={mergedStyle}
-			{...rest}
-		>
-			{ICONS[state]}
+		<>
+			<div
+				className={combinedClassName}
+				style={mergedStyle}
+				{...rest}
+			>
+				{ICONS[state]}
+			</div>
 			<style>
 				{`
 					.result {
@@ -72,6 +74,6 @@ export default function Status({
 					}
 				`}
 			</style>
-		</div>
+		</>
 	);
 }

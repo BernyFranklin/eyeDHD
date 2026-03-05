@@ -98,8 +98,6 @@ export default function CreateCaseWindow(props: Props) {
 		}
 	};
 
-
-
 	if (!props.isOpen) {
 		return null;
 	}

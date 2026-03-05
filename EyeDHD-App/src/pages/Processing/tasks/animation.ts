@@ -1,5 +1,5 @@
 import { setTaskProgress } from '@src/data/features/task';
-import { Task, TaskFn } from '.';
+import { type Task, type TaskFn } from '.';
 
 const NAME = 'animation';
 const WAITING = 'Animate eye movements';

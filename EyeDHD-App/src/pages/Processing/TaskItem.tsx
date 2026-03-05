@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 
 import { ProgressCircle, Status } from '@src/components';
 
+import { CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
 import { selectCurrentTask, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
+import { selectSelectedCase } from '@src/data/features/user';
 
 import { Task } from './tasks/index';
-import { selectSelectedCase } from '@src/data/features/user';
-import { CaseData } from '@src/data/types';
 
 type Props = {
 	task: Task
@@ -37,6 +37,31 @@ export default function TaskItem({ task }: Props) {
 		setFailed(true);
 		setActive(false);
 		dispatch(setTaskError(err));
+	}
+
+	const getTaskName = () => {
+		if (complete) {
+			return task.display.completed;
+		} else if (current === task.name) {
+			return task.display.running;
+		}
+		return task.display.waiting;
+	}
+
+	const getStatus = () => {
+		if (failed) {
+			return <Status state='error' />;
+		}
+
+		if (complete) {
+			return <Status state='success' />;
+		}
+
+		if (current === task.name) {
+			return <ProgressCircle value={progress} size={30} />;
+		}
+
+		return <Status state='pending' />;
 	}
 
 	useEffect(() => {
@@ -70,39 +95,17 @@ export default function TaskItem({ task }: Props) {
 			.catch(handleError);
 	}, [current, task.name, trial]);
 
-	const getTaskName = () => {
-		if (complete) {
-			return task.display.completed;
-		} else if (current === task.name) {
-			return task.display.running;
-		}
-		return task.display.waiting;
-	}
-
-	const getStatus = () => {
-		if (failed) {
-			return <Status state='error' />;
-		}
-
-		if (complete) {
-			return <Status state='success' />;
-		}
-
-		if (current === task.name) {
-			return <ProgressCircle value={progress} size={30} />;
-		}
-
-		return <Status state='pending' />;
-	}
-
 	return (
 		<>
 			<div className={[
-				'task-item',
-				failed && 'failed-task',
-				complete && 'success-task',
-				active && 'active-task'
-			].filter(Boolean).join(' ')}>
+					'task-item',
+					failed && 'failed-task',
+					complete && 'success-task',
+					active && 'active-task'
+				]
+				.filter(Boolean)
+				.join(' ')
+			}>
 				<span className='task-name'>{getTaskName()}</span>
 				<div className='task-progress'>
 					{getStatus()}
