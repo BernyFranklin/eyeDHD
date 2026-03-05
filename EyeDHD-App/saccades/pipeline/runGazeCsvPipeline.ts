@@ -1,6 +1,6 @@
-import { analyzeSaccadesFromVectors } from "../index";
-import { parseGazeCsvSession } from "../ingest/csv/parseGazeCsvSession";
-import { adaptGazeRowsToAnalysisInput } from "../adapt/adapter";
+import { analyzeSaccadesFromVectors } from "@saccades/index";
+import { parseGazeCsvSession } from "@saccades/ingest/csv/parseGazeCsvSession";
+import { adaptGazeRowsToAnalysisInput } from "@saccades/adapt/adapter";
 import type { GazeCsvPipelineOptions, GazeCsvPipelineResult } from "./types";
 
 export function runGazeCsvPipeline(

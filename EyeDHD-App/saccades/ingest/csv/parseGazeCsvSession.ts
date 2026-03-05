@@ -1,4 +1,4 @@
-import { DEFAULT_SAMPLING_RATE_HZ } from '../../schema';
+import { DEFAULT_SAMPLING_RATE_HZ } from '@saccades/index';
 import type {
   DtStats,
   InvalidRowReason,

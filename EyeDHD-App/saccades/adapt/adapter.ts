@@ -1,5 +1,5 @@
-import type { Vec3 } from "../index"; 
-import type { RawGazeRow } from "../ingest/csv/types";
+import type { Vec3 } from "@saccades/index"; 
+import type { RawGazeRow } from "@saccades/ingest/csv/types";
 
 export interface AdapterSelectionPolicy {
   includeGazeStatuses?: readonly string[];

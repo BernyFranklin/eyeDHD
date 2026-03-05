@@ -1,5 +1,5 @@
 import type { Vec3 } from "./core/velocities";
-import type { SaccadeDetectionOptions } from "./schema";
+import type { SaccadeDetectionOptions } from "./core/schema";
 import type { SaccadeMetricsOptions, SaccadeMetricsInput, SaccadeMetricsResult } from "./metrics";
 
 import { detectSaccadesFromVectors } from "./core/detection";
@@ -10,12 +10,12 @@ export type {
     SaccadeEvent,
     SaccadeEventExtended,
     SaccadeDetectionOptions,
-} from "./schema";
+} from "./core/schema";
 
 export {
     DEFAULT_SAMPLING_RATE_HZ,
     DEFAULT_SACCADE_OPTIONS,
-} from "./schema"
+} from "./core/schema"
 
 // Public velocities API (vector + velocity helpers)
 export type { Vec3 } from "./core/velocities";

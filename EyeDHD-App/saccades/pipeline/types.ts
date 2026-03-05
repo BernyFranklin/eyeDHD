@@ -1,8 +1,8 @@
-import type { ParseGazeCsvOptions, ParseMeta, ParseDiagnostics } from "../ingest/csv/types";
-import type { AdapterOptions, AdapterDiagnostics } from "../adapt/adapter";
-import type { SaccadeDetectionOptions } from "../core/schema";
-import type { SaccadeMetricsOptions } from "../metrics/types";
-import type { AnalyzeSaccadesResult } from "../index";
+import type { ParseGazeCsvOptions, ParseMeta, ParseDiagnostics } from "@saccades/ingest/csv/types";
+import type { AdapterOptions, AdapterDiagnostics } from "@saccades/adapt/adapter";
+import type { SaccadeDetectionOptions } from "@saccades/core/schema";
+import type { SaccadeMetricsOptions } from "@saccades/metrics/types";
+import type { AnalyzeSaccadesResult } from "@saccades/index";
 
 export interface GazeCsvPipelineOptions {
   parse: Partial<ParseGazeCsvOptions>;
