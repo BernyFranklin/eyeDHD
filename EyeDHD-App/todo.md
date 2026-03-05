@@ -23,6 +23,7 @@
 - Show loading animation on app startup.
 - Add the app name to the Navbar / Titlebar.
 - Add percentage to progress circle.
+- Make AlertWindow positionable so it can be used like a speech bubble that points to whatever caused the Alert.
 
 Project folder example:
 

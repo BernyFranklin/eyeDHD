@@ -4,7 +4,7 @@ import { ProgressCircle, Status } from '@src/components';
 
 import { CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
-import { selectCurrentTask, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
+import { selectCurrentTask, selectTaskError, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
 import { selectSelectedCase } from '@src/data/features/user';
 
 import { Task } from './tasks/index';
@@ -28,6 +28,7 @@ export default function TaskItem({ task }: Props) {
 	const trial = useSelector(selectSelectedCase);
 	const current = useSelector(selectCurrentTask);
 	const progress = useSelector(selectTaskProgress);
+	const error = useSelector(selectTaskError);
 
 	const [active, setActive] = useState(false);
 	const [failed, setFailed] = useState(false);
@@ -72,6 +73,12 @@ export default function TaskItem({ task }: Props) {
 		setActive(false);
 		setFailed(false);
 	}, [trial.id]);
+
+	useEffect(() => {
+		if (!error) {
+			setFailed(false);
+		}
+	}, [error]);
 
 	useEffect(() => {
 		if (current !== task.name) {

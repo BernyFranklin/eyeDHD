@@ -25,6 +25,9 @@ export default function TaskList() {
 	const [buttonText, setButtonText] = useState('Start processing');
 
 	const onclick = () => {
+		if (error) {
+			dispatch(initializeTask());
+		}
 		dispatch(setNextTask());
 	}
 
@@ -36,7 +39,7 @@ export default function TaskList() {
 
 	useEffect(() => {
 		if (error) {
-			setButtonText('Processing failed!');
+			setButtonText('Failed! Try again');
 			AlertControls.error(`
 				Task ${current.toUpperCase()} had an error:
 				${error.message}
@@ -67,7 +70,7 @@ export default function TaskList() {
 				</ul>
 				<div className='task-button'>
 					<Button onClick={onclick}
-						disabled={current !== null}
+						disabled={!error && current !== null}
 					>
 						{buttonText}
 					</Button>

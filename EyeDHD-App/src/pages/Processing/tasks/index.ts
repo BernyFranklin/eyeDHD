@@ -20,7 +20,7 @@ import { combination } from './combination';
 
 // Generate TaskName type from the keys of the tasks object in CaseData, so changes to
 // tasks in CaseData will automatically update the TaskName type and prevent mismatches.
-type TaskName = CaseData['tasks'] extends Record<infer K, boolean> ? K : never;
+export type TaskName = CaseData['tasks'] extends Record<infer K, boolean> ? K : never;
 
 export type TaskFn = (trial: CaseData, dispatch: Dispatch) => Promise<void>;
 
