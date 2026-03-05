@@ -1,11 +1,10 @@
 import { setTaskProgress } from '@src/data/features/task';
 import { Task, TaskFn } from '.';
-import RemoteStream from '@src/data/RemoteStream';
 
-const NAME = 'cleaning';
-const WAITING = 'Clean data';
-const RUNNING = 'Cleaning data...';
-const COMPLETED = 'Cleaned data';
+const NAME = 'combination';
+const WAITING = 'Combine side by side';
+const RUNNING = 'Combining side by side...';
+const COMPLETED = 'Combined side by side';
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
@@ -13,17 +12,17 @@ const delay = (ms: number) => new Promise<void>((resolve) => {
 
 const fn: TaskFn = async (trial, dispatch) => {
 	let percent = 0.0;
+	while (percent < 1.0) {
+		await delay(10);
 
-	const stream = await RemoteStream.create('Cleaning', { trial });
-	for await (const _ of stream) {
-		percent = Math.min((stream.progress.bytesRead / stream.progress.totalBytes), 1.0);
+		percent = percent + 0.01;
 		dispatch(setTaskProgress(percent));
 	}
 
 	await delay(150);
 }
 
-export const cleanTask: Task = {
+export const combination: Task = {
 	display: {
 		waiting: WAITING,
 		running: RUNNING,

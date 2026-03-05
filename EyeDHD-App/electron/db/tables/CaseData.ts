@@ -1,5 +1,5 @@
 import path from 'path';
-import type { Database } from 'better-sqlite3';
+import type { Database, Statement } from 'better-sqlite3';
 
 export default {
 	create,
@@ -13,75 +13,67 @@ export default {
 	csvOutputPath
 };
 
-// Update code to replace cleaned w/ completed, storing as a single INTEGER in
-// database and using bitwise operations to set and retrieve
+/**
+ * CaseData type represents the metadata and processing status of a CSV file in the
+ * database. It includes fields for the file's unique identifier, name, path, header
+ * information, task completion status, number of cleaned rows, and timestamps for
+ * creation and last update. The tasks field is an object that tracks the completion
+ * status of various processing tasks (cleaning, detection, visualization, animation,
+ * combination) as boolean values.
+ */
 export type CaseData = {
 	id: number;
 	name: string;
 	path: string;
 	header: string;
-	completed: {
+	tasks: {
 		cleaning: boolean;
-		detecting: boolean;
-		visualizing: boolean;
-		animating: boolean;
-		stitching: boolean;
+		detection: boolean;
+		visualization: boolean;
+		animation: boolean;
+		combination: boolean;
 	};
 	cleaned_rows: number;
 	created_at: string;
 	updated_at: string;
 };
 
-type CaseDataRow = Omit<CaseData, 'completed'> & { completed: number };
-type CaseDataInput = CaseData | CaseDataRow;
+export type CaseDataRaw = Omit<CaseData, 'tasks'> & { tasks: number };
 
-export type CaseDataUpdate = Omit<Partial<CaseData>, 'completed'> & {
-	completed?: Partial<CaseData['completed']>;
+export type CaseDataUpdate = Omit<Partial<CaseData>, 'tasks'> & {
+	tasks?: Partial<CaseData['tasks']>;
 };
 
-const COMPLETION_FLAGS = {
+const TASK_FLAGS = {
 	cleaning: 1 << 0,
-	detecting: 1 << 1,
-	visualizing: 1 << 2,
-	animating: 1 << 3,
-	stitching: 1 << 4
+	detection: 1 << 1,
+	visualization: 1 << 2,
+	animation: 1 << 3,
+	combination: 1 << 4
 } as const;
 
-function completedToFlags(completed: CaseData['completed']): number {
+function tasksToFlags(tasks: CaseData['tasks']): number {
 	let flags = 0;
-	if (completed.cleaning) flags |= COMPLETION_FLAGS.cleaning;
-	if (completed.detecting) flags |= COMPLETION_FLAGS.detecting;
-	if (completed.visualizing) flags |= COMPLETION_FLAGS.visualizing;
-	if (completed.animating) flags |= COMPLETION_FLAGS.animating;
-	if (completed.stitching) flags |= COMPLETION_FLAGS.stitching;
+	if (tasks.cleaning) flags |= TASK_FLAGS.cleaning;
+	if (tasks.detection) flags |= TASK_FLAGS.detection;
+	if (tasks.visualization) flags |= TASK_FLAGS.visualization;
+	if (tasks.animation) flags |= TASK_FLAGS.animation;
+	if (tasks.combination) flags |= TASK_FLAGS.combination;
 	return flags;
 }
 
-function flagsToCompleted(flags: number): CaseData['completed'] {
+function flagsToTasks(flags: number): CaseData['tasks'] {
 	return {
-		cleaning: (flags & COMPLETION_FLAGS.cleaning) !== 0,
-		detecting: (flags & COMPLETION_FLAGS.detecting) !== 0,
-		visualizing: (flags & COMPLETION_FLAGS.visualizing) !== 0,
-		animating: (flags & COMPLETION_FLAGS.animating) !== 0,
-		stitching: (flags & COMPLETION_FLAGS.stitching) !== 0
-	};
-}
-
-export function normalizeCaseData(row: CaseDataInput): CaseData {
-	const completed = typeof row.completed === 'number'
-		? flagsToCompleted(row.completed)
-		: row.completed;
-
-	return {
-		...row,
-		completed
+		cleaning: (flags & TASK_FLAGS.cleaning) !== 0,
+		detection: (flags & TASK_FLAGS.detection) !== 0,
+		visualization: (flags & TASK_FLAGS.visualization) !== 0,
+		animation: (flags & TASK_FLAGS.animation) !== 0,
+		combination: (flags & TASK_FLAGS.combination) !== 0
 	};
 }
 
 /**
- * Creates the CaseData table in the database if it doesn't already exist. The CaseData
- * table stores information about each CSV file, including its name, path, header,
- * completion status, number of rows, and timestamps for creation and last update.
+ * Creates the CaseData table in the database if it does not already exist.
  */
 export function createCaseDataTable(db: Database) {
 	db.prepare(`
@@ -90,7 +82,7 @@ export function createCaseDataTable(db: Database) {
 			name TEXT UNIQUE NOT NULL,
 			path TEXT NOT NULL,
 			header TEXT DEFAULT '',
-			completed INTEGER DEFAULT 0,
+			tasks INTEGER DEFAULT 0,
 			cleaned_rows INTEGER DEFAULT 0,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -119,22 +111,25 @@ function create(
 	filename: string,
 	filepath: string
 ): CaseData {
-	const result = db.prepare<[string, string], CaseDataRow>(`
+	const result = db.prepare<[string, string], CaseDataRaw>(`
 			INSERT INTO CaseData (name, path)
 			VALUES (?, ?);
 		`)
 		.run(filename, filepath);
 
-	const file = db.prepare<[number | bigint], CaseDataRow>(`
+	const trial = db.prepare<[number | bigint], CaseDataRaw>(`
 			SELECT * FROM CaseData WHERE id = ?;
 		`)
 		.get(result.lastInsertRowid);
 
-	if (!file) {
+	if (!trial) {
 		throw new Error(`Failed to create file entry for: ${filename}`);
 	}
 
-	return normalizeCaseData(file);
+	return {
+		...trial,
+		tasks: flagsToTasks(trial.tasks)
+	};
 }
 
 /**
@@ -143,16 +138,19 @@ function create(
  * data object. If no matching entry is found, it throws an error.
  */
 function read(db: Database, filename: string): CaseData {
-	const file = db.prepare<string, CaseDataRow>(`
+	const trial = db.prepare<string, CaseDataRaw>(`
 		SELECT * FROM CaseData WHERE name = ?;
 	`)
 	.get(filename);
 
-	if (!file) {
+	if (!trial) {
 		throw new Error(`File entry not found for: ${filename}`);
 	}
 
-	return normalizeCaseData(file);
+	return {
+		...trial,
+		tasks: flagsToTasks(trial.tasks)
+	};
 }
 
 /**
@@ -173,15 +171,29 @@ function exists(db: Database, filename: string): boolean {
 	return true;
 }
 
+type CaseDataIterStatement = Omit<Statement<[], CaseDataRaw>, 'iterate'> & { iterate(): IterableIterator<CaseData> };
+
 /**
  * Returns a SQL query string that selects all case data entries from the database. This is
  * used for iterating over all case data entries, such as when streaming data for all
  * files.
  */
-function iterate() {
-	return (`
+function iterate(db: Database): CaseDataIterStatement {
+	const stmt = db.prepare<[], CaseDataRaw>(`
 		SELECT * FROM CaseData;
 	`);
+	const iterateRaw = stmt.iterate.bind(stmt);
+
+	return Object.assign(stmt, {
+		iterate: function* () {
+			for (const row of iterateRaw()) {
+				yield {
+					...row,
+					tasks: flagsToTasks(row.tasks)
+				};
+			}
+		}
+	}) as CaseDataIterStatement;
 }
 
 /**
@@ -199,10 +211,10 @@ function update(
 		throw new Error('Cannot update id, name, or path fields for case data');
 	}
 
-	const { completed: completedUpdates, ...restUpdates } = updates;
-	const mergedCompleted = completedUpdates
-		? { ...trial.completed, ...completedUpdates }
-		: trial.completed;
+	const { tasks: taskUpdates, ...restUpdates } = updates;
+	const mergedTasks = taskUpdates
+		? { ...trial.tasks, ...taskUpdates }
+		: trial.tasks;
 
 	const merged: CaseData = {
 		id: trial.id,
@@ -210,19 +222,19 @@ function update(
 		path: trial.path,
 		...trial,
 		...restUpdates,
-		completed: mergedCompleted
+		tasks: mergedTasks
 	};
 
-	const payload: CaseDataRow = {
+	const payload: CaseDataRaw = {
 		...merged,
-		completed: completedToFlags(merged.completed)
+		tasks: tasksToFlags(merged.tasks)
 	};
 
 	const result = db.prepare(`
 		UPDATE CaseData
 		SET
 			header = @header,
-			completed = @completed,
+			tasks = @tasks,
 			cleaned_rows = @cleaned_rows,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = @id;

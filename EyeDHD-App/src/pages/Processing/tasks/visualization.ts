@@ -1,10 +1,10 @@
 import { setTaskProgress } from '@src/data/features/task';
 import { Task, TaskFn } from '.';
 
-const NAME = 'stitching';
-const WAITING = 'Stitch side by side';
-const RUNNING = 'Stitching side by side...';
-const COMPLETED = 'Stitched side by side';
+const NAME = 'visualization';
+const WAITING = 'Visualize data';
+const RUNNING = 'Visualizing data...';
+const COMPLETED = 'Visualized data';
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
@@ -22,7 +22,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 	await delay(150);
 }
 
-export const stitchTask: Task = {
+export const visualization: Task = {
 	display: {
 		waiting: WAITING,
 		running: RUNNING,
