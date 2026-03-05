@@ -318,20 +318,39 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
   });
 
   it("O8) Traceability invariants: sourceRowIndices length matches includedRows and is stable", () => {
-    const csvText = "TODO";
-
-    const r1 = runGazeCsvPipeline(csvText, {
-      adapter: { selection: { includeGazeStatuses: ["VALID"] } },
+    const header = [                                  // Define the required headers for the CSV input
+      "CaptureTime",
+      "GazeStatus",
+      "CombinedGazeForwardX",
+      "CombinedGazeForwardY",
+      "CombinedGazeForwardZ", 
+    ];
+    const csvText = makeCsv({                         // Create a CSV string with a mix of VALID and INVALID gaze statuses
+      header,
+      rows: [
+        { CaptureTime: 0, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 15000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+      ],
     });
+    
+    const options = {                                 // Define adapter options to include only VALID gaze statuses and order by capture time
+      adapter: {
+        ordering: "byCaptureTime",
+        selection: { includeGazeStatuses: ["VALID"] },
+       },
+    } as const;
 
-    const r2 = runGazeCsvPipeline(csvText, {
-      adapter: { selection: { includeGazeStatuses: ["VALID"] } },
-    });
+    const r1 = runGazeCsvPipeline(csvText, options);  // First run of the pipeline with the specified CSV text and options
+    const r2 = runGazeCsvPipeline(csvText, options);  // Second run of the pipeline with the same CSV text and options
 
-    expect(r1.adapter.sourceRowIndices.length).toBe(r1.adapter.diagnostics.includedRows);
-    expect(r1.adapter.sourceRowIndices).toEqual(r2.adapter.sourceRowIndices);
+    expect(r1.adapter.sourceRowIndices.length).toBe(r1.adapter.diagnostics.includedRows);  // Invariant 1: length matches includedRows
+    expect(r1.adapter.sourceRowIndices).toEqual(r2.adapter.sourceRowIndices);              // Invariant 2: stable across runs
+    expect(r1.adapter.sourceRowIndices).toEqual([0, 2]);                                   // Invariant 3: refers to original parsed row indices (0-based)
+    // With our fixture, VALID rows are at parsed rowIndex 0 and 2.
   });
-
+  
   it("O9) All rows filtered: adapter returns empty vectors and analysis is still returned deterministically", () => {
     const header = [
       "CaptureTime",
