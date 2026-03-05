@@ -387,7 +387,7 @@ ipcMain.handle('csv:reset-cleaning-progress', async (_, trial) => {
 ipcMain.handle('csv:export-data', async (_, trial: CaseData) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			if (!trial.completed?.cleaning) {
+			if (!trial.tasks.cleaning) {
 				return reject(`File: ${trial.name} hasn't been cleaned yet. Clean the file first.`);
 			}
 

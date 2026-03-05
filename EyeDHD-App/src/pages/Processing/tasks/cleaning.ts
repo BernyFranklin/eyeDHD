@@ -1,10 +1,11 @@
 import { setTaskProgress } from '@src/data/features/task';
 import { Task, TaskFn } from '.';
+import RemoteStream from '@src/data/RemoteStream';
 
-const NAME = 'detecting';
-const WAITING = 'Detect saccades';
-const RUNNING = 'Detecting saccades...';
-const COMPLETED = 'Detected saccades';
+const NAME = 'cleaning';
+const WAITING = 'Clean data';
+const RUNNING = 'Cleaning data...';
+const COMPLETED = 'Cleaned data';
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
@@ -12,21 +13,17 @@ const delay = (ms: number) => new Promise<void>((resolve) => {
 
 const fn: TaskFn = async (trial, dispatch) => {
 	let percent = 0.0;
-	while (percent < 1.0) {
-		await delay(10);
 
-		if (percent > 0.5) {
-			throw new Error('this is an error');
-		}
-
-		percent = percent + 0.01;
+	const stream = await RemoteStream.create('Cleaning', { trial });
+	for await (const _ of stream) {
+		percent = Math.min((stream.progress.bytesRead / stream.progress.totalBytes), 1.0);
 		dispatch(setTaskProgress(percent));
 	}
 
 	await delay(150);
 }
 
-export const detectTask: Task = {
+export const cleaning: Task = {
 	display: {
 		waiting: WAITING,
 		running: RUNNING,

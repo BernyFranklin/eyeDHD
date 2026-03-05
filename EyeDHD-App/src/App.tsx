@@ -7,8 +7,8 @@ import { AlertControls } from '@src/components/AlertWindow';
 
 import { CaseData } from '@src/data/types';
 import RemoteStream from '@src/data/RemoteStream';
-import { useDispatch } from '@src/data/hooks';
-import { setLoading } from '@src/data/features/global';
+import { useDispatch, useSelector } from '@src/data/hooks';
+import { selectLoading, setLoading } from '@src/data/features/global';
 import { setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 
 /**

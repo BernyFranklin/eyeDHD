@@ -1,11 +1,11 @@
+import { CaseData } from '@src/data/types';
 import { Dispatch } from '@src/data/hooks';
 
-import { cleanTask } from './clean';
-import { detectTask } from './detect';
-import { visualizeTask } from './visualize';
-import { animateTask } from './animate';
-import { stitchTask } from './stitch';
-import { CaseData } from '@src/data/types';
+import { cleaning } from './cleaning';
+import { detection } from './detection';
+import { visualization } from './visualization';
+import { animation } from './animation';
+import { combination } from './combination';
 
 /**
  * Defines the list of tasks that need to be completed to process a case, as well as the
@@ -18,23 +18,8 @@ import { CaseData } from '@src/data/types';
  * to track progress and update the UI accordingly.
  */
 
-export const TASKS = [
-	cleanTask,
-	detectTask,
-	visualizeTask,
-	animateTask,
-	stitchTask
-];
-
-export const TASKORDER = [
-	'cleaning',
-	'detecting',
-	'visualizing',
-	'animating',
-	'stitching'
-] as const;
-
-export type TaskName = typeof TASKORDER[number];
+type TaskName = CaseData['tasks'] extends Record<infer K, boolean> ? K : never;
+export type TaskFn = (trial: CaseData, dispatch: Dispatch) => Promise<void>;
 
 export type Task = {
 	display: {
@@ -46,4 +31,12 @@ export type Task = {
 	fn: TaskFn
 }
 
-export type TaskFn = (trial: CaseData, dispatch: Dispatch) => Promise<void>;
+export const TASKS = [
+	cleaning,
+	detection,
+	visualization,
+	animation,
+	combination
+] as const;
+
+export const TASKORDER = TASKS.map(task => task.name);

@@ -2,7 +2,7 @@ import fs from "fs";
 import rl from "readline";
 
 import { type TrackingData, fromCSV, toCSV } from "./tables/TrackingData";
-import metadataActions, { type CaseData, csvImportPath, csvOutputPath, normalizeCaseData } from "./tables/CaseData";
+import caseDataActions, { type CaseData, csvImportPath, csvOutputPath } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
 import DataCleaner from "@electron/analysis/DataCleaner";
 
@@ -120,12 +120,11 @@ export default class DataStream {
 	private static async *caseDataIterator(
 		manager: DatabaseManager
 	): AsyncGenerator<DataType[], void, undefined> {
-		const sql = metadataActions.iterate();
-		const stmt = manager['db'].prepare<[], CaseData>(sql);
+		const stmt = caseDataActions.iterate(manager['db']);
 
 		let batch: CaseData[] = [];
 		for (const row of stmt.iterate()) {
-			batch.push(normalizeCaseData(row));
+			batch.push(row);
 			if (batch.length >= STREAM_BATCH_SIZE) {
 				yield batch;
 				batch = [];
@@ -238,7 +237,7 @@ export default class DataStream {
 
 		self.trial = manager.actions.case.update(self.trial, {
 			cleaned_rows: cleaner.progress.currentRow,
-			completed: {
+			tasks: {
 				cleaning: true
 			}
 		});
