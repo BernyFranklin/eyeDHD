@@ -10,7 +10,8 @@
 - Saccade chart.
 - CSS Styling.
 - More complete error checking:
-	- If main.db has a selected project folder, on start check if folder is set up correctly and if error and prompt for new folder selection if not
+	- If main.db has a selected project folder, on start check if folder is set up correctly and if error and prompt for new folder selection
+	- skip task from running if it has been completed already
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
 - Custom title bar.
 - Select multiple cases and compare.
