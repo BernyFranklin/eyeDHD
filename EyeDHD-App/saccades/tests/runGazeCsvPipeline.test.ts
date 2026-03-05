@@ -287,39 +287,72 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
   });
 
   it("O7) No mutation: does not mutate options object", () => {
-    const csvText = "TODO";
+    const header = [                          // Define the required headers for the CSV input
+      "CaptureTime",
+      "GazeStatus",
+      "CombinedGazeForwardX",
+      "CombinedGazeForwardY",
+      "CombinedGazeForwardZ",
+    ];
+    const csvText = makeCsv({                 // Create a CSV string with a mix of VALID and INVALID gaze statuses to test that options are not mutated during processing.
+      header,
+      rows: [
+        { CaptureTime: 0, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+      ],  
+    });
 
-    const options = {
-      parse: { /* TODO */ },
+    const options = {                         // Define options with nested objects to verify that they are not mutated by the pipeline.
+      parse: {},
       adapter: {
-        ordering: "asParsed",
+        ordering: "byCaptureTime",
         selection: { includeGazeStatuses: ["VALID"] },
-      } as const,
-      detection: { /* TODO */ },
-    };
+      },
+      detection: {},
+    } as const;
 
-    const before = structuredClone(options);
-    runGazeCsvPipeline(csvText, options);
-    expect(options).toEqual(before);
+    const before = structuredClone(options);  // Deep clone the options object before running the pipeline to compare against after execution.
+    runGazeCsvPipeline(csvText, options);     // Run the pipeline with the specified CSV text and options
+    expect(options).toEqual(before);          // The options object should remain unchanged after the pipeline runs, confirming that there is no mutation.
   });
 
   it("O8) Traceability invariants: sourceRowIndices length matches includedRows and is stable", () => {
-    const csvText = "TODO";
-
-    const r1 = runGazeCsvPipeline(csvText, {
-      adapter: { selection: { includeGazeStatuses: ["VALID"] } },
+    const header = [                                  // Define the required headers for the CSV input
+      "CaptureTime",
+      "GazeStatus",
+      "CombinedGazeForwardX",
+      "CombinedGazeForwardY",
+      "CombinedGazeForwardZ", 
+    ];
+    const csvText = makeCsv({                         // Create a CSV string with a mix of VALID and INVALID gaze statuses
+      header,
+      rows: [
+        { CaptureTime: 0, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "VALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 15000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+      ],
     });
+    
+    const options = {                                 // Define adapter options to include only VALID gaze statuses and order by capture time
+      adapter: {
+        ordering: "byCaptureTime",
+        selection: { includeGazeStatuses: ["VALID"] },
+       },
+    } as const;
 
-    const r2 = runGazeCsvPipeline(csvText, {
-      adapter: { selection: { includeGazeStatuses: ["VALID"] } },
-    });
+    const r1 = runGazeCsvPipeline(csvText, options);  // First run of the pipeline with the specified CSV text and options
+    const r2 = runGazeCsvPipeline(csvText, options);  // Second run of the pipeline with the same CSV text and options
 
-    expect(r1.adapter.sourceRowIndices.length).toBe(r1.adapter.diagnostics.includedRows);
-    expect(r1.adapter.sourceRowIndices).toEqual(r2.adapter.sourceRowIndices);
+    expect(r1.adapter.sourceRowIndices.length).toBe(r1.adapter.diagnostics.includedRows);  // Invariant 1: length matches includedRows
+    expect(r1.adapter.sourceRowIndices).toEqual(r2.adapter.sourceRowIndices);              // Invariant 2: stable across runs
+    expect(r1.adapter.sourceRowIndices).toEqual([0, 2]);                                   // Invariant 3: refers to original parsed row indices (0-based)
+    // With our fixture, VALID rows are at parsed rowIndex 0 and 2.
   });
-
+  
   it("O9) All rows filtered: adapter returns empty vectors and analysis is still returned deterministically", () => {
-    const header = [
+    const header = [                                          // Define the required headers for the CSV input
       "CaptureTime",
       "GazeStatus",
       "CombinedGazeForwardX",
@@ -327,24 +360,23 @@ describe("Orchestrator: runGazeCsvPipeline", () => {
       "CombinedGazeForwardZ",
     ];
 
-    const csvText = makeCsv({
+    const csvText = makeCsv({                                 // Create a CSV string where all rows have INVALID gaze status, which should filter out.
       header,
       rows: [
         { CaptureTime: 0,   GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
-        { CaptureTime: 5e6, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 5000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
+        { CaptureTime: 10000000, GazeStatus: "INVALID", CombinedGazeForwardX: 0, CombinedGazeForwardY: 0, CombinedGazeForwardZ: 1 },
       ],
     });
 
-    const result = runGazeCsvPipeline(csvText, {
+    const result = runGazeCsvPipeline(csvText, {              // Run the pipeline with adapter options that filter out all rows based on gaze status
       adapter: { selection: { includeGazeStatuses: ["VALID"] } },
     });
 
-    expect(result.adapter.diagnostics.includedRows).toBe(0);
-    expect(result.adapter.sourceRowIndices).toEqual([]);
-    expect(result).toHaveProperty("analysis");
-
-    // TODO: define expected empty-input behavior for analyzeSaccadesFromVectors
-    // e.g., no saccades
-    // expect(result.analysis.detection.saccades).toEqual([]);
+    expect(result.adapter.diagnostics.includedRows).toBe(0);  // All rows should be excluded based on gaze status filter
+    expect(result.adapter.sourceRowIndices).toEqual([]);      // sourceRowIndices should be empty since no rows are included
+    expect(result.analysis).toHaveProperty("detection");      // Analysis should still be returned even if no vectors are included
+    expect(result.analysis).toHaveProperty("metrics");        // Metrics should also be returned (even if empty) to confirm that analysis step runs without input vectors
+    expect(result.analysis.detection.saccades).toEqual([]);   // No saccades should be detected with no input vectors
   });
 });
