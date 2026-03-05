@@ -1,7 +1,7 @@
 import { setTaskProgress } from '@src/data/features/task';
 import { Task, TaskFn } from '.';
 
-const NAME = 'stitch';
+const NAME = 'stitching';
 const WAITING = 'Stitch side by side';
 const RUNNING = 'Stitching side by side...';
 const COMPLETED = 'Stitched side by side';

@@ -2,7 +2,7 @@ import { setTaskProgress } from '@src/data/features/task';
 import { Task, TaskFn } from '.';
 import RemoteStream from '@src/data/RemoteStream';
 
-const NAME = 'clean';
+const NAME = 'cleaning';
 const WAITING = 'Clean data';
 const RUNNING = 'Cleaning data...';
 const COMPLETED = 'Cleaned data';

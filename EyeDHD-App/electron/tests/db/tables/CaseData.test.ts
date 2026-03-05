@@ -38,7 +38,7 @@ function compareMetadata(result: CaseData, expected: CaseData) {
 	expect(result.id).toBe(expected.id);
 	expect(result.name).toBe(expected.name);
 	expect(result.path).toBe(expected.path);
-	expect(result.cleaned).toBe(expected.cleaned);
+	expect(result.completed).toEqual(expected.completed);
 	expect(result.cleaned_rows).toBe(expected.cleaned_rows);
 }
 
@@ -68,7 +68,13 @@ describe('Database - CaseData', () => {
 				name: 'newData.csv',
 				path: '../newData.csv',
 				header: '',
-				cleaned: 0,
+				completed: {
+					cleaning: false,
+					detecting: false,
+					visualizing: false,
+					animating: false,
+					stitching: false
+				},
 				cleaned_rows: 0,
 				created_at: '',
 				updated_at: '',
@@ -89,7 +95,13 @@ describe('Database - CaseData', () => {
 				name: 'test2.csv',
 				path: 'test2.csv',
 				header: '',
-				cleaned: 0,
+				completed: {
+					cleaning: false,
+					detecting: false,
+					visualizing: false,
+					animating: false,
+					stitching: false
+				},
 				cleaned_rows: 0,
 				created_at: '',
 				updated_at: '',
@@ -108,7 +120,7 @@ describe('Database - CaseData', () => {
 			const original = metadataActions.read(db, 'test2.csv');
 			const result = metadataActions.update(db, original, {
 				header: 'a,b,c',
-				cleaned: 1,
+				completed: { cleaning: true },
 				cleaned_rows: 42,
 			});
 
@@ -118,7 +130,7 @@ describe('Database - CaseData', () => {
 			const expected: CaseData = {
 				...original,
 				header: 'a,b,c',
-				cleaned: 1,
+				completed: { ...original.completed, cleaning: true },
 				cleaned_rows: 42,
 				created_at: '',
 				updated_at: '',

@@ -7,10 +7,32 @@ import { selectCurrentTask, selectTaskProgress, setNextTask, setTaskError } from
 
 import { Task } from './tasks/index';
 import { selectSelectedCase } from '@src/data/features/user';
+import { CaseData } from '@src/data/types';
 
 type Props = {
 	task: Task
 };
+
+const getCompletion = (task: Task, trial: CaseData | null) => {
+	if (!trial?.completed) {
+		return false;
+	}
+
+	switch (task.name) {
+		case 'cleaning':
+			return trial.completed.cleaning;
+		case 'detecting':
+			return trial.completed.detecting;
+		case 'visualizing':
+			return trial.completed.visualizing;
+		case 'animating':
+			return trial.completed.animating;
+		case 'stitching':
+			return trial.completed.stitching;
+		default:
+			return false;
+	}
+}
 
 /**
  * Component for displaying the status of an individual task, including progress and
@@ -21,12 +43,13 @@ type Props = {
 export default function TaskItem({ task }: Props) {
 	const dispatch = useDispatch();
 	const trial = useSelector(selectSelectedCase);
+	console.log('rendering task item', task.name, getCompletion(task, trial));
 	const current = useSelector(selectCurrentTask);
 	const progress = useSelector(selectTaskProgress);
 
 	const [active, setActive] = useState(false);
 	const [failed, setFailed] = useState(false);
-	const [complete, setComplete] = useState(false);
+	const [complete, setComplete] = useState(getCompletion(task, trial));
 
 	const handleError = (err: Error) => {
 		setFailed(true);
@@ -35,23 +58,44 @@ export default function TaskItem({ task }: Props) {
 	}
 
 	useEffect(() => {
-		if (current === task.name) {
-			setActive(true);
-			task.fn(trial, dispatch)
-				.then(() => {
-					setActive(false);
-					setComplete(true);
-					dispatch(setNextTask());
-				})
-				.catch(handleError);
+		setComplete(getCompletion(task, trial));
+	}, [task.name, trial]);
+
+	useEffect(() => {
+		setActive(false);
+		setFailed(false);
+	}, [trial?.id]);
+
+	useEffect(() => {
+		if (!trial) {
+			return;
 		}
-	}, [current]);
+		if (current !== task.name) {
+			return;
+		}
+
+		if (getCompletion(task, trial)) {
+			setComplete(true);
+			setActive(false);
+			dispatch(setNextTask());
+			return;
+		}
+
+		setActive(true);
+		task.fn(trial, dispatch)
+			.then(() => {
+				setActive(false);
+				setComplete(true);
+				dispatch(setNextTask());
+			})
+			.catch(handleError);
+	}, [current, task.name, trial]);
 
 	const getTaskName = () => {
-		if (current === task.name) {
-			return task.display.running;
-		} else if (complete) {
+		if (complete) {
 			return task.display.completed;
+		} else if (current === task.name) {
+			return task.display.running;
 		}
 		return task.display.waiting;
 	}

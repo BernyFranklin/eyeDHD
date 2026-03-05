@@ -27,13 +27,11 @@ export const TASKS = [
 ];
 
 export const TASKORDER = [
-	'none',
-	'clean',
-	'detect',
-	'visualize',
-	'animate',
-	'stitch',
-	'complete'
+	'cleaning',
+	'detecting',
+	'visualizing',
+	'animating',
+	'stitching'
 ] as const;
 
 export type TaskName = typeof TASKORDER[number];

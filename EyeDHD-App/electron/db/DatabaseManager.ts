@@ -17,11 +17,15 @@ type UserActions = {
 	update: (user: UserData, updates: Partial<UserData>) => UserData;
 }
 
+type CaseDataUpdate = Omit<Partial<CaseData>, 'completed'> & {
+	completed?: Partial<CaseData['completed']>;
+};
+
 type CaseDataActions = {
 	create: (filename: string, filepath: string) => CaseData;
 	read: (filename: string) => CaseData;
 	exists: (filename: string) => boolean;
-	update: (trial: CaseData, updates: Partial<CaseData>) => CaseData;
+	update: (trial: CaseData, updates: CaseDataUpdate) => CaseData;
 	resetCleaning: (trial: CaseData) => CaseData;
 	remove: (trial: CaseData) => CaseData;
 };
@@ -58,7 +62,7 @@ export default class DatabaseManager {
 				create: (filename: string, filepath: string) => caseActions.create(this.db, filename, filepath),
 				exists: (filename: string) => caseActions.exists(this.db, filename),
 				read: (filename: string) => caseActions.read(this.db, filename),
-				update: (trial: CaseData, updates: Partial<CaseData>) => caseActions.update(this.db, trial, updates),
+				update: (trial: CaseData, updates: CaseDataUpdate) => caseActions.update(this.db, trial, updates),
 				resetCleaning: (trial: CaseData) => {
 					const cleanedPath = csvOutputPath(trial);
 					if (fs.existsSync(cleanedPath)) {
@@ -66,8 +70,8 @@ export default class DatabaseManager {
 					}
 
 					return caseActions.update(this.db, trial, {
-						cleaned: 0,
-						cleaned_rows: 0
+						cleaned_rows: 0,
+						completed: { cleaning: false }
 					});
 				},
 				remove: (trial: CaseData) => caseActions.remove(this.db, trial)

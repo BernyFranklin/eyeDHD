@@ -1,7 +1,7 @@
 import { setTaskProgress } from '@src/data/features/task';
 import { Task, TaskFn } from '.';
 
-const NAME = 'visualize';
+const NAME = 'visualizing';
 const WAITING = 'Visualize data';
 const RUNNING = 'Visualizing data...';
 const COMPLETED = 'Visualized data';

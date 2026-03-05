@@ -4,13 +4,13 @@ import type { RootState } from '..'
 import { TASKORDER, type TaskName } from '@src/pages/Processing/tasks';
 
 type TaskState = {
-	current: TaskName,
+	current?: TaskName | 'complete',
 	progress: number,
 	error?: Error
 }
 
 const initialState: TaskState = {
-	current: TASKORDER[0],
+	current: null,
 	progress: 0.0
 };
 
@@ -23,12 +23,15 @@ export const taskSlice = createSlice({
 	initialState,
 	reducers: {
 		initializeTask: (state) => {
-			state.current = TASKORDER[0];
+			state.current = null;
 			state.progress = 0.0;
 			state.error = null;
 		},
 		setNextTask: (state) => {
-			const index = TASKORDER.indexOf(state.current) + 1;
+			if (state.current === 'complete') {
+				return;
+			}
+			const index = TASKORDER.indexOf(state.current as TaskName) + 1;
 			const next = TASKORDER[index];
 			if (next) {
 				state.current = next;
