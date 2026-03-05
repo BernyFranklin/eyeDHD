@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { type Database } from 'better-sqlite3';
 
 import { getDB } from '../../../db/DatabaseManager';
-import metadataActions, { createCaseDataTable, type CaseData } from '../../../db/tables/CaseData';
+import caseDataActions, { createCaseDataTable, type CaseData } from '../../../db/tables/CaseData';
 
 type SeededDb = {
 	db: Database;
@@ -38,7 +38,7 @@ function compareMetadata(result: CaseData, expected: CaseData) {
 	expect(result.id).toBe(expected.id);
 	expect(result.name).toBe(expected.name);
 	expect(result.path).toBe(expected.path);
-	expect(result.completed).toEqual(expected.completed);
+	expect(result.tasks).toEqual(expected.tasks);
 	expect(result.cleaned_rows).toBe(expected.cleaned_rows);
 }
 
@@ -68,19 +68,19 @@ describe('Database - CaseData', () => {
 				name: 'newData.csv',
 				path: '../newData.csv',
 				header: '',
-				completed: {
+				tasks: {
 					cleaning: false,
-					detecting: false,
-					visualizing: false,
-					animating: false,
-					stitching: false
+					detection: false,
+					visualization: false,
+					animation: false,
+					combination: false
 				},
 				cleaned_rows: 0,
 				created_at: '',
 				updated_at: '',
 			};
 
-			const result = metadataActions.create(db, expected.name, expected.path);
+			const result = caseDataActions.create(db, expected.name, expected.path);
 			expect(result).not.toBeNull();
 
 			compareMetadata(result as CaseData, expected);
@@ -95,19 +95,19 @@ describe('Database - CaseData', () => {
 				name: 'test2.csv',
 				path: 'test2.csv',
 				header: '',
-				completed: {
+				tasks: {
 					cleaning: false,
-					detecting: false,
-					visualizing: false,
-					animating: false,
-					stitching: false
+					detection: false,
+					visualization: false,
+					animation: false,
+					combination: false
 				},
 				cleaned_rows: 0,
 				created_at: '',
 				updated_at: '',
 			};
 
-			const result = metadataActions.read(db, 'test2.csv');
+			const result = caseDataActions.read(db, 'test2.csv');
 			expect(result).not.toBeNull();
 
 			compareMetadata(result as CaseData, expected);
@@ -117,10 +117,10 @@ describe('Database - CaseData', () => {
 		it('B3) Updates a CaseData row', () => {
 			const { db, cleanup } = seedCaseDataDb();
 
-			const original = metadataActions.read(db, 'test2.csv');
-			const result = metadataActions.update(db, original, {
+			const original = caseDataActions.read(db, 'test2.csv');
+			const result = caseDataActions.update(db, original, {
 				header: 'a,b,c',
-				completed: { cleaning: true },
+				tasks: { cleaning: true },
 				cleaned_rows: 42,
 			});
 
@@ -130,7 +130,7 @@ describe('Database - CaseData', () => {
 			const expected: CaseData = {
 				...original,
 				header: 'a,b,c',
-				completed: { ...original.completed, cleaning: true },
+				tasks: { ...original.tasks, cleaning: true },
 				cleaned_rows: 42,
 				created_at: '',
 				updated_at: '',
@@ -143,13 +143,13 @@ describe('Database - CaseData', () => {
 		it('B4) Removes a CaseData row', () => {
 			const { db, cleanup } = seedCaseDataDb();
 
-			const file = metadataActions.read(db, 'test3.csv');
-			const result = metadataActions.remove(db, file);
+			const file = caseDataActions.read(db, 'test3.csv');
+			const result = caseDataActions.remove(db, file);
 
 			expect(result).not.toBeNull();
 			compareMetadata(result as CaseData, file);
 
-			expect(() => metadataActions.read(db, 'test3.csv')).toThrow();
+			expect(() => caseDataActions.read(db, 'test3.csv')).toThrow();
 			cleanup();
 		});
 	});

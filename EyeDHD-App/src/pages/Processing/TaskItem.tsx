@@ -13,25 +13,8 @@ type Props = {
 	task: Task
 };
 
-const getCompletion = (task: Task, trial: CaseData | null) => {
-	if (!trial?.completed) {
-		return false;
-	}
-
-	switch (task.name) {
-		case 'cleaning':
-			return trial.completed.cleaning;
-		case 'detecting':
-			return trial.completed.detecting;
-		case 'visualizing':
-			return trial.completed.visualizing;
-		case 'animating':
-			return trial.completed.animating;
-		case 'stitching':
-			return trial.completed.stitching;
-		default:
-			return false;
-	}
+const getSavedStatus = (task: Task, trial: CaseData) => {
+	return Boolean(trial.tasks[task.name]);
 }
 
 /**
@@ -43,13 +26,12 @@ const getCompletion = (task: Task, trial: CaseData | null) => {
 export default function TaskItem({ task }: Props) {
 	const dispatch = useDispatch();
 	const trial = useSelector(selectSelectedCase);
-	console.log('rendering task item', task.name, getCompletion(task, trial));
 	const current = useSelector(selectCurrentTask);
 	const progress = useSelector(selectTaskProgress);
 
 	const [active, setActive] = useState(false);
 	const [failed, setFailed] = useState(false);
-	const [complete, setComplete] = useState(getCompletion(task, trial));
+	const [complete, setComplete] = useState(getSavedStatus(task, trial));
 
 	const handleError = (err: Error) => {
 		setFailed(true);
@@ -58,23 +40,20 @@ export default function TaskItem({ task }: Props) {
 	}
 
 	useEffect(() => {
-		setComplete(getCompletion(task, trial));
+		setComplete(getSavedStatus(task, trial));
 	}, [task.name, trial]);
 
 	useEffect(() => {
 		setActive(false);
 		setFailed(false);
-	}, [trial?.id]);
+	}, [trial.id]);
 
 	useEffect(() => {
-		if (!trial) {
-			return;
-		}
 		if (current !== task.name) {
 			return;
 		}
 
-		if (getCompletion(task, trial)) {
+		if (getSavedStatus(task, trial)) {
 			setComplete(true);
 			setActive(false);
 			dispatch(setNextTask());

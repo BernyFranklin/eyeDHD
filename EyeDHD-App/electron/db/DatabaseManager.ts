@@ -2,7 +2,7 @@ import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
-import caseActions, { type CaseData, csvOutputPath, createCaseDataTable } from './tables/CaseData';
+import caseDataActions, { type CaseData, type CaseDataUpdate, csvOutputPath, createCaseDataTable } from './tables/CaseData';
 
 import userActions, { type UserData, createUserTable } from './tables/UserData';
 
@@ -16,10 +16,6 @@ type UserActions = {
 	read: () => UserData;
 	update: (user: UserData, updates: Partial<UserData>) => UserData;
 }
-
-type CaseDataUpdate = Omit<Partial<CaseData>, 'completed'> & {
-	completed?: Partial<CaseData['completed']>;
-};
 
 type CaseDataActions = {
 	create: (filename: string, filepath: string) => CaseData;
@@ -59,22 +55,22 @@ export default class DatabaseManager {
 
 		this.actions = {
 			case: {
-				create: (filename: string, filepath: string) => caseActions.create(this.db, filename, filepath),
-				exists: (filename: string) => caseActions.exists(this.db, filename),
-				read: (filename: string) => caseActions.read(this.db, filename),
-				update: (trial: CaseData, updates: CaseDataUpdate) => caseActions.update(this.db, trial, updates),
+				create: (filename: string, filepath: string) => caseDataActions.create(this.db, filename, filepath),
+				exists: (filename: string) => caseDataActions.exists(this.db, filename),
+				read: (filename: string) => caseDataActions.read(this.db, filename),
+				update: (trial: CaseData, updates: CaseDataUpdate) => caseDataActions.update(this.db, trial, updates),
 				resetCleaning: (trial: CaseData) => {
 					const cleanedPath = csvOutputPath(trial);
 					if (fs.existsSync(cleanedPath)) {
 						fs.unlinkSync(cleanedPath);
 					}
 
-					return caseActions.update(this.db, trial, {
+					return caseDataActions.update(this.db, trial, {
 						cleaned_rows: 0,
-						completed: { cleaning: false }
+						tasks: { cleaning: false }
 					});
 				},
-				remove: (trial: CaseData) => caseActions.remove(this.db, trial)
+				remove: (trial: CaseData) => caseDataActions.remove(this.db, trial)
 			},
 
 			user: {
@@ -106,10 +102,10 @@ export default class DatabaseManager {
 	 */
 	createCase(filename: string, filepath: string): CaseData {
 		if (this.actions.case.exists(filename)) {
-			return caseActions.read(this.db, filename);
+			return caseDataActions.read(this.db, filename);
 		}
 
-		const trial = caseActions.create(this.db, filename, filepath);
+		const trial = caseDataActions.create(this.db, filename, filepath);
 
 		return trial;
 	}

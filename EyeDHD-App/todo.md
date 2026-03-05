@@ -10,14 +10,18 @@
 - Saccade chart.
 - CSS Styling.
 - More complete error checking:
-	- If main.db has a selected project folder, on start check if folder is set up correctly and if error and prompt for new folder selection
-	- skip task from running if it has been completed already
+	- If main.db has a selected project folder, on start check if folder is set up correctly and if not tell user and prompt for new folder selection
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
 - Custom title bar.
 - Select multiple cases and compare.
 - Add ability to switch project folders.
 - Keep track of task completion in the CaseData table.
-- Update backend tests that are failing now.
+- Add a clear project option.
+- Make Login window a full page and have welcome text.
+- Add description text to each page.
+- Adjust loading overlay to have an (spinning?) animation using the `images/eyedhd-logo-transparent.png`.
+- Show loading animation on app startup.
+- Add the app name to the Navbar / Titlebar.
 
 Project folder example:
 
