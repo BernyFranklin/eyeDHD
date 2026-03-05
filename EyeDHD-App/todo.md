@@ -1,7 +1,7 @@
 # UI / Backend TODO List
 
 ## Need to be done now
-- Add functionality to the tasks.
+- Add functionality to the animate and side-by-side tasks.
 
 ## Things / Ideas for later
 - Estimated time until all tasks complete.

@@ -73,6 +73,11 @@ export default function AlertWindow() {
 
 					}
 
+					.alert-window p {
+						white-space: pre-line;
+						text-align: left;
+					}
+
 					.alert-window.green {
 						background-color: #d4edda;
 						color: #155724;

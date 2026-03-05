@@ -41,9 +41,10 @@ export default function TaskSuite() {
 		if (error) {
 			setButtonText('Failed! Try again');
 			AlertControls.error(`
-				Task ${current.toUpperCase()} had an error:
+				An unexpected error occurred during ${current.toUpperCase()}:
+
 				${error.message}
-			`);
+			`.trim());
 			return;
 		}
 

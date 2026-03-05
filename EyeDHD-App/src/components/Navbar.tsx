@@ -39,10 +39,15 @@ export default function Navbar() {
 				</div>
 			</span>
 			<style>{`
+				:root {
+					--navbar-height: 80px;
+				}
+
 				.navbar {
 					background-color: #b1102b;
 					margin: 0;
-					padding: 10px 20px;
+					height: var(--navbar-height);
+					padding: 0 20px;
 					display: flex;
 					align-items: center;
 					justify-content: space-between;
