@@ -134,7 +134,7 @@ export default function Login() {
 							Welcome to EyeDHD.
 
 							This is a short introduction area for your app. You can replace this paragraph with a richer overview, quick start steps, or helpful tips for first-time users.
-						`}
+						`.trim()}
 						readOnly
 					/>
 				</div>
@@ -224,7 +224,7 @@ export default function Login() {
 						box-sizing: border-box;
 						text-align: center;
 						text-align-vertical: center;
-						font-size: 36px;
+						font-size: 32px;
 						color: #333;
 						line-height: 1.5;
 					}
