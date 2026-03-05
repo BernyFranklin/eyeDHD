@@ -6,7 +6,7 @@ import { type CaseData } from "@src/data/types";
 import RemoteStream from "@src/data/RemoteStream";
 
 type Props = {
-	file: CaseData;
+	trial: CaseData;
 	csvStream: RemoteStream;
 	setCsvStream: React.Dispatch<React.SetStateAction<RemoteStream | null>>;
 };
@@ -59,7 +59,7 @@ export default function CanvasRecorder(props: Props) {
 		recorder.onstop = () => {
 			const blob = new Blob(chunksRef.current, { type: mimeType })
 
-			const name = props.file.name;
+			const name = props.trial.name;
 
 			const url = URL.createObjectURL(blob);
 			const anchor = document.createElement('a');

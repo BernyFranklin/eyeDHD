@@ -22,6 +22,7 @@
 - Adjust loading overlay to have an (spinning?) animation using the `images/eyedhd-logo-transparent.png`.
 - Show loading animation on app startup.
 - Add the app name to the Navbar / Titlebar.
+- Add percentage to progress circle.
 
 Project folder example:
 
