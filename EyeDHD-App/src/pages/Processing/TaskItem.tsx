@@ -37,7 +37,11 @@ export default function TaskItem({ task }: Props) {
 	const handleError = (err: Error) => {
 		setFailed(true);
 		setActive(false);
-		dispatch(setTaskError(err));
+		dispatch(setTaskError({
+			message: err.message,
+			name: err.name,
+			stack: err.stack
+		}));
 	}
 
 	const getTaskName = () => {
