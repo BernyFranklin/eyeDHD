@@ -4,12 +4,13 @@ import { Task, TaskFn } from '.';
 const NAME = 'stitch';
 const WAITING = 'Stitch side by side';
 const RUNNING = 'Stitching side by side...';
+const COMPLETED = 'Stitched side by side';
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
 });
 
-const fn: TaskFn = async (dispatch) => {
+const fn: TaskFn = async (trial, dispatch) => {
 	let percent = 0.0;
 	while (percent < 1.0) {
 		await delay(10);
@@ -22,7 +23,11 @@ const fn: TaskFn = async (dispatch) => {
 }
 
 export const stitchTask: Task = {
-	display: { waiting: WAITING, running: RUNNING },
+	display: {
+		waiting: WAITING,
+		running: RUNNING,
+		completed: COMPLETED
+	},
 	name: NAME,
 	fn
 }

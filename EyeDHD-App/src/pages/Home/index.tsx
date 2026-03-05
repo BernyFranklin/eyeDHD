@@ -10,6 +10,7 @@ import { type CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
 import { selectCases, setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 import { useNavigate } from 'react-router';
+import { FilePlusCorner } from 'lucide-react';
 
 /**
  * Home page of the app, shows list of cases and allows user to create new cases
@@ -24,7 +25,7 @@ export default function Home() {
 	const [showCreateCase, setShowCreateCase] = useState(false);
 
 	const handleError = (err: Error) => {
-		AlertControls.show(`Error: ${err.message}`, 'red');
+		AlertControls.error(`Error: ${err.message}`);
 	};
 
 	const refresh = async () => {
@@ -36,7 +37,9 @@ export default function Home() {
 			dispatch(setProjectInitialized(!!user.project_initialized));
 
 			if (!user.dir || !user.project_initialized) {
-				AlertControls.show('Project directory not set or initialized, please select a project directory.', 'red');
+				AlertControls.error(
+					'Project directory not set or initialized, please select a project directory.'
+				);
 
 				navigate('/');
 				return;
@@ -73,9 +76,8 @@ export default function Home() {
 							onClick={() => setShowCreateCase(true)}
 							height='45px'
 							width='45px'
-							padding='10px 16px'
 						>
-							+
+							<FilePlusCorner size={30} strokeWidth={2} />
 						</Button>
 					</div>
 				</div>

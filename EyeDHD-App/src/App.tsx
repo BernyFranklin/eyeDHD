@@ -20,7 +20,7 @@ function App() {
 	const dispatch = useDispatch();
 
 	const handleError = (err: Error) => {
-		AlertControls.show(`Error: ${err.message}`, 'red');
+		AlertControls.error(`Error: ${err.message}`);
 	};
 
 	const loadUserData = async () => {

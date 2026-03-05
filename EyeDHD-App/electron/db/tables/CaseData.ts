@@ -136,16 +136,16 @@ function iterate() {
  * updates the corresponding row in the CaseData table. It returns the updated case data
  * object. If the update fails, it throws an error.
  */
-function update(db: Database, file: CaseData, updates: Partial<CaseData>): CaseData {
+function update(db: Database, trial: CaseData, updates: Partial<CaseData>): CaseData {
 	if (updates.id !== undefined || updates.name !== undefined || updates.path !== undefined) {
 		throw new Error('Cannot update id, name, or path fields for case data');
 	}
 
 	const merged: CaseData = {
-		id: file.id,
-		name: file.name,
-		path: file.path,
-		...file,
+		id: trial.id,
+		name: trial.name,
+		path: trial.path,
+		...trial,
 		...updates
 	};
 
@@ -161,10 +161,10 @@ function update(db: Database, file: CaseData, updates: Partial<CaseData>): CaseD
 	.run(merged);
 
 	if (!result.changes) {
-		throw new Error(`Failed to update file entry for: ${file.name}`);
+		throw new Error(`Failed to update file entry for: ${trial.name}`);
 	}
 
-	return read(db, file.name);
+	return read(db, trial.name);
 }
 
 /**
@@ -173,10 +173,10 @@ function update(db: Database, file: CaseData, updates: Partial<CaseData>): CaseD
  * the CaseData table. It returns the original case data object that was removed. If the
  * deletion fails, it throws an error.
  */
-function remove(db: Database, file: CaseData): CaseData {
-	const original = read(db, file.name);
+function remove(db: Database, trial: CaseData): CaseData {
+	const original = read(db, trial.name);
 	if (original === null) {
-		throw new Error(`File entry not found for deletion: ${file.name}`);
+		throw new Error(`File entry not found for deletion: ${trial.name}`);
 	}
 
 	const result = db.prepare(`
@@ -186,26 +186,26 @@ function remove(db: Database, file: CaseData): CaseData {
 		.run(original.id);
 
 	if (!result.changes) {
-		throw new Error(`Failed to delete file entry for: ${file.name}`);
+		throw new Error(`Failed to delete file entry for: ${trial.name}`);
 	}
 
 	return original;
 }
 
-export function caseBaseName(file: CaseData): string {
-	const lowerName = file.name.toLowerCase();
+export function caseBaseName(trial: CaseData): string {
+	const lowerName = trial.name.toLowerCase();
 	if (lowerName.endsWith('.csv')) {
-		return file.name.slice(0, -4);
+		return trial.name.slice(0, -4);
 	}
-	return file.name;
+	return trial.name;
 }
 
-export function csvImportPath(file: CaseData): string {
-	const baseName = caseBaseName(file);
-	return path.join(file.path, 'imports', `${baseName}.csv`);
+export function csvImportPath(trial: CaseData): string {
+	const baseName = caseBaseName(trial);
+	return path.join(trial.path, 'imports', `${baseName}.csv`);
 }
 
-export function csvOutputPath(file: CaseData): string {
-	const baseName = caseBaseName(file);
-	return path.join(file.path, 'outputs', `${baseName}_Cleaned.csv`);
+export function csvOutputPath(trial: CaseData): string {
+	const baseName = caseBaseName(trial);
+	return path.join(trial.path, 'outputs', `${baseName}_Cleaned.csv`);
 }

@@ -1,13 +1,21 @@
 import React, { useEffect, useState } from "react";
 
+import { Button } from "@src/components";
 import { AlertControls } from "@src/components/AlertWindow";
+
 import { useDispatch, useSelector } from "@src/data/hooks";
 import { selectCurrentTask, initializeTask, setNextTask, selectTaskError } from "@src/data/features/task";
 
 import { TASKS } from './tasks';
 import TaskItem from "./TaskItem";
-import { Button } from "@src/components";
 
+/**
+ * Component for displaying the list of tasks that need to be completed to process a case,
+ * as well as a button to start processing.
+ *
+ * Listens to changes in the current task and updates the button text and error states
+ * accordingly.
+ */
 export default function TaskList() {
 	const dispatch = useDispatch();
 	const current = useSelector(selectCurrentTask);
@@ -25,10 +33,11 @@ export default function TaskList() {
 
 	useEffect(() => {
 		if (error) {
-			AlertControls.show(
-				`Task ${current} had an error: ${error.message}`,
-				'red'
-			);
+			setButtonText('Processing failed!');
+			AlertControls.error(`
+				Task ${current.toUpperCase()} had an error:
+				${error.message}
+			`);
 			return;
 		}
 

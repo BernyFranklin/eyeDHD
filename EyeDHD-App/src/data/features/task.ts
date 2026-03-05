@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 import type { RootState } from '..'
-import { TASKORDER, type TaskName } from '@src/pages/CaseViewer/tasks';
+import { TASKORDER, type TaskName } from '@src/pages/Processing/tasks';
 
 type TaskState = {
 	current: TaskName,
@@ -15,11 +15,8 @@ const initialState: TaskState = {
 };
 
 /**
- * Redux slice for global app state, including things like button disabled states and
- * alerts.
- *
- * Provides actions for setting these values and selectors for accessing them from
- * components.
+ * Slice for managing the state of the current task being processed, including progress
+ * and error handling.
  */
 export const taskSlice = createSlice({
 	name: 'task',

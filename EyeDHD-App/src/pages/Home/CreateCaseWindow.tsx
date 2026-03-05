@@ -60,18 +60,12 @@ export default function CreateCaseWindow(props: Props) {
 			setCasename(getCasename(filepath));
 			setCsvStatus('success');
 		} catch (err) {
-			AlertControls.show(`Error selecting CSV: ${err.message}`, 'red');
+			AlertControls.error(`Error selecting CSV: ${err.message}`);
 		}
 	};
 
 	const handleConfirm = async () => {
 		const trimmedName = casename.trim();
-
-		if (!csvLabel) {
-			AlertControls.show('Please select a CSV file before confirming.', 'red');
-
-			return;
-		}
 
 		try {
 			setIsSubmitting(true);
@@ -96,9 +90,9 @@ export default function CreateCaseWindow(props: Props) {
 			props.onClose();
 			setIsSubmitting(false);
 
-			navigate('/case');
+			navigate('/processing');
 		} catch (err) {
-			AlertControls.show(`Error creating case: ${err.message}`, 'red');
+			AlertControls.error(`Error creating case: ${err.message}`);
 
 			setIsSubmitting(false);
 		}

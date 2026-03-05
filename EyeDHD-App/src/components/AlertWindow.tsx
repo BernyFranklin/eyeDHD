@@ -9,8 +9,11 @@ import { selectAlert, hideAlert, showAlert } from '@src/data/features/global';
 const AUTO_DISMISS_MS = 4000;
 
 export const AlertControls = {
-	show: (message: string, color: 'green' | 'red' = 'green') => {
-		store.dispatch(showAlert({ message, color }));
+	error: (message: string) => {
+		store.dispatch(showAlert({ message, color: 'red' }));
+	},
+	success: (message: string) => {
+		store.dispatch(showAlert({ message, color: 'green' }));
 	}
 }
 
@@ -42,59 +45,63 @@ export default function AlertWindow() {
 	}
 
 	return (
-		<div
-			key={alert.key}
-			className={`alert-window ${alert.color}`}
-			onAnimationEnd={() => {
-				if (alert.color === 'green') {
-					dispatch(hideAlert());
-				}
-			}}
-		>
-			<p>{alert.message}</p>
-			<Button onClick={() => dispatch(hideAlert())}>Close</Button>
-			<style>{`
-				.alert-window {
-					margin-top: 0;
-					padding: 1rem;
-					border: 1px solid;
-					border-radius: var(--action-radius);
-					position: fixed;
-					top: 102px;
-					right: 14px;
-					z-index: 10000;
-					pointer-events: auto;
-
-				}
-
-				.alert-window.green {
-					background-color: #d4edda;
-					color: #155724;
-					border-color: 1px solid #c3e6cb;
-					animation: fadeInOut 4s ease-in-out forwards;
-				}
-
-				.alert-window.red {
-					background-color: #f8d7da;
-					color: #721c24;
-					border-color: 1px solid #f5c6cb;
-				}
-
-				@keyframes fadeInOut {
-					0% {
-						opacity: 0;
+		<>
+			<div
+				key={alert.key}
+				className={`alert-window ${alert.color}`}
+				onAnimationEnd={() => {
+					if (alert.color === 'green') {
+						dispatch(hideAlert());
 					}
-					10% {
-						opacity: 1;
+				}}
+			>
+				<p>{alert.message}</p>
+				<Button onClick={() => dispatch(hideAlert())}>Close</Button>
+			</div>
+			<style>
+				{`
+					.alert-window {
+						margin-top: 0;
+						padding: 1rem;
+						border: 1px solid;
+						border-radius: var(--action-radius);
+						position: fixed;
+						top: 102px;
+						right: 14px;
+						z-index: 10000;
+						pointer-events: auto;
+
 					}
-					90% {
-						opacity: 1;
+
+					.alert-window.green {
+						background-color: #d4edda;
+						color: #155724;
+						border-color: 1px solid #c3e6cb;
+						animation: fadeInOut 4s ease-in-out forwards;
 					}
-					100% {
-						opacity: 0;
+
+					.alert-window.red {
+						background-color: #f8d7da;
+						color: #721c24;
+						border-color: 1px solid #f5c6cb;
 					}
-				}
-			`}</style>
-		</div>
+
+					@keyframes fadeInOut {
+						0% {
+							opacity: 0;
+						}
+						10% {
+							opacity: 1;
+						}
+						90% {
+							opacity: 1;
+						}
+						100% {
+							opacity: 0;
+						}
+					}
+				`}
+			</style>
+		</>
 	);
 }

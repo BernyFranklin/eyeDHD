@@ -1,9 +1,8 @@
 import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
-import DataCleaner from '../analysis/DataCleaner';
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
-import caseActions, { type CaseData, csvImportPath, csvOutputPath, createCaseDataTable } from './tables/CaseData';
+import caseActions, { type CaseData, csvOutputPath, createCaseDataTable } from './tables/CaseData';
 
 import userActions, { type UserData, createUserTable } from './tables/UserData';
 
@@ -22,12 +21,10 @@ type CaseDataActions = {
 	create: (filename: string, filepath: string) => CaseData;
 	read: (filename: string) => CaseData;
 	exists: (filename: string) => boolean;
-	update: (file: CaseData, updates: Partial<CaseData>) => CaseData;
-	resetCleaning: (file: CaseData) => CaseData;
-	remove: (file: CaseData) => CaseData;
+	update: (trial: CaseData, updates: Partial<CaseData>) => CaseData;
+	resetCleaning: (trial: CaseData) => CaseData;
+	remove: (trial: CaseData) => CaseData;
 };
-
-
 
 /**
  * DatabaseManager class that manages the SQLite database connection, provides methods
@@ -39,7 +36,6 @@ type CaseDataActions = {
  */
 export default class DatabaseManager {
 	private db: Database;
-	private cleaners = new Map<string, DataCleaner>();
 	private streams = new Map<number, DataStream>();
 
 	actions: {
@@ -62,20 +58,19 @@ export default class DatabaseManager {
 				create: (filename: string, filepath: string) => caseActions.create(this.db, filename, filepath),
 				exists: (filename: string) => caseActions.exists(this.db, filename),
 				read: (filename: string) => caseActions.read(this.db, filename),
-				update: (file: CaseData, updates: Partial<CaseData>) => caseActions.update(this.db, file, updates),
-				resetCleaning: (file: CaseData) => {
-					this.resetCleaner(file);
-					const cleanedPath = csvOutputPath(file);
+				update: (trial: CaseData, updates: Partial<CaseData>) => caseActions.update(this.db, trial, updates),
+				resetCleaning: (trial: CaseData) => {
+					const cleanedPath = csvOutputPath(trial);
 					if (fs.existsSync(cleanedPath)) {
 						fs.unlinkSync(cleanedPath);
 					}
 
-					return caseActions.update(this.db, file, {
+					return caseActions.update(this.db, trial, {
 						cleaned: 0,
 						cleaned_rows: 0
 					});
 				},
-				remove: (file: CaseData) => caseActions.remove(this.db, file)
+				remove: (trial: CaseData) => caseActions.remove(this.db, trial)
 			},
 
 			user: {
@@ -97,11 +92,6 @@ export default class DatabaseManager {
 			this.streams.delete(key);
 		}
 
-		for (const cleaner of this.cleaners.values()) {
-			cleaner.close();
-		}
-		this.cleaners.clear();
-
 		this.db.close();
 	}
 
@@ -115,34 +105,9 @@ export default class DatabaseManager {
 			return caseActions.read(this.db, filename);
 		}
 
-		const casedata = caseActions.create(this.db, filename, filepath);
+		const trial = caseActions.create(this.db, filename, filepath);
 
-		return casedata;
-	}
-
-	/**
-	 * Creates a new DataCleaner instance for the specified file and stores it in the
-	 * cleaners map.
-	 */
-	private createCleaner(file: CaseData) {
-		const cleaner = new DataCleaner({ path: csvImportPath(file) });
-		this.cleaners.set(file.name, cleaner);
-	}
-
-	/**
-	 * Resets the DataCleaner for the specified file by deleting the existing cleaner and
-	 * creating a new one. This is used when the cleaning progress is reset for a file.
-	 */
-	private resetCleaner(file: CaseData) {
-		this.cleaners.delete(file.name);
-		this.createCleaner(file);
-	}
-
-	/**
-	 * Retrieves the DataCleaner instance for the specified file from the cleaners map.
-	 */
-	getCleaner(file: CaseData): DataCleaner {
-		return this.cleaners.get(file.name);
+		return trial;
 	}
 
 	/**
@@ -150,8 +115,12 @@ export default class DatabaseManager {
 	 * It creates a new DataStream instance, stores it in the streams map with a unique
 	 * key, and returns the key to the caller for future reference.
 	 */
-	async startStream(type: StreamType, file?: CaseData): Promise<StreamKey> {
-		const stream = DataStream.new(this, type, file);
+	async startStream(type: StreamType, trial?: CaseData): Promise<StreamKey> {
+		const stream = new DataStream()
+			.of(type)
+			.with(trial)
+			.start(this);
+
 		const key = { id: Date.now(), type };
 		this.streams.set(key.id, stream);
 
@@ -192,7 +161,7 @@ export default class DatabaseManager {
 		const rows: DataType[] = [];
 
 		for (let i = 0; i < count; i++) {
-			const { value, done } = await stream.next(this);
+			const { value, done } = await stream.next();
 			if (done) {
 				break;
 			}

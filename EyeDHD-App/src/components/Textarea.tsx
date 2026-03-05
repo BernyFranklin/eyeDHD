@@ -100,7 +100,7 @@ export default function Textarea({
 						animation: text-area-waiting-pulse 1.4s ease-in-out infinite;
 						box-shadow: 0 0 0 1px color-mix(
 							in srgb,
-							blue 45%,
+							var(--action-bg) 45%,
 							transparent
 						);
 					}
@@ -124,7 +124,7 @@ export default function Textarea({
 						50% {
 							box-shadow: 0 0 0 2px color-mix(
 								in srgb,
-								blue 55%,
+								var(--action-bg) 90%,
 								transparent
 							);
 						}

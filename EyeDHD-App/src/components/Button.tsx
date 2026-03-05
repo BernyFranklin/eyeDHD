@@ -56,7 +56,7 @@ export default function Button({
 			<style>
 				{`
 					.btn {
-						display: block;
+						display: flex;
 						background-color: var(--action-bg);
 						color: var(--action-text);
 						border: none;
@@ -68,6 +68,15 @@ export default function Button({
 						transition: ease background-color 0.3s;
 						margin-top: 1rem;
 						width: fit-content;
+						justify-content: center;
+						align-items: center;
+					}
+
+					.btn > svg {
+						width: auto;
+						height: auto;
+						flex-shrink: 0;
+						display: block;
 					}
 
 					.btn:hover {

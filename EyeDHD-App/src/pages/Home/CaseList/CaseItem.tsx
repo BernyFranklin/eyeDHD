@@ -20,7 +20,6 @@ export default function Case(props: Props) {
 		<>
 			<div className='case-item'>
 				<a
-					href='/case'
 					onClick={(event) => {
 						event.preventDefault();
 						props.onClick(props.file);
@@ -30,7 +29,7 @@ export default function Case(props: Props) {
 				</a>
 				<div
 					className='case-options'
-					onClick={() => AlertControls.show('Not implemented', 'red')}
+					onClick={() => AlertControls.error('Not implemented')}
 				>
 					...
 				</div>

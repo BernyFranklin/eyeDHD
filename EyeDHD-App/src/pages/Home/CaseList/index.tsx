@@ -27,7 +27,7 @@ export default function CaseList(props: Props) {
 
 	const openCase = async (file: CaseData) => {
 		dispatch(setSelectedCase(file));
-		navigate('/case');
+		navigate('/processing');
 	}
 
 	useEffect(() => {
@@ -41,7 +41,7 @@ export default function CaseList(props: Props) {
 				const cases = await stream.collect<CaseData>();
 				dispatch(setCases(cases));
 			} catch (err) {
-				AlertControls.show(`Error loading cases: ${err.message}`, 'red');
+				AlertControls.error(`Error loading cases: ${err.message}`);
 			}
 		};
 
