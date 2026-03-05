@@ -38,6 +38,8 @@ export type CaseData = {
 	updated_at: string;
 };
 
+// Bitfield <-> Object mapping
+
 export type CaseDataRaw = Omit<CaseData, 'tasks'> & { tasks: number };
 
 export type CaseDataUpdate = Omit<Partial<CaseData>, 'tasks'> & {
@@ -171,11 +173,16 @@ function exists(db: Database, filename: string): boolean {
 	return true;
 }
 
-type CaseDataIterStatement = Omit<Statement<[], CaseDataRaw>, 'iterate'> & { iterate(): IterableIterator<CaseData> };
+type CaseDataIterStatement = Omit<
+	Statement<[], CaseDataRaw>,
+	'iterate'
+> & {
+	iterate(): IterableIterator<CaseData>
+};
 
 /**
- * Returns a SQL query string that selects all case data entries from the database. This is
- * used for iterating over all case data entries, such as when streaming data for all
+ * Returns a SQL query string that selects all case data entries from the database. This
+ * is used for iterating over all case data entries, such as when streaming data for all
  * files.
  */
 function iterate(db: Database): CaseDataIterStatement {
