@@ -1,6 +1,7 @@
 # UI / Backend TODO List
 
 ## Need to be done now
+- Convert animation to backend headless animation, switch to ffmpeg-wasm.
 - Add functionality to the animate and side-by-side tasks.
 
 ## Things / Ideas for later
@@ -13,7 +14,7 @@
 	- If main.db has a selected project folder, on start check if folder is set up correctly and if not tell user and prompt for new folder selection
 - Case option dialog which will allow exporting case to zip, deleting case, etc.
 - Custom title bar.
-- Add ability to switch project folders.
+- Add ability to switch project folders (maybe button on navbar).
 - Add a clear project option.
 - Make Login window a full page and have welcome text.
 - Add description text to each page.

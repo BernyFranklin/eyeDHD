@@ -15,6 +15,10 @@ const fn: TaskFn = async (trial, dispatch) => {
 	while (percent < 1.0) {
 		await delay(10);
 
+		if (percent > 0.5) {
+			throw new Error('this is an error');
+		}
+
 		percent = percent + 0.01;
 		dispatch(setTaskProgress(percent));
 	}
