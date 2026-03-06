@@ -14,7 +14,7 @@ Here are common approaches:
 - Save each frame as PNG (or WebP).
 - Use FFmpeg to encode into MP4.
 
-**Pros:** deterministic, high quality, no dropped frames  
+**Pros:** deterministic, high quality, no dropped frames
 **Cons:** a bit more setup
 
 ## 2) Puppeteer + fixed timestep rendering
@@ -23,7 +23,7 @@ Here are common approaches:
 - Use `page.screenshot()` to capture each frame.
 - Encode with FFmpeg.
 
-**Pros:** minimal changes to your client code  
+**Pros:** minimal changes to your client code
 **Cons:** slower than GPU‑native tools
 
 ## 3) RenderTarget readback + FFmpeg in browser (no “recorder”)
@@ -32,7 +32,7 @@ Here are common approaches:
 - Convert to image blobs and send to a server or save locally.
 - Encode server‑side with FFmpeg.
 
-**Pros:** stays in WebGL; deterministic  
+**Pros:** stays in WebGL; deterministic
 **Cons:** heavy bandwidth/memory if you do it in the browser
 
 ---
@@ -145,30 +145,3 @@ To produce a minimal, working offline renderer and FFmpeg pipe, tell me:
 4. **Where should the output live** (directory, file naming), or will we pipe directly to FFmpeg only?
 
 Once I have those, I can outline the exact Node script structure and FFmpeg args tuned for 720p/1080p at 30 fps, plus a second pass for 200 fps if you want it.
-
-## User
-
-Could we use the ffmpeg.wasm library instead of using stdin?
-
-## Assistant
-
-You can, but it’s usually not the best fit for a headless/back‑end render pipeline.
-
-**Short answer:** yes, `ffmpeg.wasm` can encode without stdin, but it’s slower, memory‑heavy, and not ideal for long/high‑res renders (1080p+). It’s primarily meant for **browser/Electron renderer** use where you can’t rely on native FFmpeg.
-
-### Why it’s not ideal here
-- **Performance:** WASM FFmpeg is significantly slower than native, especially at 1080p.
-- **Memory limits:** it typically needs all frames or large chunks in memory, which is a problem for long renders.
-- **No streaming efficiency:** stdin piping is the fastest/lowest‑memory way to feed raw frames.
-
-### When `ffmpeg.wasm` *does* make sense
-- You must stay entirely in the **renderer process** with no native dependency.
-- Short clips, lower resolutions, or proof‑of‑concept workflows.
-
-### Best option for your setup
-Since you already have FFmpeg on the backend, **native FFmpeg with stdin piping** is the fastest and most reliable approach for headless GL rendering. It also scales better for 200‑fps exports.
-
----
-
-If you still want to try `ffmpeg.wasm` in Electron, tell me whether you want it in the **renderer** or **main** process and your typical clip duration. I can outline what that pipeline would look like and its limitations.
-
