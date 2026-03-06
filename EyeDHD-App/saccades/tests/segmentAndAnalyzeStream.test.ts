@@ -36,11 +36,11 @@ async function loadWithAnalyzerMock(mockImpl?: any) {
   const analyzeMock = vi.fn(mockImpl ?? (() => ({ ok: true })));
 
   // IMPORTANT: this path must match what segmentAndAnalyzeStream.ts will import.
-  vi.doMock('../../saccades/analyzeSaccadesFromVectors', () => {
+  vi.doMock('@saccades/analyzeSaccadesFromVectors', () => {
     return { analyzeSaccadesFromVectors: analyzeMock };
   });
 
-  const mod = await import('./segmentAndAnalyzeStream');
+  const mod = await import('@saccades/ingest/segmentation/segmentAndAnalyzeStream');
   return {
     segmentAndAnalyzeStream: mod.segmentAndAnalyzeStream as Function,
     SegmentMarkerNotFoundError: mod.SegmentMarkerNotFoundError as any,
@@ -53,7 +53,7 @@ beforeEach(() => {
 });
 
 describe('segmentAndAnalyzeStream (Step 4)', () => {
-  it('S1 — Time range segmentation basics: computes correct startIndex/endIndex from time ranges', async () => {
+  it('S1) — Time range segmentation basics: computes correct startIndex/endIndex from time ranges', async () => {
     const { segmentAndAnalyzeStream } = await loadWithAnalyzerMock(() => ({ ok: true }));
 
     const stream = {
@@ -102,7 +102,7 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     });
   });
 
-  it('S2 — Traceability slicing: slices sourceRowIndices aligned to vector slice', async () => {
+  it('S2) — Traceability slicing: slices sourceRowIndices aligned to vector slice', async () => {
     const { segmentAndAnalyzeStream } = await loadWithAnalyzerMock(() => ({ ok: true }));
 
     const stream = {
@@ -124,7 +124,7 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     expect(result.segments[0].sourceRowIndices).toEqual([101, 102, 103]);
   });
 
-  it('S3 — Marker range segmentation basics: computes correct time/index bounds from markers', async () => {
+  it('S3) — Marker range segmentation basics: computes correct time/index bounds from markers', async () => {
     const { segmentAndAnalyzeStream } = await loadWithAnalyzerMock(() => ({ ok: true }));
 
     const stream = {
@@ -161,7 +161,7 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     });
   });
 
-  it('S4 — Missing marker handling: throws SegmentMarkerNotFoundError (locked behavior)', async () => {
+  it('S4) — Missing marker handling: throws SegmentMarkerNotFoundError (locked behavior)', async () => {
     const { segmentAndAnalyzeStream, SegmentMarkerNotFoundError } = await loadWithAnalyzerMock(() => ({ ok: true }));
 
     const stream = {
@@ -182,7 +182,7 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     expect(() => segmentAndAnalyzeStream(stream, specs, { markers })).toThrow(SegmentMarkerNotFoundError);
   });
 
-  it('S5 — Determinism: identical inputs produce deep-equal outputs', async () => {
+  it('S5) — Determinism: identical inputs produce deep-equal outputs', async () => {
     const { segmentAndAnalyzeStream } = await loadWithAnalyzerMock((vectors: Vec3[]) => ({
       ok: true,
       count: vectors.length,
@@ -213,7 +213,7 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     expect(r1).toEqual(r2);
   });
 
-  it('S6 — No mutation: does not mutate stream, segment specs, or markers', async () => {
+  it('S6) — No mutation: does not mutate stream, segment specs, or markers', async () => {
     const { segmentAndAnalyzeStream } = await loadWithAnalyzerMock(() => ({ ok: true }));
 
     const stream = deepFreeze({
@@ -248,7 +248,7 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     expect(JSON.stringify(specs)).toBe(specsBefore);
   });
 
-  it('S7 — Analysis invocation: analyzeSaccadesFromVectors called once per segment with correct vector slice', async () => {
+  it('S7) — Analysis invocation: analyzeSaccadesFromVectors called once per segment with correct vector slice', async () => {
     const emptyResult = { ok: true, kind: 'analysis', count: 0 };
     const nonEmptyResult = (n: number) => ({ ok: true, kind: 'analysis', count: n });
 
@@ -296,7 +296,7 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     expect(result.segments[1].analysis).toEqual(emptyResult);
   });
 
-  it('S8 — Ordering guarantees: segments returned in spec order; vectors preserve original order', async () => {
+  it('S8) — Ordering guarantees: segments returned in spec order; vectors preserve original order', async () => {
     const { segmentAndAnalyzeStream, analyzeMock } = await loadWithAnalyzerMock((vectors: Vec3[]) => ({
       xs: vectors.map(v => v.x),
     }));
@@ -331,7 +331,7 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     expect(analyzeMock.mock.calls[1][0].map((v: Vec3) => v.x)).toEqual([0, 1]);
   });
 
-  it('S9 — Empty segment behavior: no samples => valid segment entry with empty analysis', async () => {
+  it('S9) — Empty segment behavior: no samples => valid segment entry with empty analysis', async () => {
     const emptyAnalysis = { ok: true, empty: true };
 
     const { segmentAndAnalyzeStream, analyzeMock } = await loadWithAnalyzerMock((vectors: Vec3[]) => {
