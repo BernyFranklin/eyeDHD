@@ -3,12 +3,12 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter, Route, Routes } from 'react-router';
 
-import '@src/index.css';
+import { Login, Home, Processing } from '@src/pages';
 
 import { store } from '@src/data';
 
 import App from '@src/App';
-import { Login, Home, Processing } from '@src/pages';
+import '@src/index.css';
 
 createRoot(document.getElementById('root')).render(
 	<StrictMode>

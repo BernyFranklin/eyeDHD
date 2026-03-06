@@ -37,6 +37,7 @@ type CaseDataActions = {
 export default class DatabaseManager {
 	private db: Database;
 	private streams = new Map<number, DataStream>();
+	private streamCounter = 0;
 
 	actions: {
 		user: UserActions;
@@ -121,7 +122,7 @@ export default class DatabaseManager {
 			.with(trial)
 			.start(this);
 
-		const key = { id: Date.now(), type };
+		const key = { id: ++this.streamCounter, type };
 		this.streams.set(key.id, stream);
 
 		return key;

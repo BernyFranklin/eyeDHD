@@ -5,7 +5,7 @@ import { Button, Textarea } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
 
 import { useSelector, useDispatch } from '@src/data/hooks';
-import { selectLoading } from '@src/data/features/global';
+import { disableButtons, enableButtons, selectLoading } from '@src/data/features/global';
 import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 
 type SelectStatus = 'waiting' | 'success' | 'error';
@@ -26,6 +26,23 @@ export default function Login() {
 
 	const [placeholder, setPlaceholder] = useState('Please select an empty folder');
 	const [selectStatus, setSelectStatus] = useState<SelectStatus>('waiting');
+
+	const canContinue = Boolean(projectDir && projectInitialized);
+	const confirmLabel = canContinue ? 'continue' : 'confirm';
+
+	useEffect(() => {
+		dispatch(disableButtons());
+
+		return () => {
+			dispatch(enableButtons());
+		};
+	}, [dispatch]);
+
+	useEffect(() => {
+		if (canContinue) {
+			setSelectStatus('success');
+		}
+	}, [canContinue]);
 
 	const selectDir = async () => {
 		try {
@@ -60,6 +77,11 @@ export default function Login() {
 	}
 
 	const handleConfirm = async () => {
+		if (canContinue) {
+			navigate('/home');
+			return;
+		}
+
 		if (!projectDir) {
 			return;
 		}
@@ -73,71 +95,99 @@ export default function Login() {
 
 			dispatch(setProjectDir(updatedUser.dir));
 			dispatch(setProjectInitialized(!!updatedUser.project_initialized));
+
+			if (updatedUser.project_initialized) {
+				navigate('/home');
+			}
 		} catch (err) {
 			AlertControls.error(`Error initializing directory: ${err.message}`);
 		}
 	};
-
-
-
-	useEffect(() => {
-		if (projectDir && projectInitialized) {
-			navigate('/home');
-		}
-	}, [projectDir, projectInitialized]);
 
 	if (loading) {
 		return null;
 	}
 
 	return (
-		<div
-			className='dir-prompt-overlay'
-			role='dialog'
-			aria-modal='true'
-			aria-label='Select project directory'
-		>
-			<div className='dir-prompt-window'>
-				<div className='dir-prompt-title'>
-					Project folder needed!
+		<div className='login-page' role='main' aria-label='Select project directory'>
+			<div className='login-column left'>
+				<div className='dir-prompt-window' role='dialog' aria-modal='true'>
+					<div className='dir-prompt-title'>
+						{canContinue ? 'Folder selected' : 'Project folder needed!'}
+					</div>
+					<Textarea
+						variant='tall-clickable'
+						status={selectStatus}
+						onClick={selectDir}
+						value={projectDir}
+						placeholder={placeholder}
+						readOnly
+					/>
+					<div className='dir-prompt-actions'>
+						<Button
+							onClick={handleConfirm}
+							disabled={!canContinue && (selectStatus === 'error' || !projectDir)}
+						>
+							{confirmLabel}
+						</Button>
+					</div>
 				</div>
-				<Textarea
-					variant='tall-clickable'
-					status={selectStatus}
-					onClick={selectDir}
-					value={projectDir}
-					placeholder={placeholder}
-					readOnly
-				/>
-				<div className='dir-prompt-actions'>
-					<Button
-						onClick={handleConfirm}
-						disabled={selectStatus === 'error' || !projectDir}
-					>
-						confirm
-					</Button>
+			</div>
+
+			<div className='login-column right'>
+				<div className='login-welcome'>
+					<Textarea
+						className='login-welcome-textarea'
+						variant='tall-static'
+						value={`
+							Welcome to EyeDHD.
+
+							This is a short introduction area for your app. You can replace this paragraph with a richer overview, quick start steps, or helpful tips for first-time users.
+						`.trim()}
+						readOnly
+					/>
 				</div>
 			</div>
 
 			<style>
 				{`
-					.dir-prompt-overlay {
+					.login-page {
 						position: fixed;
-						inset: 0;
-						background: rgba(0, 0, 0, 0.45);
+						top: var(--navbar-height, 0px);
+						left: 0;
+						right: 0;
+						bottom: 0;
+						height: calc(100vh - var(--navbar-height, 0px));
 						display: flex;
-						align-items: center;
+						align-items: stretch;
+						background: #f5f5f5;
+						overflow: hidden;
+						box-sizing: border-box;
+					}
+
+					.login-column {
+						display: flex;
 						justify-content: center;
-						z-index: 1000;
+						padding: 24px;
+						height: 100%;
+						min-height: 0;
+						box-sizing: border-box;
+					}
+
+					.login-column.left {
+						flex: 1;
+						justify-content: flex-start;
+						padding-left: 100px;
+						margin-top: 22px;
 					}
 
 					.dir-prompt-window {
-						width: 520px;
-						max-width: 90vw;
+						width: 100%;
+						max-width: 520px;
 						padding: 24px;
-						background: #fff;
-						border-radius: var(--action-radius);
-						box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+						background: transparent;
+						border-radius: 0;
+						box-shadow: none;
 						display: flex;
 						flex-direction: column;
 						align-items: stretch;
@@ -156,7 +206,37 @@ export default function Login() {
 						width: 100%;
 					}
 
+					.login-column.right {
+						flex: 2;
+						justify-content: center;
+						align-items: center;
+						overflow: hidden;
+					}
 
+					.login-welcome {
+						width: 80%;
+						height: 80%;
+						max-width: 100%;
+						max-height: 100%;
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						box-sizing: border-box;
+					}
+
+					.login-welcome-textarea {
+						width: 100%;
+						height: 100%;
+						max-height: 100%;
+						max-width: 100%;
+						min-height: 0;
+						box-sizing: border-box;
+						text-align: center;
+						text-align-vertical: center;
+						font-size: 32px;
+						color: #333;
+						line-height: 1.5;
+					}
 				`}
 			</style>
 		</div>

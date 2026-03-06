@@ -1,6 +1,6 @@
 import React from "react";
 
-import TaskList from "./TaskList";
+import TaskSuite from "./TaskSuite";
 import Preview from "./Preview";
 
 import { useSelector } from "@src/data/hooks";
@@ -19,7 +19,7 @@ export default function Processing() {
 				<div className="processing-task-pane">
 					<div className="processing-task-list">
 						<h1 className="case-name-header">{selectedCase.name}</h1>
-						<TaskList />
+						<TaskSuite />
 					</div>
 				</div>
 				<div className="processing-preview-pane">

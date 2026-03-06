@@ -3,15 +3,22 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import type { RootState } from '..'
 import { TASKORDER, type TaskName } from '@src/pages/Processing/tasks';
 
+type TaskError = {
+	message: string,
+	name?: string,
+	stack?: string
+}
+
 type TaskState = {
 	current?: TaskName | 'complete',
 	progress: number,
-	error?: Error
+	error?: TaskError | null
 }
 
 const initialState: TaskState = {
 	current: null,
-	progress: 0.0
+	progress: 0.0,
+	error: null
 };
 
 /**
@@ -38,7 +45,7 @@ export const taskSlice = createSlice({
 				state.progress = 0.0;
 			}
 		},
-		setTaskError: (state, action: PayloadAction<Error>) => {
+		setTaskError: (state, action: PayloadAction<TaskError>) => {
 			state.error = action.payload;
 			state.progress = 0.0;
 		},

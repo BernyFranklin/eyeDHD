@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 
-import CaseItem from "./CaseItem";
 import { LoadingOverlay } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
 
@@ -9,6 +8,8 @@ import RemoteStream from '@src/data/RemoteStream';
 import { type CaseData } from '@src/data/types';
 import { useSelector, useDispatch } from '@src/data/hooks';
 import { selectCases, selectProjectDir, setCases, setSelectedCase } from '@src/data/features/user';
+
+import CaseItem from "./CaseItem";
 
 type Props = {
 	loading: boolean;

@@ -20,7 +20,7 @@ export const AlertControls = {
 /**
  * AlertWindow component that displays an alert message with a close button.
  * It uses the alert context to determine visibility, message, and color.
- * The alert will auto-dismiss after a set duration or can be closed manually.
+ * The alert will auto-dismiss after a set duration if success or can be closed manually.
  *
  * The AlertWindow is a global component rendered once in App.tsx that can be triggered
  * from anywhere in the app by dispatching the showAlert action with the appropriate
@@ -71,6 +71,11 @@ export default function AlertWindow() {
 						z-index: 10000;
 						pointer-events: auto;
 
+					}
+
+					.alert-window p {
+						white-space: pre-line;
+						text-align: left;
 					}
 
 					.alert-window.green {

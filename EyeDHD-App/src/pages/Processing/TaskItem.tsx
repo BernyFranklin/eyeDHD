@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 
 import { ProgressCircle, Status } from '@src/components';
 
+import { CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
-import { selectCurrentTask, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
+import { selectCurrentTask, selectTaskError, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
+import { selectSelectedCase } from '@src/data/features/user';
 
 import { Task } from './tasks/index';
-import { selectSelectedCase } from '@src/data/features/user';
-import { CaseData } from '@src/data/types';
 
 type Props = {
 	task: Task
@@ -28,6 +28,7 @@ export default function TaskItem({ task }: Props) {
 	const trial = useSelector(selectSelectedCase);
 	const current = useSelector(selectCurrentTask);
 	const progress = useSelector(selectTaskProgress);
+	const error = useSelector(selectTaskError);
 
 	const [active, setActive] = useState(false);
 	const [failed, setFailed] = useState(false);
@@ -36,39 +37,12 @@ export default function TaskItem({ task }: Props) {
 	const handleError = (err: Error) => {
 		setFailed(true);
 		setActive(false);
-		dispatch(setTaskError(err));
+		dispatch(setTaskError({
+			message: err.message,
+			name: err.name,
+			stack: err.stack
+		}));
 	}
-
-	useEffect(() => {
-		setComplete(getSavedStatus(task, trial));
-	}, [task.name, trial]);
-
-	useEffect(() => {
-		setActive(false);
-		setFailed(false);
-	}, [trial.id]);
-
-	useEffect(() => {
-		if (current !== task.name) {
-			return;
-		}
-
-		if (getSavedStatus(task, trial)) {
-			setComplete(true);
-			setActive(false);
-			dispatch(setNextTask());
-			return;
-		}
-
-		setActive(true);
-		task.fn(trial, dispatch)
-			.then(() => {
-				setActive(false);
-				setComplete(true);
-				dispatch(setNextTask());
-			})
-			.catch(handleError);
-	}, [current, task.name, trial]);
 
 	const getTaskName = () => {
 		if (complete) {
@@ -95,14 +69,54 @@ export default function TaskItem({ task }: Props) {
 		return <Status state='pending' />;
 	}
 
+	useEffect(() => {
+		setComplete(getSavedStatus(task, trial));
+	}, [task.name, trial]);
+
+	useEffect(() => {
+		setActive(false);
+		setFailed(false);
+	}, [trial.id]);
+
+	useEffect(() => {
+		if (!error) {
+			setFailed(false);
+		}
+	}, [error]);
+
+	useEffect(() => {
+		if (current !== task.name) {
+			return;
+		}
+
+		if (getSavedStatus(task, trial)) {
+			setComplete(true);
+			setActive(false);
+			dispatch(setNextTask());
+			return;
+		}
+
+		setActive(true);
+		task.fn(trial, dispatch)
+			.then(() => {
+				setActive(false);
+				setComplete(true);
+				dispatch(setNextTask());
+			})
+			.catch(handleError);
+	}, [current, task.name, trial]);
+
 	return (
 		<>
 			<div className={[
-				'task-item',
-				failed && 'failed-task',
-				complete && 'success-task',
-				active && 'active-task'
-			].filter(Boolean).join(' ')}>
+					'task-item',
+					failed && 'failed-task',
+					complete && 'success-task',
+					active && 'active-task'
+				]
+				.filter(Boolean)
+				.join(' ')
+			}>
 				<span className='task-name'>{getTaskName()}</span>
 				<div className='task-progress'>
 					{getStatus()}

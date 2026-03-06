@@ -43,6 +43,26 @@ export type TrackingData = {
 	// FocusStability: number;
 };
 
+export const TRACKING_DATA_HEADERS = [
+	'Frame',
+	'CaptureTime',
+	'LogTime',
+	'GazeStatus',
+	'CombinedGazeForwardX',
+	'CombinedGazeForwardY',
+	'CombinedGazeForwardZ',
+	'LeftEyeStatus',
+	'LeftEyeForwardX',
+	'LeftEyeForwardY',
+	'LeftEyeForwardZ',
+	'LeftPupilDiameterInMM',
+	'RightEyeStatus',
+	'RightEyeForwardX',
+	'RightEyeForwardY',
+	'RightEyeForwardZ',
+	'RightPupilDiameterInMM'
+] as const;
+
 export const fromCSV = (line: string): TrackingData => {
 	const values = line.split(',');
 	if (values.length !== 17) {

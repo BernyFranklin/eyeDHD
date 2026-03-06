@@ -1,7 +1,7 @@
 import fs from "fs";
 import rl from "readline";
 
-import { type TrackingData, fromCSV, toCSV } from "./tables/TrackingData";
+import { TRACKING_DATA_HEADERS, type TrackingData, fromCSV, toCSV } from "./tables/TrackingData";
 import caseDataActions, { type CaseData, csvImportPath, csvOutputPath } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
 import DataCleaner from "@electron/analysis/DataCleaner";
@@ -188,11 +188,12 @@ export default class DataStream {
 	): AsyncGenerator<DataType[], void, undefined> {
 		self.trial = manager.actions.case.resetCleaning(self.trial);
 		const cleaner = new DataCleaner({ path: csvImportPath(self.trial) });
+		await cleaner.ready();
 
 		const outputPath = csvOutputPath(self.trial);
 		const outputStream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
 
-		const header = cleaner.header + '\n';
+		const header = TRACKING_DATA_HEADERS.join(',') + '\n';
 		outputStream.write(header);
 		self.trial = manager.actions.case.update(self.trial, { header });
 

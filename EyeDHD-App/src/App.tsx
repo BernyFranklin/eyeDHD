@@ -1,15 +1,16 @@
 import React, { useEffect } from 'react';
 import { Outlet } from 'react-router';
 
-import '@src/App.css';
 import { AlertWindow, Navbar } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
 
-import { CaseData } from '@src/data/types';
 import RemoteStream from '@src/data/RemoteStream';
+import { CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
 import { selectLoading, setLoading } from '@src/data/features/global';
 import { setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
+
+import '@src/App.css';
 
 /**
  * Main app component, handles loading user data on startup and showing either the

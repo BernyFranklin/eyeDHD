@@ -1,4 +1,4 @@
-import { CaseData } from '@src/data/types';
+import { type CaseData } from '@src/data/types';
 import { Dispatch } from '@src/data/hooks';
 
 import { cleaning } from './cleaning';
@@ -18,7 +18,10 @@ import { combination } from './combination';
  * to track progress and update the UI accordingly.
  */
 
-type TaskName = CaseData['tasks'] extends Record<infer K, boolean> ? K : never;
+// Generate TaskName type from the keys of the tasks object in CaseData, so changes to
+// tasks in CaseData will automatically update the TaskName type and prevent mismatches.
+export type TaskName = CaseData['tasks'] extends Record<infer K, boolean> ? K : never;
+
 export type TaskFn = (trial: CaseData, dispatch: Dispatch) => Promise<void>;
 
 export type Task = {

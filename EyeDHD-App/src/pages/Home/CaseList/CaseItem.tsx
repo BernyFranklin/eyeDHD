@@ -4,7 +4,6 @@ import { AlertControls } from '@src/components/AlertWindow';
 
 import { type CaseData } from '@src/data/types';
 
-
 type Props = {
 	file: CaseData,
 	onClick: (file: CaseData) => void
