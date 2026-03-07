@@ -105,8 +105,9 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
   });
 
   it('S2) — Traceability slicing: slices sourceRowIndices aligned to vector slice', async () => {
+    // Load with a simple mock since this test only cares about sourceRowIndices slicing, not analysis results
     const { segmentAndAnalyzeStream } = await loadWithAnalyzerMock(() => ({ ok: true }));
-
+    // Stream with sourceRowIndices aligned to timesNs/vectors
     const stream = {
       timesNs: [0, 10, 20, 30, 40],
       vectors: [
@@ -119,10 +120,11 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
       sourceRowIndices: [100, 101, 102, 103, 104],
     };
 
-    const specs = [{ kind: 'timeRange', id: 'A', startTimeNs: 10, endTimeNs: 40 }] as const; // idx [1,4)
-
+    // Segment spec that includes t=10,20,30 => idx [1,4) => should include sourceRowIndices [101,102,103]
+    const specs = [{ kind: 'timeRange', id: 'A', startTimeNs: 10, endTimeNs: 40 }] as const; 
+    // Run segmentation
     const result = segmentAndAnalyzeStream(stream, specs);
-
+    // Verify that the segment's sourceRowIndices are correctly sliced to match the vector slice for that segment
     expect(result.segments[0].sourceRowIndices).toEqual([101, 102, 103]);
   });
 
