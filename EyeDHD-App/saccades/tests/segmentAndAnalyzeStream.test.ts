@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Vec3 } from '@saccades/core/velocities'
 
 /**
  * Step 4 contracts locked by these tests:
@@ -12,8 +13,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
  * - Deterministic, no mutation, stable ordering
  * - analyzeSaccadesFromVectors invoked once per segment with the correct vector slice
  */
-
-type Vec3 = { x: number; y: number; z: number };
 
 // Deep-freeze helper to ensure no mutation (S6)
 function deepFreeze<T>(obj: T): T {
@@ -29,7 +28,7 @@ function deepFreeze<T>(obj: T): T {
   }
   return obj;
 }
-
+// Helper to load the module under test with a mocked analyzeSaccadesFromVectors implementation.
 async function loadWithAnalyzerMock(mockImpl?: any) {
   vi.resetModules();
 
@@ -47,16 +46,18 @@ async function loadWithAnalyzerMock(mockImpl?: any) {
     analyzeMock,
   };
 }
-
+// Ensure no mock state leaks between tests
 beforeEach(() => {
   vi.restoreAllMocks();
 });
 
 describe('segmentAndAnalyzeStream (Step 4)', () => {
   it('S1) — Time range segmentation basics: computes correct startIndex/endIndex from time ranges', async () => {
-    const { segmentAndAnalyzeStream } = await loadWithAnalyzerMock(() => ({ ok: true }));
+    // Simple mock since this test only cares about bounds, not analysis results
+    const { segmentAndAnalyzeStream } = await loadWithAnalyzerMock(() => ({ ok: true }));  
 
-    const stream = {
+    // Times at 0,10,20,30,40
+    const stream = {  // Times at 0,10,20,30,40
       timesNs: [0, 10, 20, 30, 40],
       vectors: [
         { x: 0, y: 0, z: 0 },
@@ -67,38 +68,39 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
       ] satisfies Vec3[],
     };
 
-    const specs = [
+    // Note: these specs intentionally overlap to also test that they don't interfere with each other's bounds calculations
+    const specs = [  
       { kind: 'timeRange', id: 'A', startTimeNs: 10, endTimeNs: 30 }, // includes t=10,20 => idx [1,3)
       { kind: 'timeRange', id: 'B', startTimeNs: 0, endTimeNs: 50 },  // includes all => idx [0,5)
       { kind: 'timeRange', id: 'C', startTimeNs: 15, endTimeNs: 16 }, // includes none => idx [2,2)
     ] as const;
 
-    const result = segmentAndAnalyzeStream(stream, specs);
+    const result = segmentAndAnalyzeStream(stream, specs);            // Run segmentation
 
-    expect(result.segments).toHaveLength(3);
+    expect(result.segments).toHaveLength(3);                          // All specs should produce a segment, even if empty
 
-    expect(result.segments[0].id).toBe('A');
-    expect(result.segments[0].bounds).toEqual({
-      startTimeNs: 10,
-      endTimeNs: 30,
-      startIndex: 1,
-      endIndex: 3,
+    expect(result.segments[0].id).toBe('A');                          // Check bounds for segment A
+    expect(result.segments[0].bounds).toEqual({                       // Check bounds of first element
+      startTimeNs: 10,                                                // Includes t=10
+      endTimeNs: 30,                                                  // Excludes t=30
+      startIndex: 1,                                                  // First index with t >= 10 is idx 1 (t=10)
+      endIndex: 3,                                                    // First index with t >= 30 is idx 3 (t=30), exclusive bound
     });
 
-    expect(result.segments[1].id).toBe('B');
+    expect(result.segments[1].id).toBe('B');                          // Check bounds for segment B
     expect(result.segments[1].bounds).toEqual({
-      startTimeNs: 0,
-      endTimeNs: 50,
-      startIndex: 0,
-      endIndex: 5,
+      startTimeNs: 0,                                                // Includes t=0
+      endTimeNs: 50,                                                 // Excludes t=50
+      startIndex: 0,                                                 // First index with t >= 0 is idx 0 (t=0)
+      endIndex: 5,                                                   // First index with t >= 50 is idx 5 (t=50), exclusive bound
     });
 
-    expect(result.segments[2].id).toBe('C');
+    expect(result.segments[2].id).toBe('C');                          // Check bounds for segment C (empty segment case)
     expect(result.segments[2].bounds).toEqual({
-      startTimeNs: 15,
-      endTimeNs: 16,
-      startIndex: 2,
-      endIndex: 2,
+      startTimeNs: 15,                                                // Includes t=15
+      endTimeNs: 16,                                                  // Excludes t=16
+      startIndex: 2,                                                  // First index with t >= 15 is idx 2 (t=20)
+      endIndex: 2,                                                    // First index with t >= 16 is also idx 2 (t=20), exclusive bound, empty segment
     });
   });
 
