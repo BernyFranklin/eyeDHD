@@ -36,7 +36,7 @@ async function loadWithAnalyzerMock(mockImpl?: any) {
   const analyzeMock = vi.fn(mockImpl ?? (() => ({ ok: true })));
 
   // IMPORTANT: this path must match what segmentAndAnalyzeStream.ts will import.
-  vi.doMock('@saccades/analyzeSaccadesFromVectors', () => {
+  vi.doMock('@saccades/index', () => {
     return { analyzeSaccadesFromVectors: analyzeMock };
   });
 
