@@ -67,6 +67,41 @@ function lowerBound(arr: number[], x: number): number {
     return lo;
 }
 
+// Helper to build segmemts for both branches
+function buildSegment(
+    stream: TimedVectorStream,
+    id: string,
+    startTimeNs: number,
+    endTimeNs: number,
+    options: SegmentAndAnalyzeOptions
+): SegmentedAnalysisResult['segments'][number] {
+    // Use binary search to find the indices corresponding to the start and end times of the segment
+    const startIndex = lowerBound(stream.timesNs, startTimeNs);
+    const endIndex = lowerBound(stream.timesNs, endTimeNs);
+    // Depending on the clip policy, we may need to adjust the indices to ensure that we only include vectors that are fully inside the segment bounds
+    const vecSlice = stream.vectors.slice(startIndex, endIndex);
+    // Perform saccade analysis on the vectors within this segment using the provided options for detection and metrics
+    const analysis = analyzeSaccadesFromVectors(vecSlice, options.detection, options.metrics);
+    // Construct the segment result object, including the segment ID, bounds, and analysis results. 
+    const seg: SegmentedAnalysisResult['segments'][number] = {
+        id,
+        bounds: {
+            startTimeNs,
+            endTimeNs,
+            startIndex,
+            endIndex,
+        },
+        analysis,
+    };
+    // If the original stream includes source row indices, we should also slice that array to correspond to the segment's vectors
+    if (stream.sourceRowIndices) {
+        seg.sourceRowIndices = stream.sourceRowIndices.slice(startIndex, endIndex);
+    }
+    // Return the constructed segment result
+    return seg;
+}
+
+
 // Entrypoint
 export function segmentAndAnalyzeStream(
     stream: TimedVectorStream,
@@ -89,37 +124,31 @@ export function segmentAndAnalyzeStream(
     // For each segment specification, we determine the corresponding indices in the stream and perform saccade analysis on that segment
     const segments = segmentSpecs.map((spec) => {
         if (spec.kind === 'timeRange') {
-            const startIndex = lowerBound(stream.timesNs, spec.startTimeNs);
-            const endIndex = lowerBound(stream.timesNs, spec.endTimeNs);
-
-            const vecSlice = stream.vectors.slice(startIndex, endIndex);
-            // Pass the sliced vectors through our saccade analysis function, along with any relevant options for detection and metrics
-            const analysis = analyzeSaccadesFromVectors(  
-                vecSlice,
-                options.detection,
-                options.metrics
-            );
-            // Construct the segment result
-            const seg: SegmentedAnalysisResult['segments'][number] = {
-                id: spec.id,
-                bounds: {
-                    startTimeNs: spec.startTimeNs,
-                    endTimeNs: spec.endTimeNs,
-                    startIndex,
-                    endIndex,
-                },
-                analysis,
-            };
-            // If the original stream included sourceRowIndices, we need to slice that as well to maintain alignment with the vectors and times
-            if (stream.sourceRowIndices) {
-                seg.sourceRowIndices = stream.sourceRowIndices.slice(startIndex, endIndex);
-            }
-
-            return seg;
+            return buildSegment(stream, spec.id, spec.startTimeNs, spec.endTimeNs, options);
         }
 
-        // Marker range not implemented yet (will be s3/s4)
-        throw new Error(`markerRange not implemented yet (segment id="${spec.id}")`);
+        // Marker range 
+        // Initialize markers to an empty array if not provided
+        const markers = options.markers ?? [];  
+        const startMarkerIndex = markers.findIndex(
+            (m) => m.type === spec.startMarker
+        );
+        // Throw error if the start marker is not found in the provided markers
+        if (startMarkerIndex === -1) {  
+            throw new SegmentMarkerNotFoundError(spec.id, { startMarker: spec.startMarker });
+        }
+        // If the start marker is found, we then look for the corresponding end marker that comes after it in the markers array
+        const startMarker = markers[startMarkerIndex];
+        // We need to ensure that the end marker we find comes after the start marker in time
+        const endMarker = markers
+            .slice(startMarkerIndex + 1) // Only consider markers that come after the start marker
+            .find((m) => m.type === spec.endMarker);
+        // If we cannot find a valid end marker that comes after the start marker, we throw an error indicating that the end marker is missing
+        if (!endMarker) {
+            throw new SegmentMarkerNotFoundError(spec.id, { endMarker: spec.endMarker });
+        }
+
+        return buildSegment(stream, spec.id, startMarker.timeNs, endMarker.timeNs, options);
     });
     return  { segments };
 }
