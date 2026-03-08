@@ -1,5 +1,8 @@
 import { analyzeSaccadesFromVectors } from '@saccades/index'
 import type { Vec3 } from '@saccades/core/velocities'
+import type { SaccadeDetectionOptions } from '@saccades/core/schema'
+import type { SaccadeMetricsOptions } from '@saccades/index'
+import type { AnalyzeSaccadesResult } from '@saccades/index'
 
 export class SegmentMarkerNotFoundError extends Error {
     override name = 'SegmentMarkerNotFoundError' as const;  // For easier identification in tests and error handling
@@ -35,8 +38,8 @@ export type ClipPolicy = 'clipBounds' | 'requireFullyInside';
 // Options for the segmentation and analysis process, including saccade detection and metrics parameters
 export interface SegmentAndAnalyzeOptions {
     markers?: ExperimentMarker[];
-    detection?: any;  // Placeholder for saccade detection options
-    metrics?: any;  // Placeholder for saccade metrics options
+    detection?: Partial<SaccadeDetectionOptions>;  
+    metrics?: SaccadeMetricsOptions;  
     clipPolicy?: ClipPolicy;
 }
 
@@ -51,7 +54,7 @@ export interface SegmentedAnalysisResult {
             endIndex: number;
         };
         sourceRowIndices?: number[];
-        analysis: any; // Placeholder for the actual analysis results for this segment
+        analysis: AnalyzeSaccadesResult; 
     }>;
 }
 
@@ -105,7 +108,7 @@ function buildSegment(
 // Entrypoint
 export function segmentAndAnalyzeStream(
     stream: TimedVectorStream,
-    segmentSpecs: SegmentSpec[],
+    segmentSpecs: readonly SegmentSpec[],
     options: SegmentAndAnalyzeOptions = {}
 ): SegmentedAnalysisResult {
     const n = stream.timesNs.length;  // Basic validation to ensure the input stream is well-formed

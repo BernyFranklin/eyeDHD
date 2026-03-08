@@ -28,8 +28,10 @@ function deepFreeze<T>(obj: T): T {
   }
   return obj;
 }
+
+type MockAnalyzeImpl = (...args: unknown[]) => unknown;
 // Helper to load the module under test with a mocked analyzeSaccadesFromVectors implementation.
-async function loadWithAnalyzerMock(mockImpl?: any) {
+async function loadWithAnalyzerMock(mockImpl?: MockAnalyzeImpl) {
   vi.resetModules();
 
   const analyzeMock = vi.fn(mockImpl ?? (() => ({ ok: true })));
@@ -39,10 +41,10 @@ async function loadWithAnalyzerMock(mockImpl?: any) {
     return { analyzeSaccadesFromVectors: analyzeMock };
   });
 
-  const mod = await import('@saccades/ingest/segmentation/segmentAndAnalyzeStream');
+  const mod = await import('../ingest/segmentation/segmentAndAnalyzeStream');
   return {
-    segmentAndAnalyzeStream: mod.segmentAndAnalyzeStream as Function,
-    SegmentMarkerNotFoundError: mod.SegmentMarkerNotFoundError as any,
+    segmentAndAnalyzeStream: mod.segmentAndAnalyzeStream as typeof import('../ingest/segmentation/segmentAndAnalyzeStream').segmentAndAnalyzeStream,
+    SegmentMarkerNotFoundError: mod.SegmentMarkerNotFoundError,
     analyzeMock,
   };
 }
