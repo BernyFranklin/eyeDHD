@@ -190,13 +190,14 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
   });
 
   it('S5) — Determinism: identical inputs produce deep-equal outputs', async () => {
+    // Mock implementation that returns some analysis result based on the input vectors, to ensure we're testing the full flow including analysis results in the output
     const { segmentAndAnalyzeStream } = await loadWithAnalyzerMock((vectors: Vec3[]) => ({
       ok: true,
       count: vectors.length,
       first: vectors[0]?.x ?? null,
       last: vectors[vectors.length - 1]?.x ?? null,
     }));
-
+    // Stream with times and vectors
     const stream = {
       timesNs: [0, 10, 20, 30, 40],
       vectors: [
@@ -208,15 +209,15 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
       ] satisfies Vec3[],
       sourceRowIndices: [10, 11, 12, 13, 14],
     };
-
+    // Segment specs that will produce some segments with vectors to analyze
     const specs = [
       { kind: 'timeRange', id: 'A', startTimeNs: 10, endTimeNs: 40 },
       { kind: 'timeRange', id: 'B', startTimeNs: 0, endTimeNs: 20 },
     ] as const;
-
+    // Run the segmentation and analysis twice with the same inputs and verify that the outputs are deeply equal, ensuring determinism
     const r1 = segmentAndAnalyzeStream(stream, specs);
     const r2 = segmentAndAnalyzeStream(stream, specs);
-
+    // We use toEqual for deep equality check since the output is an object with nested structures, and we want to ensure that all nested properties are equal as well
     expect(r1).toEqual(r2);
   });
 
