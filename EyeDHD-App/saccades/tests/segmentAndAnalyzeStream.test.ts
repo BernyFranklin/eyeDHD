@@ -335,8 +335,10 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     expect(result.segments[1].analysis).toEqual({ xs: [0, 1] });
 
     // Also verify the actual calls preserve order
-    expect(analyzeMock.mock.calls[0][0].map((v: Vec3) => v.x)).toEqual([2, 3, 4]);
-    expect(analyzeMock.mock.calls[1][0].map((v: Vec3) => v.x)).toEqual([0, 1]);
+    const firstCallVectors = analyzeMock.mock.calls[0][0] as Vec3[];
+    const secondCallVectors = analyzeMock.mock.calls[1][0] as Vec3[];
+    expect(firstCallVectors.map(v => v.x)).toEqual([2, 3, 4]);
+    expect(secondCallVectors.map(v => v.x)).toEqual([0, 1]);
   });
 
   it('S9) — Empty segment behavior: no samples => valid segment entry with empty analysis', async () => {
