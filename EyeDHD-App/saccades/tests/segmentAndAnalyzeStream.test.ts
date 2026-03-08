@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Vec3 } from '@saccades/core/velocities'
+import type { Vec3 } from '@saccades/core/velocities';
+import type {
+  TimedVectorStream,
+  SegmentSpec,
+  ExperimentMarker,
+} from '@saccades/ingest/segmentation/types';
+import type { SaccadeDetectionOptions } from '@saccades/core/schema';
+import type { SaccadeMetricsOptions } from '@saccades/metrics/types';
+
 
 /**
  * Step 4 contracts locked by these tests:
@@ -249,7 +257,10 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     const markersBefore = JSON.stringify(markers);
     const specsBefore = JSON.stringify(specs);
 
-    expect(() => segmentAndAnalyzeStream(stream as any, specs as any, { markers: markers as any })).not.toThrow();
+    expect(() => segmentAndAnalyzeStream(
+      stream as TimedVectorStream, 
+      specs as readonly SegmentSpec[], 
+      { markers: markers as ExperimentMarker[] })).not.toThrow();
 
     expect(JSON.stringify(stream)).toBe(streamBefore);
     expect(JSON.stringify(markers)).toBe(markersBefore);
@@ -281,8 +292,8 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
     ] as const;
 
     const result = segmentAndAnalyzeStream(stream, specs, {
-      detection: { velocityThresholdDegPerSec: 123 } as any,
-      metrics: { someMetricsOption: true } as any,
+      detection: { velocityThresholdDegPerSec: 123 } as Partial<SaccadeDetectionOptions>,
+      metrics: { someMetricsOption: true } as SaccadeMetricsOptions,
     });
 
     expect(analyzeMock).toHaveBeenCalledTimes(2);
