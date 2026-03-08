@@ -166,8 +166,9 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
   });
 
   it('S4) — Missing marker handling: throws SegmentMarkerNotFoundError (locked behavior)', async () => {
+    // We only need a simple mock since this test is about error handling before analysis is even called
     const { segmentAndAnalyzeStream, SegmentMarkerNotFoundError } = await loadWithAnalyzerMock(() => ({ ok: true }));
-
+    // Stream with times but markers are missing the required end marker
     const stream = {
       timesNs: [0, 10, 20],
       vectors: [
@@ -176,13 +177,13 @@ describe('segmentAndAnalyzeStream (Step 4)', () => {
         { x: 2, y: 0, z: 0 },
       ] satisfies Vec3[],
     };
-
-    const markers = [{ timeNs: 10, type: 'TRIAL_START' }]; // missing TRIAL_END
-
+    // Markers array includes the start marker but is missing the corresponding end marker
+    const markers = [{ timeNs: 10, type: 'TRIAL_START' }]; 
+    // Segment spec that looks for a marker range that cannot be fulfilled due to the missing end marker
     const specs = [
       { kind: 'markerRange', id: 'BAD', startMarker: 'TRIAL_START', endMarker: 'TRIAL_END' },
     ] as const;
-
+    // We expect the function to throw a SegmentMarkerNotFoundError indicating that the end marker is missing
     expect(() => segmentAndAnalyzeStream(stream, specs, { markers })).toThrow(SegmentMarkerNotFoundError);
   });
 
