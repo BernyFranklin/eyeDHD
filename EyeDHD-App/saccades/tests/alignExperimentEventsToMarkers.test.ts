@@ -40,23 +40,23 @@ describe('Event Alignment Layer', () => {
 
     describe('B — Ordering', () => {
         it('B1) Returns events sorted by ascending timeNs when sort is true or omitted', () => {
-            const events: RawExperimentEvent[] = [
+            const events: RawExperimentEvent[] = [                                              // Load raw events in non-chronological order
             { timeNs: 300, type: 'third' },
             { timeNs: 100, type: 'first' },
             { timeNs: 200, type: 'second' },
-            ]
+            ];
 
-            const defaultResult = alignExperimentEventsToMarkers(events)
-            const explicitSortResult = alignExperimentEventsToMarkers(events, { sort: true })
+            const defaultResult = alignExperimentEventsToMarkers(events);                       // Align events with default sorting (should sort by timeNs)
+            const explicitSortResult = alignExperimentEventsToMarkers(events, { sort: true });  // Align events with explicit sorting enabled
 
-            const expected: ExperimentMarker[] = [
+            const expected: ExperimentMarker[] = [                                              // Define expected output markers sorted by timeNs with normalized types
             { timeNs: 100, type: 'FIRST' },
             { timeNs: 200, type: 'SECOND' },
             { timeNs: 300, type: 'THIRD' },
-            ]
+            ];
 
-            expect(defaultResult.markers).toEqual(expected)
-            expect(explicitSortResult.markers).toEqual(expected)
+            expect(defaultResult.markers).toEqual(expected);                                    // Expect default sorting to produce the expected order
+            expect(explicitSortResult.markers).toEqual(expected);                               // Expect explicit sorting to produce the same expected order
         })
 
         it('B2 — preserves original relative order for events with the same timeNs', () => {

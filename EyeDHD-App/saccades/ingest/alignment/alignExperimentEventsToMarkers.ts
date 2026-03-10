@@ -10,29 +10,37 @@ export function alignExperimentEventsToMarkers(
     events: RawExperimentEvent[],
     options: AlignExperimentEventsOptions = {}
 ): AlignExperimentEventsResult {
-    // Convert raw events to markers, normalizing the type field
-    const markers: ExperimentMarker[] = events.map((event) => { 
+    // Convert raw events to markers, normalizing the type field and keeping track of original indices for stable sorting
+    const normalizedMarkers = events.map((event, index) => { 
         const normalizedType = event.type
             .trim()
             .replace(/\s+/g, "_")
             .toUpperCase();
 
             return {
-                timeNs: event.timeNs,
-                type: normalizedType,
-                payload: event.payload,
-            };
+                marker: {
+                    timeNs: event.timeNs,
+                    type: normalizedType,
+                    payload: event.payload,
+                } satisfies ExperimentMarker,
+            originalIndex: index,
+        }
     });
 
-    // Sort markers by timeNs if sorting is enabled (default is true)
-    const outputMarkers = 
+    // Sort markers by timeNs if sorting is enabled (default is true), using original indices to maintain stable order for events with the same timeNs
+    const orderedMarkers = 
         options.sort === false
-        ? markers
-        : [...markers].sort((a, b) => a.timeNs - b.timeNs);
+        ? normalizedMarkers
+        : [...normalizedMarkers].sort((a, b) => {
+            if (a.marker.timeNs !== b.marker.timeNs) {
+                return a.marker.timeNs - b.marker.timeNs;
+            }
+            return a.originalIndex - b.originalIndex;
+        });
 
     // Return the aligned markers and diagnostics
     return {
-        markers: outputMarkers,
+        markers: orderedMarkers.map(({ marker }) => marker),
         diagnostics: {
             totalEvents: events.length,
             acceptedEvents: events.length,
