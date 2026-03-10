@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { alignExperimentEventsToMarkers } from '@saccades/ingest/alignment//alignExperimentEventsToMarkers'
 import type { ExperimentMarker } from '@saccades/ingest/segmentation/types'
-import type { RawExperimentEvent } from './types'
+import type { RawExperimentEvent } from '@saccades/ingest/alignment/types'
 
 describe('Event Alignment Layer', () => {
     describe('A — Normalization', () => {
         it('A1 — converts valid raw events into ExperimentMarker objects with normalized uppercase underscore-separated types', () => {
-            const events: RawExperimentEvent[] = [
+            const events: RawExperimentEvent[] = [                 // Load typical raw events with various type formats
             { timeNs: 100, type: 'trial start' },
             { timeNs: 200, type: 'distractor on' },
             { timeNs: 300, type: 'response made' },
             ]
 
-            const result = alignExperimentEventsToMarkers(events)
+            const result = alignExperimentEventsToMarkers(events)  // Align events to markers
 
-            expect(result.markers).toEqual<ExperimentMarker[]>([
+            expect(result.markers).toEqual<ExperimentMarker[]>([   // Expect normalized types in the output markers
             { timeNs: 100, type: 'TRIAL_START' },
             { timeNs: 200, type: 'DISTRACTOR_ON' },
             { timeNs: 300, type: 'RESPONSE_MADE' },
