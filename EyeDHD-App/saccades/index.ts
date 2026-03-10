@@ -1,3 +1,5 @@
+// TO-DO: Create index files in each subdirectory and have all exports lead to this top-level index for cleaner imports
+
 import type { Vec3 } from "./core/velocities";
 import type { SaccadeDetectionOptions } from "./core/schema";
 import type { SaccadeMetricsOptions, SaccadeMetricsInput, SaccadeMetricsResult } from "./metrics";
