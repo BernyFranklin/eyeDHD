@@ -22,11 +22,17 @@ export function alignExperimentEventsToMarkers(
                 type: normalizedType,
                 payload: event.payload,
             };
-    })
+    });
+
+    // Sort markers by timeNs if sorting is enabled (default is true)
+    const outputMarkers = 
+        options.sort === false
+        ? markers
+        : [...markers].sort((a, b) => a.timeNs - b.timeNs);
 
     // Return the aligned markers and diagnostics
     return {
-        markers,
+        markers: outputMarkers,
         diagnostics: {
             totalEvents: events.length,
             acceptedEvents: events.length,

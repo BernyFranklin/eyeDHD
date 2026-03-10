@@ -5,7 +5,7 @@ import type { RawExperimentEvent } from '@saccades/ingest/alignment/types'
 
 describe('Event Alignment Layer', () => {
     describe('A — Normalization', () => {
-        it('A1 — converts valid raw events into ExperimentMarker objects with normalized uppercase underscore-separated types', () => {
+        it('A1) Converts valid raw events into ExperimentMarker objects with normalized uppercase underscore-separated types', () => {
             const events: RawExperimentEvent[] = [                  // Load typical raw events with various type formats
             { timeNs: 100, type: 'trial start' },
             { timeNs: 200, type: 'distractor on' },
@@ -21,7 +21,7 @@ describe('Event Alignment Layer', () => {
             ]);
         })
 
-        it('A2 — normalizes leading/trailing spaces and repeated internal whitespace', () => {
+        it('A2) Normalizes leading/trailing spaces and repeated internal whitespace', () => {
             const events: RawExperimentEvent[] = [                  // Load raw events with irregular spacing in type fields
             { timeNs: 100, type: ' Trial Start ' },
             { timeNs: 200, type: 'distractor   on' },
@@ -39,7 +39,7 @@ describe('Event Alignment Layer', () => {
     })
 
     describe('B — Ordering', () => {
-        it('B1 — returns events sorted by ascending timeNs when sort is true or omitted', () => {
+        it('B1) Returns events sorted by ascending timeNs when sort is true or omitted', () => {
             const events: RawExperimentEvent[] = [
             { timeNs: 300, type: 'third' },
             { timeNs: 100, type: 'first' },
