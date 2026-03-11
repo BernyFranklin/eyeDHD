@@ -59,17 +59,17 @@ describe('Event Alignment Layer', () => {
             expect(explicitSortResult.markers).toEqual(expected);                               // Expect explicit sorting to produce the same expected order
         })
 
-        it('B2 — preserves original relative order for events with the same timeNs', () => {
-            const events: RawExperimentEvent[] = [
+        it('B2) — preserves original relative order for events with the same timeNs', () => {
+            const events: RawExperimentEvent[] = [                  // Load raw events with duplicate timeNs values to test stable sorting
             { timeNs: 100, type: 'alpha', sourceIndex: 0 },
             { timeNs: 100, type: 'beta', sourceIndex: 1 },
             { timeNs: 50, type: 'earlier', sourceIndex: 2 },
             { timeNs: 100, type: 'gamma', sourceIndex: 3 },
-            ]
+            ];
 
-            const result = alignExperimentEventsToMarkers(events)
+            const result = alignExperimentEventsToMarkers(events);  // Align events with default sorting (should sort by timeNs but maintain original order for ties)
 
-            expect(result.markers).toEqual<ExperimentMarker[]>([
+            expect(result.markers).toEqual<ExperimentMarker[]>([    // Expect events with the same timeNs to maintain their original order as defined by sourceIndex
             { timeNs: 50, type: 'EARLIER' },
             { timeNs: 100, type: 'ALPHA' },
             { timeNs: 100, type: 'BETA' },
@@ -77,16 +77,16 @@ describe('Event Alignment Layer', () => {
             ])
         })
 
-        it('B3 — preserves input order after normalization and filtering when sort is false', () => {
-            const events: RawExperimentEvent[] = [
+        it('B3) — preserves input order after normalization and filtering when sort is false', () => {
+            const events: RawExperimentEvent[] = [                                   // Load raw events in non-chronological order to test input order preservation
             { timeNs: 300, type: 'third event' },
             { timeNs: 100, type: 'first event' },
             { timeNs: 200, type: 'second event' },
-            ]
+            ];
 
-            const result = alignExperimentEventsToMarkers(events, { sort: false })
+            const result = alignExperimentEventsToMarkers(events, { sort: false });  // Align events with sorting disabled (should preserve input order regardless of timeNs)
 
-            expect(result.markers).toEqual<ExperimentMarker[]>([
+            expect(result.markers).toEqual<ExperimentMarker[]>([                     // Expect output markers to be in the same order as input events after normalization, ignoring timeNs sorting
             { timeNs: 300, type: 'THIRD_EVENT' },
             { timeNs: 100, type: 'FIRST_EVENT' },
             { timeNs: 200, type: 'SECOND_EVENT' },
