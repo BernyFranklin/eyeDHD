@@ -23,8 +23,8 @@ export default function Navbar() {
 				/>
 				<img
 					className="navbar-logo-image"
-					src="./images/eyedhd-logo.png"
-					alt="EyeDHD Logo"
+					src="./images/sight-logo.png"
+					alt="SIGHT Logo"
 				/>
 			</span>
 			<span className="navbar-links">

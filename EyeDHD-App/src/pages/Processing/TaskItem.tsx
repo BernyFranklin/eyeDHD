@@ -10,7 +10,8 @@ import { selectSelectedCase } from '@src/data/features/user';
 import { Task } from './tasks/index';
 
 type Props = {
-	task: Task
+	task: Task;
+	// Have this take an optional component to render hidden for animation and visualization, or maybe this would be the preview component. Need to figure out how the two would be wired together
 };
 
 const getSavedStatus = (task: Task, trial: CaseData) => {

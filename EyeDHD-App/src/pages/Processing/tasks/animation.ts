@@ -1,3 +1,5 @@
+import * as Three from 'three';
+
 import { setTaskProgress } from '@src/data/features/task';
 import { type Task, type TaskFn } from '.';
 
@@ -10,13 +12,25 @@ const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
 });
 
-// We need to somehow create a Canvas recorder and control it from here.
-// Maybe we can have one hiden in the task list / processing page
-// and pass it's ref to here.
-// We also need access to the stream so we can update progress here
-// for consistence, although that could be done in the animation components instead
 const fn: TaskFn = async (trial, dispatch) => {
 	let percent = 0.0;
+
+	// Use three.js non react, render frame by frame, send data to backend for FFMPEG to write to output folder, would be no need for canvas recorder or canvas elements in general
+	// <OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
+	// <ambientLight intensity={2} color="white" />
+	// <Environment preset="studio" /> {/* Lighting environment */}
+
+	const scene = new Three.Scene();
+	const camera = new Three.OrthographicCamera(0, 0, 5, 100);
+
+	const renderer = new Three.WebGLRenderer({
+		antialias: true,
+		powerPreference: 'high-performance'
+	});
+
+	renderer.setSize(1920, 1080);
+
+
 	while (percent < 1.0) {
 		await delay(10);
 

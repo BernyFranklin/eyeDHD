@@ -6,8 +6,8 @@ import { AlertControls } from '@src/components/AlertWindow';
 
 import RemoteStream from '@src/data/RemoteStream';
 import { CaseData } from '@src/data/types';
-import { useDispatch, useSelector } from '@src/data/hooks';
-import { selectLoading, setLoading } from '@src/data/features/global';
+import { useDispatch } from '@src/data/hooks';
+import { setLoading } from '@src/data/features/global';
 import { setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 
 import '@src/App.css';
@@ -57,8 +57,8 @@ function App() {
 			<main className="app-content">
 				<img
 					className="app-background-logo"
-					src="./images/eyedhd-logo-transparent.png"
-					alt="EyeDHD logo"
+					src="./images/sight-logo-transparent.png"
+					alt="SIGHT logo"
 				/>
 				<div className="app-page">
 					<Outlet />

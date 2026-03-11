@@ -1,10 +1,8 @@
-import ApexCharts from 'apexcharts';
-
 import React, { useEffect, useState, useRef } from 'react';
 
 import LoadingOverlay from '../LoadingOverlay';
+import ApexCharts from 'apexcharts';
 
-// #region Sample data
 const data = [
 	{
 		name: 'Page A',
@@ -45,11 +43,7 @@ const data = [
 ];
 
 export default function LineChart() {
-	const [error, setError] = useState('');
-	const [alertMessage, setAlertMessage] = useState('');
-	const [showAlert, setShowAlert] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
-	const [isHidden, setIsHidden] = useState(true);
 
 	const chartRef = useRef(null);
 
