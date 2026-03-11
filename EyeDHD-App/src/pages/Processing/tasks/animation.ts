@@ -30,7 +30,6 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	renderer.setSize(1920, 1080);
 
-
 	while (percent < 1.0) {
 		await delay(10);
 
