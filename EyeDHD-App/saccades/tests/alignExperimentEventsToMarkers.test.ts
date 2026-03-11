@@ -95,44 +95,44 @@ describe('Event Alignment Layer', () => {
     })
 
     describe('C — Filtering and diagnostics', () => {
-        it('C1 — filters events with non-finite timeNs and counts them in diagnostics.filteredReasons.invalidTimeNs', () => {
-            const events: RawExperimentEvent[] = [
+        it('C1) — filters events with non-finite timeNs and counts them in diagnostics.filteredReasons.invalidTimeNs', () => {
+            const events: RawExperimentEvent[] = [                             // Load raw events with a mix of valid and invalid timeNs values to test filtering and diagnostics
             { timeNs: 100, type: 'valid one' },
             { timeNs: Number.NaN, type: 'bad nan' },
             { timeNs: Number.POSITIVE_INFINITY, type: 'bad inf' },
             { timeNs: Number.NEGATIVE_INFINITY, type: 'bad neg inf' },
             { timeNs: 200, type: 'valid two' },
-            ]
+            ];
 
-            const result = alignExperimentEventsToMarkers(events)
+            const result = alignExperimentEventsToMarkers(events);             // Align events with default sorting 
 
-            expect(result.markers).toEqual<ExperimentMarker[]>([
+            expect(result.markers).toEqual<ExperimentMarker[]>([               // Expect only the valid events with finite timeNs to be included in the output markers
             { timeNs: 100, type: 'VALID_ONE' },
             { timeNs: 200, type: 'VALID_TWO' },
-            ])
+            ]);
 
-            expect(result.diagnostics.filteredReasons.invalidTimeNs).toBe(3)
-            expect(result.diagnostics.filteredReasons.blankType).toBe(0)
+            expect(result.diagnostics.filteredReasons.invalidTimeNs).toBe(3);  // Expect diagnostics to report the correct count of events filtered due to invalid timeNs values
+            expect(result.diagnostics.filteredReasons.blankType).toBe(0);      // Expect diagnostics to report zero events filtered due to blank types in this test case
         })
 
-        it('C2 — filters events whose type becomes blank after trimming/normalization and counts them in diagnostics.filteredReasons.blankType', () => {
-            const events: RawExperimentEvent[] = [
+        it('C2) — filters events whose type becomes blank after trimming/normalization and counts them in diagnostics.filteredReasons.blankType', () => {
+            const events: RawExperimentEvent[] = [                                  // Load raw events with type fields that will become blank after trimming and normalization
             { timeNs: 100, type: 'valid event' },
             { timeNs: 200, type: '' },
             { timeNs: 300, type: '     ' },
             { timeNs: 400, type: '\t   \n' },
             { timeNs: 500, type: 'also valid' },
-            ]
+            ];
 
-            const result = alignExperimentEventsToMarkers(events, { sort: false })
+            const result = alignExperimentEventsToMarkers(events, { sort: false })  // Align events with sorting disabled to focus on filtering and diagnostics
 
-            expect(result.markers).toEqual<ExperimentMarker[]>([
+            expect(result.markers).toEqual<ExperimentMarker[]>([                    // Expect only the events with non-blank types
             { timeNs: 100, type: 'VALID_EVENT' },
             { timeNs: 500, type: 'ALSO_VALID' },
-            ])
+            ]);
 
-            expect(result.diagnostics.filteredReasons.invalidTimeNs).toBe(0)
-            expect(result.diagnostics.filteredReasons.blankType).toBe(3)
+            expect(result.diagnostics.filteredReasons.invalidTimeNs).toBe(0);       // Expect diagnostics to report zero events filtered
+            expect(result.diagnostics.filteredReasons.blankType).toBe(3);           // Expect diagnostics to report the correct count of events filtered 
         })
 
         it('C3 — reports correct totals for totalEvents, acceptedEvents, filteredEvents, and filteredReasons', () => {

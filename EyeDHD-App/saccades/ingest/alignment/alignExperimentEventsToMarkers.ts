@@ -12,6 +12,7 @@ export function alignExperimentEventsToMarkers(
 ): AlignExperimentEventsResult {
     // Initialize diagnostics counters
     let invalidTimeNs = 0;
+    let blankType = 0;
 
     // Convert raw events to markers, normalizing the type field and keeping track of original indices for stable sorting
     const normalizedMarkers = events.flatMap((event, index) => { 
@@ -25,6 +26,13 @@ export function alignExperimentEventsToMarkers(
             .trim()
             .replace(/\s+/g, '_')
             .toUpperCase();
+
+        // Filter out events with blank types after normalization
+        if (normalizedType.length === 0) {
+            blankType++;
+            return [];
+        
+        }
         // Create a marker object with the normalized type and original index for stable sorting
         return [
             {
@@ -55,10 +63,10 @@ export function alignExperimentEventsToMarkers(
         diagnostics: {
             totalEvents: events.length,
             acceptedEvents: normalizedMarkers.length,
-            filteredEvents: invalidTimeNs,
+            filteredEvents: invalidTimeNs + blankType,
             filteredReasons: {
                 invalidTimeNs,
-                blankType: 0,
+                blankType,
             },
         },
     };
