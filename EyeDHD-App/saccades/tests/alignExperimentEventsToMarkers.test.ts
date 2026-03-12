@@ -248,20 +248,20 @@ describe('Event Alignment Layer', () => {
             ]);
         })
 
-        it('E2 — returns markers directly usable as Step 4 ExperimentMarker[] input shape', () => {
-            const events: RawExperimentEvent[] = [
+        it('E2) — Returns markers directly usable as Step 4 ExperimentMarker[] input shape', () => {
+            const events: RawExperimentEvent[] = [                        // Load raw events that represent typical experiment events with valid timeNs and type fields
             { timeNs: 500, type: 'trial start', payload: { trial: 1 } },
             { timeNs: 1500, type: 'trial end', payload: { trial: 1 } },
-            ]
+            ];
 
-            const result = alignExperimentEventsToMarkers(events)
+            const result = alignExperimentEventsToMarkers(events);        // Align events to markers, which should produce an array of ExperimentMarker objects 
 
-            const markers: ExperimentMarker[] = result.markers
+            const markers: ExperimentMarker[] = result.markers;           // The output markers should be directly usable as input for Step 4 segmentation
 
-            expect(markers).toEqual([
-            { timeNs: 500, type: 'TRIAL_START', payload: { trial: 1 } },
+            expect(markers).toEqual([                                     // Expect the output markers to have the correct timeNs, normalized type fields, 
+            { timeNs: 500, type: 'TRIAL_START', payload: { trial: 1 } },  // and preserved payloads, making them directly usable for segmentation
             { timeNs: 1500, type: 'TRIAL_END', payload: { trial: 1 } },
-            ])
+            ]);
         })
     })
 })
