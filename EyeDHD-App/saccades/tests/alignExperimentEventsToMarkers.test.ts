@@ -189,19 +189,19 @@ describe('Event Alignment Layer', () => {
             expect(payloadB).toEqual({ trialId: 2, nested: { label: 'end' } });    // Expect the contents of payloadB to be unchanged after alignment
         })
 
-        it('D2 — returns deep-equal results when run twice with identical inputs', () => {
-            const events: RawExperimentEvent[] = [
+        it('D2) — Returns deep-equal results when run twice with identical inputs', () => {
+            const events: RawExperimentEvent[] = [                   // Define raw events with payloads and various type formats, including leading/trailing spaces
             { timeNs: 300, type: ' trial start ', payload: { id: 3 } },
             { timeNs: 100, type: 'trial end', payload: { id: 1 } },
             { timeNs: 200, type: '   ' },
             { timeNs: Number.NaN, type: 'bad time' },
             { timeNs: 100, type: 'trial start', payload: { id: 2 } },
-            ]
+            ];
 
-            const resultA = alignExperimentEventsToMarkers(events)
-            const resultB = alignExperimentEventsToMarkers(events)
+            const resultA = alignExperimentEventsToMarkers(events);  // Align events to markers for the first time to get the initial result
+            const resultB = alignExperimentEventsToMarkers(events);  // Align events to markers for the second time to verify consistency
 
-            expect(resultA).toEqual(resultB)
+            expect(resultA).toEqual(resultB);                        // Expect the results of both alignments to be deeply equal
         })
     })
 
