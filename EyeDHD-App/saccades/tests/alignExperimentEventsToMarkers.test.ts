@@ -206,27 +206,27 @@ describe('Event Alignment Layer', () => {
     })
 
     describe('E — Output compatibility', () => {
-        it('E1 — preserves payload contents for accepted events', () => {
-            const payload1 = {
+        it('E1) — Preserves payload contents for accepted events', () => {
+            const payload1 = {                                      // Load raw events with complex payload objects to test that payload contents are preserved in the output markers
             trialId: 'T1',
             condition: 'control',
             score: 42,
-            }
+            };
 
-            const payload2 = {
+            const payload2 = {                                      // Load another raw event with a different complex payload object to test that payload contents are preserved in the output markers
             trialId: 'T2',
             distractor: true,
             meta: { level: 3 },
-            }
+            };
 
-            const events: RawExperimentEvent[] = [
+            const events: RawExperimentEvent[] = [                  //Load events with payloads
             { timeNs: 100, type: 'trial start', payload: payload1 },
             { timeNs: 200, type: 'distractor on', payload: payload2 },
-            ]
+            ];
 
-            const result = alignExperimentEventsToMarkers(events)
+            const result = alignExperimentEventsToMarkers(events);  // Align events to markers
 
-            expect(result.markers).toEqual<ExperimentMarker[]>([
+            expect(result.markers).toEqual<ExperimentMarker[]>([    // Expect the output markers to include the payloads with their contents preserved, while also normalizing the type fields
             {
                 timeNs: 100,
                 type: 'TRIAL_START',
@@ -245,7 +245,7 @@ describe('Event Alignment Layer', () => {
                 meta: { level: 3 },
                 },
             },
-            ])
+            ]);
         })
 
         it('E2 — returns markers directly usable as Step 4 ExperimentMarker[] input shape', () => {
