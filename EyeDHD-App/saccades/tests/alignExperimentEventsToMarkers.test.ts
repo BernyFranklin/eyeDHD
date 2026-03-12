@@ -159,34 +159,34 @@ describe('Event Alignment Layer', () => {
     })
 
     describe('D — Safety and determinism', () => {
-        it('D1 — does not mutate the input events array, event objects, or payload objects', () => {
-            const payloadA = { trialId: 1, nested: { label: 'start' } }
-            const payloadB = { trialId: 2, nested: { label: 'end' } }
+        it('D1) — Does not mutate the input events array, event objects, or payload objects', () => {
+            const payloadA = { trialId: 1, nested: { label: 'start' } };           // Load raw events with payload objects to test immutability of input data structures
+            const payloadB = { trialId: 2, nested: { label: 'end' } };  
 
-            const events: RawExperimentEvent[] = [
+            const events: RawExperimentEvent[] = [                                 // Define raw events with payloads and various type formats, including leading/trailing spaces
             { timeNs: 200, type: ' trial start ', payload: payloadA, sourceIndex: 0 },
             { timeNs: 100, type: ' trial end ', payload: payloadB, sourceIndex: 1 },
-            ]
+            ];
 
-            const originalArraySnapshot = events.slice()
-            const originalEvent0 = { ...events[0] }
-            const originalEvent1 = { ...events[1] }
-            const originalType0 = events[0].type
-            const originalType1 = events[1].type
-            const originalPayloadARef = payloadA
-            const originalPayloadBRef = payloadB
+            const originalArraySnapshot = events.slice();                          // Take a shallow snapshot of the original events array to compare against after alignment
+            const originalEvent0 = { ...events[0] };                               // Take a shallow copy of the first event object to compare against after alignment
+            const originalEvent1 = { ...events[1] };                               // Take a shallow copy of the second event object to compare against after alignment
+            const originalType0 = events[0].type;                                  // Store the original type string of the first event to verify it remains unchanged after alignment
+            const originalType1 = events[1].type;                                  // Store the original type string of the second event to verify it remains unchanged after alignment
+            const originalPayloadARef = payloadA;                                  // Store the original reference to payloadA to verify it remains unchanged after alignment
+            const originalPayloadBRef = payloadB;                                  // Store the original reference to payloadB to verify it remains unchanged after alignment
 
-            alignExperimentEventsToMarkers(events)
+            alignExperimentEventsToMarkers(events);                                // Align events to markers, which should not mutate the input events array or its contents
 
-            expect(events).toEqual(originalArraySnapshot)
-            expect(events[0]).toEqual(originalEvent0)
-            expect(events[1]).toEqual(originalEvent1)
-            expect(events[0].type).toBe(originalType0)
-            expect(events[1].type).toBe(originalType1)
-            expect(events[0].payload).toBe(originalPayloadARef)
-            expect(events[1].payload).toBe(originalPayloadBRef)
-            expect(payloadA).toEqual({ trialId: 1, nested: { label: 'start' } })
-            expect(payloadB).toEqual({ trialId: 2, nested: { label: 'end' } })
+            expect(events).toEqual(originalArraySnapshot);                         // Expect the events array to be unchanged (same length and same event objects in the same order)
+            expect(events[0]).toEqual(originalEvent0);                             // Expect the first event object to be unchanged (same timeNs, type, payload reference, and sourceIndex)
+            expect(events[1]).toEqual(originalEvent1);                             // Expect the second event object to be unchanged (same timeNs, type, payload reference, and sourceIndex)
+            expect(events[0].type).toBe(originalType0);                            // Expect the type string of the first event to be unchanged (including spaces)
+            expect(events[1].type).toBe(originalType1);                            // Expect the type string of the second event to be unchanged (including spaces)
+            expect(events[0].payload).toBe(originalPayloadARef);                   // Expect the payload reference of the first event to be unchanged (same object in memory)
+            expect(events[1].payload).toBe(originalPayloadBRef);                   // Expect the payload reference of the second event to be unchanged (same object in memory)
+            expect(payloadA).toEqual({ trialId: 1, nested: { label: 'start' } });  // Expect the contents of payloadA to be unchanged after alignment
+            expect(payloadB).toEqual({ trialId: 2, nested: { label: 'end' } });    // Expect the contents of payloadB to be unchanged after alignment
         })
 
         it('D2 — returns deep-equal results when run twice with identical inputs', () => {
