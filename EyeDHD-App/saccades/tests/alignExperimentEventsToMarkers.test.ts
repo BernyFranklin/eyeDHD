@@ -59,7 +59,7 @@ describe('Event Alignment Layer', () => {
             expect(explicitSortResult.markers).toEqual(expected);                               // Expect explicit sorting to produce the same expected order
         })
 
-        it('B2) — preserves original relative order for events with the same timeNs', () => {
+        it('B2) — Preserves original relative order for events with the same timeNs', () => {
             const events: RawExperimentEvent[] = [                  // Load raw events with duplicate timeNs values to test stable sorting
             { timeNs: 100, type: 'alpha', sourceIndex: 0 },
             { timeNs: 100, type: 'beta', sourceIndex: 1 },
@@ -77,7 +77,7 @@ describe('Event Alignment Layer', () => {
             ])
         })
 
-        it('B3) — preserves input order after normalization and filtering when sort is false', () => {
+        it('B3) — Preserves input order after normalization and filtering when sort is false', () => {
             const events: RawExperimentEvent[] = [                                   // Load raw events in non-chronological order to test input order preservation
             { timeNs: 300, type: 'third event' },
             { timeNs: 100, type: 'first event' },
@@ -95,7 +95,7 @@ describe('Event Alignment Layer', () => {
     })
 
     describe('C — Filtering and diagnostics', () => {
-        it('C1) — filters events with non-finite timeNs and counts them in diagnostics.filteredReasons.invalidTimeNs', () => {
+        it('C1) — Filters events with non-finite timeNs and counts them in diagnostics.filteredReasons.invalidTimeNs', () => {
             const events: RawExperimentEvent[] = [                             // Load raw events with a mix of valid and invalid timeNs values to test filtering and diagnostics
             { timeNs: 100, type: 'valid one' },
             { timeNs: Number.NaN, type: 'bad nan' },
@@ -115,7 +115,7 @@ describe('Event Alignment Layer', () => {
             expect(result.diagnostics.filteredReasons.blankType).toBe(0);      // Expect diagnostics to report zero events filtered due to blank types in this test case
         })
 
-        it('C2) — filters events whose type becomes blank after trimming/normalization and counts them in diagnostics.filteredReasons.blankType', () => {
+        it('C2) — Filters events whose type becomes blank after trimming/normalization and counts them in diagnostics.filteredReasons.blankType', () => {
             const events: RawExperimentEvent[] = [                                  // Load raw events with type fields that will become blank after trimming and normalization
             { timeNs: 100, type: 'valid event' },
             { timeNs: 200, type: '' },
@@ -135,18 +135,18 @@ describe('Event Alignment Layer', () => {
             expect(result.diagnostics.filteredReasons.blankType).toBe(3);           // Expect diagnostics to report the correct count of events filtered 
         })
 
-        it('C3 — reports correct totals for totalEvents, acceptedEvents, filteredEvents, and filteredReasons', () => {
-            const events: RawExperimentEvent[] = [
+        it('C3) — Reports correct totals for totalEvents, acceptedEvents, filteredEvents, and filteredReasons', () => {
+            const events: RawExperimentEvent[] = [                  // Load raw events with a mix of valid and invalid timeNs values and type fields
             { timeNs: 100, type: 'valid a' },
             { timeNs: Number.NaN, type: 'invalid time' },
             { timeNs: 200, type: '   ' },
             { timeNs: 300, type: 'valid b' },
             { timeNs: Number.POSITIVE_INFINITY, type: 'invalid time 2' },
-            ]
+            ];
 
-            const result = alignExperimentEventsToMarkers(events)
+            const result = alignExperimentEventsToMarkers(events);  // Align events with default sorting to test overall diagnostics reporting
 
-            expect(result.diagnostics).toEqual({
+            expect(result.diagnostics).toEqual({                    // Expect diagnostics to report the correct totals for total events, accepted events, filtered events, and reasons for filtering
             totalEvents: 5,
             acceptedEvents: 2,
             filteredEvents: 3,
@@ -154,7 +154,7 @@ describe('Event Alignment Layer', () => {
                 invalidTimeNs: 2,
                 blankType: 1,
             },
-            })
+            });
         })
     })
 
