@@ -68,6 +68,15 @@ export type {
     SegmentSummaryCsvRow,
 } from "./metrics";
 
+
+// Public event alignment API
+export {alignExperimentEventsToMarkers} from "./ingest/alignment/alignExperimentEventsToMarkers";
+export type {
+    RawExperimentEvent,
+    AlignExperimentEventsOptions,
+    AlignExperimentEventsResult,
+} from "./ingest/alignment/types";
+
 // Convenience wrapper for processing a full session of gaze data
 export interface AnalyzeSaccadesResult {
     detection: ReturnType<typeof detectSaccadesFromVectors>;
