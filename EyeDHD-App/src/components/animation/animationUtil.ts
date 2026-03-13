@@ -1,7 +1,9 @@
 import { type TrackingData } from "@src/data/types";
 
 // Calculate pitch angle from forward vector
-export function GetPitch(x: number, y: number, z: number) { return Math.atan2(-y, Math.sqrt(x * x + z * z)); }
+export function GetPitch(x: number, y: number, z: number) {
+	return Math.atan2(-y, Math.sqrt(x * x + z * z));
+}
 
 // Calculate yaw angle from forward vector
 export function GetYaw(x: number, y: number, z: number) { return Math.atan2(x, z); }
