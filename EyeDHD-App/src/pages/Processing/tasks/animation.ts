@@ -1,5 +1,5 @@
 import * as Three from 'three';
-import { useGLTF } from '@react-three/drei';
+// import { useGLTF } from '@react-three/drei';
 
 import { type TrackingData } from "@src/data/types";
 import RemoteStream from '@src/data/RemoteStream';
@@ -26,9 +26,16 @@ const fn: TaskFn = async (trial, dispatch) => {
 	// <ambientLight intensity={2} color="white" />
 	// <Environment preset="studio" /> {/* Lighting environment */}
 
-	//const scene = new Three.Scene();
-	const { scene: left } = useGLTF('/eye_model.glb');
-	const { scene: right } = useGLTF('/eye_model.glb');
+	const scene = new Three.Scene();
+	const left = new Three.Scene();
+	const right = new Three.Scene();
+	scene.add(left, right);
+
+	const loader = new Three.ObjectLoader();
+	const model = await loader.loadAsync('/eye_model.glb');
+
+	left.copy(model);
+	right.copy(model);
 	left.position.set(-2, 0, 0);
 	right.position.set(2, 0, 0);
 
@@ -53,7 +60,6 @@ const fn: TaskFn = async (trial, dispatch) => {
 		const percent = i / trial.cleaned_rows;
 		dispatch(setTaskProgress(percent));
 
-		// Create objects and draw
 		const left_targets: Three.Object3D<Three.Object3DEventMap>[] = [];
 		const right_targets: Three.Object3D<Three.Object3DEventMap>[] = [];
 
@@ -65,9 +71,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 			right_targets.push(o);
 		});
 
-		const scene = new Three.Scene();
-		scene.copy(left);
-		scene.copy(right);
+		// Update rotations
 
 		renderer.render(scene, camera);
 
