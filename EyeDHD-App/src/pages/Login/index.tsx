@@ -8,6 +8,8 @@ import { useSelector, useDispatch } from '@src/data/hooks';
 import { disableButtons, enableButtons, selectLoading } from '@src/data/features/global';
 import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 
+import { ToolTip } from '@src/components/extra/ToolTip/ToolTip';
+
 type SelectStatus = 'waiting' | 'success' | 'error';
 
 /**
@@ -124,12 +126,13 @@ export default function Login() {
 						readOnly
 					/>
 					<div className='dir-prompt-actions'>
-						<Button
-							onClick={handleConfirm}
-							disabled={!canContinue && (selectStatus === 'error' || !projectDir)}
-						>
-							{confirmLabel}
-						</Button>
+						<ToolTip text="test">
+							<Button
+								onClick={handleConfirm}
+								disabled={!canContinue && (selectStatus === 'error' || !projectDir)}>
+								{confirmLabel}
+							</Button>
+						</ToolTip>
 					</div>
 				</div>
 			</div>
