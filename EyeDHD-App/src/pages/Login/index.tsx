@@ -126,7 +126,7 @@ export default function Login() {
 						readOnly
 					/>
 					<div className='dir-prompt-actions'>
-						<ToolTip text="test">
+						<ToolTip text="Click to continue after selecting a folder">
 							<Button
 								onClick={handleConfirm}
 								disabled={!canContinue && (selectStatus === 'error' || !projectDir)}>
