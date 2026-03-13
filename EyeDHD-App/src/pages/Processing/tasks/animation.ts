@@ -26,6 +26,8 @@ const fn: TaskFn = async (trial, dispatch) => {
 	// <ambientLight intensity={2} color="white" />
 	// <Environment preset="studio" /> {/* Lighting environment */}
 
+	// Setup animation context and load models
+
 	const scene = new Three.Scene();
 	const left = new Three.Scene();
 	const right = new Three.Scene();
@@ -75,34 +77,38 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	document.body.appendChild(renderer.domElement);
 
+	// Render loop
+
 	let i = 0;
 
 	const stream = await RemoteStream.create('TrackingData', { trial });
-	for await (const row of stream) {
-		const data = row as TrackingData;
+	for await (const data of stream) {
+		const row = data as TrackingData;
 
 		// Calculate progress
 		const percent = i / trial.cleaned_rows;
 		dispatch(setTaskProgress(percent));
 
 		// Calculate new rotations
-		const targets = calculate_rotations(data);
+		const targets = calculate_rotations(row);
 
 		// Update dilations
-		const left_dilation = NormalizePupilDilation(data['LeftPupilDiameterInMM']);
+		const left_dilation = NormalizePupilDilation(row['LeftPupilDiameterInMM']);
 		// const idx = left_pupil.morphTargetDictionary['Open'];
-		if (data['LeftEyeStatus'] !== 'Invalid') {
+		if (row['LeftEyeStatus'] !== 'Invalid') {
 			left_pupil.morphTargetInfluences[0] = left_dilation;
 		}
 
-		const right_dilation = NormalizePupilDilation(data['RightPupilDiameterInMM']);
-		if (data['RightEyeStatus'] !== 'Invalid') {
+		const right_dilation = NormalizePupilDilation(row['RightPupilDiameterInMM']);
+		if (row['RightEyeStatus'] !== 'Invalid') {
 			right_pupil.morphTargetInfluences[0] = right_dilation;
 		}
 
 		// Interpolate new rotations from current if new targets
 		const smoothing = 1;
 
+		// I think we need left/right_target_rotation which gets updated when the target is valid
+		// and the interpolation only happens when the target is invalid
 		if (targets.left) {
 			left_current_rotation.x += (targets.left.x - left_current_rotation.x) * smoothing;
 			left_current_rotation.y += (targets.left.y - left_current_rotation.y) * smoothing;
@@ -162,6 +168,7 @@ export const animation: Task = {
 	fn
 }
 
+// Calculate target rotations from forward vector and eye status
 function calculate_rotations(row: TrackingData): {
 	left: { x: number, y: number, z: number } | null,
 	right: { x: number, y: number, z: number } | null
@@ -204,14 +211,6 @@ function GetYaw(x: number, y: number, z: number) {
 
 // Normalizes pupil dilation from mm to 0-1 range
 function NormalizePupilDilation(dilationInMM: number, minMM = 1, maxMM = 8) {
-    if (
-     	Number.isNaN(dilationInMM)
-      	|| !Number.isFinite(dilationInMM)
-    ) {
-        return 0; // Return 0 for invalid input
-    }
-
-    // Clamp dilation to min and max
     const clampedDilation = Math.min(Math.max(dilationInMM, minMM), maxMM);
 
     // Normalize to 0-1 range
