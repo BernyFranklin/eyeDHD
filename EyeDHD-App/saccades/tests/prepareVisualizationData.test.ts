@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { prepareVisualizationModels } from '@saccades/visualization/prep/prepareVisualizationData';
+import { prepareVisualizationModels } from '@saccades/visualization/prep/index';
 import type {
     VisualizationPrepInput,
     VisualizationPrepResult,
     VisualizationMarker,
-} from '@saccades/visualization/prep/types';
+} from '@saccades/visualization/prep/index';
 
 function deepClone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value));
@@ -38,8 +38,8 @@ function isPlainData(value: unknown): boolean {
 
 describe('Visualization Prep Layer', () => {
     describe('A — Scatter model generation', () => {
-        it('A1 — converts per-saccade analysis data into scatter points with timeMs and amplitudeDeg', () => {
-            const input: VisualizationPrepInput = {
+        it('A1) — Converts per-saccade analysis data into scatter points with timeMs and amplitudeDeg', () => {
+            const input: VisualizationPrepInput = {            // Partial input focused on perSaccade
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.5 },
                     { timeMs: 250, amplitudeDeg: 5.0 },
@@ -47,9 +47,9 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input);
+            const result = prepareVisualizationModels(input);  // Pass through to scatter generation, no special options needed
 
-            expect(result.scatter.points).toEqual([
+            expect(result.scatter.points).toEqual([            // Expect scatter points to match input saccades with correct properties
                 { timeMs: 100, amplitudeDeg: 2.5 },
                 { timeMs: 250, amplitudeDeg: 5.0 },
                 { timeMs: 400, amplitudeDeg: 1.25 },
