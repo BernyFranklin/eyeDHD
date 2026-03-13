@@ -1,5 +1,5 @@
 import * as Three from 'three';
-// import { useGLTF } from '@react-three/drei';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import { type TrackingData } from "@src/data/types";
 import RemoteStream from '@src/data/RemoteStream';
@@ -31,16 +31,38 @@ const fn: TaskFn = async (trial, dispatch) => {
 	const right = new Three.Scene();
 	scene.add(left, right);
 
-	const loader = new Three.ObjectLoader();
+	const loader = new GLTFLoader();
 	const model = await loader.loadAsync('/eye_model.glb');
 
-	left.copy(model);
-	right.copy(model);
+	left.add(model.scene.clone(true));
+	right.add(model.scene.clone(true));
 	left.position.set(-2, 0, 0);
 	right.position.set(2, 0, 0);
 
-	const camera = new Three.OrthographicCamera(0, 0, 5, 100);
+	// Get pupils from both scenes
+	let left_pupil: Three.Object3D<Three.Object3DEventMap> & Three.Mesh = undefined;
+	let right_pupil: Three.Object3D<Three.Object3DEventMap> & Three.Mesh = undefined;
 
+	left.traverse((o: Three.Object3D<Three.Object3DEventMap>) => {
+		if (o instanceof Three.Mesh && o.morphTargetDictionary && o.morphTargetInfluences) {
+			if (o.morphTargetDictionary['Open'] !== undefined) {
+				left_pupil = o;
+			}
+		}
+	});
+
+	right.traverse((o: Three.Object3D<Three.Object3DEventMap>) => {
+		if (o instanceof Three.Mesh && o.morphTargetDictionary && o.morphTargetInfluences) {
+			if (o.morphTargetDictionary['Open'] !== undefined) {
+				right_pupil = o;
+			}
+		}
+	});
+
+	const left_current_rotation = { x: 0.0, y: 0.0, z: 0.0 };
+	const right_current_rotation = { x: 0.0, y: 0.0, z: 0.0 };
+
+	const camera = new Three.OrthographicCamera(0, 0, 5, 100);
 	const renderer = new Three.WebGLRenderer({
 		antialias: true,
 		powerPreference: 'high-performance'
@@ -57,22 +79,55 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	const stream = await RemoteStream.create('TrackingData', { trial });
 	for await (const row of stream) {
+		const data = row as TrackingData;
+
+		// Calculate progress
 		const percent = i / trial.cleaned_rows;
 		dispatch(setTaskProgress(percent));
 
-		const left_targets: Three.Object3D<Three.Object3DEventMap>[] = [];
-		const right_targets: Three.Object3D<Three.Object3DEventMap>[] = [];
+		// Calculate new rotations
+		const targets = calculate_rotations(data);
 
-		left.traverse((o: Three.Object3D<Three.Object3DEventMap>) => {
-			left_targets.push(o);
-		});
+		// Update dilations
+		const left_dilation = NormalizePupilDilation(data['LeftPupilDiameterInMM']);
+		// const idx = left_pupil.morphTargetDictionary['Open'];
+		if (data['LeftEyeStatus'] !== 'Invalid') {
+			left_pupil.morphTargetInfluences[0] = left_dilation;
+		}
 
-		right.traverse((o: Three.Object3D<Three.Object3DEventMap>) => {
-			right_targets.push(o);
-		});
+		const right_dilation = NormalizePupilDilation(data['RightPupilDiameterInMM']);
+		if (data['RightEyeStatus'] !== 'Invalid') {
+			right_pupil.morphTargetInfluences[0] = right_dilation;
+		}
 
-		// Update rotations
+		// Interpolate new rotations from current if new targets
+		const smoothing = 1;
 
+		if (targets.left) {
+			left_current_rotation.x += (targets.left.x - left_current_rotation.x) * smoothing;
+			left_current_rotation.y += (targets.left.y - left_current_rotation.y) * smoothing;
+			left_current_rotation.z += (targets.left.z - left_current_rotation.z) * smoothing;
+		}
+
+		if (targets.right) {
+			right_current_rotation.x += (targets.right.x - right_current_rotation.x) * smoothing;
+			right_current_rotation.y += (targets.right.y - right_current_rotation.y) * smoothing;
+			right_current_rotation.z += (targets.right.z - right_current_rotation.z) * smoothing;
+		}
+
+		// Apply rotations
+		left.rotation.set(
+			left_current_rotation.x,
+			left_current_rotation.y,
+			left_current_rotation.z
+		);
+		right.rotation.set(
+			right_current_rotation.x,
+			right_current_rotation.y,
+			right_current_rotation.z
+		);
+
+		// Render scene and grab pixels to send to backend
 		renderer.render(scene, camera);
 
 		const pixels = new Uint8Array(SIZE.width * SIZE.height * 4);
@@ -107,19 +162,50 @@ export const animation: Task = {
 	fn
 }
 
+function calculate_rotations(row: TrackingData): {
+	left: { x: number, y: number, z: number } | null,
+	right: { x: number, y: number, z: number } | null
+} {
+	const left_forward_x = row['LeftEyeForwardX'];
+	const left_forward_y = row['LeftEyeForwardY'];
+	const left_forward_z = row['LeftEyeForwardZ'];
+	const left_pitch = GetPitch(left_forward_x, left_forward_y, left_forward_z);
+	const left_yaw = GetYaw(left_forward_x, left_forward_y, left_forward_z);
+
+	const right_forward_x = row['RightEyeForwardX'];
+	const right_forward_y = row['RightEyeForwardY'];
+	const right_forward_z = row['RightEyeForwardZ'];
+	const right_pitch = GetPitch(right_forward_x, right_forward_y, right_forward_z);
+	const right_yaw = GetYaw(right_forward_x, right_forward_y, right_forward_z);
+
+	const left_target = row['LeftEyeStatus'] === 'Invalid'
+		? null
+		: { x: left_pitch, y: left_yaw, z: 0 };
+
+	const right_target = row['RightEyeStatus'] === 'Invalid'
+		? null
+		: { x: right_pitch, y: right_yaw, z: 0 };
+
+	return {
+		left: left_target,
+		right: right_target
+	}
+}
+
 // Calculate pitch angle from forward vector
-export function GetPitch(x: number, y: number, z: number) {
+function GetPitch(x: number, y: number, z: number) {
 	return Math.atan2(-y, Math.sqrt(x * x + z * z));
 }
 
 // Calculate yaw angle from forward vector
-export function GetYaw(x: number, y: number, z: number) { return Math.atan2(x, z); }
+function GetYaw(x: number, y: number, z: number) {
+	return Math.atan2(x, z);
+}
 
 // Normalizes pupil dilation from mm to 0-1 range
-export function NormalizePupilDilation(dilationInMM: number, minMM = 1, maxMM = 8) {
+function NormalizePupilDilation(dilationInMM: number, minMM = 1, maxMM = 8) {
     if (
-    	typeof dilationInMM !== 'number'
-     	|| Number.isNaN(dilationInMM)
+     	Number.isNaN(dilationInMM)
       	|| !Number.isFinite(dilationInMM)
     ) {
         return 0; // Return 0 for invalid input
@@ -130,33 +216,4 @@ export function NormalizePupilDilation(dilationInMM: number, minMM = 1, maxMM = 
 
     // Normalize to 0-1 range
     return (clampedDilation - minMM) / (maxMM - minMM);
-}
-
-// Check data validity for angle and required fields
-export function CheckDataValidity(angle: number, row: TrackingData) {
-    let isValid = true;
-
-    // Validate angle
-    if((typeof angle !== 'number' && Number.isNaN(angle) && !Number.isFinite(angle))){
-        isValid = false;
-    }
-
-    // Sanity check for required fields
-    const positions = ['Left', 'Right'];
-    const axis = ['X', 'Y', 'Z'];
-
-    // Check all required fields
-    for(const pos of positions) {
-        for(const ax of axis) {
-            const key = `${pos}EyeForward${ax}`;
-
-            // Check if the field is missing or empty
-            if((row as any)[key] === undefined || (row as any)[key] === null) {
-                isValid = false;
-                break;
-            }
-        }
-    }
-
-    return isValid;
 }
