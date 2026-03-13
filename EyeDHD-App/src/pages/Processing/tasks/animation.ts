@@ -13,8 +13,8 @@ const RUNNING = 'Animating eye movements...';
 const COMPLETED = 'Animated eye movements';
 
 const SIZE = {
-	width: 1920,
-	height: 1080
+	width: 1280,
+	height: 720
 };
 
 const delay = (ms: number) => new Promise<void>((resolve) => {
@@ -22,16 +22,16 @@ const delay = (ms: number) => new Promise<void>((resolve) => {
 });
 
 const fn: TaskFn = async (trial, dispatch) => {
-	// <OrthographicCamera makeDefault position={[0, 0, 5]} zoom={100} />
-	// <ambientLight intensity={2} color="white" />
-	// <Environment preset="studio" /> {/* Lighting environment */}
-
-	// Setup animation context and load models
-
+	// Set up scene and lighting
 	const scene = new Three.Scene();
+	scene.background = new Three.Color(0x101010);
+
+	const ambientLight = new Three.AmbientLight(0xffffff, 2);
+	scene.add(ambientLight);
+
+	// Load models
 	const left = new Three.Scene();
 	const right = new Three.Scene();
-	scene.add(left, right);
 
 	const loader = new GLTFLoader();
 	const model = await loader.loadAsync('/eye_model.glb');
@@ -40,6 +40,8 @@ const fn: TaskFn = async (trial, dispatch) => {
 	right.add(model.scene.clone(true));
 	left.position.set(-2, 0, 0);
 	right.position.set(2, 0, 0);
+
+	scene.add(left, right);
 
 	// Get pupils from both scenes
 	let left_pupil: Three.Object3D<Three.Object3DEventMap> & Three.Mesh = undefined;
@@ -64,7 +66,18 @@ const fn: TaskFn = async (trial, dispatch) => {
 	const left_current_rotation = { x: 0.0, y: 0.0, z: 0.0 };
 	const right_current_rotation = { x: 0.0, y: 0.0, z: 0.0 };
 
-	const camera = new Three.OrthographicCamera(0, 0, 5, 100);
+	const camera = new Three.OrthographicCamera(
+		(-4 * SIZE.width / SIZE.height) / 2,
+		(4 * SIZE.width / SIZE.height) / 2,
+		-2,
+		2,
+		0.1,
+		100
+	);
+	camera.position.set(0, 0, 5);
+	camera.lookAt(0, 0, 0);
+	camera.updateProjectionMatrix();
+
 	const renderer = new Three.WebGLRenderer({
 		antialias: true,
 		powerPreference: 'high-performance'
@@ -72,9 +85,15 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	renderer.setSize(SIZE.width, SIZE.height);
 
-	//const canvas = renderer.domElement;
-	//canvas.style.display = 'none';
+	// Render to this instead of a canvas element
+	// const renderTarget = new Three.WebGLRenderTarget(SIZE.width, SIZE.height, {
+	// 	format: Three.RGBAFormat,
+	// 	type: Three.UnsignedByteType,
+	// 	depthBuffer: true,
+	// 	stencilBuffer: false
+	// });
 
+	// renderer.setRenderTarget(renderTarget);
 	document.body.appendChild(renderer.domElement);
 
 	// Render loop
@@ -136,24 +155,26 @@ const fn: TaskFn = async (trial, dispatch) => {
 		// Render scene and grab pixels to send to backend
 		renderer.render(scene, camera);
 
-		const pixels = new Uint8Array(SIZE.width * SIZE.height * 4);
-		renderer.readRenderTargetPixels(
-			renderer.getRenderTarget(),
-			0,
-			0,
-			SIZE.width,
-			SIZE.height,
-			pixels
-		);
+		// const pixels = new Uint8Array(SIZE.width * SIZE.height * 4);
+		// renderer.readRenderTargetPixels(
+		// 	renderer.getRenderTarget(),
+		// 	0,
+		// 	0,
+		// 	SIZE.width,
+		// 	SIZE.height,
+		// 	pixels
+		// );
 
-		console.log(`Frame ${i}:`, pixels.slice(0, 10));
+		// console.log(`Frame ${i}:`, pixels.slice(0, 10));
 
 		// Send pixels to backend
 
 		i = i + 1;
 	}
 
-	//renderer.setAnimationLoop(animate);
+	// renderTarget.dispose();
+	renderer.dispose();
+	renderer.domElement.remove();
 
 	await delay(150);
 }
