@@ -203,26 +203,26 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('D — Marker / overlay generation', () => {
-        it('D1 — converts distractor/event markers into visualization marker primitives', () => {
-            const input: VisualizationPrepInput = {
+        it('D1) — Converts distractor/event markers into visualization marker primitives', () => {
+            const input: VisualizationPrepInput = {  // Partial input focused on markers to test conversion of event markers into visualization marker primitives
                 markers: [
                     { timeNs: 1_500_000, type: 'DISTRACTOR_ON', label: 'D1' },
                     { timeNs: 2_250_000, type: 'DISTRACTOR_OFF', label: 'D1 end' },
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to marker generation with option to include markers
                 includeMarkers: true,
             });
 
-            expect(result.markers).toContainEqual<VisualizationMarker>({
+            expect(result.markers).toContainEqual<VisualizationMarker>({  // Expect markers to include converted event markers with correct properties for visualization overlay
                 kind: 'event',
                 timeMs: 1.5,
                 type: 'DISTRACTOR_ON',
                 label: 'D1',
             });
 
-            expect(result.markers).toContainEqual<VisualizationMarker>({
+            expect(result.markers).toContainEqual<VisualizationMarker>({  // Expect markers to include converted event markers with correct properties for visualization overlay
                 kind: 'event',
                 timeMs: 2.25,
                 type: 'DISTRACTOR_OFF',
@@ -230,19 +230,19 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('D2 — includes segment boundary markers when segments are present', () => {
-            const input: VisualizationPrepInput = {
+        it('D2) — Includes segment boundary markers when segments are present', () => {
+            const input: VisualizationPrepInput = {  // Partial input focused on segments to test conversion of segment boundaries into visualization marker primitives
                 segments: [
                     { id: 'segA', startTimeMs: 0, endTimeMs: 1000, label: 'Baseline' },
                     { id: 'segB', startTimeMs: 1000, endTimeMs: 2500, label: 'Task' },
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to marker generation with option to include markers
                 includeMarkers: true,
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment start marker for first segment with correct properties for visualization overlay
                 kind: 'segment_start',
                 timeMs: 0,
                 type: 'SEGMENT_START',
@@ -250,7 +250,7 @@ describe('Visualization Prep Layer', () => {
                 segmentId: 'segA',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment end marker for first segment with correct properties for visualization overlay
                 kind: 'segment_end',
                 timeMs: 1000,
                 type: 'SEGMENT_END',
@@ -258,7 +258,7 @@ describe('Visualization Prep Layer', () => {
                 segmentId: 'segA',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment start marker for second segment with correct properties for visualization overlay
                 kind: 'segment_start',
                 timeMs: 1000,
                 type: 'SEGMENT_START',
@@ -266,7 +266,7 @@ describe('Visualization Prep Layer', () => {
                 segmentId: 'segB',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment end marker for second segment with correct properties for visualization overlay
                 kind: 'segment_end',
                 timeMs: 2500,
                 type: 'SEGMENT_END',
@@ -275,8 +275,8 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('D3 — preserves label/type information for overlays', () => {
-            const input: VisualizationPrepInput = {
+        it('D3) — Preserves label/type information for overlays', () => {
+            const input: VisualizationPrepInput = {  // Partial input focused on markers and segments to test preservation of label and type information in visualization marker primitives
                 markers: [
                     { timeNs: 3_000_000, type: 'DISTRACTOR_ON', label: 'Auditory Cue' },
                 ],
@@ -285,18 +285,18 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to marker generation with option to include markers
                 includeMarkers: true,
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted event marker with preserved type and label information for visualization overlay
                 kind: 'event',
                 timeMs: 3,
                 type: 'DISTRACTOR_ON',
                 label: 'Auditory Cue',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment start marker with preserved label and type information for visualization overlay
                 kind: 'segment_start',
                 timeMs: 0,
                 type: 'SEGMENT_START',
