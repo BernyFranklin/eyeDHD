@@ -340,8 +340,8 @@ describe('Visualization Prep Layer', () => {
             expect(input.segments).toBe(originalSegmentsRef);      // Expect segments reference to be unchanged after processing, confirming no mutations occurred
         });
 
-        it('E2 — returns deep-equal results for identical inputs', () => {
-            const input: VisualizationPrepInput = {
+        it('E2) — returns deep-equal results for identical inputs', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that identical inputs produce deep-equal results, confirming deterministic output
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 1.0, segmentId: 'A' },
                     { timeMs: 1200, amplitudeDeg: 3.0, segmentId: 'B' },
@@ -356,19 +356,19 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result1 = prepareVisualizationModels(input, {
+            const result1 = prepareVisualizationModels(input, {  // Pass through to processing with all options to test that identical inputs produce deep-equal results
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 20,
                 includeMarkers: true,
             });
 
-            const result2 = prepareVisualizationModels(input, {
+            const result2 = prepareVisualizationModels(input, {  // Pass through to processing again with same input and options to confirm that results are deep-equal, confirming deterministic output
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 20,
                 includeMarkers: true,
             });
 
-            expect(result1).toEqual(result2);
+            expect(result1).toEqual(result2);  // Expect results from identical inputs to be deeply equal, confirming that output is deterministic and does not contain non-deterministic elements
         });
 
         it('E3 — remains plotting-framework agnostic by returning plain data objects only', () => {
