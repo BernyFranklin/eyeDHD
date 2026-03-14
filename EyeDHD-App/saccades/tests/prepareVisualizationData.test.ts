@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { prepareVisualizationModels } from '@saccades/visualization/prep/prepareVisualizationData';
+import { prepareVisualizationModels } from '@saccades/visualization/prep/index';
 import type {
     VisualizationPrepInput,
     VisualizationPrepResult,
     VisualizationMarker,
-} from '@saccades/visualization/prep/types';
+} from '@saccades/visualization/prep/index';
 
 function deepClone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value));
@@ -38,8 +38,8 @@ function isPlainData(value: unknown): boolean {
 
 describe('Visualization Prep Layer', () => {
     describe('A — Scatter model generation', () => {
-        it('A1 — converts per-saccade analysis data into scatter points with timeMs and amplitudeDeg', () => {
-            const input: VisualizationPrepInput = {
+        it('A1) — Converts per-saccade analysis data into scatter points with timeMs and amplitudeDeg', () => {
+            const input: VisualizationPrepInput = {            // Partial input focused on perSaccade
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.5 },
                     { timeMs: 250, amplitudeDeg: 5.0 },
@@ -47,17 +47,17 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input);
+            const result = prepareVisualizationModels(input);  // Pass through to scatter generation, no special options needed
 
-            expect(result.scatter.points).toEqual([
+            expect(result.scatter.points).toEqual([            // Expect scatter points to match input saccades with correct properties
                 { timeMs: 100, amplitudeDeg: 2.5 },
                 { timeMs: 250, amplitudeDeg: 5.0 },
                 { timeMs: 400, amplitudeDeg: 1.25 },
             ]);
         });
 
-        it('A2 — preserves deterministic ordering of scatter points', () => {
-            const input: VisualizationPrepInput = {
+        it('A2) — Preserves deterministic ordering of scatter points', () => {
+            const input: VisualizationPrepInput = {            // Partial input focused on perSaccade with out-of-order times to test sorting/stability
                 perSaccade: [
                     { timeMs: 500, amplitudeDeg: 1.0 },
                     { timeMs: 100, amplitudeDeg: 2.0 },
@@ -65,26 +65,26 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input);
+            const result = prepareVisualizationModels(input);  // Pass through to scatter generation, no special options needed
 
-            expect(result.scatter.points).toEqual([
+            expect(result.scatter.points).toEqual([            // Expect scatter points to be in the same order as input, preserving stability even if times are out of order
                 { timeMs: 500, amplitudeDeg: 1.0 },
                 { timeMs: 100, amplitudeDeg: 2.0 },
                 { timeMs: 300, amplitudeDeg: 3.0 },
             ]);
         });
 
-        it('A3 — includes segment association when available', () => {
-            const input: VisualizationPrepInput = {
+        it('A3) — Includes segment association when available', () => {
+            const input: VisualizationPrepInput = {            // Partial input focused on perSaccade with segmentId to test segment association in scatter points
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'baseline' },
                     { timeMs: 600, amplitudeDeg: 3.5, segmentId: 'task' },
                 ],
             };
 
-            const result = prepareVisualizationModels(input);
+            const result = prepareVisualizationModels(input);  // Pass through to scatter generation, no special options needed
 
-            expect(result.scatter.points).toEqual([
+            expect(result.scatter.points).toEqual([            // Expect scatter points to include segmentId when provided in input saccades
                 { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'baseline' },
                 { timeMs: 600, amplitudeDeg: 3.5, segmentId: 'task' },
             ]);
