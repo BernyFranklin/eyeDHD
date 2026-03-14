@@ -113,14 +113,15 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 		// Update dilations
 		const left_dilation = NormalizePupilDilation(row['LeftPupilDiameterInMM']);
-		// const idx = left_pupil.morphTargetDictionary['Open'];
 		if (row['LeftEyeStatus'] !== 'Invalid') {
-			left_pupil.morphTargetInfluences[0] = left_dilation;
+			const idx = left_pupil.morphTargetDictionary['Open'];
+			left_pupil.morphTargetInfluences[idx] = left_dilation;
 		}
 
 		const right_dilation = NormalizePupilDilation(row['RightPupilDiameterInMM']);
 		if (row['RightEyeStatus'] !== 'Invalid') {
-			right_pupil.morphTargetInfluences[0] = right_dilation;
+			const idx = right_pupil.morphTargetDictionary['Open'];
+			right_pupil.morphTargetInfluences[idx] = right_dilation;
 		}
 
 		// Interpolate new rotations from current if new targets
