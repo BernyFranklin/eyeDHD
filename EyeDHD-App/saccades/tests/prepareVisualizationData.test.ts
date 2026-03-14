@@ -153,16 +153,16 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('C — ISI histogram generation', () => {
-        it('C1 — converts ISI values into histogram-ready binEdges and counts', () => {
-            const input: VisualizationPrepInput = {
+        it('C1) — Converts ISI values into histogram-ready binEdges and counts', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on isiValuesMs to test ISI histogram generation with specific bin width
                 isiValuesMs: [10, 40, 60, 90],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to ISI histogram generation with specific bin width option
                 isiBinWidthMs: 50,
             });
 
-            expect(result.isiHistogram).toEqual({
+            expect(result.isiHistogram).toEqual({               // Expect ISI histogram to have correct bin width, edges, and counts based on input ISI values and binning logic
                 binWidthMs: 50,
                 binEdges: [0, 50, 100],
                 counts: [2, 2],

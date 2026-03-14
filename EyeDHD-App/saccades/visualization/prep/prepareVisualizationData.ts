@@ -66,6 +66,45 @@ export function prepareVisualizationModels(
             };
         });
     })();
+
+    // Generate ISI Histogram data
+    const isiBinWidthMs = options.isiBinWidthMs ?? 25;
+
+    const isiHistogram = (() => {
+        // If no ISI values, return empty histogram
+        const isiValues = input.isiValuesMs ?? [];
+        if (isiValues.length === 0) {
+            return {
+                binWidthMs: isiBinWidthMs,
+                binEdges: [],
+                counts: [],
+            };
+        }
+
+        // Determine max ISI to set histogram range
+        const maxIsi = Math.max(...isiValues);
+        // Calculate number of bins needed to cover the range of ISI values
+        const binCount = Math.floor(maxIsi / isiBinWidthMs) + 1;
+        // Create bin edges based on the number of bins and bin width
+        const binEdges = Array.from(
+            { length: binCount + 1},
+            (_, i) => i * isiBinWidthMs
+        );
+        // Initialize counts for each bin
+        const counts = Array.from({ length: binCount }, () => 0);
+        // Count ISI values in each bin
+        for (const value of isiValues) {
+            const binIndex = Math.floor(value / isiBinWidthMs);
+            counts[binIndex] += 1;
+        }
+        // Return histogram data structure
+        return {
+            binWidthMs: isiBinWidthMs,
+            binEdges,
+            counts,
+        };
+    })();
+    
     // Return object as VisualizationPrepResult structure
     return {
         scatter: { points: scatterPoints, },
@@ -73,11 +112,7 @@ export function prepareVisualizationModels(
             binWidthMs,
             points: rateSeriesPoints, 
         },
-        isiHistogram: {
-            binWidthMs: options.isiBinWidthMs ?? 25,
-            binEdges: [], // TODO: compute ISI histogram bin edges
-            counts: [],   // TODO: compute ISI histogram counts
-        },
+        isiHistogram,
         markers: [], // TODO: process event and segment markers
     };
 }
