@@ -371,8 +371,8 @@ describe('Visualization Prep Layer', () => {
             expect(result1).toEqual(result2);  // Expect results from identical inputs to be deeply equal, confirming that output is deterministic and does not contain non-deterministic elements
         });
 
-        it('E3 — remains plotting-framework agnostic by returning plain data objects only', () => {
-            const input: VisualizationPrepInput = {
+        it('E3) — Remains plotting-framework agnostic by returning plain data objects only', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that output is composed of plain data objects without any plotting-framework-specific structures
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.0 },
                 ],
@@ -385,13 +385,13 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to processing with all options to test that output is composed of plain data objects suitable for any plotting
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 25,
                 includeMarkers: true,
             });
 
-            expect(isPlainData(result)).toBe(true);
+            expect(isPlainData(result)).toBe(true);  // Expect output to be composed of plain data objects without any functions, class instances, or other non-serializable structures
         });
     });
 
