@@ -92,8 +92,8 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('B — Rate series generation', () => {
-        it('B1 — generates rate-per-second series using a chosen bin width', () => {
-            const input: VisualizationPrepInput = {
+        it('B1) — Generates rate-per-second series using a chosen bin width', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on perSaccade with multiple saccades to test rate series generation with specific bin width
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 1.0 },
                     { timeMs: 400, amplitudeDeg: 2.0 },
@@ -102,11 +102,11 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to rate series generation with specific bin width option
                 rateBinWidthMs: 1000,
             });
 
-            expect(result.rateSeries).toEqual({
+            expect(result.rateSeries).toEqual({                 // Expect rate series to have correct bin width and points calculated based on input saccades and binning logic
                 binWidthMs: 1000,
                 points: [
                     { timeMs: 500, count: 2, ratePerSec: 2 },
