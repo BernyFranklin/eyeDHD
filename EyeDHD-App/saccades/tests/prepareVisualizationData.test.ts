@@ -153,48 +153,48 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('C — ISI histogram generation', () => {
-        it('C1 — converts ISI values into histogram-ready binEdges and counts', () => {
-            const input: VisualizationPrepInput = {
+        it('C1) — Converts ISI values into histogram-ready binEdges and counts', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on isiValuesMs to test ISI histogram generation with specific bin width
                 isiValuesMs: [10, 40, 60, 90],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to ISI histogram generation with specific bin width option
                 isiBinWidthMs: 50,
             });
 
-            expect(result.isiHistogram).toEqual({
+            expect(result.isiHistogram).toEqual({               // Expect ISI histogram to have correct bin width, edges, and counts based on input ISI values and binning logic
                 binWidthMs: 50,
                 binEdges: [0, 50, 100],
                 counts: [2, 2],
             });
         });
 
-        it('C2 — respects chosen histogram bin width', () => {
-            const input: VisualizationPrepInput = {
+        it('C2) — Respects chosen histogram bin width', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on isiValuesMs to test ISI histogram generation with different bin width
                 isiValuesMs: [5, 20, 45, 80],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to ISI histogram generation with different bin width option
                 isiBinWidthMs: 20,
             });
 
-            expect(result.isiHistogram).toEqual({
+            expect(result.isiHistogram).toEqual({               // Expect ISI histogram to reflect the chosen bin width in its edges and counts based on input ISI values
                 binWidthMs: 20,
                 binEdges: [0, 20, 40, 60, 80, 100],
                 counts: [1, 1, 1, 0, 1],
             });
         });
 
-        it('C3 — handles empty ISI input gracefully', () => {
-            const input: VisualizationPrepInput = {
+        it('C3) — Handles empty ISI input gracefully', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on empty isiValuesMs to test graceful handling of empty ISI input for histogram generation
                 isiValuesMs: [],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to ISI histogram generation with specific bin width option
                 isiBinWidthMs: 25,
             });
 
-            expect(result.isiHistogram).toEqual({
+            expect(result.isiHistogram).toEqual({               // Expect ISI histogram to handle empty input gracefully by returning correct structure with empty edges and counts
                 binWidthMs: 25,
                 binEdges: [],
                 counts: [],
