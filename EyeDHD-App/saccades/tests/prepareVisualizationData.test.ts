@@ -135,17 +135,17 @@ describe('Visualization Prep Layer', () => {
             ]);
         });
 
-        it('B3 — handles empty segments or empty analysis inputs gracefully', () => {
-            const emptyAnalysisInput: VisualizationPrepInput = {
+        it('B3) — Handles empty segments or empty analysis inputs gracefully', () => {
+            const emptyAnalysisInput: VisualizationPrepInput = {             // Empty input focused on testing graceful handling of empty perSaccade and segments for rate series generation
                 perSaccade: [],
                 segments: [],
             };
 
-            const result = prepareVisualizationModels(emptyAnalysisInput, {
+            const result = prepareVisualizationModels(emptyAnalysisInput, {  // Pass through to rate series generation with specific bin width option
                 rateBinWidthMs: 1000,
             });
 
-            expect(result.rateSeries).toEqual({
+            expect(result.rateSeries).toEqual({                              // Expect rate series to handle empty input gracefully by returning correct structure with empty points array
                 binWidthMs: 1000,
                 points: [],
             });
