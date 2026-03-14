@@ -307,8 +307,8 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('E — Diagnostics / safety / determinism', () => {
-        it('E1 — does not mutate input structures', () => {
-            const input: VisualizationPrepInput = {
+        it('E1) — Does not mutate input structures', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that prepareVisualizationModels does not mutate input structures and preserves reference equality
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'seg1', sourceIndex: 0 },
                 ],
@@ -321,23 +321,23 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const before = deepClone(input);
-            const originalPerSaccadeRef = input.perSaccade;
-            const originalIsiRef = input.isiValuesMs;
-            const originalMarkersRef = input.markers;
-            const originalSegmentsRef = input.segments;
+            const before = deepClone(input);                 // Deep clone input to compare against after processing to ensure no mutations occur
+            const originalPerSaccadeRef = input.perSaccade;  // Store original reference to perSaccade array to check for reference equality after processing
+            const originalIsiRef = input.isiValuesMs;        // Store original reference to isiValuesMs array to check for reference equality after processing
+            const originalMarkersRef = input.markers;        // Store original reference to markers array to check for reference equality after processing
+            const originalSegmentsRef = input.segments;      // Store original reference to segments array to check for reference equality after processing
 
-            prepareVisualizationModels(input, {
+            prepareVisualizationModels(input, {  // Pass through to processing with all options to test that input is not mutated and references are preserved
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 25,
                 includeMarkers: true,
             });
 
-            expect(input).toEqual(before);
-            expect(input.perSaccade).toBe(originalPerSaccadeRef);
-            expect(input.isiValuesMs).toBe(originalIsiRef);
-            expect(input.markers).toBe(originalMarkersRef);
-            expect(input.segments).toBe(originalSegmentsRef);
+            expect(input).toEqual(before);                         // Expect input to be deeply equal to original input after processing, confirming no mutations occurred
+            expect(input.perSaccade).toBe(originalPerSaccadeRef);  // Expect perSaccade reference to be unchanged after processing, confirming no mutations occurred
+            expect(input.isiValuesMs).toBe(originalIsiRef);        // Expect isiValuesMs reference to be unchanged after processing, confirming no mutations occurred
+            expect(input.markers).toBe(originalMarkersRef);        // Expect markers reference to be unchanged after processing, confirming no mutations occurred
+            expect(input.segments).toBe(originalSegmentsRef);      // Expect segments reference to be unchanged after processing, confirming no mutations occurred
         });
 
         it('E2 — returns deep-equal results for identical inputs', () => {

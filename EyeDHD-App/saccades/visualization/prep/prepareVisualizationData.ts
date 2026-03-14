@@ -134,7 +134,7 @@ export function prepareVisualizationModels(
             },
         ]);
         // Combine event markers and segment markers into a single array of visualization markers
-        return [...eventMarkers, ...segmentMarkers];;
+        return [...eventMarkers, ...segmentMarkers];
     })();
     // Return object as VisualizationPrepResult structure
     return {
