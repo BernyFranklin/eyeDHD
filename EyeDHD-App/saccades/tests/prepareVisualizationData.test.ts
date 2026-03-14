@@ -396,22 +396,22 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('F — Output shape compatibility', () => {
-        it('F1 — returns a single top-level result containing scatter, rateSeries, isiHistogram, and markers', () => {
-            const input: VisualizationPrepInput = {
+        it('F1) — Returns a single top-level result containing scatter, rateSeries, isiHistogram, and markers', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that output contains all expected top-level properties for visualization
                 perSaccade: [{ timeMs: 100, amplitudeDeg: 2.5 }],
                 isiValuesMs: [20, 40],
                 markers: [{ timeNs: 1_000_000, type: 'DISTRACTOR_ON', label: 'D1' }],
                 segments: [{ id: 'seg1', startTimeMs: 0, endTimeMs: 500, label: 'Baseline' }],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to processing with all options to test that output contains all expected properties
                 includeMarkers: true,
             });
 
-            expect(result).toHaveProperty('scatter');
-            expect(result).toHaveProperty('rateSeries');
-            expect(result).toHaveProperty('isiHistogram');
-            expect(result).toHaveProperty('markers');
+            expect(result).toHaveProperty('scatter');       // Expect output to have scatter property containing scatter points for visualization
+            expect(result).toHaveProperty('rateSeries');    // Expect output to have rateSeries property containing rate series points and bin width for visualization
+            expect(result).toHaveProperty('isiHistogram');  // Expect output to have isiHistogram property containing bin edges, counts, and bin width for visualization
+            expect(result).toHaveProperty('markers');       // Expect output to have markers property containing array of visualization marker primitives for overlays
         });
 
         it('F2 — output is suitable for downstream charting/export layers without further normalization', () => {
