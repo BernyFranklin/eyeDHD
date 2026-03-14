@@ -74,17 +74,17 @@ describe('Visualization Prep Layer', () => {
             ]);
         });
 
-        it('A3 — includes segment association when available', () => {
-            const input: VisualizationPrepInput = {
+        it('A3) — Includes segment association when available', () => {
+            const input: VisualizationPrepInput = {            // Partial input focused on perSaccade with segmentId to test segment association in scatter points
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'baseline' },
                     { timeMs: 600, amplitudeDeg: 3.5, segmentId: 'task' },
                 ],
             };
 
-            const result = prepareVisualizationModels(input);
+            const result = prepareVisualizationModels(input);  // Pass through to scatter generation, no special options needed
 
-            expect(result.scatter.points).toEqual([
+            expect(result.scatter.points).toEqual([            // Expect scatter points to include segmentId when provided in input saccades
                 { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'baseline' },
                 { timeMs: 600, amplitudeDeg: 3.5, segmentId: 'task' },
             ]);
