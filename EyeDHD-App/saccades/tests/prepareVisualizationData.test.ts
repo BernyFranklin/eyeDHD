@@ -185,16 +185,16 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('C3 — handles empty ISI input gracefully', () => {
-            const input: VisualizationPrepInput = {
+        it('C3) — Handles empty ISI input gracefully', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on empty isiValuesMs to test graceful handling of empty ISI input for histogram generation
                 isiValuesMs: [],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to ISI histogram generation with specific bin width option
                 isiBinWidthMs: 25,
             });
 
-            expect(result.isiHistogram).toEqual({
+            expect(result.isiHistogram).toEqual({               // Expect ISI histogram to handle empty input gracefully by returning correct structure with empty edges and counts
                 binWidthMs: 25,
                 binEdges: [],
                 counts: [],
