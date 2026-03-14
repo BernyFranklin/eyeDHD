@@ -169,16 +169,16 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('C2 — respects chosen histogram bin width', () => {
-            const input: VisualizationPrepInput = {
+        it('C2) — Respects chosen histogram bin width', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on isiValuesMs to test ISI histogram generation with different bin width
                 isiValuesMs: [5, 20, 45, 80],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to ISI histogram generation with different bin width option
                 isiBinWidthMs: 20,
             });
 
-            expect(result.isiHistogram).toEqual({
+            expect(result.isiHistogram).toEqual({               // Expect ISI histogram to reflect the chosen bin width in its edges and counts based on input ISI values
                 binWidthMs: 20,
                 binEdges: [0, 20, 40, 60, 80, 100],
                 counts: [1, 1, 1, 0, 1],
