@@ -107,15 +107,34 @@ export function prepareVisualizationModels(
     
     // Generate overlay
     const markers = (() => {
+        // If option to include markers is not set, return empty array
         if (!options.includeMarkers) return [];
-
+        // Convert event markers to visualization marker primitives
         const eventMarkers = (input.markers ?? []).map((marker) => ({
             kind: 'event' as const,
             timeMs: marker.timeNs / 1_000_000,
             type: marker.type,
             ...(marker.label !== undefined ? { label: marker.label } : {}),
         }));
-        return eventMarkers;
+        // Convert segments to visualization marker primitives for segment start and end
+        const segmentMarkers = (input.segments ?? []).flatMap((segment) => [
+            {
+                kind: 'segment_start' as const,
+                timeMs: segment.startTimeMs,
+                type: 'SEGMENT_START',
+                ...(segment.label !== undefined ? { label: segment.label } : {}),
+                segmentId: segment.id,
+            },
+            {
+                kind: 'segment_end' as const,
+                timeMs: segment.endTimeMs,
+                type: 'SEGMENT_END',
+                ...(segment.label !== undefined ? { label: segment.label } : {}),
+                segmentId: segment.id,
+            },
+        ]);
+        // Combine event markers and segment markers into a single array of visualization markers
+        return [...eventMarkers, ...segmentMarkers];;
     })();
     // Return object as VisualizationPrepResult structure
     return {

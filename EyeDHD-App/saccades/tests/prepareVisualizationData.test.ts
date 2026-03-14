@@ -230,19 +230,19 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('D2 — includes segment boundary markers when segments are present', () => {
-            const input: VisualizationPrepInput = {
+        it('D2) — Includes segment boundary markers when segments are present', () => {
+            const input: VisualizationPrepInput = {  // Partial input focused on segments to test conversion of segment boundaries into visualization marker primitives
                 segments: [
                     { id: 'segA', startTimeMs: 0, endTimeMs: 1000, label: 'Baseline' },
                     { id: 'segB', startTimeMs: 1000, endTimeMs: 2500, label: 'Task' },
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to marker generation with option to include markers
                 includeMarkers: true,
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include segment start marker for first segment with correct properties based on input segment data
                 kind: 'segment_start',
                 timeMs: 0,
                 type: 'SEGMENT_START',
@@ -250,7 +250,7 @@ describe('Visualization Prep Layer', () => {
                 segmentId: 'segA',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include segment end marker for first segment with correct properties based on input segment data
                 kind: 'segment_end',
                 timeMs: 1000,
                 type: 'SEGMENT_END',
@@ -258,7 +258,7 @@ describe('Visualization Prep Layer', () => {
                 segmentId: 'segA',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include segment start marker for second segment with correct properties based on input segment data
                 kind: 'segment_start',
                 timeMs: 1000,
                 type: 'SEGMENT_START',
@@ -266,7 +266,7 @@ describe('Visualization Prep Layer', () => {
                 segmentId: 'segB',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include segment end marker for second segment with correct properties based on input segment data
                 kind: 'segment_end',
                 timeMs: 2500,
                 type: 'SEGMENT_END',
