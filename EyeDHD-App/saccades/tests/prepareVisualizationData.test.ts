@@ -203,26 +203,26 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('D — Marker / overlay generation', () => {
-        it('D1 — converts distractor/event markers into visualization marker primitives', () => {
-            const input: VisualizationPrepInput = {
+        it('D1) — Converts distractor/event markers into visualization marker primitives', () => {
+            const input: VisualizationPrepInput = {                       // Partial input focused on markers to test conversion of event markers into visualization marker primitives
                 markers: [
                     { timeNs: 1_500_000, type: 'DISTRACTOR_ON', label: 'D1' },
                     { timeNs: 2_250_000, type: 'DISTRACTOR_OFF', label: 'D1 end' },
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {            // Pass through to marker generation with option to include markers
                 includeMarkers: true,
             });
 
-            expect(result.markers).toContainEqual<VisualizationMarker>({
+            expect(result.markers).toContainEqual<VisualizationMarker>({  // Expect markers to include converted event markers with correct properties based on input marker data
                 kind: 'event',
                 timeMs: 1.5,
                 type: 'DISTRACTOR_ON',
                 label: 'D1',
             });
 
-            expect(result.markers).toContainEqual<VisualizationMarker>({
+            expect(result.markers).toContainEqual<VisualizationMarker>({  // Expect markers to include converted event markers with correct properties based on input marker data, testing multiple markers
                 kind: 'event',
                 timeMs: 2.25,
                 type: 'DISTRACTOR_OFF',

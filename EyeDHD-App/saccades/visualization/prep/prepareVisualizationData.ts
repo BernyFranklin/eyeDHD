@@ -105,6 +105,18 @@ export function prepareVisualizationModels(
         };
     })();
     
+    // Generate overlay
+    const markers = (() => {
+        if (!options.includeMarkers) return [];
+
+        const eventMarkers = (input.markers ?? []).map((marker) => ({
+            kind: 'event' as const,
+            timeMs: marker.timeNs / 1_000_000,
+            type: marker.type,
+            ...(marker.label !== undefined ? { label: marker.label } : {}),
+        }));
+        return eventMarkers;
+    })();
     // Return object as VisualizationPrepResult structure
     return {
         scatter: { points: scatterPoints, },
@@ -113,7 +125,7 @@ export function prepareVisualizationModels(
             points: rateSeriesPoints, 
         },
         isiHistogram,
-        markers: [], // TODO: process event and segment markers
+        markers, 
     };
 }
 
