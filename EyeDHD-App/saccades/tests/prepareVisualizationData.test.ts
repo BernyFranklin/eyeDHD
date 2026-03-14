@@ -115,8 +115,8 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('B2 — produces deterministic bin centers/timestamps', () => {
-            const input: VisualizationPrepInput = {
+        it('B2) — Produces deterministic bin centers/timestamps', () => {
+            const input: VisualizationPrepInput = {                          // Partial input focused on perSaccade with saccades placed to test deterministic bin center calculation in rate series generation
                 perSaccade: [
                     { timeMs: 50, amplitudeDeg: 1.0 },
                     { timeMs: 1050, amplitudeDeg: 1.0 },
@@ -124,11 +124,11 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {               // Pass through to rate series generation with specific bin width option to test deterministic bin center calculation
                 rateBinWidthMs: 1000,
             });
 
-            expect(result.rateSeries.points.map((p) => p.timeMs)).toEqual([
+            expect(result.rateSeries.points.map((p) => p.timeMs)).toEqual([  // Expect bin centers to be deterministic and correctly calculated based on bin width and input saccade times
                 500,
                 1500,
                 2500,
