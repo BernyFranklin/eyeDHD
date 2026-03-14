@@ -92,8 +92,8 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('B — Rate series generation', () => {
-        it('B1 — generates rate-per-second series using a chosen bin width', () => {
-            const input: VisualizationPrepInput = {
+        it('B1) — Generates rate-per-second series using a chosen bin width', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on perSaccade with multiple saccades to test rate series generation with specific bin width
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 1.0 },
                     { timeMs: 400, amplitudeDeg: 2.0 },
@@ -102,11 +102,11 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to rate series generation with specific bin width option
                 rateBinWidthMs: 1000,
             });
 
-            expect(result.rateSeries).toEqual({
+            expect(result.rateSeries).toEqual({                 // Expect rate series to have correct bin width and points calculated based on input saccades and binning logic
                 binWidthMs: 1000,
                 points: [
                     { timeMs: 500, count: 2, ratePerSec: 2 },
@@ -115,8 +115,8 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('B2 — produces deterministic bin centers/timestamps', () => {
-            const input: VisualizationPrepInput = {
+        it('B2) — Produces deterministic bin centers/timestamps', () => {
+            const input: VisualizationPrepInput = {                          // Partial input focused on perSaccade with saccades placed to test deterministic bin center calculation in rate series generation
                 perSaccade: [
                     { timeMs: 50, amplitudeDeg: 1.0 },
                     { timeMs: 1050, amplitudeDeg: 1.0 },
@@ -124,28 +124,28 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {               // Pass through to rate series generation with specific bin width option to test deterministic bin center calculation
                 rateBinWidthMs: 1000,
             });
 
-            expect(result.rateSeries.points.map((p) => p.timeMs)).toEqual([
+            expect(result.rateSeries.points.map((p) => p.timeMs)).toEqual([  // Expect bin centers to be deterministic and correctly calculated based on bin width and input saccade times
                 500,
                 1500,
                 2500,
             ]);
         });
 
-        it('B3 — handles empty segments or empty analysis inputs gracefully', () => {
-            const emptyAnalysisInput: VisualizationPrepInput = {
+        it('B3) — Handles empty segments or empty analysis inputs gracefully', () => {
+            const emptyAnalysisInput: VisualizationPrepInput = {             // Empty input focused on testing graceful handling of empty perSaccade and segments for rate series generation
                 perSaccade: [],
                 segments: [],
             };
 
-            const result = prepareVisualizationModels(emptyAnalysisInput, {
+            const result = prepareVisualizationModels(emptyAnalysisInput, {  // Pass through to rate series generation with specific bin width option
                 rateBinWidthMs: 1000,
             });
 
-            expect(result.rateSeries).toEqual({
+            expect(result.rateSeries).toEqual({                              // Expect rate series to handle empty input gracefully by returning correct structure with empty points array
                 binWidthMs: 1000,
                 points: [],
             });
