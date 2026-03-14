@@ -17,12 +17,17 @@ const SIZE = {
 	height: 720
 };
 
-const delay = (ms: number) => new Promise<void>((resolve) => {
-	setTimeout(resolve, ms);
-});
+type Rotation = {
+	x: number,
+	y: number,
+	z: number
+};
 
 const fn: TaskFn = async (trial, dispatch) => {
-	// Set up scene and lighting
+	/*
+	 * Rendering setup
+	 */
+
 	const scene = new Three.Scene();
 	scene.background = new Three.Color(0x101010);
 
@@ -63,8 +68,8 @@ const fn: TaskFn = async (trial, dispatch) => {
 		}
 	});
 
-	const left_current_rotation = { x: 0.0, y: 0.0, z: 0.0 };
-	const right_current_rotation = { x: 0.0, y: 0.0, z: 0.0 };
+	const left_rotation = { x: 0.0, y: 0.0, z: 0.0 };
+	const right_rotation = { x: 0.0, y: 0.0, z: 0.0 };
 
 	const camera = new Three.OrthographicCamera(
 		(-4 * SIZE.width / SIZE.height) / 2,
@@ -96,61 +101,32 @@ const fn: TaskFn = async (trial, dispatch) => {
 	// renderer.setRenderTarget(renderTarget);
 	document.body.appendChild(renderer.domElement);
 
-	// Render loop
-
 	let i = 0;
-
 	const stream = await RemoteStream.create('TrackingData', { trial });
-	for await (const data of stream) {
-		const row = data as TrackingData;
 
+	/*
+	 * Rendering loop
+	 */
+
+	for await (const row of stream) {
 		// Calculate progress
 		const percent = i / trial.cleaned_rows;
 		dispatch(setTaskProgress(percent));
 
-		// Calculate new rotations
-		const targets = calculate_rotations(row);
+		const targets = calculate_rotations(row as TrackingData);
+		update_dilation(row as TrackingData, left_pupil, right_pupil);
+		interpolate_rotation(targets, left_rotation, right_rotation);
 
-		// Update dilations
-		const left_dilation = NormalizePupilDilation(row['LeftPupilDiameterInMM']);
-		if (row['LeftEyeStatus'] !== 'Invalid') {
-			const idx = left_pupil.morphTargetDictionary['Open'];
-			left_pupil.morphTargetInfluences[idx] = left_dilation;
-		}
-
-		const right_dilation = NormalizePupilDilation(row['RightPupilDiameterInMM']);
-		if (row['RightEyeStatus'] !== 'Invalid') {
-			const idx = right_pupil.morphTargetDictionary['Open'];
-			right_pupil.morphTargetInfluences[idx] = right_dilation;
-		}
-
-		// Interpolate new rotations from current if new targets
-		const smoothing = 1;
-
-		// I think we need left/right_target_rotation which gets updated when the target is valid
-		// and the interpolation only happens when the target is invalid
-		if (targets.left) {
-			left_current_rotation.x += (targets.left.x - left_current_rotation.x) * smoothing;
-			left_current_rotation.y += (targets.left.y - left_current_rotation.y) * smoothing;
-			left_current_rotation.z += (targets.left.z - left_current_rotation.z) * smoothing;
-		}
-
-		if (targets.right) {
-			right_current_rotation.x += (targets.right.x - right_current_rotation.x) * smoothing;
-			right_current_rotation.y += (targets.right.y - right_current_rotation.y) * smoothing;
-			right_current_rotation.z += (targets.right.z - right_current_rotation.z) * smoothing;
-		}
-
-		// Apply rotations
+		// Apply rotation to models
 		left.rotation.set(
-			left_current_rotation.x,
-			left_current_rotation.y,
-			left_current_rotation.z
+			left_rotation.x,
+			left_rotation.y,
+			left_rotation.z
 		);
 		right.rotation.set(
-			right_current_rotation.x,
-			right_current_rotation.y,
-			right_current_rotation.z
+			right_rotation.x,
+			right_rotation.y,
+			right_rotation.z
 		);
 
 		// Render scene and grab pixels to send to backend
@@ -190,11 +166,14 @@ export const animation: Task = {
 	fn
 }
 
+// Helper functions
+
+const delay = (ms: number) => new Promise<void>((resolve) => {
+	setTimeout(resolve, ms);
+});
+
 // Calculate target rotations from forward vector and eye status
-function calculate_rotations(row: TrackingData): {
-	left: { x: number, y: number, z: number } | null,
-	right: { x: number, y: number, z: number } | null
-} {
+function calculate_rotations(row: TrackingData): { left?: Rotation, right?: Rotation } {
 	const left_forward_x = row['LeftEyeForwardX'];
 	const left_forward_y = row['LeftEyeForwardY'];
 	const left_forward_z = row['LeftEyeForwardZ'];
@@ -221,13 +200,49 @@ function calculate_rotations(row: TrackingData): {
 	}
 }
 
+// Interpolate rotation towards target rotation if target is valid, otherwise keep current rotation
+function interpolate_rotation(
+	targets: { left?: Rotation, right?: Rotation },
+	left_rotation: Rotation,
+	right_rotation: Rotation
+) {
+	const smoothing = 1;
+
+	if (targets.left) {
+		left_rotation.x += (targets.left.x - left_rotation.x) * smoothing;
+		left_rotation.y += (targets.left.y - left_rotation.y) * smoothing;
+		left_rotation.z += (targets.left.z - left_rotation.z) * smoothing;
+	}
+
+	if (targets.right) {
+		right_rotation.x += (targets.right.x - right_rotation.x) * smoothing;
+		right_rotation.y += (targets.right.y - right_rotation.y) * smoothing;
+		right_rotation.z += (targets.right.z - right_rotation.z) * smoothing;
+	}
+}
+
+// Update pupil dilation based on pupil diameter in mm, normalized to 0-1 range
+function update_dilation(row: TrackingData, left_pupil: Three.Mesh, right_pupil: Three.Mesh) {
+	const left_dilation = NormalizePupilDilation(row['LeftPupilDiameterInMM']);
+	if (row['LeftEyeStatus'] !== 'Invalid') {
+		const idx = left_pupil.morphTargetDictionary['Open'];
+		left_pupil.morphTargetInfluences[idx] = left_dilation;
+	}
+
+	const right_dilation = NormalizePupilDilation(row['RightPupilDiameterInMM']);
+	if (row['RightEyeStatus'] !== 'Invalid') {
+		const idx = right_pupil.morphTargetDictionary['Open'];
+		right_pupil.morphTargetInfluences[idx] = right_dilation;
+	}
+}
+
 // Calculate pitch angle from forward vector
 function GetPitch(x: number, y: number, z: number) {
 	return Math.atan2(-y, Math.sqrt(x * x + z * z));
 }
 
 // Calculate yaw angle from forward vector
-function GetYaw(x: number, y: number, z: number) {
+function GetYaw(x: number, _: number, z: number) {
 	return Math.atan2(x, z);
 }
 
