@@ -13,8 +13,8 @@ const RUNNING = 'Animating eye movements...';
 const COMPLETED = 'Animated eye movements';
 
 const SIZE = {
-	width: 1280,
-	height: 720
+	width: 854,
+	height: 480
 };
 
 type Rotation = {
@@ -90,17 +90,6 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	renderer.setSize(SIZE.width, SIZE.height);
 
-	// Render to this instead of a canvas element
-	// const renderTarget = new Three.WebGLRenderTarget(SIZE.width, SIZE.height, {
-	// 	format: Three.RGBAFormat,
-	// 	type: Three.UnsignedByteType,
-	// 	depthBuffer: true,
-	// 	stencilBuffer: false
-	// });
-
-	// renderer.setRenderTarget(renderTarget);
-	document.body.appendChild(renderer.domElement);
-
 	let i = 0;
 	const stream = await RemoteStream.create('TrackingData', { trial });
 
@@ -131,25 +120,17 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 		// Render scene and grab pixels to send to backend
 		renderer.render(scene, camera);
-
-		// const pixels = new Uint8Array(SIZE.width * SIZE.height * 4);
-		// renderer.readRenderTargetPixels(
-		// 	renderer.getRenderTarget(),
-		// 	0,
-		// 	0,
-		// 	SIZE.width,
-		// 	SIZE.height,
-		// 	pixels
-		// );
-
-		// console.log(`Frame ${i}:`, pixels.slice(0, 10));
-
-		// Send pixels to backend
+		// This seems slower...
+		const blob = await new Promise((resolve) => {
+			renderer.domElement.toBlob((blob) => {
+				console.log("grabbing a blob" + i);
+				resolve(blob);
+			}, 'image/jpeg', 0.75)
+		});
 
 		i = i + 1;
 	}
 
-	// renderTarget.dispose();
 	renderer.dispose();
 	renderer.domElement.remove();
 
