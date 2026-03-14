@@ -56,8 +56,8 @@ describe('Visualization Prep Layer', () => {
             ]);
         });
 
-        it('A2 — preserves deterministic ordering of scatter points', () => {
-            const input: VisualizationPrepInput = {
+        it('A2) — Preserves deterministic ordering of scatter points', () => {
+            const input: VisualizationPrepInput = {            // Partial input focused on perSaccade with out-of-order times to test sorting/stability
                 perSaccade: [
                     { timeMs: 500, amplitudeDeg: 1.0 },
                     { timeMs: 100, amplitudeDeg: 2.0 },
@@ -65,9 +65,9 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input);
+            const result = prepareVisualizationModels(input);  // Pass through to scatter generation, no special options needed
 
-            expect(result.scatter.points).toEqual([
+            expect(result.scatter.points).toEqual([            // Expect scatter points to be in the same order as input, preserving stability even if times are out of order
                 { timeMs: 500, amplitudeDeg: 1.0 },
                 { timeMs: 100, amplitudeDeg: 2.0 },
                 { timeMs: 300, amplitudeDeg: 3.0 },
