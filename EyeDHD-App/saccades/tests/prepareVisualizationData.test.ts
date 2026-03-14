@@ -414,8 +414,8 @@ describe('Visualization Prep Layer', () => {
             expect(result).toHaveProperty('markers');       // Expect output to have markers property containing array of visualization marker primitives for overlays
         });
 
-        it('F2 — output is suitable for downstream charting/export layers without further normalization', () => {
-            const input: VisualizationPrepInput = {
+        it('F2) — Output is suitable for downstream charting/export layers without further normalization', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that output is in a shape that is directly usable for downstream charting
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'seg1', sourceIndex: 0 },
                     { timeMs: 1100, amplitudeDeg: 4.0, segmentId: 'seg2', sourceIndex: 1 },
@@ -430,33 +430,29 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result: VisualizationPrepResult = prepareVisualizationModels(input, {
+            const result: VisualizationPrepResult = prepareVisualizationModels(input, {  // Pass through to processing with all options to test that output is directly usable for downstream charting 
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 20,
                 includeMarkers: true,
             });
 
-            // Scatter is already chart-ready
-            expect(result.scatter.points[0]).toEqual({
+            expect(result.scatter.points[0]).toEqual({                               // Scatter is already chart-ready
                 timeMs: 100,
                 amplitudeDeg: 2.0,
                 segmentId: 'seg1',
                 sourceIndex: 0,
             });
 
-            // Rate series is already time/value chart-ready
-            expect(result.rateSeries.points[0]).toEqual({
+            expect(result.rateSeries.points[0]).toEqual({                            // Rate series is already time/value chart-ready
                 timeMs: 500,
                 count: 1,
                 ratePerSec: 1,
             });
 
-            // Histogram is already bin/count ready
-            expect(result.isiHistogram.binEdges).toEqual([0, 20, 40, 60, 80, 100]);
-            expect(result.isiHistogram.counts).toEqual([0, 1, 1, 0, 1]);
+            expect(result.isiHistogram.binEdges).toEqual([0, 20, 40, 60, 80, 100]);  // Histogram is already bin/count ready
+            expect(result.isiHistogram.counts).toEqual([0, 1, 1, 0, 1]);             // Histogram counts are correct based on input ISI values and binning
 
-            // Markers are already overlay-ready
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({                                  // Markers are already in a shape suitable for overlaying on charts
                 kind: 'event',
                 timeMs: 2,
                 type: 'DISTRACTOR_ON',
