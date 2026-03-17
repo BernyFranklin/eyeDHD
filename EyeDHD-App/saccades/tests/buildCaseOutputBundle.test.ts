@@ -86,11 +86,12 @@ function makeOptions(
 
 describe('Case Output Bundle', () => {
     describe('A — Metadata + Case Identity', () => {
-        it('A1 — builds caseInfo from metadata input', () => {
+        it('A1) — Builds caseInfo from metadata input', () => {
+            // Create input object
             const input = makeInput();
-
+            // Call the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that caseInfo is correctly constructed
             expect(result.caseInfo).toEqual({
                 participantId: 'P-001',
                 caseId: 'Case-Alpha',
@@ -126,7 +127,7 @@ describe('Case Output Bundle', () => {
             expect(result.caseInfo.caseId).toBe('case-unknown');
         });
     });
-,
+
     describe('B — Table Construction', () => {
         it('B1 — converts per-saccade analysis into perSaccadeRows', () => {
             const input = makeInput();
