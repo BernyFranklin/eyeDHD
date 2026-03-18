@@ -42,7 +42,7 @@ export function buildCaseOutputBundle(
             scatterModel: input.visualization.scatter,
             rateSeriesModel: input.visualization.rateSeries,
             isiHistogramModel: input.visualization.isiHistogram,
-            overlaysModel: { markers: [] },
+                overlaysModel: { markers: input.visualization.markers },
         },
         files: [],
     };

@@ -228,11 +228,12 @@ describe('Case Output Bundle', () => {
             });
         });
 
-        it('C4 — attaches overlay markers', () => {
+        it('C4) — Attaches overlay markers', () => {
+            // Create input object with markers in visualization data
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that overlaysModel in visuals contains the markers from input
             expect(result.visuals.overlaysModel).toEqual({
                 markers: [
                     { timeMs: 120, label: 'Distractor A', kind: 'distractor' },
