@@ -215,11 +215,12 @@ describe('Case Output Bundle', () => {
             });
         });
 
-        it('C3 — preserves histogram model', () => {
+        it('C3) — Preserves histogram model', () => {
+            // Create input object with ISI histogram visualization data
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that isiHistogramModel in visuals matches the input ISI histogram data
             expect(result.visuals.isiHistogramModel).toEqual({
                 binWidthMs: 50,
                 binEdges: [0, 50, 100, 150, 200],

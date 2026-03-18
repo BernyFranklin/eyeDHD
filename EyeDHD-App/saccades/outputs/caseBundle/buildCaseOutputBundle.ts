@@ -41,7 +41,7 @@ export function buildCaseOutputBundle(
         visuals: {
             scatterModel: input.visualization.scatter,
             rateSeriesModel: input.visualization.rateSeries,
-            isiHistogramModel: { binWidthMs: 0, binEdges: [], counts: [] },
+            isiHistogramModel: input.visualization.isiHistogram,
             overlaysModel: { markers: [] },
         },
         files: [],
