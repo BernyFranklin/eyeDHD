@@ -186,11 +186,12 @@ describe('Case Output Bundle', () => {
     });
 
     describe('C — Visualization Models', () => {
-        it('C1 — preserves scatter model', () => {
+        it('C1) — Preserves scatter model', () => {
+            // Create input object with scatter visualization data
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that scatterModel in visuals matches the input scatter data
             expect(result.visuals.scatterModel).toEqual({
                 points: [
                     { timeMs: 100, amplitudeDeg: 2.5 },
