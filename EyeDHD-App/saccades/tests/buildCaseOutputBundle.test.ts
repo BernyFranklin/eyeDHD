@@ -200,11 +200,12 @@ describe('Case Output Bundle', () => {
             });
         });
 
-        it('C2 — preserves rate series model', () => {
+        it('C2) — Preserves rate series model', () => {
+            // Create input object with rate series visualization data
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that rateSeriesModel in visuals matches the input rate series data
             expect(result.visuals.rateSeriesModel).toEqual({
                 binWidthMs: 100,
                 points: [

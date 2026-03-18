@@ -40,7 +40,7 @@ export function buildCaseOutputBundle(
         },
         visuals: {
             scatterModel: input.visualization.scatter,
-            rateSeriesModel: { binWidthMs: 0, points: [] },
+            rateSeriesModel: input.visualization.rateSeries,
             isiHistogramModel: { binWidthMs: 0, binEdges: [], counts: [] },
             overlaysModel: { markers: [] },
         },
