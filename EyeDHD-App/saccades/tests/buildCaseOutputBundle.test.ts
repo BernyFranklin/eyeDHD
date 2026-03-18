@@ -114,7 +114,8 @@ describe('Case Output Bundle', () => {
             expect(result.caseInfo.generatedAtIso).toBe('2030-01-01T00:00:00.000Z');
         });
 
-        it('A3 — generates fallback caseId when missing', () => {
+        it('A3) — Generates fallback caseId when missing', () => {
+            // Create input object with missing caseId  
             const input = makeInput({
                 metadata: {
                     participantId: 'P-001',
@@ -123,9 +124,9 @@ describe('Case Output Bundle', () => {
                     sourceFileName: 'participant-001.csv',
                 },
             });
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that caseId falls back to 'case-unknown'
             expect(result.caseInfo.caseId).toBe('case-unknown');
         });
     });
