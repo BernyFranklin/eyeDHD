@@ -22,7 +22,10 @@ export function buildCaseOutputBundle(
         runConfig: input.runConfig,
         tables: {
             perSaccadeRows: input.analysis.perSaccade ?? [],
-            sessionSummaryRows: [],
+            sessionSummaryRows: 
+                input.analysis.sessionSummary
+                ? [input.analysis.sessionSummary]
+                : [],
             segmentSummaryRows: [],
             isiHistogramRows: [],
             markerRows: [],

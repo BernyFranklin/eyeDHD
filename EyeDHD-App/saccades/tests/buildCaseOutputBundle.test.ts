@@ -144,11 +144,12 @@ describe('Case Output Bundle', () => {
             ]);
         });
 
-        it('B2 — converts session summary into sessionSummaryRows', () => {
+        it('B2) — Converts session summary into sessionSummaryRows', () => {
+            // Create input object with session summary data
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that sessionSummaryRows contains the session summary data
             expect(result.tables.sessionSummaryRows).toEqual([
                 {
                     totalSaccades: 2,
