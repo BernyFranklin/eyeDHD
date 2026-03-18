@@ -101,14 +101,16 @@ describe('Case Output Bundle', () => {
             });
         });
 
-        it('A2 — injects deterministic timestamp when provided in options', () => {
+        it('A2) — Injects deterministic timestamp when provided in options', () => {
+            //  Create input object
             const input = makeInput();
+            // Call the function with overridden generatedAtIso
             const options = makeOptions({
                 generatedAtIso: '2030-01-01T00:00:00.000Z',
             });
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, options);
-
+            // Assert that the generatedAtIso in caseInfo matches the overridden value
             expect(result.caseInfo.generatedAtIso).toBe('2030-01-01T00:00:00.000Z');
         });
 
