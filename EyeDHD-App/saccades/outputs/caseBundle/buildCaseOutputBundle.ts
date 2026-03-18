@@ -26,7 +26,7 @@ export function buildCaseOutputBundle(
                 input.analysis.sessionSummary
                 ? [input.analysis.sessionSummary]
                 : [],
-            segmentSummaryRows: [],
+            segmentSummaryRows: input.analysis.segmentSummaries ?? [],
             isiHistogramRows: [],
             markerRows: [],
         },

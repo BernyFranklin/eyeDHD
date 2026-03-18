@@ -158,11 +158,12 @@ describe('Case Output Bundle', () => {
             ]);
         });
 
-        it('B3 — converts segment summaries into segmentSummaryRows', () => {
+        it('B3) — Converts segment summaries into segmentSummaryRows', () => {
+            // Create input object with segment summaries
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that segmentSummaryRows contains the segment summaries
             expect(result.tables.segmentSummaryRows).toEqual([
                 { segmentId: 'baseline', saccadeCount: 1, ratePerSec: 0.5 },
                 { segmentId: 'task', saccadeCount: 1, ratePerSec: 1.1 },
