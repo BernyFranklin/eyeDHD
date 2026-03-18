@@ -21,7 +21,7 @@ export function buildCaseOutputBundle(
         caseInfo,
         runConfig: input.runConfig,
         tables: {
-            perSaccadeRows: [],
+            perSaccadeRows: input.analysis.perSaccade ?? [],
             sessionSummaryRows: [],
             segmentSummaryRows: [],
             isiHistogramRows: [],

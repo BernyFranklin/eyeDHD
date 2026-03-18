@@ -132,11 +132,12 @@ describe('Case Output Bundle', () => {
     });
 
     describe('B — Table Construction', () => {
-        it('B1 — converts per-saccade analysis into perSaccadeRows', () => {
+        it('B1) — Converts per-saccade analysis into perSaccadeRows', () => {
+            // Create input object with per-saccade analysis data
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that perSaccadeRows are correctly constructed from input analysis
             expect(result.tables.perSaccadeRows).toEqual([
                 { timeMs: 100, amplitudeDeg: 2.5, durationMs: 40 },
                 { timeMs: 240, amplitudeDeg: 1.25, durationMs: 32 },
