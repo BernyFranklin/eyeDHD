@@ -170,11 +170,12 @@ describe('Case Output Bundle', () => {
             ]);
         });
 
-        it('B4 — converts ISI histogram into isiHistogramRows', () => {
+        it('B4) — Converts ISI histogram into isiHistogramRows', () => {
+            // Create input object with ISI histogram data
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that isiHistogramRows contains the ISI histogram data
             expect(result.tables.isiHistogramRows).toEqual([
                 { binStartMs: 0, binEndMs: 50, count: 0 },
                 { binStartMs: 50, binEndMs: 100, count: 0 },

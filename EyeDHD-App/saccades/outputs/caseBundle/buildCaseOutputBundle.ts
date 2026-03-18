@@ -17,6 +17,14 @@ export function buildCaseOutputBundle(
         generatedAtIso: options?.generatedAtIso ?? new Date().toISOString(),
     };
 
+    const isiHistogramRows = input.visualization.isiHistogram.counts.map(
+        (count, index) => ({
+            binStartMs: input.visualization.isiHistogram.binEdges[index],
+            binEndMs: input.visualization.isiHistogram.binEdges[index + 1],
+            count,
+        })
+    );
+
     return {
         caseInfo,
         runConfig: input.runConfig,
@@ -27,7 +35,7 @@ export function buildCaseOutputBundle(
                 ? [input.analysis.sessionSummary]
                 : [],
             segmentSummaryRows: input.analysis.segmentSummaries ?? [],
-            isiHistogramRows: [],
+            isiHistogramRows,
             markerRows: [],
         },
         visuals: {
