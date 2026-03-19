@@ -400,11 +400,13 @@ describe('Case Output Bundle', () => {
             );
         });
 
-        it('D4 — generates PNG placeholder descriptors', () => {
+        it('D4) — Generates PNG placeholder descriptors', () => {
+
+            // Create input object
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that files array contains PNG descriptors for scatter plot, rate series plot, and ISI histogram plot with null content
             expect(result.files).toEqual(
                 expect.arrayContaining([
                     {

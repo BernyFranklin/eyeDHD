@@ -137,6 +137,34 @@ export function buildCaseOutputBundle(
         },
     )
 
+    // Push PNG placeholder descriptors
+    files.push(
+        {
+            key: 'scatterPng',
+            relativePath: 'visuals/scatter.png',
+            format: 'png',
+            category: 'visuals',
+            optional: false,
+            content: null, // Placeholder for actual PNG content
+        },
+        {
+            key: 'rateSeriesPng',
+            relativePath: 'visuals/rate-series.png',
+            format: 'png',
+            category: 'visuals',
+            optional: false,
+            content: null, // Placeholder for actual PNG content
+        },
+        {
+            key: 'isiHistogramPng',
+            relativePath: 'visuals/isi-histogram.png',
+            format: 'png',
+            category: 'visuals',
+            optional: false,
+            content: null, // Placeholder for actual PNG content
+        },
+    )
+
     return {
         caseInfo,
         runConfig: input.runConfig,
