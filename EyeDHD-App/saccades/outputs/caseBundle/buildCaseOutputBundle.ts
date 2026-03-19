@@ -26,6 +26,17 @@ export function buildCaseOutputBundle(
         })
     );
 
+    const tables= {
+        perSaccadeRows: input.analysis.perSaccade ?? [],
+        sessionSummaryRows: 
+            input.analysis.sessionSummary
+            ? [input.analysis.sessionSummary]
+            : [],
+        segmentSummaryRows: input.analysis.segmentSummaries ?? [],
+        isiHistogramRows,
+        markerRows: [],
+    };
+
     const files: CaseOutputFileDescriptor<any>[] = [
         {
             key: 'caseInfo',
@@ -45,19 +56,45 @@ export function buildCaseOutputBundle(
         },
     ];
 
+    files.push(
+        {
+            key: 'perSaccadeCsv',
+            relativePath: 'analysis/per-saccade.csv',
+            format: 'csv',
+            category: 'analysis',
+            optional: false,
+            content: tables.perSaccadeRows
+        },
+        {
+            key: 'sessionSummaryCsv',
+            relativePath: 'analysis/session-summary.csv',
+            format: 'csv',
+            category: 'analysis',
+            optional: false,
+            content: tables.sessionSummaryRows,
+        },
+        {
+            key: 'segmentSummaryCsv',
+            relativePath: 'analysis/segment-summary.csv',
+            format: 'csv',
+            category: 'analysis',
+            optional: true,
+            content: tables.segmentSummaryRows,
+        },
+        {
+            key: 'isiHistogramCsv',
+            relativePath: 'analysis/isi-histogram.csv',
+            format: 'csv',
+            category: 'analysis',
+            optional: false,
+            content: tables.isiHistogramRows,
+        },
+    );
+
     return {
         caseInfo,
         runConfig: input.runConfig,
-        tables: {
-            perSaccadeRows: input.analysis.perSaccade ?? [],
-            sessionSummaryRows: 
-                input.analysis.sessionSummary
-                ? [input.analysis.sessionSummary]
-                : [],
-            segmentSummaryRows: input.analysis.segmentSummaries ?? [],
-            isiHistogramRows,
-            markerRows: [],
-        },
+        tables,
         visuals: {
             scatterModel: input.visualization.scatter,
             rateSeriesModel: input.visualization.rateSeries,

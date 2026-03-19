@@ -282,11 +282,12 @@ describe('Case Output Bundle', () => {
             );
         });
 
-        it('D2 — generates analysis CSV descriptors', () => {
+        it('D2) — Generates analysis CSV descriptors', () => {
+            // Create input object
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that files array contains CSV descriptors for per-saccade, session summary, segment summary, and ISI histogram with correct content
             expect(result.files).toEqual(
                 expect.arrayContaining([
                     {
