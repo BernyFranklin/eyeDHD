@@ -37,6 +37,15 @@ export function buildCaseOutputBundle(
         markerRows: [],
     };
 
+    const visuals = {
+        scatterModel: input.visualization.scatter,
+        rateSeriesModel: input.visualization.rateSeries,
+        isiHistogramModel: input.visualization.isiHistogram,
+        overlaysModel: {
+            markers: input.visualization.markers,
+        },
+    };
+
     const files: CaseOutputFileDescriptor<any>[] = [
         {
             key: 'caseInfo',
@@ -56,6 +65,7 @@ export function buildCaseOutputBundle(
         },
     ];
 
+    // Push analysis CSV descriptors
     files.push(
         {
             key: 'perSaccadeCsv',
@@ -91,16 +101,47 @@ export function buildCaseOutputBundle(
         },
     );
 
+    // Push visual CSV descriptors
+    files.push(
+        {
+            key: 'scatterModelCsv',
+            relativePath: 'visuals/scatter-model.csv',
+            format: 'csv',
+            category: 'visuals',
+            optional:false,
+            content: visuals.scatterModel.points,
+        },
+        {
+            key: 'rateSeriesModelCsv',
+            relativePath: 'visuals/rate-series-model.csv',
+            format: 'csv',
+            category: 'visuals',
+            optional:false,
+            content: visuals.rateSeriesModel.points,
+        },
+        {
+            key: 'isiHistogramModelCsv',
+            relativePath: 'visuals/isi-histogram-model.csv',
+            format: 'csv',
+            category: 'visuals',
+            optional:false,
+            content: tables.isiHistogramRows,
+        },
+        {
+            key: 'overlaysModelCsv',
+            relativePath: 'visuals/overlays-model.csv',
+            format: 'csv',
+            category: 'visuals',
+            optional: true,
+            content: visuals.overlaysModel.markers,
+        },
+    )
+
     return {
         caseInfo,
         runConfig: input.runConfig,
         tables,
-        visuals: {
-            scatterModel: input.visualization.scatter,
-            rateSeriesModel: input.visualization.rateSeries,
-            isiHistogramModel: input.visualization.isiHistogram,
-            overlaysModel: { markers: input.visualization.markers },
-        },
+        visuals,
         files,
     };
 }

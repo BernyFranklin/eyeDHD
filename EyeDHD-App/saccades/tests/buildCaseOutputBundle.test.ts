@@ -342,11 +342,12 @@ describe('Case Output Bundle', () => {
             );
         });
 
-        it('D3 — generates visualization CSV descriptors', () => {
+        it('D3) — Generates visualization CSV descriptors', () => {
+            // Create input object
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            // Assert that files array contains CSV descriptors for scatter model, rate series model, ISI histogram model, and overlays model.
             expect(result.files).toEqual(
                 expect.arrayContaining([
                     {
