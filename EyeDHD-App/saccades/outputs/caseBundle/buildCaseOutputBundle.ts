@@ -3,6 +3,7 @@ import type {
     CaseInfo,
     CaseOutputBundle,
     CaseOutputBundleInput,
+    CaseOutputFileDescriptor,
 } from './types';
 
 export function buildCaseOutputBundle(
@@ -25,6 +26,25 @@ export function buildCaseOutputBundle(
         })
     );
 
+    const files: CaseOutputFileDescriptor<any>[] = [
+        {
+            key: 'caseInfo',
+            relativePath: 'metadata/case-info.json',
+            format: 'json',
+            category: 'metadata',
+            optional: false,
+            content: caseInfo,
+        },
+        {
+            key: 'runConfig',
+            relativePath: 'metadata/run-config.json',
+            format: 'json',
+            category: 'metadata',
+            optional: false,
+            content: input.runConfig,
+        },
+    ];
+
     return {
         caseInfo,
         runConfig: input.runConfig,
@@ -44,6 +64,6 @@ export function buildCaseOutputBundle(
             isiHistogramModel: input.visualization.isiHistogram,
             overlaysModel: { markers: input.visualization.markers },
         },
-        files: [],
+        files,
     };
 }

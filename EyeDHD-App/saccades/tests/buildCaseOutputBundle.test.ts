@@ -244,11 +244,12 @@ describe('Case Output Bundle', () => {
     });
 
     describe('D — File Descriptor Generation', () => {
-        it('D1 — generates metadata descriptors', () => {
+        it('D1) — Generates metadata descriptors', () => {
+            // Create input object
             const input = makeInput();
-
+            // Run the function under test
             const result = buildCaseOutputBundle(input, makeOptions());
-
+            //  Assert that files array contains descriptors for caseInfo and runConfig with correct content
             expect(result.files).toEqual(
                 expect.arrayContaining([
                     {
