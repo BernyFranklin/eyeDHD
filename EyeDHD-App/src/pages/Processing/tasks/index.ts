@@ -30,7 +30,7 @@ export type Task = {
 		running: string,
 		completed: string
 	},
-	name: TaskName,
+	name: TaskName | 'complete',
 	fn: TaskFn
 }
 
@@ -42,4 +42,4 @@ export const TASKS = [
 	combination
 ] as const;
 
-export const TASKORDER = TASKS.map(task => task.name);
+export const TASKORDER = TASKS.map(task => task.name).concat(['complete']);

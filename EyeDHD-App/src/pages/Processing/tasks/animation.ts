@@ -24,6 +24,8 @@ type Rotation = {
 };
 
 const fn: TaskFn = async (trial, dispatch) => {
+	trial = await window.electron.case.read(trial.name);
+
 	/*
 	 * Rendering setup
 	 */
@@ -68,9 +70,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 		}
 	});
 
-	const left_rotation = { x: 0.0, y: 0.0, z: 0.0 };
-	const right_rotation = { x: 0.0, y: 0.0, z: 0.0 };
-
+	// Create camera and position it
 	const camera = new Three.OrthographicCamera(
 		(-4 * SIZE.width / SIZE.height) / 2,
 		(4 * SIZE.width / SIZE.height) / 2,
@@ -83,15 +83,35 @@ const fn: TaskFn = async (trial, dispatch) => {
 	camera.lookAt(0, 0, 0);
 	camera.updateProjectionMatrix();
 
+	// Create render target and renderer
+	const render_target = new Three.WebGLRenderTarget(SIZE.width, SIZE.height, {
+		format: Three.RGBAFormat,
+		type: Three.UnsignedByteType,
+		depthBuffer: false,
+		stencilBuffer: false
+	});
+
 	const renderer = new Three.WebGLRenderer({
 		antialias: true,
 		powerPreference: 'high-performance'
 	});
 
 	renderer.setSize(SIZE.width, SIZE.height);
+	renderer.setRenderTarget(render_target);
+	renderer.domElement.remove();
+
+	//document.body.appendChild(renderer.domElement);
+
+	// Create animation loop state
+	const stream = await RemoteStream.create('TrackingData', { trial });
+	const buffers: Array<Uint8Array> = new Array(1000);
+	const buffer: Uint8Array = new Uint8Array(SIZE.width * SIZE.height * 4);
 
 	let i = 0;
-	const stream = await RemoteStream.create('TrackingData', { trial });
+	let keep = 0;
+	let frame = 0;
+	const left_rotation = { x: 0.0, y: 0.0, z: 0.0 };
+	const right_rotation = { x: 0.0, y: 0.0, z: 0.0 };
 
 	/*
 	 * Rendering loop
@@ -102,37 +122,49 @@ const fn: TaskFn = async (trial, dispatch) => {
 		const percent = i / trial.cleaned_rows;
 		dispatch(setTaskProgress(percent));
 
+		// Only animate rows in the pattern of 6th row, 7th row, 7th row, repeat
+		// to convert 200 fps to 30 fps to match VR video fps / timing
+		if (i !== keep) {
+			i = i + 1;
+			continue;
+		}
+
+		frame = frame + 1;
+
 		const targets = calculate_rotations(row as TrackingData);
+		// TODO: This isn't working
 		update_dilation(row as TrackingData, left_pupil, right_pupil);
 		interpolate_rotation(targets, left_rotation, right_rotation);
 
 		// Apply rotation to models
-		left.rotation.set(
-			left_rotation.x,
-			left_rotation.y,
-			left_rotation.z
-		);
-		right.rotation.set(
-			right_rotation.x,
-			right_rotation.y,
-			right_rotation.z
-		);
+		left.rotation.set(left_rotation.x, left_rotation.y, left_rotation.z);
+		right.rotation.set(right_rotation.x, right_rotation.y, right_rotation.z);
 
 		// Render scene and grab pixels to send to backend
 		renderer.render(scene, camera);
-		// This seems slower...
-		const blob = await new Promise((resolve) => {
-			renderer.domElement.toBlob((blob) => {
-				console.log("grabbing a blob" + i);
-				resolve(blob);
-			}, 'image/jpeg', 0.75)
-		});
+		renderer.readRenderTargetPixels(
+			render_target,
+			0,
+			0,
+			SIZE.width,
+			SIZE.height,
+			buffer,
+		);
+
+		// Update state
+		const idx = frame % 1000;
+		buffers[idx] = buffer.slice();
+
+		if (idx === 999) {
+			// Send to backend
+		}
 
 		i = i + 1;
+		keep = keep + calculate_interval(i);
 	}
 
+	render_target.dispose();
 	renderer.dispose();
-	renderer.domElement.remove();
 
 	await delay(150);
 }
@@ -152,6 +184,18 @@ export const animation: Task = {
 const delay = (ms: number) => new Promise<void>((resolve) => {
 	setTimeout(resolve, ms);
 });
+
+const calculate_interval = (i: number) => {
+	switch (i % 20) {
+		case 0 | 1 | 2 | 3 | 4 | 5: {
+			return 6;
+		}
+		default: {
+			return 7;
+		}
+	}
+}
+
 
 // Calculate target rotations from forward vector and eye status
 function calculate_rotations(row: TrackingData): { left?: Rotation, right?: Rotation } {

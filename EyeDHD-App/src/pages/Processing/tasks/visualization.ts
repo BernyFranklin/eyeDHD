@@ -11,6 +11,8 @@ const delay = (ms: number) => new Promise<void>((resolve) => {
 });
 
 const fn: TaskFn = async (trial, dispatch) => {
+	trial = await window.electron.case.read(trial.name);
+
 	let percent = 0.0;
 	while (percent < 1.0) {
 		await delay(10);
