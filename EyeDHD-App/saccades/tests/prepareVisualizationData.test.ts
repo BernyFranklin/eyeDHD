@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { prepareVisualizationModels } from '@saccades/visualization/prep/prepareVisualizationData';
+import { prepareVisualizationModels } from '@saccades/visualization/prep/index';
 import type {
     VisualizationPrepInput,
     VisualizationPrepResult,
     VisualizationMarker,
-} from '@saccades/visualization/prep/types';
+} from '@saccades/visualization/prep/index';
 
 function deepClone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value));
@@ -38,8 +38,8 @@ function isPlainData(value: unknown): boolean {
 
 describe('Visualization Prep Layer', () => {
     describe('A — Scatter model generation', () => {
-        it('A1 — converts per-saccade analysis data into scatter points with timeMs and amplitudeDeg', () => {
-            const input: VisualizationPrepInput = {
+        it('A1) — Converts per-saccade analysis data into scatter points with timeMs and amplitudeDeg', () => {
+            const input: VisualizationPrepInput = {            // Partial input focused on perSaccade
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.5 },
                     { timeMs: 250, amplitudeDeg: 5.0 },
@@ -47,17 +47,17 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input);
+            const result = prepareVisualizationModels(input);  // Pass through to scatter generation, no special options needed
 
-            expect(result.scatter.points).toEqual([
+            expect(result.scatter.points).toEqual([            // Expect scatter points to match input saccades with correct properties
                 { timeMs: 100, amplitudeDeg: 2.5 },
                 { timeMs: 250, amplitudeDeg: 5.0 },
                 { timeMs: 400, amplitudeDeg: 1.25 },
             ]);
         });
 
-        it('A2 — preserves deterministic ordering of scatter points', () => {
-            const input: VisualizationPrepInput = {
+        it('A2) — Preserves deterministic ordering of scatter points', () => {
+            const input: VisualizationPrepInput = {            // Partial input focused on perSaccade with out-of-order times to test sorting/stability
                 perSaccade: [
                     { timeMs: 500, amplitudeDeg: 1.0 },
                     { timeMs: 100, amplitudeDeg: 2.0 },
@@ -65,26 +65,26 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input);
+            const result = prepareVisualizationModels(input);  // Pass through to scatter generation, no special options needed
 
-            expect(result.scatter.points).toEqual([
+            expect(result.scatter.points).toEqual([            // Expect scatter points to be in the same order as input, preserving stability even if times are out of order
                 { timeMs: 500, amplitudeDeg: 1.0 },
                 { timeMs: 100, amplitudeDeg: 2.0 },
                 { timeMs: 300, amplitudeDeg: 3.0 },
             ]);
         });
 
-        it('A3 — includes segment association when available', () => {
-            const input: VisualizationPrepInput = {
+        it('A3) — Includes segment association when available', () => {
+            const input: VisualizationPrepInput = {            // Partial input focused on perSaccade with segmentId to test segment association in scatter points
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'baseline' },
                     { timeMs: 600, amplitudeDeg: 3.5, segmentId: 'task' },
                 ],
             };
 
-            const result = prepareVisualizationModels(input);
+            const result = prepareVisualizationModels(input);  // Pass through to scatter generation, no special options needed
 
-            expect(result.scatter.points).toEqual([
+            expect(result.scatter.points).toEqual([            // Expect scatter points to include segmentId when provided in input saccades
                 { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'baseline' },
                 { timeMs: 600, amplitudeDeg: 3.5, segmentId: 'task' },
             ]);
@@ -92,8 +92,8 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('B — Rate series generation', () => {
-        it('B1 — generates rate-per-second series using a chosen bin width', () => {
-            const input: VisualizationPrepInput = {
+        it('B1) — Generates rate-per-second series using a chosen bin width', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on perSaccade with multiple saccades to test rate series generation with specific bin width
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 1.0 },
                     { timeMs: 400, amplitudeDeg: 2.0 },
@@ -102,11 +102,11 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to rate series generation with specific bin width option
                 rateBinWidthMs: 1000,
             });
 
-            expect(result.rateSeries).toEqual({
+            expect(result.rateSeries).toEqual({                 // Expect rate series to have correct bin width and points calculated based on input saccades and binning logic
                 binWidthMs: 1000,
                 points: [
                     { timeMs: 500, count: 2, ratePerSec: 2 },
@@ -115,8 +115,8 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('B2 — produces deterministic bin centers/timestamps', () => {
-            const input: VisualizationPrepInput = {
+        it('B2) — Produces deterministic bin centers/timestamps', () => {
+            const input: VisualizationPrepInput = {                          // Partial input focused on perSaccade with saccades placed to test deterministic bin center calculation in rate series generation
                 perSaccade: [
                     { timeMs: 50, amplitudeDeg: 1.0 },
                     { timeMs: 1050, amplitudeDeg: 1.0 },
@@ -124,28 +124,28 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {               // Pass through to rate series generation with specific bin width option to test deterministic bin center calculation
                 rateBinWidthMs: 1000,
             });
 
-            expect(result.rateSeries.points.map((p) => p.timeMs)).toEqual([
+            expect(result.rateSeries.points.map((p) => p.timeMs)).toEqual([  // Expect bin centers to be deterministic and correctly calculated based on bin width and input saccade times
                 500,
                 1500,
                 2500,
             ]);
         });
 
-        it('B3 — handles empty segments or empty analysis inputs gracefully', () => {
-            const emptyAnalysisInput: VisualizationPrepInput = {
+        it('B3) — Handles empty segments or empty analysis inputs gracefully', () => {
+            const emptyAnalysisInput: VisualizationPrepInput = {             // Empty input focused on testing graceful handling of empty perSaccade and segments for rate series generation
                 perSaccade: [],
                 segments: [],
             };
 
-            const result = prepareVisualizationModels(emptyAnalysisInput, {
+            const result = prepareVisualizationModels(emptyAnalysisInput, {  // Pass through to rate series generation with specific bin width option
                 rateBinWidthMs: 1000,
             });
 
-            expect(result.rateSeries).toEqual({
+            expect(result.rateSeries).toEqual({                              // Expect rate series to handle empty input gracefully by returning correct structure with empty points array
                 binWidthMs: 1000,
                 points: [],
             });
@@ -153,48 +153,48 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('C — ISI histogram generation', () => {
-        it('C1 — converts ISI values into histogram-ready binEdges and counts', () => {
-            const input: VisualizationPrepInput = {
+        it('C1) — Converts ISI values into histogram-ready binEdges and counts', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on isiValuesMs to test ISI histogram generation with specific bin width
                 isiValuesMs: [10, 40, 60, 90],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to ISI histogram generation with specific bin width option
                 isiBinWidthMs: 50,
             });
 
-            expect(result.isiHistogram).toEqual({
+            expect(result.isiHistogram).toEqual({               // Expect ISI histogram to have correct bin width, edges, and counts based on input ISI values and binning logic
                 binWidthMs: 50,
                 binEdges: [0, 50, 100],
                 counts: [2, 2],
             });
         });
 
-        it('C2 — respects chosen histogram bin width', () => {
-            const input: VisualizationPrepInput = {
+        it('C2) — Respects chosen histogram bin width', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on isiValuesMs to test ISI histogram generation with different bin width
                 isiValuesMs: [5, 20, 45, 80],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to ISI histogram generation with different bin width option
                 isiBinWidthMs: 20,
             });
 
-            expect(result.isiHistogram).toEqual({
+            expect(result.isiHistogram).toEqual({               // Expect ISI histogram to reflect the chosen bin width in its edges and counts based on input ISI values
                 binWidthMs: 20,
                 binEdges: [0, 20, 40, 60, 80, 100],
                 counts: [1, 1, 1, 0, 1],
             });
         });
 
-        it('C3 — handles empty ISI input gracefully', () => {
-            const input: VisualizationPrepInput = {
+        it('C3) — Handles empty ISI input gracefully', () => {
+            const input: VisualizationPrepInput = {             // Partial input focused on empty isiValuesMs to test graceful handling of empty ISI input for histogram generation
                 isiValuesMs: [],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to ISI histogram generation with specific bin width option
                 isiBinWidthMs: 25,
             });
 
-            expect(result.isiHistogram).toEqual({
+            expect(result.isiHistogram).toEqual({               // Expect ISI histogram to handle empty input gracefully by returning correct structure with empty edges and counts
                 binWidthMs: 25,
                 binEdges: [],
                 counts: [],
@@ -203,26 +203,26 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('D — Marker / overlay generation', () => {
-        it('D1 — converts distractor/event markers into visualization marker primitives', () => {
-            const input: VisualizationPrepInput = {
+        it('D1) — Converts distractor/event markers into visualization marker primitives', () => {
+            const input: VisualizationPrepInput = {  // Partial input focused on markers to test conversion of event markers into visualization marker primitives
                 markers: [
                     { timeNs: 1_500_000, type: 'DISTRACTOR_ON', label: 'D1' },
                     { timeNs: 2_250_000, type: 'DISTRACTOR_OFF', label: 'D1 end' },
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to marker generation with option to include markers
                 includeMarkers: true,
             });
 
-            expect(result.markers).toContainEqual<VisualizationMarker>({
+            expect(result.markers).toContainEqual<VisualizationMarker>({  // Expect markers to include converted event markers with correct properties for visualization overlay
                 kind: 'event',
                 timeMs: 1.5,
                 type: 'DISTRACTOR_ON',
                 label: 'D1',
             });
 
-            expect(result.markers).toContainEqual<VisualizationMarker>({
+            expect(result.markers).toContainEqual<VisualizationMarker>({  // Expect markers to include converted event markers with correct properties for visualization overlay
                 kind: 'event',
                 timeMs: 2.25,
                 type: 'DISTRACTOR_OFF',
@@ -230,19 +230,19 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('D2 — includes segment boundary markers when segments are present', () => {
-            const input: VisualizationPrepInput = {
+        it('D2) — Includes segment boundary markers when segments are present', () => {
+            const input: VisualizationPrepInput = {  // Partial input focused on segments to test conversion of segment boundaries into visualization marker primitives
                 segments: [
                     { id: 'segA', startTimeMs: 0, endTimeMs: 1000, label: 'Baseline' },
                     { id: 'segB', startTimeMs: 1000, endTimeMs: 2500, label: 'Task' },
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to marker generation with option to include markers
                 includeMarkers: true,
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment start marker for first segment with correct properties for visualization overlay
                 kind: 'segment_start',
                 timeMs: 0,
                 type: 'SEGMENT_START',
@@ -250,7 +250,7 @@ describe('Visualization Prep Layer', () => {
                 segmentId: 'segA',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment end marker for first segment with correct properties for visualization overlay
                 kind: 'segment_end',
                 timeMs: 1000,
                 type: 'SEGMENT_END',
@@ -258,7 +258,7 @@ describe('Visualization Prep Layer', () => {
                 segmentId: 'segA',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment start marker for second segment with correct properties for visualization overlay
                 kind: 'segment_start',
                 timeMs: 1000,
                 type: 'SEGMENT_START',
@@ -266,7 +266,7 @@ describe('Visualization Prep Layer', () => {
                 segmentId: 'segB',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment end marker for second segment with correct properties for visualization overlay
                 kind: 'segment_end',
                 timeMs: 2500,
                 type: 'SEGMENT_END',
@@ -275,8 +275,8 @@ describe('Visualization Prep Layer', () => {
             });
         });
 
-        it('D3 — preserves label/type information for overlays', () => {
-            const input: VisualizationPrepInput = {
+        it('D3) — Preserves label/type information for overlays', () => {
+            const input: VisualizationPrepInput = {  // Partial input focused on markers and segments to test preservation of label and type information in visualization marker primitives
                 markers: [
                     { timeNs: 3_000_000, type: 'DISTRACTOR_ON', label: 'Auditory Cue' },
                 ],
@@ -285,18 +285,18 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to marker generation with option to include markers
                 includeMarkers: true,
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted event marker with preserved type and label information for visualization overlay
                 kind: 'event',
                 timeMs: 3,
                 type: 'DISTRACTOR_ON',
                 label: 'Auditory Cue',
             });
 
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({  // Expect markers to include converted segment start marker with preserved label and type information for visualization overlay
                 kind: 'segment_start',
                 timeMs: 0,
                 type: 'SEGMENT_START',
@@ -307,8 +307,8 @@ describe('Visualization Prep Layer', () => {
     });
 
     describe('E — Diagnostics / safety / determinism', () => {
-        it('E1 — does not mutate input structures', () => {
-            const input: VisualizationPrepInput = {
+        it('E1) — Does not mutate input structures', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that prepareVisualizationModels does not mutate input structures and preserves reference equality
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'seg1', sourceIndex: 0 },
                 ],
@@ -321,27 +321,27 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const before = deepClone(input);
-            const originalPerSaccadeRef = input.perSaccade;
-            const originalIsiRef = input.isiValuesMs;
-            const originalMarkersRef = input.markers;
-            const originalSegmentsRef = input.segments;
+            const before = deepClone(input);                 // Deep clone input to compare against after processing to ensure no mutations occur
+            const originalPerSaccadeRef = input.perSaccade;  // Store original reference to perSaccade array to check for reference equality after processing
+            const originalIsiRef = input.isiValuesMs;        // Store original reference to isiValuesMs array to check for reference equality after processing
+            const originalMarkersRef = input.markers;        // Store original reference to markers array to check for reference equality after processing
+            const originalSegmentsRef = input.segments;      // Store original reference to segments array to check for reference equality after processing
 
-            prepareVisualizationModels(input, {
+            prepareVisualizationModels(input, {  // Pass through to processing with all options to test that input is not mutated and references are preserved
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 25,
                 includeMarkers: true,
             });
 
-            expect(input).toEqual(before);
-            expect(input.perSaccade).toBe(originalPerSaccadeRef);
-            expect(input.isiValuesMs).toBe(originalIsiRef);
-            expect(input.markers).toBe(originalMarkersRef);
-            expect(input.segments).toBe(originalSegmentsRef);
+            expect(input).toEqual(before);                         // Expect input to be deeply equal to original input after processing, confirming no mutations occurred
+            expect(input.perSaccade).toBe(originalPerSaccadeRef);  // Expect perSaccade reference to be unchanged after processing, confirming no mutations occurred
+            expect(input.isiValuesMs).toBe(originalIsiRef);        // Expect isiValuesMs reference to be unchanged after processing, confirming no mutations occurred
+            expect(input.markers).toBe(originalMarkersRef);        // Expect markers reference to be unchanged after processing, confirming no mutations occurred
+            expect(input.segments).toBe(originalSegmentsRef);      // Expect segments reference to be unchanged after processing, confirming no mutations occurred
         });
 
-        it('E2 — returns deep-equal results for identical inputs', () => {
-            const input: VisualizationPrepInput = {
+        it('E2) — returns deep-equal results for identical inputs', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that identical inputs produce deep-equal results, confirming deterministic output
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 1.0, segmentId: 'A' },
                     { timeMs: 1200, amplitudeDeg: 3.0, segmentId: 'B' },
@@ -356,23 +356,23 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result1 = prepareVisualizationModels(input, {
+            const result1 = prepareVisualizationModels(input, {  // Pass through to processing with all options to test that identical inputs produce deep-equal results
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 20,
                 includeMarkers: true,
             });
 
-            const result2 = prepareVisualizationModels(input, {
+            const result2 = prepareVisualizationModels(input, {  // Pass through to processing again with same input and options to confirm that results are deep-equal, confirming deterministic output
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 20,
                 includeMarkers: true,
             });
 
-            expect(result1).toEqual(result2);
+            expect(result1).toEqual(result2);  // Expect results from identical inputs to be deeply equal, confirming that output is deterministic and does not contain non-deterministic elements
         });
 
-        it('E3 — remains plotting-framework agnostic by returning plain data objects only', () => {
-            const input: VisualizationPrepInput = {
+        it('E3) — Remains plotting-framework agnostic by returning plain data objects only', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that output is composed of plain data objects without any plotting-framework-specific structures
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.0 },
                 ],
@@ -385,37 +385,37 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to processing with all options to test that output is composed of plain data objects suitable for any plotting
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 25,
                 includeMarkers: true,
             });
 
-            expect(isPlainData(result)).toBe(true);
+            expect(isPlainData(result)).toBe(true);  // Expect output to be composed of plain data objects without any functions, class instances, or other non-serializable structures
         });
     });
 
     describe('F — Output shape compatibility', () => {
-        it('F1 — returns a single top-level result containing scatter, rateSeries, isiHistogram, and markers', () => {
-            const input: VisualizationPrepInput = {
+        it('F1) — Returns a single top-level result containing scatter, rateSeries, isiHistogram, and markers', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that output contains all expected top-level properties for visualization
                 perSaccade: [{ timeMs: 100, amplitudeDeg: 2.5 }],
                 isiValuesMs: [20, 40],
                 markers: [{ timeNs: 1_000_000, type: 'DISTRACTOR_ON', label: 'D1' }],
                 segments: [{ id: 'seg1', startTimeMs: 0, endTimeMs: 500, label: 'Baseline' }],
             };
 
-            const result = prepareVisualizationModels(input, {
+            const result = prepareVisualizationModels(input, {  // Pass through to processing with all options to test that output contains all expected properties
                 includeMarkers: true,
             });
 
-            expect(result).toHaveProperty('scatter');
-            expect(result).toHaveProperty('rateSeries');
-            expect(result).toHaveProperty('isiHistogram');
-            expect(result).toHaveProperty('markers');
+            expect(result).toHaveProperty('scatter');       // Expect output to have scatter property containing scatter points for visualization
+            expect(result).toHaveProperty('rateSeries');    // Expect output to have rateSeries property containing rate series points and bin width for visualization
+            expect(result).toHaveProperty('isiHistogram');  // Expect output to have isiHistogram property containing bin edges, counts, and bin width for visualization
+            expect(result).toHaveProperty('markers');       // Expect output to have markers property containing array of visualization marker primitives for overlays
         });
 
-        it('F2 — output is suitable for downstream charting/export layers without further normalization', () => {
-            const input: VisualizationPrepInput = {
+        it('F2) — Output is suitable for downstream charting/export layers without further normalization', () => {
+            const input: VisualizationPrepInput = {  // Partial input with all properties to test that output is in a shape that is directly usable for downstream charting
                 perSaccade: [
                     { timeMs: 100, amplitudeDeg: 2.0, segmentId: 'seg1', sourceIndex: 0 },
                     { timeMs: 1100, amplitudeDeg: 4.0, segmentId: 'seg2', sourceIndex: 1 },
@@ -430,33 +430,29 @@ describe('Visualization Prep Layer', () => {
                 ],
             };
 
-            const result: VisualizationPrepResult = prepareVisualizationModels(input, {
+            const result: VisualizationPrepResult = prepareVisualizationModels(input, {  // Pass through to processing with all options to test that output is directly usable for downstream charting 
                 rateBinWidthMs: 1000,
                 isiBinWidthMs: 20,
                 includeMarkers: true,
             });
 
-            // Scatter is already chart-ready
-            expect(result.scatter.points[0]).toEqual({
+            expect(result.scatter.points[0]).toEqual({                               // Scatter is already chart-ready
                 timeMs: 100,
                 amplitudeDeg: 2.0,
                 segmentId: 'seg1',
                 sourceIndex: 0,
             });
 
-            // Rate series is already time/value chart-ready
-            expect(result.rateSeries.points[0]).toEqual({
+            expect(result.rateSeries.points[0]).toEqual({                            // Rate series is already time/value chart-ready
                 timeMs: 500,
                 count: 1,
                 ratePerSec: 1,
             });
 
-            // Histogram is already bin/count ready
-            expect(result.isiHistogram.binEdges).toEqual([0, 20, 40, 60, 80, 100]);
-            expect(result.isiHistogram.counts).toEqual([0, 1, 1, 0, 1]);
+            expect(result.isiHistogram.binEdges).toEqual([0, 20, 40, 60, 80, 100]);  // Histogram is already bin/count ready
+            expect(result.isiHistogram.counts).toEqual([0, 1, 1, 0, 1]);             // Histogram counts are correct based on input ISI values and binning
 
-            // Markers are already overlay-ready
-            expect(result.markers).toContainEqual({
+            expect(result.markers).toContainEqual({                                  // Markers are already in a shape suitable for overlaying on charts
                 kind: 'event',
                 timeMs: 2,
                 type: 'DISTRACTOR_ON',
