@@ -439,7 +439,8 @@ describe('Case Output Bundle', () => {
     });
 
     describe('E — Optional Artifact Handling', () => {
-        it('E1 — markers CSV only generated if markers exist', () => {
+        it('E1) — Markers CSV only generated if markers exist', () => {
+            // Create input object without markers in visualization data
             const inputWithoutMarkers = makeInput({
                 visualization: {
                 scatter: {
@@ -463,15 +464,18 @@ describe('Case Output Bundle', () => {
                 markers: [],
                 },
             });
-
+            // Run the function under test
             const result = buildCaseOutputBundle(inputWithoutMarkers, makeOptions());
-
+            // Assert that tables.markerRows is empty and that files array does not contain markersCsv or overlaysModelCsv descriptors
             expect(result.tables.markerRows).toEqual([]);
+            // Assert that files array does not contain markersCsv or overlaysModelCsv descriptors
             expect(result.files.some((file) => file.key === 'markersCsv')).toBe(false);
+            // Assert that files array does not contain overlaysModelCsv descriptor
             expect(result.files.some((file) => file.key === 'overlaysModelCsv')).toBe(false);
         });
 
-        it('E2 — segment summaries CSV only generated if segments exist', () => {
+        it('E2) — Segment summaries CSV only generated if segments exist', () => {
+            // Create input object without segment summaries in analysis data
             const inputWithoutSegments = makeInput({
                 analysis: {
                     perSaccade: [
@@ -491,20 +495,21 @@ describe('Case Output Bundle', () => {
                     },
                 },
             });
-
+            // Run the function under test
             const result = buildCaseOutputBundle(inputWithoutSegments, makeOptions());
-
+            // Assert that tables.segmentSummaryRows is empty and that files array does not contain segmentSummaryCsv descriptor
             expect(result.tables.segmentSummaryRows).toEqual([]);
             expect(result.files.some((file) => file.key === 'segmentSummaryCsv')).toBe(false);
         });
 
-        it('E3 — animation descriptor only generated if animation exists', () => {
+        it('E3) — Animation descriptor only generated if animation exists', () => {
+            // Create input object without animation data
             const inputWithoutAnimation = makeInput({
                 animation: undefined,
             });
-
+            // Run the function under test
             const result = buildCaseOutputBundle(inputWithoutAnimation, makeOptions());
-
+            // Assert that animation is undefined and that files array does not contain eyeAnimationDataJson descriptor
             expect(result.animation).toBeUndefined();
             expect(result.files.some((file) => file.key === 'eyeAnimationDataJson')).toBe(false);
         });

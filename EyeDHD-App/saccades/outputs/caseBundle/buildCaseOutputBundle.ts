@@ -6,6 +6,7 @@ import type {
     CaseOutputFileDescriptor,
 } from './types';
 
+// TO-DO: Specify types and remove 'any' types.
 export function buildCaseOutputBundle(
     input: CaseOutputBundleInput,
     options?: BuildCaseOutputBundleOptions,
@@ -34,7 +35,7 @@ export function buildCaseOutputBundle(
             : [],
         segmentSummaryRows: input.analysis.segmentSummaries ?? [],
         isiHistogramRows,
-        markerRows: [],
+        markerRows: input.visualization.markers ?? [],
     };
 
     const visuals = {
@@ -45,6 +46,10 @@ export function buildCaseOutputBundle(
             markers: input.visualization.markers,
         },
     };
+
+    const animation = input.animation
+        ? { frames: input.animation.frames ?? [] }
+        : undefined;
 
     const files: CaseOutputFileDescriptor<any>[] = [
         {
@@ -84,14 +89,6 @@ export function buildCaseOutputBundle(
             content: tables.sessionSummaryRows,
         },
         {
-            key: 'segmentSummaryCsv',
-            relativePath: 'analysis/segment-summary.csv',
-            format: 'csv',
-            category: 'analysis',
-            optional: true,
-            content: tables.segmentSummaryRows,
-        },
-        {
             key: 'isiHistogramCsv',
             relativePath: 'analysis/isi-histogram.csv',
             format: 'csv',
@@ -100,7 +97,7 @@ export function buildCaseOutputBundle(
             content: tables.isiHistogramRows,
         },
     );
-
+    
     // Push visual CSV descriptors
     files.push(
         {
@@ -127,16 +124,8 @@ export function buildCaseOutputBundle(
             optional:false,
             content: tables.isiHistogramRows,
         },
-        {
-            key: 'overlaysModelCsv',
-            relativePath: 'visuals/overlays-model.csv',
-            format: 'csv',
-            category: 'visuals',
-            optional: true,
-            content: visuals.overlaysModel.markers,
-        },
     )
-
+    
     // Push PNG placeholder descriptors
     files.push(
         {
@@ -163,13 +152,66 @@ export function buildCaseOutputBundle(
             optional: false,
             content: null, // Placeholder for actual PNG content
         },
-    )
+    );
+    
+    // Push marker CSV descriptors only if markers exist
+    if (tables.markerRows.length > 0) {
+        files.push(
+            {
+                key: 'markersCsv',
+                relativePath: 'analysis/markers.csv',
+                format: 'csv',
+                category: 'analysis',
+                optional: true,
+                content: tables.markerRows,
+            }
+        );
+        
+        files.push(
+            {
+                key: 'overlaysModelCsv',
+                relativePath: 'visuals/overlays-model.csv',
+                format: 'csv',
+                category: 'visuals',
+                optional: true,
+                content: visuals.overlaysModel.markers,
+            },
+            
+        );
+    }
+    
+    // Push segment summary CSV descriptor only if segment summaries exist
+    if (tables.segmentSummaryRows.length >0 ) {
+        files.push(
+            {
+                key: 'segmentSummaryCsv',
+                relativePath: 'analysis/segment-summary.csv',
+                format: 'csv',
+                category: 'analysis',
+                optional: true,
+                content: tables.segmentSummaryRows,
+            },
+        );
+    }
 
+    if (animation) {
+        files.push(
+            {
+                key: 'eyeAnimationDataJson',
+                relativePath: 'animation/eye-animation-data.json',
+                format: 'json',
+                category: 'animation',
+                optional: true,
+                content: animation,
+            }
+        );
+    }
     return {
         caseInfo,
         runConfig: input.runConfig,
         tables,
         visuals,
+        animation,
         files,
     };
 }
