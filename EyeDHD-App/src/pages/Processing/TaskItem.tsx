@@ -7,7 +7,7 @@ import { useDispatch, useSelector } from '@src/data/hooks';
 import { selectCurrentTask, selectTaskError, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
 import { selectSelectedCase } from '@src/data/features/user';
 
-import { Task } from './tasks/index';
+import { Task, TaskName } from './tasks/index';
 
 type Props = {
 	task: Task;
@@ -15,7 +15,8 @@ type Props = {
 };
 
 const getSavedStatus = (task: Task, trial: CaseData) => {
-	return Boolean(trial.tasks[task.name]);
+	const name = task.name as TaskName;
+	return Boolean(trial.tasks[name]);
 }
 
 /**
