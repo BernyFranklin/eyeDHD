@@ -14,6 +14,20 @@
     left:50%;                     /* Align top-left of component to anchor 50% mark (middle) */
     top:110%;                     /* Align top-left of component to anchor 110% BELOW the top */
     transform: translateX(-50%);  /* Move component in -X direction 50% its width */
+    pointer-events: none;
+    animation: tooltipFadeIn 0.2s ease;
+}
+
+/* Animation for tool tip -- causes it to move up and fade in */
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 /* Psuedo element -- does not render in the DOM -- the triangle pointer for tool tip */
