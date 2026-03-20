@@ -474,7 +474,8 @@ describe('Case Output Bundle', () => {
             expect(result.files.some((file) => file.key === 'overlaysModelCsv')).toBe(false);
         });
 
-        it('E2 — segment summaries CSV only generated if segments exist', () => {
+        it('E2) — Segment summaries CSV only generated if segments exist', () => {
+            // Create input object without segment summaries in analysis data
             const inputWithoutSegments = makeInput({
                 analysis: {
                     perSaccade: [
@@ -494,9 +495,9 @@ describe('Case Output Bundle', () => {
                     },
                 },
             });
-
+            // Run the function under test
             const result = buildCaseOutputBundle(inputWithoutSegments, makeOptions());
-
+            // Assert that tables.segmentSummaryRows is empty and that files array does not contain segmentSummaryCsv descriptor
             expect(result.tables.segmentSummaryRows).toEqual([]);
             expect(result.files.some((file) => file.key === 'segmentSummaryCsv')).toBe(false);
         });

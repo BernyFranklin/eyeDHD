@@ -85,14 +85,6 @@ export function buildCaseOutputBundle(
             content: tables.sessionSummaryRows,
         },
         {
-            key: 'segmentSummaryCsv',
-            relativePath: 'analysis/segment-summary.csv',
-            format: 'csv',
-            category: 'analysis',
-            optional: true,
-            content: tables.segmentSummaryRows,
-        },
-        {
             key: 'isiHistogramCsv',
             relativePath: 'analysis/isi-histogram.csv',
             format: 'csv',
@@ -101,7 +93,7 @@ export function buildCaseOutputBundle(
             content: tables.isiHistogramRows,
         },
     );
-
+    
     // Push visual CSV descriptors
     files.push(
         {
@@ -158,6 +150,7 @@ export function buildCaseOutputBundle(
         },
     );
     
+    // Push marker CSV descriptors only if markers exist
     if (tables.markerRows.length > 0) {
         files.push(
             {
@@ -183,6 +176,19 @@ export function buildCaseOutputBundle(
         );
     }
     
+    // Push segment summary CSV descriptor only if segment summaries exist
+    if (tables.segmentSummaryRows.length >0 ) {
+        files.push(
+            {
+                key: 'segmentSummaryCsv',
+                relativePath: 'analysis/segment-summary.csv',
+                format: 'csv',
+                category: 'analysis',
+                optional: true,
+                content: tables.segmentSummaryRows,
+            },
+        );
+    }
     return {
         caseInfo,
         runConfig: input.runConfig,
