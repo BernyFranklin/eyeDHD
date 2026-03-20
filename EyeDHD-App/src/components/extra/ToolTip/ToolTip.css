@@ -1,0 +1,48 @@
+.tooltip-wrapper {
+    position: relative;     /* Set main anchor point */
+    display: inline-block;  
+}
+
+.tooltip-block {
+    /* Appearance */
+    color:white;                /* Text Color*/
+    background-color: #b1102b;  /* Background Color*/
+    padding:5px;                  /* Spacing around text */
+    border-radius: 8px;           /* Apply rounding to corner of 8px */
+    /* Alignment */
+    position:absolute;            /* Prevent messing up with main layout */
+    left:50%;                     /* Align top-left of component to anchor 50% mark (middle) */
+    top:110%;                     /* Align top-left of component to anchor 110% BELOW the top */
+    transform: translateX(-50%);  /* Move component in -X direction 50% its width */
+    pointer-events: none;
+    animation: tooltipFadeIn 0.2s ease;
+}
+
+/* Animation for tool tip -- causes it to move up and fade in */
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Psuedo element -- does not render in the DOM -- the triangle pointer for tool tip */
+.tooltip-block::after {
+    content: "";                              /* Psuedo elements require content to render */
+    position: absolute;                       /* Prevent messup up with main layout -- anchored to parent */
+    
+    bottom: 100%;                             /* Place point 100% ABOVE the bottom (the top) */
+    left: 50%;                                /* Place point at 50% left point (middle) but aligned to top left of component */
+    transform: translateX(-50%);              /* Translate point by -50% X its width to center it */
+    
+    width: 0;                                 /* We only want borders no box -- remove width */
+    height: 0;                                /* We only want borders no box -- remove height */
+
+    border-left: 6px solid transparent;       /* Hide the borders next to point */
+    border-right: 6px solid transparent;      /* Hide the borders next to point */
+    border-bottom: 6px solid #b1102b;       /* same color as tooltip */
+}
