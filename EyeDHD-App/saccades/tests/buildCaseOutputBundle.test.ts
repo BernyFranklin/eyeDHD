@@ -502,13 +502,14 @@ describe('Case Output Bundle', () => {
             expect(result.files.some((file) => file.key === 'segmentSummaryCsv')).toBe(false);
         });
 
-        it('E3 — animation descriptor only generated if animation exists', () => {
+        it('E3) — Animation descriptor only generated if animation exists', () => {
+            // Create input object without animation data
             const inputWithoutAnimation = makeInput({
                 animation: undefined,
             });
-
+            // Run the function under test
             const result = buildCaseOutputBundle(inputWithoutAnimation, makeOptions());
-
+            // Assert that animation is undefined and that files array does not contain eyeAnimationDataJson descriptor
             expect(result.animation).toBeUndefined();
             expect(result.files.some((file) => file.key === 'eyeAnimationDataJson')).toBe(false);
         });

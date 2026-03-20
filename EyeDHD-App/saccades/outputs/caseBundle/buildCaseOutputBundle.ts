@@ -47,6 +47,10 @@ export function buildCaseOutputBundle(
         },
     };
 
+    const animation = input.animation
+        ? { frames: input.animation.frames ?? [] }
+        : undefined;
+
     const files: CaseOutputFileDescriptor<any>[] = [
         {
             key: 'caseInfo',
@@ -189,11 +193,25 @@ export function buildCaseOutputBundle(
             },
         );
     }
+
+    if (animation) {
+        files.push(
+            {
+                key: 'eyeAnimationDataJson',
+                relativePath: 'animation/eye-animation-data.json',
+                format: 'json',
+                category: 'animation',
+                optional: true,
+                content: animation,
+            }
+        );
+    }
     return {
         caseInfo,
         runConfig: input.runConfig,
         tables,
         visuals,
+        animation,
         files,
     };
 }
