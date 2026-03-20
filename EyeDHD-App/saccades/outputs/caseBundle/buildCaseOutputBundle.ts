@@ -6,6 +6,7 @@ import type {
     CaseOutputFileDescriptor,
 } from './types';
 
+// TO-DO: Specify types and remove 'any' types.
 export function buildCaseOutputBundle(
     input: CaseOutputBundleInput,
     options?: BuildCaseOutputBundleOptions,
@@ -34,7 +35,7 @@ export function buildCaseOutputBundle(
             : [],
         segmentSummaryRows: input.analysis.segmentSummaries ?? [],
         isiHistogramRows,
-        markerRows: [],
+        markerRows: input.visualization.markers ?? [],
     };
 
     const visuals = {
@@ -127,16 +128,8 @@ export function buildCaseOutputBundle(
             optional:false,
             content: tables.isiHistogramRows,
         },
-        {
-            key: 'overlaysModelCsv',
-            relativePath: 'visuals/overlays-model.csv',
-            format: 'csv',
-            category: 'visuals',
-            optional: true,
-            content: visuals.overlaysModel.markers,
-        },
     )
-
+    
     // Push PNG placeholder descriptors
     files.push(
         {
@@ -163,8 +156,33 @@ export function buildCaseOutputBundle(
             optional: false,
             content: null, // Placeholder for actual PNG content
         },
-    )
-
+    );
+    
+    if (tables.markerRows.length > 0) {
+        files.push(
+            {
+                key: 'markersCsv',
+                relativePath: 'analysis/markers.csv',
+                format: 'csv',
+                category: 'analysis',
+                optional: true,
+                content: tables.markerRows,
+            }
+        );
+        
+        files.push(
+            {
+                key: 'overlaysModelCsv',
+                relativePath: 'visuals/overlays-model.csv',
+                format: 'csv',
+                category: 'visuals',
+                optional: true,
+                content: visuals.overlaysModel.markers,
+            },
+            
+        );
+    }
+    
     return {
         caseInfo,
         runConfig: input.runConfig,

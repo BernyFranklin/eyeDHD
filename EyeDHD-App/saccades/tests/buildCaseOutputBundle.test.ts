@@ -439,7 +439,8 @@ describe('Case Output Bundle', () => {
     });
 
     describe('E — Optional Artifact Handling', () => {
-        it('E1 — markers CSV only generated if markers exist', () => {
+        it('E1) — Markers CSV only generated if markers exist', () => {
+            // Create input object without markers in visualization data
             const inputWithoutMarkers = makeInput({
                 visualization: {
                 scatter: {
@@ -463,11 +464,13 @@ describe('Case Output Bundle', () => {
                 markers: [],
                 },
             });
-
+            // Run the function under test
             const result = buildCaseOutputBundle(inputWithoutMarkers, makeOptions());
-
+            // Assert that tables.markerRows is empty and that files array does not contain markersCsv or overlaysModelCsv descriptors
             expect(result.tables.markerRows).toEqual([]);
+            // Assert that files array does not contain markersCsv or overlaysModelCsv descriptors
             expect(result.files.some((file) => file.key === 'markersCsv')).toBe(false);
+            // Assert that files array does not contain overlaysModelCsv descriptor
             expect(result.files.some((file) => file.key === 'overlaysModelCsv')).toBe(false);
         });
 
