@@ -529,12 +529,14 @@ describe('Case Output Bundle', () => {
 			expect(resultA).toEqual(resultB);
 		});
 
-		it('F2 — input objects not mutated', () => {
+		it('F2) — Input objects not mutated', () => {
+			// Create input object
 			const input = makeInput();
+			// Make a deep copy of the input for comparison after function call
 			const before = structuredClone(input);
-
+			// Run the function under test
 			buildCaseOutputBundle(input, makeOptions());
-
+			// Assert that the input object has not been mutated
 			expect(input).toEqual(before);
 		});
 
