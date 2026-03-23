@@ -540,14 +540,16 @@ describe('Case Output Bundle', () => {
 			expect(input).toEqual(before);
 		});
 
-		it('F3 — bundle output fully serializable', () => {
+		it('F3) — Bundle output fully serializable', () => {
+			// Create input object
 			const input = makeInput();
-
+			// Run the function under test
 			const result = buildCaseOutputBundle(input, makeOptions());
-
+			// Convert to JSON
 			const json = JSON.stringify(result);
+			// Parse JSON back to object
 			const parsed = JSON.parse(json);
-
+			// Assert that the parsed object matches the original result
 			expect(parsed).toEqual(result);
 		});
 	});
