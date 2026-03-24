@@ -17,15 +17,17 @@ import type {
 
 describe('Export Writer Layer', () => {
   describe('A — Case Output Directory Resolution', () => {
-    it('A1 — uses explicit caseFolderName when provided', () => {
+    it('A1) — Uses explicit caseFolderName when provided', () => {
+      // Create a bundle with minimal required fields.
       const bundle = makeBundle();
+      // Create options
       const options = makeOptions({
         rootDir: '/exports',
         caseFolderName: 'manual-case-folder',
       });
-
+      // Run the writeCaseBundle function with the bundle and options.
       const result = writeCaseBundle(bundle, options);
-
+      // Assert that the caseFolderName in the result matches the explicitly provided name.
       expect(result.caseFolderName).toBe('manual-case-folder');
     });
 

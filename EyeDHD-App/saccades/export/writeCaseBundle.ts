@@ -4,37 +4,40 @@ import { serializeCsvRows, serializeJsonValue } from './serializers';
 import type {
   CaseOutputBundle,
   WriteCaseBundleOptions,
-  WriteCaseBundleResult,
-  WrittenArtifact,
+	WriteCaseBundleResult,
+	WrittenArtifact
 } from './types';
-
 
 // Stub implementations. TO-DO: Implement
 
 export function writeCaseBundle(
-  bundle: CaseOutputBundle,
-  options: WriteCaseBundleOptions
+	bundle: CaseOutputBundle,
+	options: WriteCaseBundleOptions
 ): WriteCaseBundleResult {
-  void serializeCsvRows;
-  void serializeJsonValue;
+	const caseFolderName = options.caseFolderName ?? '';
+	const outputDir = path.join(options.rootDir, caseFolderName);
 
-  const caseFolderName = options.caseFolderName ?? '';
-  const outputDir = path.join(options.rootDir, caseFolderName);
+	const artifacts: WrittenArtifact[] = bundle.files.map((file) => {
+		void file;
+		return {
+			key: file.key,
+			absolutePath: path.join(outputDir, file.relativePath),
+			relativePath: file.relativePath,
+			format: file.format,
+			category: file.category,
+			bytes: 0,
+			skipped: true
+		};
+	});
 
-  const artifacts: WrittenArtifact[] = bundle.files.map((file) => ({
-    key: file.key,
-    absolutePath: path.join(outputDir, file.relativePath),
-    relativePath: file.relativePath,
-    format: file.format,
-    category: file.category,
-    bytes: 0,
-    skipped: true,
-  }));
+  void bundle;
+	void serializeCsvRows;
+	void serializeJsonValue;
 
-  return {
-    caseFolderName,
-    rootDir: options.rootDir,
-    outputDir,
-    artifacts,
-  };
+	return {
+		caseFolderName,
+		rootDir: options.rootDir,
+		outputDir,
+		artifacts
+	};
 }
