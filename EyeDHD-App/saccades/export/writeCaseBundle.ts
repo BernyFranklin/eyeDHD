@@ -14,12 +14,11 @@ export function writeCaseBundle(
 	bundle: CaseOutputBundle,
 	options: WriteCaseBundleOptions
 ): WriteCaseBundleResult {
-	const caseFolderName = options.caseFolderName ?? '';
+	const caseFolderName = options.caseFolderName ?? bundle.caseInfo.caseId;
 	const outputDir = path.join(options.rootDir, caseFolderName);
 
-	const artifacts: WrittenArtifact[] = bundle.files.map((file) => {
-		void file;
-		return {
+	const artifacts: WrittenArtifact[] = bundle.files.map((file) => ({
+		
 			key: file.key,
 			absolutePath: path.join(outputDir, file.relativePath),
 			relativePath: file.relativePath,
@@ -27,10 +26,8 @@ export function writeCaseBundle(
 			category: file.category,
 			bytes: 0,
 			skipped: true
-		};
-	});
+	}));
 
-  void bundle;
 	void serializeCsvRows;
 	void serializeJsonValue;
 
