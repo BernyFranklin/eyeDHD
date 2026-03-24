@@ -31,7 +31,7 @@ describe('Export Writer Layer', () => {
 			expect(result.caseFolderName).toBe('manual-case-folder');
 		});
 
-		it('A2) — derives default caseFolderName from bundle.caseInfo.caseId', () => {
+		it('A2) — Derives default caseFolderName from bundle.caseInfo.caseId', () => {
 			// Create bundle with specific caseId in caseInfo.
 			const bundle = makeBundle({
 				caseInfo: {
@@ -44,15 +44,16 @@ describe('Export Writer Layer', () => {
 			expect(result.caseFolderName).toBe('Case-Alpha');
 		});
 
-		it('A3 — resolves outputDir deterministically from rootDir and caseFolderName', () => {
+		it('A3) — Resolves outputDir deterministically from rootDir and caseFolderName', () => {
+			// Create bundle with specific caseId to ensure consistent caseFolderName.
 			const bundle = makeBundle({
 				caseInfo: {
 					caseId: 'Case-Alpha'
 				}
 			});
-
+			// Run the function with a known rootDir and check that outputDir is correctly resolved.
 			const result = writeCaseBundle(bundle, makeOptions({ rootDir: '/exports' }));
-
+			// Assert that the outputDir is the combination of rootDir and caseFolderName.
 			expect(result.rootDir).toBe('/exports');
 			expect(result.outputDir).toBe(path.join('/exports', 'Case-Alpha'));
 		});
