@@ -5,7 +5,7 @@ Here’s a simple way to pipe raw frames from headless‑gl/Three.js into **ffmp
 3. Write that buffer to ffmpeg’s **stdin** as raw video.
 4. ffmpeg encodes to MP4 (or any codec you want).
 
-```/dev/null/headless-three-ffmpeg.mjs#L1-164
+```ts
 import { spawn } from "child_process";
 import gl from "gl";
 import {

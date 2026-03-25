@@ -34,11 +34,11 @@ declare interface Electron {
 		resetCleaningProgress(trial: CaseData): Promise<void>;
 	};
 
-	video: {
-		selectFile(): Promise<string | null>;
-		SidebySide(vrFile: string, animFile: string, offsetSeconds: number): Promise<string>;
-		toVideoURL(filename: string | null): string | null;
-	};
+	// video: {
+	// 	selectFile(): Promise<string | null>;
+	// 	SidebySide(vrFile: string, animFile: string, offsetSeconds: number): Promise<string>;
+	// 	toVideoURL(filename: string | null): string | null;
+	// };
 
 	stream: {
 		start(type: StreamType, file?: CaseData): Promise<StreamKey>;
@@ -130,34 +130,34 @@ const electron: Electron = {
 		}
 	},
 
-	video: {
-		/**
-		 * open a native dialog to choose a video file and return full path
-		 */
-		selectFile: async () => {
-			return await ipcRenderer.invoke('vr:select-video-file');
-		},
-		/**
-		 * sync vr + animation using main.js ffmpeg handler
-		 */
-		SidebySide: async (vrFile: string, animFile: string, offsetSeconds: number) => {
-			return await ipcRenderer.invoke('vr:video-sync-vr', {
-				vrFile,
-				animFile,
-				offsetSeconds
-			});
-		},
-		/**
-		 * convert OS path → safe video URL for <video src="">
-		 * no Node 'path' module used so bundlers can't complain
-		 */
-		toVideoURL: (filepath: string) => {
-			if (!filepath) return null;
-			const normalized = filepath.replace(/\\/g, '/');
-			// avoid double prefixing if it already starts with file:///
-			return normalized.startsWith('file:///') ? normalized : `file:///${normalized}`;
-		}
-	},
+	// video: {
+	// 	/**
+	// 	 * open a native dialog to choose a video file and return full path
+	// 	 */
+	// 	selectFile: async () => {
+	// 		return await ipcRenderer.invoke('vr:select-video-file');
+	// 	},
+	// 	/**
+	// 	 * sync vr + animation using main.js ffmpeg handler
+	// 	 */
+	// 	SidebySide: async (vrFile: string, animFile: string, offsetSeconds: number) => {
+	// 		return await ipcRenderer.invoke('vr:video-sync-vr', {
+	// 			vrFile,
+	// 			animFile,
+	// 			offsetSeconds
+	// 		});
+	// 	},
+	// 	/**
+	// 	 * convert OS path → safe video URL for <video src="">
+	// 	 * no Node 'path' module used so bundlers can't complain
+	// 	 */
+	// 	toVideoURL: (filepath: string) => {
+	// 		if (!filepath) return null;
+	// 		const normalized = filepath.replace(/\\/g, '/');
+	// 		// avoid double prefixing if it already starts with file:///
+	// 		return normalized.startsWith('file:///') ? normalized : `file:///${normalized}`;
+	// 	}
+	// },
 
 	stream: {
 		/**
