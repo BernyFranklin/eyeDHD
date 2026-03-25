@@ -88,7 +88,8 @@ describe('Export Writer Layer', () => {
 			);
 		});
 
-		it('B2 — serializes session summary rows to CSV', () => {
+		it('B2) — Serializes session summary rows to CSV', () => {
+			// Create sample session summary rows to test CSV serialization.
 			const rows = [
 				{
 					segmentId: 'session',
@@ -97,9 +98,9 @@ describe('Export Writer Layer', () => {
 					ratePerSec: 2.4
 				}
 			];
-
+			// Serialize the rows to CSV using the serializer function.
 			const csv = serializeCsvRows(rows);
-
+			// Assert that the resulting CSV string matches the expected format and content.
 			expect(csv).toBe(
 				['count,durationMs,ratePerSec,segmentId', '12,5000,2.4,session'].join('\n')
 			);
