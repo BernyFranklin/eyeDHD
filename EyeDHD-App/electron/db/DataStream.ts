@@ -1,9 +1,8 @@
 import fs from "fs";
 import rl from "readline";
 
-import os from 'os';
 import { spawn } from 'child_process';
-import ffmpegPath from 'ffmpeg-static';
+import FFMPEG_PATH from 'ffmpeg-static';
 
 import gl from "gl";
 import * as Three from 'three';
@@ -270,7 +269,7 @@ export default class DataStream {
 		manager: DatabaseManager
 	): AsyncGenerator<DataType[], void, undefined> {
 		// ffmpeg init here
-		const ffmpeg = spawn("ffmpeg", [
+		const ffmpeg = spawn(FFMPEG_PATH, [
 			"-y",
 			"-f", "rawvideo",
 			"-pix_fmt", "rgba",
