@@ -118,15 +118,16 @@ describe('Export Writer Layer', () => {
 			expect(csv).toBe(['binEndMs,binStartMs,count', '50,0,2', '100,50,5'].join('\n'));
 		});
 
-		it('B4 — preserves deterministic column ordering across identical runs', () => {
+		it('B4) — Preserves deterministic column ordering across identical runs', () => {
+			// Create sample rows with multiple columns to test deterministic column ordering.
 			const rows = [
 				{ zeta: 1, alpha: 2, middle: 3 },
 				{ zeta: 4, alpha: 5, middle: 6 }
 			];
-
+			// Serialize the rows to CSV multiple times to check for consistent column ordering.
 			const csv1 = serializeCsvRows(rows);
 			const csv2 = serializeCsvRows(rows);
-
+			// Assert that the resulting CSV strings are identical and that the column order is consistent.
 			expect(csv1).toBe(csv2);
 			expect(csv1.split('\n')[0]).toBe('alpha,middle,zeta');
 		});
