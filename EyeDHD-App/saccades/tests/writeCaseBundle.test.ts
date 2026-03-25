@@ -60,7 +60,8 @@ describe('Export Writer Layer', () => {
 	});
 
 	describe('B — CSV Serialization', () => {
-		it('B1 — serializes per-saccade rows to CSV', () => {
+		it('B1) — Serializes per-saccade rows to CSV', () => {
+			// Create sample per-saccade rows to test CSV serialization.
 			const rows = [
 				{
 					startTimeMs: 100,
@@ -75,9 +76,9 @@ describe('Export Writer Layer', () => {
 					amplitudeDeg: 4.25
 				}
 			];
-
+			// Serialize the rows to CSV using the serializer function.
 			const csv = serializeCsvRows(rows);
-
+			// Assert that the resulting CSV string matches the expected format and content.
 			expect(csv).toBe(
 				[
 					'amplitudeDeg,durationMs,endTimeMs,startTimeMs',
