@@ -106,14 +106,15 @@ describe('Export Writer Layer', () => {
 			);
 		});
 
-		it('B3 — serializes histogram rows to CSV', () => {
+		it('B3) — Serializes histogram rows to CSV', () => {
+			// Create sample histogram rows to test CSV serialization.
 			const rows = [
 				{ binStartMs: 0, binEndMs: 50, count: 2 },
 				{ binStartMs: 50, binEndMs: 100, count: 5 }
 			];
-
+			// Serialize the rows to CSV using the serializer function.
 			const csv = serializeCsvRows(rows);
-
+			// Assert that the resulting CSV string matches the expected format and content.
 			expect(csv).toBe(['binEndMs,binStartMs,count', '50,0,2', '100,50,5'].join('\n'));
 		});
 
