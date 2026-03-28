@@ -244,13 +244,14 @@ describe('Export Writer Layer', () => {
 			expect(pngArtifact?.bytes).toBe(0);
 		});
 
-		it('D3 — preserves PNG relative paths from descriptors', () => {
+		it('D3) — Preserves PNG relative paths from descriptors', () => {
+			// Create a bundle to test that PNG relative paths from descriptors are preserved in the resulting artifacts.
 			const bundle = makeBundle();
-
+			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Find the PNG artifact with the expected key in the resulting artifacts list.
 			const pngArtifact = result.artifacts.find((a) => a.key === 'mainTimelinePng');
-
+			// Assert that the PNG artifact relative path matches the expected value from the descriptor.
 			expect(pngArtifact?.relativePath).toBe('visuals/main-timeline.png');
 		});
 	});
