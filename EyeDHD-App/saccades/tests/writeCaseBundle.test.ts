@@ -219,12 +219,14 @@ describe('Export Writer Layer', () => {
 	});
 
 	describe('D — PNG Placeholder Handling', () => {
-		it('D1 — includes PNG artifacts in result', () => {
+		it('D1) — includes PNG artifacts in result', () => {
+			// Create a bundle to test that PNG artifacts are included in the resulting artifacts list.
 			const bundle = makeBundle();
-
+			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Filter the resulting artifacts to find those with PNG format
 			const pngArtifacts = result.artifacts.filter((a) => a.format === 'png');
+			// Assert that at least one PNG artifact was found and that the expected key is present among them.
 			expect(pngArtifacts.length).toBeGreaterThan(0);
 			expect(pngArtifacts.map((a) => a.key)).toContain('mainTimelinePng');
 		});
