@@ -17,6 +17,25 @@ export function serializeCsvRows(rows: Record<string, unknown>[]): string {
 }
 
 export function serializeJsonValue(value: unknown): string {
-	void value;
-	return '';
+	const normailzed = sortJsonValue(value);
+	return JSON.stringify(normailzed, null, 2);	
+}
+
+function sortJsonValue(value: unknown): unknown {
+	if (Array.isArray(value)) {
+		return value.map(sortJsonValue);
+	}
+
+	if (value !== null && typeof value == 'object') {
+		const record = value as Record<string, unknown>;
+		const sortedKeys = Object.keys(record).sort();
+
+		const result: Record<string, unknown> = {};
+
+		for (const key of sortedKeys) {
+			result[key] = sortJsonValue(record[key]);
+		}
+		return result;
+	}
+	return value;
 }

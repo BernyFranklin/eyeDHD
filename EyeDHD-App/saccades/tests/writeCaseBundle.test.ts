@@ -134,7 +134,8 @@ describe('Export Writer Layer', () => {
 	});
 
 	describe('C — JSON Serialization', () => {
-		it('C1 — serializes case-info metadata to JSON', () => {
+		it('C1) — Serializes case-info metadata to JSON', () => {
+			// Create a sample case-info metadata object to test JSON serialization.
 			const value = {
 				participantId: 'P-001',
 				caseId: 'Case-Alpha',
@@ -142,9 +143,9 @@ describe('Export Writer Layer', () => {
 				studyLabel: 'ADHD Pilot',
 				generatedAtIso: '2026-03-16T12:00:00.000Z'
 			};
-
+			// Serialize the sample case-info metadata object to JSON using the serializer function.
 			const json = serializeJsonValue(value);
-
+			// Assert that the resulting JSON string matches the expected format and content.
 			expect(json).toBe(
 				[
 					'{',
