@@ -219,7 +219,7 @@ describe('Export Writer Layer', () => {
 	});
 
 	describe('D — PNG Placeholder Handling', () => {
-		it('D1) — includes PNG artifacts in result', () => {
+		it('D1) — Includes PNG artifacts in result', () => {
 			// Create a bundle to test that PNG artifacts are included in the resulting artifacts list.
 			const bundle = makeBundle();
 			// Write the bundle using the writeCaseBundle function with default options.
@@ -231,13 +231,14 @@ describe('Export Writer Layer', () => {
 			expect(pngArtifacts.map((a) => a.key)).toContain('mainTimelinePng');
 		});
 
-		it('D2 — marks PNG artifacts as skipped placeholders', () => {
+		it('D2) — Marks PNG artifacts as skipped placeholders', () => {
+			// Create a bundle to test that PNG artifacts are marked as skipped placeholders.
 			const bundle = makeBundle();
-
+			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Find the PNG artifact with the expected key in the resulting artifacts list.
 			const pngArtifact = result.artifacts.find((a) => a.key === 'mainTimelinePng');
-
+			// Assert that the PNG artifact is defined and marked as skipped with zero bytes.
 			expect(pngArtifact).toBeDefined();
 			expect(pngArtifact?.skipped).toBe(true);
 			expect(pngArtifact?.bytes).toBe(0);
