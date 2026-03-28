@@ -186,7 +186,8 @@ describe('Export Writer Layer', () => {
 			);
 		});
 
-		it('C3 — serializes animation payload to JSON when present', () => {
+		it('C3) — Serializes animation payload to JSON when present', () => {
+			// Create a sample animation payload object to test JSON serialization.
 			const value = {
 				fps: 30,
 				frames: [
@@ -194,9 +195,9 @@ describe('Export Writer Layer', () => {
 					{ tMs: 100, marker: 'cue' }
 				]
 			};
-
+			// Serialize the sample animation payload object to JSON using the serializer function.
 			const json = serializeJsonValue(value);
-
+			// Assert that the resulting JSON string matches the expected format and content.
 			expect(json).toBe(
 				[
 					'{',
