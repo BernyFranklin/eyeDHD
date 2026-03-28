@@ -159,7 +159,8 @@ describe('Export Writer Layer', () => {
 			);
 		});
 
-		it('C2 — serializes run-config metadata to JSON', () => {
+		it('C2) — Serializes run-config metadata to JSON', () => {
+			// Create values to test JSON serialization of run-config metadata.
 			const value = {
 				detection: {
 					velocityThresholdDegPerSec: 120
@@ -168,9 +169,9 @@ describe('Export Writer Layer', () => {
 					includeRatePerMin: true
 				}
 			};
-
+			// Serialize the run-config metadata object to JSON using the serializer function.
 			const json = serializeJsonValue(value);
-
+			// Assert that the resulting JSON string matches the expected format and content.
 			expect(json).toBe(
 				[
 					'{',
