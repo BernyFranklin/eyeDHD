@@ -317,7 +317,7 @@ describe('Export Writer Layer', () => {
 	});
 
 	describe('F — Optional Artifact Handling', () => {
-		it('F1) — handles missing optional animation descriptor cleanly', () => {
+		it('F1) — Handles missing optional animation descriptor cleanly', () => {
 			// Create a bundle without the optional animation descriptor to test that missing optional artifacts are handled cleanly.
 			const bundle = makeBundleWithoutAnimation();
 			// Write the bundle using the writeCaseBundle function with default options.
@@ -327,7 +327,8 @@ describe('Export Writer Layer', () => {
 			expect(result.artifacts.length).toBe(bundle.files.length);
 		});
 
-		it('F2 — handles optional marker CSV when present', () => {
+		it('F2) — Handles optional marker CSV when present', () => {
+			// Create a bundle with the optional marker CSV file included to test that optional artifacts are handled correctly when present.
 			const bundle = makeBundle({
 				files: [
 					...baseFiles(),
@@ -344,11 +345,11 @@ describe('Export Writer Layer', () => {
 					}
 				]
 			});
-
+			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Find the artifact corresponding to the optional marker CSV file in the resulting artifacts list.
 			const markerArtifact = result.artifacts.find((a) => a.key === 'markersCsv');
-
+			// Assert that the optional marker CSV artifact is defined and has the expected properties.
 			expect(markerArtifact).toBeDefined();
 			expect(markerArtifact?.relativePath).toBe('analysis/markers.csv');
 			expect(markerArtifact?.skipped).toBe(false);
