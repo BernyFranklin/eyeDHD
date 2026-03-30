@@ -395,13 +395,14 @@ describe('Export Writer Layer', () => {
 			expect(JSON.stringify(bundle)).toBe(before);
 		});
 
-		it('G3 — write result is fully serializable', () => {
+		it('G3) — Write result is fully serializable', () => {
+			// Create a bundle to test that the result of writeCaseBundle is fully serializable to JSON.
 			const bundle = makeBundle();
-
+			// Call writeCaseBundle with the bundle and options to get the result that will be tested for JSON serializability.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Assert that JSON.stringify does not throw when serializing the result.
 			expect(() => JSON.stringify(result)).not.toThrow();
-
+			// Assert that parsing the serialized result produces an object equal to the original result.
 			const roundTrip = JSON.parse(JSON.stringify(result));
 			expect(roundTrip).toEqual(result);
 		});
