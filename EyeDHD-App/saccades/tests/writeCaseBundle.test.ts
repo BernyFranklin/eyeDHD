@@ -267,36 +267,38 @@ describe('Export Writer Layer', () => {
 		});
 
 		it('E2) — Records absolutePath and relativePath for each artifact', () => {
+			// Create a bundle with a specific case ID to test that absolute and relative paths are recorded correctly for each artifact.
 			const bundle = makeBundle({
 				caseInfo: {
 					caseId: 'Case-Alpha'
 				}
 			});
-
+			// Write the bundle using the writeCaseBundle function with specific rootDir and caseFolderName options.
 			const result = writeCaseBundle(
 				bundle,
 				makeOptions({ rootDir: '/exports', caseFolderName: 'Case-Alpha' })
 			);
-
+			// Find the artifact corresponding to the case info JSON file in the resulting artifacts list.
 			const artifact = result.artifacts.find((a) => a.key === 'caseInfoJson');
-
+			// Assert that the artifact was found and that its relative and absolute paths match the expected values.
 			expect(artifact?.relativePath).toBe('metadata/case-info.json');
 			expect(artifact?.absolutePath).toBe(
 				path.join('/exports', 'Case-Alpha', 'metadata/case-info.json')
 			);
 		});
 
-		it('E3 — records bytes for written CSV/JSON artifacts', () => {
+		it('E3) — Records bytes for written CSV/JSON artifacts', () => {
+			// Create a bundle to test that the bytes field is recorded correctly for CSV and JSON artifacts.
 			const bundle = makeBundle();
-
+			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Find the artifacts corresponding to the case info JSON and per-saccade CSV files in the resulting artifacts list.
 			const caseInfoArtifact = result.artifacts.find((a) => a.key === 'caseInfoJson');
 			const perSaccadeArtifact = result.artifacts.find((a) => a.key === 'perSaccadeCsv');
-
+			// Assert that the bytes field is greater than zero and that skipped is false for both JSON and CSV artifacts.
 			expect(caseInfoArtifact?.bytes).toBeGreaterThan(0);
 			expect(caseInfoArtifact?.skipped).toBe(false);
-
+			// Assert that the bytes field is greater than zero and that skipped is false for the per-saccade CSV artifact.
 			expect(perSaccadeArtifact?.bytes).toBeGreaterThan(0);
 			expect(perSaccadeArtifact?.skipped).toBe(false);
 		});
