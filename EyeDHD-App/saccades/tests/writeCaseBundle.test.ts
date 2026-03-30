@@ -257,15 +257,16 @@ describe('Export Writer Layer', () => {
 	});
 
 	describe('E — Artifact Writing / Output Records', () => {
-		it('E1 — returns one artifact result per descriptor considered', () => {
+		it('E1) — Returns one artifact result per descriptor considered', () => {
+			// Create a bundle with a set of file descriptors to test that each descriptor results in one artifact in the output.
 			const bundle = makeBundle();
-
+			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Assert that the number of artifacts returned matches the number of file descriptors in the bundle.
 			expect(result.artifacts).toHaveLength(bundle.files.length);
 		});
 
-		it('E2 — records absolutePath and relativePath for each artifact', () => {
+		it('E2) — Records absolutePath and relativePath for each artifact', () => {
 			const bundle = makeBundle({
 				caseInfo: {
 					caseId: 'Case-Alpha'
