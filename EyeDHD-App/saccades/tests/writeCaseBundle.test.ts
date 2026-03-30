@@ -384,12 +384,14 @@ describe('Export Writer Layer', () => {
 			expect(result1).toEqual(result2);
 		});
 
-		it('G2 — bundle input is not mutated', () => {
+		it('G2) — Bundle input is not mutated', () => {
+			// Create a bundle and capture its serialized form before calling writeCaseBundle to verify that the input bundle is not mutated by the function.
 			const bundle = makeBundle();
+			// Snapshot of the bundle before calling writeCaseBundle.
 			const before = JSON.stringify(bundle);
-
+			// Call writeCaseBundle with the bundle and options.
 			writeCaseBundle(bundle, makeOptions());
-
+			// Compare snapshot and bundle after calling writeCaseBundle to ensure that the input bundle has not been mutated.
 			expect(JSON.stringify(bundle)).toBe(before);
 		});
 
