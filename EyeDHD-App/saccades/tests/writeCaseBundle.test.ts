@@ -317,11 +317,12 @@ describe('Export Writer Layer', () => {
 	});
 
 	describe('F — Optional Artifact Handling', () => {
-		it('F1 — handles missing optional animation descriptor cleanly', () => {
+		it('F1) — handles missing optional animation descriptor cleanly', () => {
+			// Create a bundle without the optional animation descriptor to test that missing optional artifacts are handled cleanly.
 			const bundle = makeBundleWithoutAnimation();
-
+			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Assert that no artifacts in the resulting artifacts list have the category 'animation' and that the number of artifacts matches the number of file descriptors in the bundle.
 			expect(result.artifacts.some((a) => a.category === 'animation')).toBe(false);
 			expect(result.artifacts.length).toBe(bundle.files.length);
 		});

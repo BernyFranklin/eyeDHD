@@ -35,8 +35,9 @@ function buildArtifactResult(
 	file: CaseOutputFileDescriptor<unknown>,
 	outputDir: string
 ): WrittenArtifact {
+	// Compute the absolute path for this artifact by joining the output directory with the relative path
 	const absolutePath = path.join(outputDir, file.relativePath);
-
+	// If PNG format, mark as skipped since PNG writing is not handled here
 	if (file.format === 'png') {
 		return {
 			key: file.key,
@@ -48,10 +49,10 @@ function buildArtifactResult(
 			skipped: true,
 		};
 	}
-
+	// Serialize the artifact content to a string using the appropriate serializer
 	const serialized = serializeArtifactContent(file);
 	const bytes = Buffer.byteLength(serialized, 'utf8');
-
+	// Return the written artifact result including the serialized byte length
 	return {
 		key: file.key,
 		absolutePath,
@@ -64,11 +65,14 @@ function buildArtifactResult(
 }
 
 function serializeArtifactContent(file: CaseOutputFileDescriptor<unknown>): string {
+	// If JSON format, serialize the content using the JSON serializer
 	if (file.format === 'json') {
 		return serializeJsonValue(file.content);
 	}
+	// If CSV, serialize the content using the CSV serializer
 	if (file.format === 'csv') {
 		return serializeCsvRows(file.content as Record<string, unknown>[]);
 	}
+	// If neither JSON nor CSV, return an empty string
 	return '';
 }
