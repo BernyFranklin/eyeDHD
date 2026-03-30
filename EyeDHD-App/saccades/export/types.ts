@@ -1,7 +1,15 @@
+export type {
+	CaseOutputFileDescriptor,
+	CaseInfo,
+	CaseOutputBundle,
+	CaseOutputTables,
+	CaseOutputVisualModels,
+} from '@saccades/outputs/caseBundle';
+
 export type ExportFileFormat = 'csv' | 'json' | 'png';
 
 export type ExportFileCategory =
-    | 'metadata'
+	| 'metadata'
 	| 'cleaned'
 	| 'analysis'
 	| 'visuals'
@@ -27,33 +35,4 @@ export interface WriteCaseBundleResult {
 	rootDir: string;
 	outputDir: string;
 	artifacts: WrittenArtifact[];
-}
-
-
-// Local Write Layer facing copy of the Step 7 descriptor contract.
-
-export interface CaseOutputFileDescriptor<T> {
-	key: string;
-	relativePath: string;
-	format: ExportFileFormat;
-	category: ExportFileCategory;
-	optional: boolean;
-	content: T;
-}
-
-export interface CaseInfo {
-	participantId: string;
-	caseId: string;
-	sessionLabel: string;
-	studyLabel: string;
-	generatedAtIso: string;
-}
-
-export interface CaseOutputBundle {
-	caseInfo: CaseInfo;
-	runConfig: Record<string, unknown>;
-	tables: Record<string, unknown>;
-	visuals: Record<string, unknown>;
-	animation?: Record<string, unknown>;
-	files: CaseOutputFileDescriptor<unknown>[];
 }

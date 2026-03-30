@@ -38,6 +38,8 @@ function buildArtifactResult(
 	// Compute the absolute path for this artifact by joining the output directory with the relative path
 	const absolutePath = path.join(outputDir, file.relativePath);
 	// If PNG format, mark as skipped since PNG writing is not handled here
+	// PNG Outputs are modeled here for deterministic export planning,
+	// but binary image rendering/writing is deferred to  later layer
 	if (file.format === 'png') {
 		return {
 			key: file.key,
@@ -71,6 +73,9 @@ function serializeArtifactContent(file: CaseOutputFileDescriptor<unknown>): stri
 	}
 	// If CSV, serialize the content using the CSV serializer
 	if (file.format === 'csv') {
+		if (!Array.isArray(file.content)) {
+			throw new Error(`CSV artifact "${file.key}" must contain an array of rows.`);
+		}
 		return serializeCsvRows(file.content as Record<string, unknown>[]);
 	}
 	// If neither JSON nor CSV, return an empty string

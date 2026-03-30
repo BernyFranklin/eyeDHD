@@ -10,6 +10,8 @@ import type {
 	CaseInfo,
 	CaseOutputBundle,
 	CaseOutputFileDescriptor,
+	CaseOutputTables,
+	CaseOutputVisualModels,
 	WriteCaseBundleOptions,
 	ExportFileCategory,
 	ExportFileFormat
@@ -423,9 +425,14 @@ function makeOptions(
 }
 
 function makeBundle(
-	overrides: Partial<Omit<CaseOutputBundle, 'caseInfo' | 'files'>> & {
+	overrides: Partial<
+		Omit<CaseOutputBundle, 'caseInfo' | 'files' | 'tables' | 'visuals' | 'animation'>
+	> & {
 		caseInfo?: Partial<CaseInfo>;
 		files?: CaseOutputFileDescriptor<unknown>[];
+		tables?: Partial<CaseOutputTables>;
+		visuals?: Partial<CaseOutputVisualModels>;
+		animation?: CaseOutputBundle['animation'];
 	} = {}
 ): CaseOutputBundle {
 	const caseInfo: CaseInfo = {
@@ -437,6 +444,56 @@ function makeBundle(
 		...(overrides.caseInfo ?? {})
 	};
 
+	const tables: CaseOutputTables = {
+		perSaccadeRows: [
+			{ timeMs: 100, amplitudeDeg: 3.5, durationMs: 40 },
+			{ timeMs: 200, amplitudeDeg: 4.25, durationMs: 45 }
+		],
+		sessionSummaryRows: [
+			{ segmentId: 'session', count: 2, durationMs: 145, ratePerSec: 13.7931034483 }
+		],
+		segmentSummaryRows: [
+			{ segmentId: 'session', saccadeCount: 2, ratePerSec: 13.7931034483 }
+		],
+		isiHistogramRows: [
+			{ binStartMs: 0, binEndMs: 50, count: 1 },
+			{ binStartMs: 50, binEndMs: 100, count: 0 }
+		],
+		markerRows: [
+			{ timeMs: 0, label: 'Intro', kind: 'segment-start' },
+			{ timeMs: 1000, label: 'Task', kind: 'segment-start' }
+		],
+		...(overrides.tables ?? {})
+	};
+
+	const visuals: CaseOutputVisualModels = {
+		scatterModel: {
+			points: [
+				{ timeMs: 100, amplitudeDeg: 3.5 },
+				{ timeMs: 200, amplitudeDeg: 4.25 }
+			]
+		},
+		rateSeriesModel: {
+			binWidthMs: 100,
+			points: [
+				{ timeMs: 0, ratePerSec: 0 },
+				{ timeMs: 100, ratePerSec: 13.7931034483 }
+			]
+		},
+		isiHistogramModel: {
+			binWidthMs: 50,
+			binEdges: [0, 50, 100],
+			counts: [1, 0]
+		},
+		overlaysModel: {
+			markers: [
+				{ timeMs: 0, label: 'Intro', kind: 'segment-start' },
+				{ timeMs: 1000, label: 'Task', kind: 'segment-start' }
+			]
+		},
+		...(overrides.visuals ?? {})
+	};
+
 	const bundle: CaseOutputBundle = {
 		caseInfo,
 		runConfig: {
@@ -445,42 +502,27 @@ function makeBundle(
 			},
 			metrics: {
 				includeRatePerMin: true
-			}
+			},
+			visualization: {
+				binWidthMs: 100
+			},
+			...(overrides.runConfig ?? {})
 		},
-		tables: {
-			perSaccade: [
-				{ startTimeMs: 100, endTimeMs: 140, durationMs: 40, amplitudeDeg: 3.5 },
-				{ startTimeMs: 200, endTimeMs: 245, durationMs: 45, amplitudeDeg: 4.25 }
-			],
-			sessionSummary: [
-				{ segmentId: 'session', count: 2, durationMs: 145, ratePerSec: 13.7931034483 }
-			],
-			isiHistogram: [
-				{ binStartMs: 0, binEndMs: 50, count: 1 },
-				{ binStartMs: 50, binEndMs: 100, count: 0 }
-			]
-		},
-		visuals: {
-			mainTimeline: {
-				kind: 'timeline-model'
-			}
-		},
-		animation: {
-			fps: 30,
-			frames: [
-				{ tMs: 0, marker: 'start' },
-				{ tMs: 100, marker: 'cue' }
-			]
-		},
+		tables,
+		visuals,
+		animation:
+			overrides.animation === undefined
+				? {
+						frames: [
+							{ timeMs: 0, x: 0, y: 0, marker: 'start' },
+							{ timeMs: 100, x: 1, y: 1, marker: 'cue' }
+						]
+					}
+				: overrides.animation,
 		files: overrides.files ?? baseFiles()
 	};
 
-	return {
-		...bundle,
-		...overrides,
-		caseInfo,
-		files: overrides.files ?? bundle.files
-	};
+	return bundle;
 }
 
 function makeBundleWithoutAnimation(): CaseOutputBundle {
