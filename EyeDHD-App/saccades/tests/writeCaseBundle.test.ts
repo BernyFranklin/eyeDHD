@@ -356,11 +356,12 @@ describe('Export Writer Layer', () => {
 			expect(markerArtifact?.bytes).toBeGreaterThan(0);
 		});
 
-		it('F3 — handles optional marker CSV absence without affecting other outputs', () => {
+		it('F3) — Handles optional marker CSV absence without affecting other outputs', () => {
+			// Create a bundle without the optional marker CSV file to test that its absence does not affect other outputs.
 			const bundle = makeBundle();
-
+			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Assert that the optional marker CSV artifact is not present and that other expected artifacts are still present in the resulting artifacts list.
 			expect(result.artifacts.find((a) => a.key === 'markersCsv')).toBeUndefined();
 			expect(result.artifacts.find((a) => a.key === 'caseInfoJson')).toBeDefined();
 			expect(result.artifacts.find((a) => a.key === 'perSaccadeCsv')).toBeDefined();
