@@ -369,16 +369,18 @@ describe('Export Writer Layer', () => {
 	});
 
 	describe('G — Determinism + Safety', () => {
-		it('G1 — identical bundle and options produce identical write results', () => {
+		it('G1) — Identical bundle and options produce identical write results', () => {
+			// Create a bundle and options to test that calling writeCaseBundle with identical inputs produces identical outputs.
 			const bundle = makeBundle();
+			// Create options specifying a root directory and a case folder name to pass to writeCaseBundle.
 			const options = makeOptions({
 				rootDir: '/exports',
 				caseFolderName: 'Case-Alpha'
 			});
-
+			// Call writeCaseBundle twice with the same bundle and options and capture the results to verify that the outputs are identical.
 			const result1 = writeCaseBundle(bundle, options);
 			const result2 = writeCaseBundle(bundle, options);
-
+			// Assert that the two results are deeply equal, indicating that the function produces deterministic output for identical inputs.
 			expect(result1).toEqual(result2);
 		});
 
