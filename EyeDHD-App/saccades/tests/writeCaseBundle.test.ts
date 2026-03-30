@@ -303,13 +303,14 @@ describe('Export Writer Layer', () => {
 			expect(perSaccadeArtifact?.skipped).toBe(false);
 		});
 
-		it('E4 — records skipped true for PNG placeholders', () => {
+		it('E4) — Records skipped true for PNG placeholders', () => {
+			// Create a bundle to test that PNG artifacts are marked as skipped in the resulting artifacts list.
 			const bundle = makeBundle();
-
+			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-
+			// Find all PNG artifacts in the resulting artifacts list.
 			const pngArtifacts = result.artifacts.filter((a) => a.format === 'png');
-
+			// Assert that there is at least one PNG artifact and that all PNG artifacts are marked as skipped.
 			expect(pngArtifacts.length).toBeGreaterThan(0);
 			expect(pngArtifacts.every((a) => a.skipped === true)).toBe(true);
 		});
