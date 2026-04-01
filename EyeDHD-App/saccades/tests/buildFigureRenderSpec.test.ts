@@ -1,0 +1,629 @@
+// saccades/render/buildFigureRenderSpec.test.ts
+
+import { describe, expect, it } from 'vitest';
+
+import {
+	attachFigureOverlays,
+	buildIsiHistogramFigureSpec,
+	buildRateSeriesFigureSpec,
+	buildScatterFigureSpec,
+	renderFigureSpec
+} from '@saccades/visualization/render/buildFigureRenderSpec';
+
+import type {
+	FigureRenderSpec,
+	FigureRendererBackend,
+	MarkerOverlaySpec,
+	PublicationFigureDefaults,
+	RenderedFigureArtifact
+} from '@saccades/visualization/render/types';
+
+describe('Visualization Rendering Layer', () => {
+	describe('A — Scatter Figure Spec Construction', () => {
+		it('A1 — builds a deterministic scatter figure spec from scatter model points', () => {
+			const model = makeScatterModel();
+
+			const result = buildScatterFigureSpec(model);
+
+			expect(result.figureId).toBe('scatter-figure');
+			expect(result.kind).toBe('scatter');
+			expect(result.geometry.type).toBe('scatter');
+
+            // Guard for TS compiler, prevents assuming result.geometry is scatter
+            if(result.geometry.type !== 'scatter') {
+                throw new Error('Expected scatter geometry');
+            }
+
+			expect(result.geometry.series).toHaveLength(1);
+			expect(result.geometry.series[0]?.points).toEqual([
+				{ x: 100, y: 2.5 },
+				{ x: 250, y: 4.25 },
+				{ x: 500, y: 3.75 }
+			]);
+			expect(result.xAxis.label.text).toBe('Time (ms)');
+			expect(result.yAxis.label.text).toBe('Amplitude (deg)');
+		});
+
+		it('A2 — applies publication-ready defaults when explicit options are not provided', () => {
+			const model = makeScatterModel();
+
+			const result = buildScatterFigureSpec(model);
+
+			expect(result.dimensions).toEqual({
+				widthPx: 1800,
+				heightPx: 1200,
+				dpi: 300
+			});
+
+			expect(result.margins).toEqual({
+				topPx: 96,
+				rightPx: 72,
+				bottomPx: 96,
+				leftPx: 120
+			});
+
+			expect(result.style.background).toBe('white');
+			expect(result.style.grid.show).toBe(true);
+			expect(result.style.legend.show).toBe(false);
+			expect(result.xAxis.scaleType).toBe('linear');
+			expect(result.yAxis.scaleType).toBe('linear');
+		});
+
+		it('A3 — honors explicit scatter figure metadata and label overrides', () => {
+			const model = makeScatterModel();
+
+			const result = buildScatterFigureSpec(model, {
+				figureId: 'custom-scatter',
+				title: 'Saccade Amplitude Scatter',
+				xAxisLabel: 'Elapsed Time (ms)',
+				yAxisLabel: 'Amplitude Degrees',
+				metadata: {
+					participantId: 'P-001'
+				}
+			});
+
+			expect(result.figureId).toBe('custom-scatter');
+			expect(result.title?.text).toBe('Saccade Amplitude Scatter');
+			expect(result.xAxis.label.text).toBe('Elapsed Time (ms)');
+			expect(result.yAxis.label.text).toBe('Amplitude Degrees');
+			expect(result.metadata).toEqual({
+				participantId: 'P-001'
+			});
+		});
+
+		it('A4 — does not mutate the input scatter model', () => {
+			const model = makeScatterModel();
+			const original = structuredClone(model);
+
+			buildScatterFigureSpec(model);
+
+			expect(model).toEqual(original);
+		});
+	});
+
+	describe('B — Rate Series Figure Spec Construction', () => {
+		it('B1 — builds a deterministic line figure spec from rate series points', () => {
+			const model = makeRateSeriesModel();
+
+			const result = buildRateSeriesFigureSpec(model);
+
+			expect(result.figureId).toBe('rate-series-figure');
+			expect(result.kind).toBe('rate-series');
+			expect(result.geometry.type).toBe('line');
+            
+            // Guard for TS compiler, prevents assuming result.geometry is line
+            if(result.geometry.type !== 'line') {
+                throw new Error('Expected line geometry');
+            }
+
+			expect(result.geometry.series).toHaveLength(1);
+			expect(result.geometry.series[0]?.points).toEqual([
+				{ x: 0, y: 1.25 },
+				{ x: 1000, y: 2.0 },
+				{ x: 2000, y: 1.5 }
+			]);
+			expect(result.xAxis.label.text).toBe('Time (ms)');
+			expect(result.yAxis.label.text).toBe('Rate (per sec)');
+		});
+
+		it('B2 — preserves input ordering rather than resorting rate series points', () => {
+			const model = {
+				points: [
+					{ timeMs: 2000, ratePerSec: 1.5 },
+					{ timeMs: 0, ratePerSec: 1.25 },
+					{ timeMs: 1000, ratePerSec: 2.0 }
+				]
+			};
+
+			const result = buildRateSeriesFigureSpec(model);
+
+			expect(result.geometry.type).toBe('line');
+
+            // Guard for TS compiler, prevents assuming result.geometry is line
+            if(result.geometry.type !== 'line') {
+                throw new Error('Expected line geometry');
+            }
+
+			expect(result.geometry.series[0]?.points).toEqual([
+				{ x: 2000, y: 1.5 },
+				{ x: 0, y: 1.25 },
+				{ x: 1000, y: 2.0 }
+			]);
+		});
+
+		it('B3 — supports explicit axis domain overrides for stable publication scaling', () => {
+			const model = makeRateSeriesModel();
+
+			const result = buildRateSeriesFigureSpec(model, {
+				axisDomains: {
+					x: { min: 0, max: 3000 },
+					y: { min: 0, max: 3 }
+				}
+			});
+
+			expect(result.xAxis.domain).toEqual({ min: 0, max: 3000 });
+			expect(result.yAxis.domain).toEqual({ min: 0, max: 3 });
+		});
+
+		it('B4 — does not mutate the input rate series model', () => {
+			const model = makeRateSeriesModel();
+			const original = structuredClone(model);
+
+			buildRateSeriesFigureSpec(model);
+
+			expect(model).toEqual(original);
+		});
+	});
+
+	describe('C — ISI Histogram Figure Spec Construction', () => {
+		it('C1 — builds a deterministic histogram figure spec from histogram bins', () => {
+			const model = makeIsiHistogramModel();
+
+			const result = buildIsiHistogramFigureSpec(model);
+
+			expect(result.figureId).toBe('isi-histogram-figure');
+			expect(result.kind).toBe('histogram');
+			expect(result.geometry.type).toBe('histogram');
+            
+            // Guard for TS compiler, prevents assuming result.geometry is histogram
+            if(result.geometry.type !== 'histogram') {
+                throw new Error('Expected histogram geometry');
+            }
+
+			expect(result.geometry.bins).toEqual([
+				{ binStart: 0, binEnd: 50, count: 2 },
+				{ binStart: 50, binEnd: 100, count: 5 },
+				{ binStart: 100, binEnd: 150, count: 1 }
+			]);
+			expect(result.xAxis.label.text).toBe('ISI (ms)');
+			expect(result.yAxis.label.text).toBe('Count');
+		});
+
+		it('C2 — preserves provided bin boundaries exactly for downstream deterministic rendering', () => {
+			const model = {
+				bins: [
+					{ binStartMs: 0, binEndMs: 37.5, count: 1 },
+					{ binStartMs: 37.5, binEndMs: 75, count: 4 }
+				]
+			};
+
+			const result = buildIsiHistogramFigureSpec(model);
+
+			expect(result.geometry.type).toBe('histogram');
+
+            // Guard for TS compiler, prevents assuming result.geometry is histogram
+            if(result.geometry.type !== 'histogram') {
+                throw new Error('Expected histogram geometry');
+            }
+            
+			expect(result.geometry.bins).toEqual([
+				{ binStart: 0, binEnd: 37.5, count: 1 },
+				{ binStart: 37.5, binEnd: 75, count: 4 }
+			]);
+		});
+
+		it('C3 — supports explicit titles and dimensions for publication variants', () => {
+			const model = makeIsiHistogramModel();
+
+			const result = buildIsiHistogramFigureSpec(model, {
+				title: 'Inter-Saccadic Interval Distribution',
+				dimensions: {
+					widthPx: 2400,
+					heightPx: 1600,
+					dpi: 600
+				}
+			});
+
+			expect(result.title?.text).toBe('Inter-Saccadic Interval Distribution');
+			expect(result.dimensions).toEqual({
+				widthPx: 2400,
+				heightPx: 1600,
+				dpi: 600
+			});
+		});
+
+		it('C4 — does not mutate the input histogram model', () => {
+			const model = makeIsiHistogramModel();
+			const original = structuredClone(model);
+
+			buildIsiHistogramFigureSpec(model);
+
+			expect(model).toEqual(original);
+		});
+	});
+
+	describe('D — Overlay Attachment and Marker Support', () => {
+		it('D1 — attaches marker overlays without altering geometry', () => {
+			const base = buildScatterFigureSpec(makeScatterModel());
+
+			const result = attachFigureOverlays(base, {
+				markers: [
+					{ timeMs: 125, label: 'Distractor A', kind: 'distractor' },
+					{ timeMs: 400, label: 'Segment Start', kind: 'segment-boundary' }
+				]
+			});
+
+			expect(result.geometry).toEqual(base.geometry);
+			expect(result.overlays?.markers).toEqual([
+				{ timeMs: 125, label: 'Distractor A', kind: 'distractor' },
+				{ timeMs: 400, label: 'Segment Start', kind: 'segment-boundary' }
+			]);
+		});
+
+		it('D2 — supports segment boundary overlays alongside marker overlays', () => {
+			const base = buildRateSeriesFigureSpec(makeRateSeriesModel());
+
+			const result = attachFigureOverlays(base, {
+				markers: [{ timeMs: 900, label: 'Cue', kind: 'event' }],
+				segmentBoundaries: [
+					{ timeMs: 0, label: 'Baseline' },
+					{ timeMs: 1000, label: 'Task' }
+				]
+			});
+
+			expect(result.overlays).toEqual({
+				markers: [{ timeMs: 900, label: 'Cue', kind: 'event' }],
+				segmentBoundaries: [
+					{ timeMs: 0, label: 'Baseline' },
+					{ timeMs: 1000, label: 'Task' }
+				]
+			});
+		});
+
+		it('D3 — returns a new figure spec rather than mutating the original when overlays are attached', () => {
+			const base = buildScatterFigureSpec(makeScatterModel());
+			const original = structuredClone(base);
+
+			const result = attachFigureOverlays(base, {
+				markers: [{ timeMs: 123, label: 'Event', kind: 'event' }]
+			});
+
+			expect(base).toEqual(original);
+			expect(result).not.toBe(base);
+			expect(result.overlays?.markers).toEqual([
+				{ timeMs: 123, label: 'Event', kind: 'event' }
+			]);
+		});
+
+		it('D4 — preserves marker ordering as provided for deterministic downstream rendering', () => {
+			const base = buildScatterFigureSpec(makeScatterModel());
+
+			const markers: MarkerOverlaySpec[] = [
+				{ timeMs: 800, label: 'Later', kind: 'event' },
+				{ timeMs: 100, label: 'Earlier', kind: 'event' }
+			];
+
+			const result = attachFigureOverlays(base, { markers });
+
+			expect(result.overlays?.markers).toEqual([
+				{ timeMs: 800, label: 'Later', kind: 'event' },
+				{ timeMs: 100, label: 'Earlier', kind: 'event' }
+			]);
+		});
+	});
+
+	describe('E — Publication Defaults and Stable Rendering Metadata', () => {
+		it('E1 — supports publication default overrides while preserving unspecified defaults', () => {
+			const model = makeScatterModel();
+
+			const publicationDefaults: Partial<PublicationFigureDefaults> = {
+				dimensions: {
+					widthPx: 2000,
+					heightPx: 1400,
+					dpi: 300
+				},
+				fontFamily: 'Arial'
+			};
+
+			const result = buildScatterFigureSpec(model, {
+				publicationDefaults
+			});
+
+			expect(result.dimensions).toEqual({
+				widthPx: 2000,
+				heightPx: 1400,
+				dpi: 300
+			});
+
+			expect(result.title?.font?.family ?? 'Arial').toBe('Arial');
+			expect(result.xAxis.label.font?.family ?? 'Arial').toBe('Arial');
+			expect(result.yAxis.label.font?.family ?? 'Arial').toBe('Arial');
+
+			expect(result.margins).toEqual({
+				topPx: 96,
+				rightPx: 72,
+				bottomPx: 96,
+				leftPx: 120
+			});
+		});
+
+		it('E2 — allows explicit dimension overrides to take precedence over publication defaults', () => {
+			const model = makeRateSeriesModel();
+
+			const result = buildRateSeriesFigureSpec(model, {
+				publicationDefaults: {
+					dimensions: {
+						widthPx: 1800,
+						heightPx: 1200,
+						dpi: 300
+					}
+				},
+				dimensions: {
+					widthPx: 2400,
+					heightPx: 1600,
+					dpi: 600
+				}
+			});
+
+			expect(result.dimensions).toEqual({
+				widthPx: 2400,
+				heightPx: 1600,
+				dpi: 600
+			});
+		});
+
+		it('E3 — includes stable default title and label font sizing suitable for publication output', () => {
+			const model = makeScatterModel();
+
+			const result = buildScatterFigureSpec(model, {
+				title: 'Amplitude Scatter'
+			});
+
+			expect(result.title?.font).toEqual({
+				family: 'Arial',
+				sizePt: 16,
+				weight: 'bold'
+			});
+
+			expect(result.xAxis.label.font).toEqual({
+				family: 'Arial',
+				sizePt: 12
+			});
+
+			expect(result.yAxis.label.font).toEqual({
+				family: 'Arial',
+				sizePt: 12
+			});
+		});
+
+		it('E4 — keeps axis scale types stable and linear by default', () => {
+			const scatter = buildScatterFigureSpec(makeScatterModel());
+			const rate = buildRateSeriesFigureSpec(makeRateSeriesModel());
+			const histogram = buildIsiHistogramFigureSpec(makeIsiHistogramModel());
+
+			expect(scatter.xAxis.scaleType).toBe('linear');
+			expect(scatter.yAxis.scaleType).toBe('linear');
+			expect(rate.xAxis.scaleType).toBe('linear');
+			expect(rate.yAxis.scaleType).toBe('linear');
+			expect(histogram.xAxis.scaleType).toBe('linear');
+			expect(histogram.yAxis.scaleType).toBe('linear');
+		});
+	});
+
+	describe('F — Renderer Backend Boundary', () => {
+		it('F1 — passes the exact figure spec to the renderer backend and returns the rendered artifact', () => {
+			const spec = buildScatterFigureSpec(makeScatterModel(), {
+				figureId: 'render-me'
+			});
+
+			const calls: FigureRenderSpec[] = [];
+			const backend = makeBackend((incoming) => {
+				calls.push(incoming);
+				return makeRenderedArtifact({
+					figureId: incoming.figureId,
+					widthPx: incoming.dimensions.widthPx,
+					heightPx: incoming.dimensions.heightPx,
+					dpi: incoming.dimensions.dpi
+				});
+			});
+
+			const result = renderFigureSpec(spec, backend);
+
+			expect(calls).toHaveLength(1);
+			expect(calls[0]).toEqual(spec);
+			expect(result).toEqual({
+				figureId: 'render-me',
+				format: 'png',
+				widthPx: spec.dimensions.widthPx,
+				heightPx: spec.dimensions.heightPx,
+				dpi: spec.dimensions.dpi,
+				bytes: new Uint8Array([1, 2, 3, 4]),
+				metadata: {}
+			});
+		});
+
+		it('F2 — does not mutate the provided figure spec during backend rendering', () => {
+			const spec = buildRateSeriesFigureSpec(makeRateSeriesModel());
+			const original = structuredClone(spec);
+
+			const backend = makeBackend((incoming) =>
+				makeRenderedArtifact({
+					figureId: incoming.figureId,
+					widthPx: incoming.dimensions.widthPx,
+					heightPx: incoming.dimensions.heightPx,
+					dpi: incoming.dimensions.dpi
+				})
+			);
+
+			renderFigureSpec(spec, backend);
+
+			expect(spec).toEqual(original);
+		});
+
+		it('F3 — supports deterministic repeated rendering with the same backend and same input', () => {
+			const spec = buildIsiHistogramFigureSpec(makeIsiHistogramModel());
+
+			const backend = makeBackend((incoming) =>
+				makeRenderedArtifact({
+					figureId: incoming.figureId,
+					widthPx: incoming.dimensions.widthPx,
+					heightPx: incoming.dimensions.heightPx,
+					dpi: incoming.dimensions.dpi
+				})
+			);
+
+			const resultA = renderFigureSpec(spec, backend);
+			const resultB = renderFigureSpec(spec, backend);
+
+			expect(resultA).toEqual(resultB);
+		});
+	});
+
+	describe('G — End-to-End Figure Spec Determinism', () => {
+		it('G1 — produces identical scatter figure specs for identical inputs', () => {
+			const model = makeScatterModel();
+
+			const resultA = buildScatterFigureSpec(model, {
+				title: 'Scatter',
+				overlays: {
+					markers: [{ timeMs: 200, label: 'Event', kind: 'event' }]
+				}
+			});
+
+			const resultB = buildScatterFigureSpec(model, {
+				title: 'Scatter',
+				overlays: {
+					markers: [{ timeMs: 200, label: 'Event', kind: 'event' }]
+				}
+			});
+
+			expect(resultA).toEqual(resultB);
+		});
+
+		it('G2 — produces identical histogram figure specs for identical inputs and explicit domains', () => {
+			const model = makeIsiHistogramModel();
+
+			const resultA = buildIsiHistogramFigureSpec(model, {
+				axisDomains: {
+					x: { min: 0, max: 200 },
+					y: { min: 0, max: 10 }
+				}
+			});
+
+			const resultB = buildIsiHistogramFigureSpec(model, {
+				axisDomains: {
+					x: { min: 0, max: 200 },
+					y: { min: 0, max: 10 }
+				}
+			});
+
+			expect(resultA).toEqual(resultB);
+		});
+
+		it('G3 — supports overlays supplied directly at figure-build time', () => {
+			const model = makeRateSeriesModel();
+
+			const result = buildRateSeriesFigureSpec(model, {
+				overlays: {
+					markers: [{ timeMs: 1000, label: 'Probe', kind: 'probe' }],
+					segmentBoundaries: [{ timeMs: 0, label: 'Start' }]
+				}
+			});
+
+			expect(result.overlays).toEqual({
+				markers: [{ timeMs: 1000, label: 'Probe', kind: 'probe' }],
+				segmentBoundaries: [{ timeMs: 0, label: 'Start' }]
+			});
+		});
+
+		it('G4 — keeps rendering concerns separate from file writing by returning in-memory artifacts only', () => {
+			const spec = buildScatterFigureSpec(makeScatterModel());
+
+			const backend = makeBackend((incoming) =>
+				makeRenderedArtifact({
+					figureId: incoming.figureId,
+					widthPx: incoming.dimensions.widthPx,
+					heightPx: incoming.dimensions.heightPx,
+					dpi: incoming.dimensions.dpi,
+					metadata: {
+						title: incoming.title?.text ?? null
+					}
+				})
+			);
+
+			const result = renderFigureSpec(spec, backend);
+
+			expect(result.format).toBe('png');
+			expect(result.bytes).toBeInstanceOf(Uint8Array);
+			expect(result.metadata).toEqual({
+				title: spec.title?.text ?? null
+			});
+		});
+	});
+});
+
+/* ------------------------------ Helpers ------------------------------ */
+
+function makeScatterModel() {
+	return {
+		points: [
+			{ timeMs: 100, amplitudeDeg: 2.5 },
+			{ timeMs: 250, amplitudeDeg: 4.25 },
+			{ timeMs: 500, amplitudeDeg: 3.75 }
+		]
+	};
+}
+
+function makeRateSeriesModel() {
+	return {
+		points: [
+			{ timeMs: 0, ratePerSec: 1.25 },
+			{ timeMs: 1000, ratePerSec: 2.0 },
+			{ timeMs: 2000, ratePerSec: 1.5 }
+		]
+	};
+}
+
+function makeIsiHistogramModel() {
+	return {
+		bins: [
+			{ binStartMs: 0, binEndMs: 50, count: 2 },
+			{ binStartMs: 50, binEndMs: 100, count: 5 },
+			{ binStartMs: 100, binEndMs: 150, count: 1 }
+		]
+	};
+}
+
+function makeBackend(
+	impl: (spec: FigureRenderSpec) => RenderedFigureArtifact
+): FigureRendererBackend {
+	return {
+		render(spec: FigureRenderSpec) {
+			return impl(spec);
+		}
+	};
+}
+
+function makeRenderedArtifact(
+	overrides: Partial<RenderedFigureArtifact> = {}
+): RenderedFigureArtifact {
+	return {
+		figureId: overrides.figureId ?? 'figure-1',
+		format: 'png',
+		widthPx: overrides.widthPx ?? 1800,
+		heightPx: overrides.heightPx ?? 1200,
+		dpi: overrides.dpi ?? 300,
+		bytes: overrides.bytes ?? new Uint8Array([1, 2, 3, 4]),
+		metadata: overrides.metadata ?? {}
+	};
+}
