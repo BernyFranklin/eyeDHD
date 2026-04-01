@@ -9,7 +9,7 @@ import * as Three from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import { TRACKING_DATA_HEADERS, type TrackingData, fromCSV, toCSV } from "./tables/TrackingData";
-import caseDataActions, { type CaseData, csvImportPath, csvOutputPath } from "./tables/CaseData";
+import caseDataActions, { animationOutputPath, type CaseData, csvImportPath, csvOutputPath } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
 import DataCleaner from "@electron/analysis/DataCleaner";
 
@@ -268,7 +268,7 @@ export default class DataStream {
 		self: DataStream,
 		manager: DatabaseManager
 	): AsyncGenerator<DataType[], void, undefined> {
-		// ffmpeg init here
+		const output_path = animationOutputPath(self.trial);
 		const ffmpeg = spawn(FFMPEG_PATH, [
 			"-y",
 			"-f", "rawvideo",
@@ -279,7 +279,7 @@ export default class DataStream {
 			"-vf", "vflip",
 			"-c:v", "libx264",
 			"-pix_fmt", "yuv420p",
-			"test.mp4"
+			output_path
 		], { stdio: ["pipe", "inherit", "inherit"] });
 
 		const context = gl(SIZE.width, SIZE.height, { preserveDrawingBuffer: true });
