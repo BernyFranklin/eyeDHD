@@ -95,12 +95,14 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('A4 — does not mutate the input scatter model', () => {
+		it('A4) — Does not mutate the input scatter model', () => {
+			// Create scatter model
 			const model = makeScatterModel();
+			// Clone the original model to compare after building the figure spec
 			const original = structuredClone(model);
-
+			// Build scatter figure spec
 			buildScatterFigureSpec(model);
-
+			// Assert that the input model was not mutated
 			expect(model).toEqual(original);
 		});
 	});
