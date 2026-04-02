@@ -46,24 +46,25 @@ describe('Visualization Rendering Layer', () => {
 			expect(result.yAxis.label.text).toBe('Amplitude (deg)');
 		});
 
-		it('A2 — applies publication-ready defaults when explicit options are not provided', () => {
+		it('A2) — Applies publication-ready defaults when explicit options are not provided', () => {
+			// Build scatter figure spec without providing explicit options
 			const model = makeScatterModel();
-
+			// Build scatter figure spec without providing explicit options
 			const result = buildScatterFigureSpec(model);
-
+			// Assert that publication defaults are applied
 			expect(result.dimensions).toEqual({
 				widthPx: 1800,
 				heightPx: 1200,
 				dpi: 300
 			});
-
+			// Assert that publication defaults are applied for margins
 			expect(result.margins).toEqual({
 				topPx: 96,
 				rightPx: 72,
 				bottomPx: 96,
 				leftPx: 120
 			});
-
+			// Assert that publication defaults are applied for style
 			expect(result.style.background).toBe('white');
 			expect(result.style.grid.show).toBe(true);
 			expect(result.style.legend.show).toBe(false);
