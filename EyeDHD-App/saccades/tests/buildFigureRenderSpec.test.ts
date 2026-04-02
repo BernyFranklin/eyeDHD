@@ -20,26 +20,28 @@ import type {
 
 describe('Visualization Rendering Layer', () => {
 	describe('A — Scatter Figure Spec Construction', () => {
-		it('A1 — builds a deterministic scatter figure spec from scatter model points', () => {
+		it('A1) — Builds a deterministic scatter figure spec from scatter model points', () => {
+			// Create scatter model
 			const model = makeScatterModel();
-
+			// Build scatter figure spec
 			const result = buildScatterFigureSpec(model);
-
+			// Assert scatter figure spec properties
 			expect(result.figureId).toBe('scatter-figure');
 			expect(result.kind).toBe('scatter');
 			expect(result.geometry.type).toBe('scatter');
 
-            // Guard for TS compiler, prevents assuming result.geometry is scatter
-            if(result.geometry.type !== 'scatter') {
-                throw new Error('Expected scatter geometry');
-            }
-
+			// Guard for TS compiler, prevents assuming result.geometry is scatter
+			if (result.geometry.type !== 'scatter') {
+				throw new Error('Expected scatter geometry');
+			}
+			// Assert scatter series points
 			expect(result.geometry.series).toHaveLength(1);
 			expect(result.geometry.series[0]?.points).toEqual([
 				{ x: 100, y: 2.5 },
 				{ x: 250, y: 4.25 },
 				{ x: 500, y: 3.75 }
 			]);
+			// Assert axis labels
 			expect(result.xAxis.label.text).toBe('Time (ms)');
 			expect(result.yAxis.label.text).toBe('Amplitude (deg)');
 		});
@@ -110,11 +112,11 @@ describe('Visualization Rendering Layer', () => {
 			expect(result.figureId).toBe('rate-series-figure');
 			expect(result.kind).toBe('rate-series');
 			expect(result.geometry.type).toBe('line');
-            
-            // Guard for TS compiler, prevents assuming result.geometry is line
-            if(result.geometry.type !== 'line') {
-                throw new Error('Expected line geometry');
-            }
+
+			// Guard for TS compiler, prevents assuming result.geometry is line
+			if (result.geometry.type !== 'line') {
+				throw new Error('Expected line geometry');
+			}
 
 			expect(result.geometry.series).toHaveLength(1);
 			expect(result.geometry.series[0]?.points).toEqual([
@@ -139,10 +141,10 @@ describe('Visualization Rendering Layer', () => {
 
 			expect(result.geometry.type).toBe('line');
 
-            // Guard for TS compiler, prevents assuming result.geometry is line
-            if(result.geometry.type !== 'line') {
-                throw new Error('Expected line geometry');
-            }
+			// Guard for TS compiler, prevents assuming result.geometry is line
+			if (result.geometry.type !== 'line') {
+				throw new Error('Expected line geometry');
+			}
 
 			expect(result.geometry.series[0]?.points).toEqual([
 				{ x: 2000, y: 1.5 },
@@ -184,11 +186,11 @@ describe('Visualization Rendering Layer', () => {
 			expect(result.figureId).toBe('isi-histogram-figure');
 			expect(result.kind).toBe('histogram');
 			expect(result.geometry.type).toBe('histogram');
-            
-            // Guard for TS compiler, prevents assuming result.geometry is histogram
-            if(result.geometry.type !== 'histogram') {
-                throw new Error('Expected histogram geometry');
-            }
+
+			// Guard for TS compiler, prevents assuming result.geometry is histogram
+			if (result.geometry.type !== 'histogram') {
+				throw new Error('Expected histogram geometry');
+			}
 
 			expect(result.geometry.bins).toEqual([
 				{ binStart: 0, binEnd: 50, count: 2 },
@@ -211,11 +213,11 @@ describe('Visualization Rendering Layer', () => {
 
 			expect(result.geometry.type).toBe('histogram');
 
-            // Guard for TS compiler, prevents assuming result.geometry is histogram
-            if(result.geometry.type !== 'histogram') {
-                throw new Error('Expected histogram geometry');
-            }
-            
+			// Guard for TS compiler, prevents assuming result.geometry is histogram
+			if (result.geometry.type !== 'histogram') {
+				throw new Error('Expected histogram geometry');
+			}
+
 			expect(result.geometry.bins).toEqual([
 				{ binStart: 0, binEnd: 37.5, count: 1 },
 				{ binStart: 37.5, binEnd: 75, count: 4 }
