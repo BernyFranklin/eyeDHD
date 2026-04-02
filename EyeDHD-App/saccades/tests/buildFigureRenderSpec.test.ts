@@ -72,9 +72,10 @@ describe('Visualization Rendering Layer', () => {
 			expect(result.yAxis.scaleType).toBe('linear');
 		});
 
-		it('A3 — honors explicit scatter figure metadata and label overrides', () => {
+		it('A3) — Honors explicit scatter figure metadata and label overrides', () => {
+			// Create scatter model
 			const model = makeScatterModel();
-
+			// Build scatter figure spec with explicit options
 			const result = buildScatterFigureSpec(model, {
 				figureId: 'custom-scatter',
 				title: 'Saccade Amplitude Scatter',
@@ -84,7 +85,7 @@ describe('Visualization Rendering Layer', () => {
 					participantId: 'P-001'
 				}
 			});
-
+			// Assert that explicit options are honored in the resulting figure spec
 			expect(result.figureId).toBe('custom-scatter');
 			expect(result.title?.text).toBe('Saccade Amplitude Scatter');
 			expect(result.xAxis.label.text).toBe('Elapsed Time (ms)');

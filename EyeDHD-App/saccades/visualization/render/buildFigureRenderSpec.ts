@@ -24,6 +24,7 @@ export function buildScatterFigureSpec(
 			bottomPx: 96,
 			leftPx: 120,
 		},
+		title: options.title ? { text: options.title } : undefined,
 		xAxis: {
 			label: {
 				text: options.xAxisLabel ?? 'Time (ms)',
@@ -58,6 +59,7 @@ export function buildScatterFigureSpec(
 				position: 'none',
 			},
 		},
+		metadata: options.metadata,
 	};
 }
 
