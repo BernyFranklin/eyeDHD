@@ -111,6 +111,7 @@ out/
 !/example_project/**/*.mp4
 *.csv
 !/example_project/**/*.csv
+CLAUDE.md
 
 # Editor directories and files
 .vscode/*
