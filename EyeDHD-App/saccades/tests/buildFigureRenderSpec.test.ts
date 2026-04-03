@@ -175,12 +175,14 @@ describe('Visualization Rendering Layer', () => {
 			expect(result.yAxis.domain).toEqual({ min: 0, max: 3 });
 		});
 
-		it('B4 — does not mutate the input rate series model', () => {
+		it('B4) — Does not mutate the input rate series model', () => {
+			// Create rate series model
 			const model = makeRateSeriesModel();
+			// Clone the original model to compare after building the figure spec
 			const original = structuredClone(model);
-
+			// Build rate series figure spec
 			buildRateSeriesFigureSpec(model);
-
+			// Assert that the input model was not mutated
 			expect(model).toEqual(original);
 		});
 	});
