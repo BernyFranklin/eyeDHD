@@ -213,23 +213,24 @@ describe('Visualization Rendering Layer', () => {
 			expect(result.yAxis.label.text).toBe('Count');
 		});
 
-		it('C2 — preserves provided bin boundaries exactly for downstream deterministic rendering', () => {
+		it('C2) — Preserves provided bin boundaries exactly for downstream deterministic rendering', () => {
+			// Create ISI histogram model with non-standard bin boundaries
 			const model = {
 				bins: [
 					{ binStartMs: 0, binEndMs: 37.5, count: 1 },
 					{ binStartMs: 37.5, binEndMs: 75, count: 4 }
 				]
 			};
-
+			// Build ISI histogram figure spec
 			const result = buildIsiHistogramFigureSpec(model);
-
+			// Assert that the geometry type is histogram
 			expect(result.geometry.type).toBe('histogram');
 
 			// Guard for TS compiler, prevents assuming result.geometry is histogram
 			if (result.geometry.type !== 'histogram') {
 				throw new Error('Expected histogram geometry');
 			}
-
+			// Assert that the histogram bins preserve the input bin boundaries exactly
 			expect(result.geometry.bins).toEqual([
 				{ binStart: 0, binEnd: 37.5, count: 1 },
 				{ binStart: 37.5, binEnd: 75, count: 4 }
