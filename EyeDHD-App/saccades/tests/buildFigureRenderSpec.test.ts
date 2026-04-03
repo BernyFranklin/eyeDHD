@@ -258,12 +258,14 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('C4 — does not mutate the input histogram model', () => {
+		it('C4) — Does not mutate the input histogram model', () => {
+			// Create ISI histogram model
 			const model = makeIsiHistogramModel();
+			// Clone the original model to compare after building the figure spec
 			const original = structuredClone(model);
-
+			// Build ISI histogram figure spec
 			buildIsiHistogramFigureSpec(model);
-
+			// Assert that the input model has not been mutated
 			expect(model).toEqual(original);
 		});
 	});
