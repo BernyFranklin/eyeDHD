@@ -188,11 +188,12 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('C — ISI Histogram Figure Spec Construction', () => {
-		it('C1 — builds a deterministic histogram figure spec from histogram bins', () => {
+		it('C1) — Builds a deterministic histogram figure spec from histogram bins', () => {
+			// Create ISI histogram model
 			const model = makeIsiHistogramModel();
-
+			// Build ISI histogram figure spec
 			const result = buildIsiHistogramFigureSpec(model);
-
+			// Assert that the figure spec has the expected top-level properties
 			expect(result.figureId).toBe('isi-histogram-figure');
 			expect(result.kind).toBe('histogram');
 			expect(result.geometry.type).toBe('histogram');
@@ -201,42 +202,45 @@ describe('Visualization Rendering Layer', () => {
 			if (result.geometry.type !== 'histogram') {
 				throw new Error('Expected histogram geometry');
 			}
-
+			// Assert that the histogram bins are as expected
 			expect(result.geometry.bins).toEqual([
 				{ binStart: 0, binEnd: 50, count: 2 },
 				{ binStart: 50, binEnd: 100, count: 5 },
 				{ binStart: 100, binEnd: 150, count: 1 }
 			]);
+			// Assert that the axis labels are as expected
 			expect(result.xAxis.label.text).toBe('ISI (ms)');
 			expect(result.yAxis.label.text).toBe('Count');
 		});
 
-		it('C2 — preserves provided bin boundaries exactly for downstream deterministic rendering', () => {
+		it('C2) — Preserves provided bin boundaries exactly for downstream deterministic rendering', () => {
+			// Create ISI histogram model with non-standard bin boundaries
 			const model = {
 				bins: [
 					{ binStartMs: 0, binEndMs: 37.5, count: 1 },
 					{ binStartMs: 37.5, binEndMs: 75, count: 4 }
 				]
 			};
-
+			// Build ISI histogram figure spec
 			const result = buildIsiHistogramFigureSpec(model);
-
+			// Assert that the geometry type is histogram
 			expect(result.geometry.type).toBe('histogram');
 
 			// Guard for TS compiler, prevents assuming result.geometry is histogram
 			if (result.geometry.type !== 'histogram') {
 				throw new Error('Expected histogram geometry');
 			}
-
+			// Assert that the histogram bins preserve the input bin boundaries exactly
 			expect(result.geometry.bins).toEqual([
 				{ binStart: 0, binEnd: 37.5, count: 1 },
 				{ binStart: 37.5, binEnd: 75, count: 4 }
 			]);
 		});
 
-		it('C3 — supports explicit titles and dimensions for publication variants', () => {
+		it('C3) — Supports explicit titles and dimensions for publication variants', () => {
+			// Create ISI histogram model
 			const model = makeIsiHistogramModel();
-
+			// Build ISI histogram figure spec with explicit title and dimensions
 			const result = buildIsiHistogramFigureSpec(model, {
 				title: 'Inter-Saccadic Interval Distribution',
 				dimensions: {
@@ -245,7 +249,7 @@ describe('Visualization Rendering Layer', () => {
 					dpi: 600
 				}
 			});
-
+			// Assert that the title and dimensions are set as specified
 			expect(result.title?.text).toBe('Inter-Saccadic Interval Distribution');
 			expect(result.dimensions).toEqual({
 				widthPx: 2400,
@@ -254,12 +258,14 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('C4 — does not mutate the input histogram model', () => {
+		it('C4) — Does not mutate the input histogram model', () => {
+			// Create ISI histogram model
 			const model = makeIsiHistogramModel();
+			// Clone the original model to compare after building the figure spec
 			const original = structuredClone(model);
-
+			// Build ISI histogram figure spec
 			buildIsiHistogramFigureSpec(model);
-
+			// Assert that the input model has not been mutated
 			expect(model).toEqual(original);
 		});
 	});
