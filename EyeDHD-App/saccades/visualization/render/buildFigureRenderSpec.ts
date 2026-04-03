@@ -67,9 +67,55 @@ export function buildRateSeriesFigureSpec(
 	model: { points: Array<{ timeMs: number; ratePerSec: number }> },
 	options: BuildFigureRenderSpecOptions = {}
 ): FigureRenderSpec {
-	void model;
-	void options;
-	throw new Error('Not implemented');
+	return {
+		figureId: options.figureId ?? 'rate-series-figure',
+		kind: 'rate-series',
+		dimensions: {
+			widthPx: 1800,
+			heightPx: 1200,
+			dpi: 300,
+		},
+		margins: {
+			topPx: 96,
+			rightPx: 72,
+			bottomPx: 96,
+			leftPx: 120,
+		},
+		title: options.title ? { text: options.title } : undefined,
+		xAxis: {
+			label: { text: options.xAxisLabel ?? 'Time (ms)', },
+			scaleType: 'linear',
+			domain: options.axisDomains?.x,
+		},
+		yAxis: {
+			label: { text: options.yAxisLabel ?? 'Rate (per sec)', },
+		    scaleType: 'linear',
+			domain: options.axisDomains?.y,
+		},
+		geometry: {
+			type: 'line',
+			series: [
+				{
+					seriesId: 'rate-series',
+					points: model.points.map((point) => ({
+						x: point.timeMs,
+						y: point.ratePerSec,
+					})),
+				},
+			],
+		},
+		style: {
+			background: 'white',
+			grid: {
+				show: true,
+			},
+			legend: {
+				show: false,
+				position: 'none',
+			},
+		},
+		metadata: options.metadata,
+	};
 }
 
 export function buildIsiHistogramFigureSpec(

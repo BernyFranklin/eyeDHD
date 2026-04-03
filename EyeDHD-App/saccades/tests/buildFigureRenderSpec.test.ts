@@ -108,11 +108,12 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('B — Rate Series Figure Spec Construction', () => {
-		it('B1 — builds a deterministic line figure spec from rate series points', () => {
+		it('B1) — Builds a deterministic line figure spec from rate series points', () => {
+			// Create rate series model
 			const model = makeRateSeriesModel();
-
+			// Build rate series figure spec
 			const result = buildRateSeriesFigureSpec(model);
-
+			// Assert that the resulting figure spec has the expected properties
 			expect(result.figureId).toBe('rate-series-figure');
 			expect(result.kind).toBe('rate-series');
 			expect(result.geometry.type).toBe('line');
@@ -121,18 +122,20 @@ describe('Visualization Rendering Layer', () => {
 			if (result.geometry.type !== 'line') {
 				throw new Error('Expected line geometry');
 			}
-
+			// Assert that the line series has the expected points
 			expect(result.geometry.series).toHaveLength(1);
 			expect(result.geometry.series[0]?.points).toEqual([
 				{ x: 0, y: 1.25 },
 				{ x: 1000, y: 2.0 },
 				{ x: 2000, y: 1.5 }
 			]);
+			// Assert that the axis labels are as expected
 			expect(result.xAxis.label.text).toBe('Time (ms)');
 			expect(result.yAxis.label.text).toBe('Rate (per sec)');
 		});
 
-		it('B2 — preserves input ordering rather than resorting rate series points', () => {
+		it('B2) — Preserves input ordering rather than resorting rate series points', () => {
+			// Create rate series model with out-of-order points
 			const model = {
 				points: [
 					{ timeMs: 2000, ratePerSec: 1.5 },
@@ -140,16 +143,16 @@ describe('Visualization Rendering Layer', () => {
 					{ timeMs: 1000, ratePerSec: 2.0 }
 				]
 			};
-
+			// Build rate series figure spec
 			const result = buildRateSeriesFigureSpec(model);
-
+			// Assert that the geometry type is line
 			expect(result.geometry.type).toBe('line');
 
 			// Guard for TS compiler, prevents assuming result.geometry is line
 			if (result.geometry.type !== 'line') {
 				throw new Error('Expected line geometry');
 			}
-
+			// Assert that the series points preserve the input ordering
 			expect(result.geometry.series[0]?.points).toEqual([
 				{ x: 2000, y: 1.5 },
 				{ x: 0, y: 1.25 },
@@ -157,26 +160,29 @@ describe('Visualization Rendering Layer', () => {
 			]);
 		});
 
-		it('B3 — supports explicit axis domain overrides for stable publication scaling', () => {
+		it('B3) — Supports explicit axis domain overrides for stable publication scaling', () => {
+			// Create rate series model
 			const model = makeRateSeriesModel();
-
+			// Build rate series figure spec with explicit axis domain overrides
 			const result = buildRateSeriesFigureSpec(model, {
 				axisDomains: {
 					x: { min: 0, max: 3000 },
 					y: { min: 0, max: 3 }
 				}
 			});
-
+			// Assert that the axis domains are set as specified
 			expect(result.xAxis.domain).toEqual({ min: 0, max: 3000 });
 			expect(result.yAxis.domain).toEqual({ min: 0, max: 3 });
 		});
 
-		it('B4 — does not mutate the input rate series model', () => {
+		it('B4) — Does not mutate the input rate series model', () => {
+			// Create rate series model
 			const model = makeRateSeriesModel();
+			// Clone the original model to compare after building the figure spec
 			const original = structuredClone(model);
-
+			// Build rate series figure spec
 			buildRateSeriesFigureSpec(model);
-
+			// Assert that the input model was not mutated
 			expect(model).toEqual(original);
 		});
 	});
