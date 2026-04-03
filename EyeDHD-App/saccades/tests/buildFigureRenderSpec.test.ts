@@ -108,11 +108,12 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('B — Rate Series Figure Spec Construction', () => {
-		it('B1 — builds a deterministic line figure spec from rate series points', () => {
+		it('B1) — Builds a deterministic line figure spec from rate series points', () => {
+			// Create rate series model
 			const model = makeRateSeriesModel();
-
+			// Build rate series figure spec
 			const result = buildRateSeriesFigureSpec(model);
-
+			// Assert that the resulting figure spec has the expected properties
 			expect(result.figureId).toBe('rate-series-figure');
 			expect(result.kind).toBe('rate-series');
 			expect(result.geometry.type).toBe('line');
@@ -121,13 +122,14 @@ describe('Visualization Rendering Layer', () => {
 			if (result.geometry.type !== 'line') {
 				throw new Error('Expected line geometry');
 			}
-
+			// Assert that the line series has the expected points
 			expect(result.geometry.series).toHaveLength(1);
 			expect(result.geometry.series[0]?.points).toEqual([
 				{ x: 0, y: 1.25 },
 				{ x: 1000, y: 2.0 },
 				{ x: 2000, y: 1.5 }
 			]);
+			// Assert that the axis labels are as expected
 			expect(result.xAxis.label.text).toBe('Time (ms)');
 			expect(result.yAxis.label.text).toBe('Rate (per sec)');
 		});
