@@ -126,9 +126,9 @@ export function buildIsiHistogramFigureSpec(
 		figureId: options.figureId ?? 'isi-histogram-figure',
 		kind: 'histogram',
 		dimensions: {
-			widthPx: 1800,
-			heightPx: 1200,
-			dpi: 300,
+			widthPx: options.dimensions?.widthPx ?? 1800,
+			heightPx: options.dimensions?.heightPx ?? 1200,
+			dpi: options.dimensions?.dpi ?? 300,
 		},
 		margins: {
 			topPx: 96,

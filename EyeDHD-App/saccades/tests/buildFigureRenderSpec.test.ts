@@ -237,9 +237,10 @@ describe('Visualization Rendering Layer', () => {
 			]);
 		});
 
-		it('C3 — supports explicit titles and dimensions for publication variants', () => {
+		it('C3) — Supports explicit titles and dimensions for publication variants', () => {
+			// Create ISI histogram model
 			const model = makeIsiHistogramModel();
-
+			// Build ISI histogram figure spec with explicit title and dimensions
 			const result = buildIsiHistogramFigureSpec(model, {
 				title: 'Inter-Saccadic Interval Distribution',
 				dimensions: {
@@ -248,7 +249,7 @@ describe('Visualization Rendering Layer', () => {
 					dpi: 600
 				}
 			});
-
+			// Assert that the title and dimensions are set as specified
 			expect(result.title?.text).toBe('Inter-Saccadic Interval Distribution');
 			expect(result.dimensions).toEqual({
 				widthPx: 2400,
