@@ -188,11 +188,12 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('C — ISI Histogram Figure Spec Construction', () => {
-		it('C1 — builds a deterministic histogram figure spec from histogram bins', () => {
+		it('C1) — Builds a deterministic histogram figure spec from histogram bins', () => {
+			// Create ISI histogram model
 			const model = makeIsiHistogramModel();
-
+			// Build ISI histogram figure spec
 			const result = buildIsiHistogramFigureSpec(model);
-
+			// Assert that the figure spec has the expected top-level properties
 			expect(result.figureId).toBe('isi-histogram-figure');
 			expect(result.kind).toBe('histogram');
 			expect(result.geometry.type).toBe('histogram');
@@ -201,12 +202,13 @@ describe('Visualization Rendering Layer', () => {
 			if (result.geometry.type !== 'histogram') {
 				throw new Error('Expected histogram geometry');
 			}
-
+			// Assert that the histogram bins are as expected
 			expect(result.geometry.bins).toEqual([
 				{ binStart: 0, binEnd: 50, count: 2 },
 				{ binStart: 50, binEnd: 100, count: 5 },
 				{ binStart: 100, binEnd: 150, count: 1 }
 			]);
+			// Assert that the axis labels are as expected
 			expect(result.xAxis.label.text).toBe('ISI (ms)');
 			expect(result.yAxis.label.text).toBe('Count');
 		});

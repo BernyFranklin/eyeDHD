@@ -122,9 +122,51 @@ export function buildIsiHistogramFigureSpec(
 	model: { bins: Array<{ binStartMs: number; binEndMs: number; count: number }> },
 	options: BuildFigureRenderSpecOptions = {}
 ): FigureRenderSpec {
-	void model;
-	void options;
-	throw new Error('Not implemented');
+	return {
+		figureId: options.figureId ?? 'isi-histogram-figure',
+		kind: 'histogram',
+		dimensions: {
+			widthPx: 1800,
+			heightPx: 1200,
+			dpi: 300,
+		},
+		margins: {
+			topPx: 96,
+			rightPx: 72,
+			bottomPx: 96,
+			leftPx: 120,
+		},
+		title: options.title ? { text: options.title } : undefined,
+		xAxis: {
+			label: { text: options.xAxisLabel ?? 'ISI (ms)', },
+			scaleType: 'linear',
+			domain: options.axisDomains?.x,
+		},
+		yAxis: {
+			label: { text: options.yAxisLabel ?? 'Count', },
+			scaleType: 'linear',
+			domain: options.axisDomains?.y,
+		},
+		geometry: {
+			type: 'histogram',
+			bins: model.bins.map((bin) => ({
+				binStart: bin.binStartMs,
+				binEnd: bin.binEndMs,
+				count: bin.count,
+			})),
+		},
+		style: {
+			background: 'white',
+			grid: {
+				show: true,
+			},
+			legend: {
+				show: false,
+				position: 'none',
+			},
+		},
+		metadata: options.metadata,
+	};
 }
 
 export function attachFigureOverlays(
