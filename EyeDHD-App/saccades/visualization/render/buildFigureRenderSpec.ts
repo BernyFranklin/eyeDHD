@@ -85,10 +85,12 @@ export function buildRateSeriesFigureSpec(
 		xAxis: {
 			label: { text: options.xAxisLabel ?? 'Time (ms)', },
 			scaleType: 'linear',
+			domain: options.axisDomains?.x,
 		},
 		yAxis: {
 			label: { text: options.yAxisLabel ?? 'Rate (per sec)', },
 		    scaleType: 'linear',
+			domain: options.axisDomains?.y,
 		},
 		geometry: {
 			type: 'line',

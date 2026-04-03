@@ -134,7 +134,8 @@ describe('Visualization Rendering Layer', () => {
 			expect(result.yAxis.label.text).toBe('Rate (per sec)');
 		});
 
-		it('B2 — preserves input ordering rather than resorting rate series points', () => {
+		it('B2) — Preserves input ordering rather than resorting rate series points', () => {
+			// Create rate series model with out-of-order points
 			const model = {
 				points: [
 					{ timeMs: 2000, ratePerSec: 1.5 },
@@ -142,16 +143,16 @@ describe('Visualization Rendering Layer', () => {
 					{ timeMs: 1000, ratePerSec: 2.0 }
 				]
 			};
-
+			// Build rate series figure spec
 			const result = buildRateSeriesFigureSpec(model);
-
+			// Assert that the geometry type is line
 			expect(result.geometry.type).toBe('line');
 
 			// Guard for TS compiler, prevents assuming result.geometry is line
 			if (result.geometry.type !== 'line') {
 				throw new Error('Expected line geometry');
 			}
-
+			// Assert that the series points preserve the input ordering
 			expect(result.geometry.series[0]?.points).toEqual([
 				{ x: 2000, y: 1.5 },
 				{ x: 0, y: 1.25 },
@@ -159,16 +160,17 @@ describe('Visualization Rendering Layer', () => {
 			]);
 		});
 
-		it('B3 — supports explicit axis domain overrides for stable publication scaling', () => {
+		it('B3) — Supports explicit axis domain overrides for stable publication scaling', () => {
+			// Create rate series model
 			const model = makeRateSeriesModel();
-
+			// Build rate series figure spec with explicit axis domain overrides
 			const result = buildRateSeriesFigureSpec(model, {
 				axisDomains: {
 					x: { min: 0, max: 3000 },
 					y: { min: 0, max: 3 }
 				}
 			});
-
+			// Assert that the axis domains are set as specified
 			expect(result.xAxis.domain).toEqual({ min: 0, max: 3000 });
 			expect(result.yAxis.domain).toEqual({ min: 0, max: 3 });
 		});
