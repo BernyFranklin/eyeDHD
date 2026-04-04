@@ -310,14 +310,16 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('D3 — returns a new figure spec rather than mutating the original when overlays are attached', () => {
+		it('D3) — Returns a new figure spec rather than mutating the original when overlays are attached', () => {
+			// Build a base scatter figure spec
 			const base = buildScatterFigureSpec(makeScatterModel());
+			// Clone the original figure spec to compare after attaching overlays
 			const original = structuredClone(base);
-
+			// Attach overlays to the base figure spec
 			const result = attachFigureOverlays(base, {
 				markers: [{ timeMs: 123, label: 'Event', kind: 'event' }]
 			});
-
+			// Assert that the original figure spec has not been mutated and that a new figure spec is returned with the overlays attached
 			expect(base).toEqual(original);
 			expect(result).not.toBe(base);
 			expect(result.overlays?.markers).toEqual([
