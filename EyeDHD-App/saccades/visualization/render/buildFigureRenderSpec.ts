@@ -173,9 +173,10 @@ export function attachFigureOverlays(
 	spec: FigureRenderSpec,
 	overlays?: FigureOverlaySpec
 ): FigureRenderSpec {
-	void spec;
-	void overlays;
-	throw new Error('Not implemented');
+	return {
+		...spec,
+		overlays: overlays ? { markers: overlays.markers } : undefined,
+	};
 }
 
 export function renderFigureSpec(

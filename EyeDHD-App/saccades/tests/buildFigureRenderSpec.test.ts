@@ -271,16 +271,17 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('D — Overlay Attachment and Marker Support', () => {
-		it('D1 — attaches marker overlays without altering geometry', () => {
+		it('D1) — Attaches marker overlays without altering geometry', () => {
+			// Build a base scatter figure spec
 			const base = buildScatterFigureSpec(makeScatterModel());
-
+			// Attach marker overlays to the base figure spec
 			const result = attachFigureOverlays(base, {
 				markers: [
 					{ timeMs: 125, label: 'Distractor A', kind: 'distractor' },
 					{ timeMs: 400, label: 'Segment Start', kind: 'segment-boundary' }
 				]
 			});
-
+			// Assert that the geometry remains unchanged and the overlays are attached as expected
 			expect(result.geometry).toEqual(base.geometry);
 			expect(result.overlays?.markers).toEqual([
 				{ timeMs: 125, label: 'Distractor A', kind: 'distractor' },
