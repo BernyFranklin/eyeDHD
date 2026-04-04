@@ -289,9 +289,10 @@ describe('Visualization Rendering Layer', () => {
 			]);
 		});
 
-		it('D2 — supports segment boundary overlays alongside marker overlays', () => {
+		it('D2) — Supports segment boundary overlays alongside marker overlays', () => {
+			// Build a base rate series figure spec
 			const base = buildRateSeriesFigureSpec(makeRateSeriesModel());
-
+			// Attach segment boundary overlays alongside marker overlays to the base figure spec
 			const result = attachFigureOverlays(base, {
 				markers: [{ timeMs: 900, label: 'Cue', kind: 'event' }],
 				segmentBoundaries: [
@@ -299,7 +300,7 @@ describe('Visualization Rendering Layer', () => {
 					{ timeMs: 1000, label: 'Task' }
 				]
 			});
-
+			// Assert that the overlays are attached as expected
 			expect(result.overlays).toEqual({
 				markers: [{ timeMs: 900, label: 'Cue', kind: 'event' }],
 				segmentBoundaries: [
