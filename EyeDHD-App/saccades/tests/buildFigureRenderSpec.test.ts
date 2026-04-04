@@ -327,16 +327,17 @@ describe('Visualization Rendering Layer', () => {
 			]);
 		});
 
-		it('D4 — preserves marker ordering as provided for deterministic downstream rendering', () => {
+		it('D4) — Preserves marker ordering as provided for deterministic downstream rendering', () => {
+			// Build a base scatter figure spec
 			const base = buildScatterFigureSpec(makeScatterModel());
-
+			// Define marker overlays in a specific order
 			const markers: MarkerOverlaySpec[] = [
 				{ timeMs: 800, label: 'Later', kind: 'event' },
 				{ timeMs: 100, label: 'Earlier', kind: 'event' }
 			];
-
+			// Attach the marker overlays to the base figure spec
 			const result = attachFigureOverlays(base, { markers });
-
+			// Assert that the marker ordering is preserved as provided
 			expect(result.overlays?.markers).toEqual([
 				{ timeMs: 800, label: 'Later', kind: 'event' },
 				{ timeMs: 100, label: 'Earlier', kind: 'event' }
