@@ -271,16 +271,17 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('D — Overlay Attachment and Marker Support', () => {
-		it('D1 — attaches marker overlays without altering geometry', () => {
+		it('D1) — Attaches marker overlays without altering geometry', () => {
+			// Build a base scatter figure spec
 			const base = buildScatterFigureSpec(makeScatterModel());
-
+			// Attach marker overlays to the base figure spec
 			const result = attachFigureOverlays(base, {
 				markers: [
 					{ timeMs: 125, label: 'Distractor A', kind: 'distractor' },
 					{ timeMs: 400, label: 'Segment Start', kind: 'segment-boundary' }
 				]
 			});
-
+			// Assert that the geometry remains unchanged and the overlays are attached as expected
 			expect(result.geometry).toEqual(base.geometry);
 			expect(result.overlays?.markers).toEqual([
 				{ timeMs: 125, label: 'Distractor A', kind: 'distractor' },
@@ -288,9 +289,10 @@ describe('Visualization Rendering Layer', () => {
 			]);
 		});
 
-		it('D2 — supports segment boundary overlays alongside marker overlays', () => {
+		it('D2) — Supports segment boundary overlays alongside marker overlays', () => {
+			// Build a base rate series figure spec
 			const base = buildRateSeriesFigureSpec(makeRateSeriesModel());
-
+			// Attach segment boundary overlays alongside marker overlays to the base figure spec
 			const result = attachFigureOverlays(base, {
 				markers: [{ timeMs: 900, label: 'Cue', kind: 'event' }],
 				segmentBoundaries: [
@@ -298,7 +300,7 @@ describe('Visualization Rendering Layer', () => {
 					{ timeMs: 1000, label: 'Task' }
 				]
 			});
-
+			// Assert that the overlays are attached as expected
 			expect(result.overlays).toEqual({
 				markers: [{ timeMs: 900, label: 'Cue', kind: 'event' }],
 				segmentBoundaries: [
@@ -308,14 +310,16 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('D3 — returns a new figure spec rather than mutating the original when overlays are attached', () => {
+		it('D3) — Returns a new figure spec rather than mutating the original when overlays are attached', () => {
+			// Build a base scatter figure spec
 			const base = buildScatterFigureSpec(makeScatterModel());
+			// Clone the original figure spec to compare after attaching overlays
 			const original = structuredClone(base);
-
+			// Attach overlays to the base figure spec
 			const result = attachFigureOverlays(base, {
 				markers: [{ timeMs: 123, label: 'Event', kind: 'event' }]
 			});
-
+			// Assert that the original figure spec has not been mutated and that a new figure spec is returned with the overlays attached
 			expect(base).toEqual(original);
 			expect(result).not.toBe(base);
 			expect(result.overlays?.markers).toEqual([
@@ -323,16 +327,17 @@ describe('Visualization Rendering Layer', () => {
 			]);
 		});
 
-		it('D4 — preserves marker ordering as provided for deterministic downstream rendering', () => {
+		it('D4) — Preserves marker ordering as provided for deterministic downstream rendering', () => {
+			// Build a base scatter figure spec
 			const base = buildScatterFigureSpec(makeScatterModel());
-
+			// Define marker overlays in a specific order
 			const markers: MarkerOverlaySpec[] = [
 				{ timeMs: 800, label: 'Later', kind: 'event' },
 				{ timeMs: 100, label: 'Earlier', kind: 'event' }
 			];
-
+			// Attach the marker overlays to the base figure spec
 			const result = attachFigureOverlays(base, { markers });
-
+			// Assert that the marker ordering is preserved as provided
 			expect(result.overlays?.markers).toEqual([
 				{ timeMs: 800, label: 'Later', kind: 'event' },
 				{ timeMs: 100, label: 'Earlier', kind: 'event' }
