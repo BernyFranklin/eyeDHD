@@ -381,9 +381,10 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('E2 — allows explicit dimension overrides to take precedence over publication defaults', () => {
+		it('E2) — Allows explicit dimension overrides to take precedence over publication defaults', () => {
+			// Build a rate series model to use as the base for the figure spec
 			const model = makeRateSeriesModel();
-
+			// Build the figure spec using the rate series model with both publication defaults and explicit dimension overrides
 			const result = buildRateSeriesFigureSpec(model, {
 				publicationDefaults: {
 					dimensions: {
@@ -398,7 +399,7 @@ describe('Visualization Rendering Layer', () => {
 					dpi: 600
 				}
 			});
-
+			// Assert that the figure spec dimensions reflect the explicit overrides rather than the publication defaults
 			expect(result.dimensions).toEqual({
 				widthPx: 2400,
 				heightPx: 1600,

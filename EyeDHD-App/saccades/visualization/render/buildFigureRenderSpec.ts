@@ -82,28 +82,46 @@ export function buildRateSeriesFigureSpec(
 	model: { points: Array<{ timeMs: number; ratePerSec: number }> },
 	options: BuildFigureRenderSpecOptions = {}
 ): FigureRenderSpec {
+	const fontFamily = options.publicationDefaults?.fontFamily ?? 'Arial';
 	return {
 		figureId: options.figureId ?? 'rate-series-figure',
 		kind: 'rate-series',
-		dimensions: {
-			widthPx: 1800,
-			heightPx: 1200,
-			dpi: 300
-		},
+		dimensions: resolveDimensions(options),
 		margins: {
 			topPx: 96,
 			rightPx: 72,
 			bottomPx: 96,
 			leftPx: 120
 		},
-		title: options.title ? { text: options.title } : undefined,
+		title: options.title
+			? {
+					text: options.title,
+					font: {
+						family: fontFamily,
+						sizePt: 16,
+						weight: 'bold'
+					}
+				}
+			: undefined,
 		xAxis: {
-			label: { text: options.xAxisLabel ?? 'Time (ms)' },
+			label: {
+				text: options.xAxisLabel ?? 'Time (ms)',
+				font: {
+					family: fontFamily,
+					sizePt: 12
+				}
+			},
 			scaleType: 'linear',
 			domain: options.axisDomains?.x
 		},
 		yAxis: {
-			label: { text: options.yAxisLabel ?? 'Rate (per sec)' },
+			label: {
+				text: options.yAxisLabel ?? 'Rate (per sec)',
+				font: {
+					family: fontFamily,
+					sizePt: 12
+				}
+			},
 			scaleType: 'linear',
 			domain: options.axisDomains?.y
 		},
@@ -129,6 +147,7 @@ export function buildRateSeriesFigureSpec(
 				position: 'none'
 			}
 		},
+		overlays: options.overlays,
 		metadata: options.metadata
 	};
 }
