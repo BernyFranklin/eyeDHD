@@ -407,24 +407,25 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('E3 — includes stable default title and label font sizing suitable for publication output', () => {
+		it('E3) — Includes stable default title and label font sizing suitable for publication output', () => {
+			// Build a scatter model to use as the base for the figure spec
 			const model = makeScatterModel();
-
+			// Build the figure spec using the scatter model with a title to test default font sizing
 			const result = buildScatterFigureSpec(model, {
 				title: 'Amplitude Scatter'
 			});
-
+			// Assert that the title font reflects the default publication sizing
 			expect(result.title?.font).toEqual({
 				family: 'Arial',
 				sizePt: 16,
 				weight: 'bold'
 			});
-
+			// Assert that the x-axis label font reflects the default publication sizing
 			expect(result.xAxis.label.font).toEqual({
 				family: 'Arial',
 				sizePt: 12
 			});
-
+			// Assert that the y-axis label font reflects the default publication sizing
 			expect(result.yAxis.label.font).toEqual({
 				family: 'Arial',
 				sizePt: 12
