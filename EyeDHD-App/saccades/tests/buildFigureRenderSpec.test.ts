@@ -346,9 +346,10 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('E — Publication Defaults and Stable Rendering Metadata', () => {
-		it('E1 — supports publication default overrides while preserving unspecified defaults', () => {
+		it('E1) — Supports publication default overrides while preserving unspecified defaults', () => {
+			// Build a scatter model to use as the base for the figure spec
 			const model = makeScatterModel();
-
+			// Define publication defaults to override certain figure spec defaults
 			const publicationDefaults: Partial<PublicationFigureDefaults> = {
 				dimensions: {
 					widthPx: 2000,
@@ -357,21 +358,21 @@ describe('Visualization Rendering Layer', () => {
 				},
 				fontFamily: 'Arial'
 			};
-
+			// Build the figure spec using the scatter model and the publication defaults
 			const result = buildScatterFigureSpec(model, {
 				publicationDefaults
 			});
-
+			// Assert that the figure spec dimensions reflect the publication defaults
 			expect(result.dimensions).toEqual({
 				widthPx: 2000,
 				heightPx: 1400,
 				dpi: 300
 			});
-
+			// Assert that the figure spec font family reflects the publication defaults
 			expect(result.title?.font?.family ?? 'Arial').toBe('Arial');
 			expect(result.xAxis.label.font?.family ?? 'Arial').toBe('Arial');
 			expect(result.yAxis.label.font?.family ?? 'Arial').toBe('Arial');
-
+			// Assert that the figure spec margins reflect the default values
 			expect(result.margins).toEqual({
 				topPx: 96,
 				rightPx: 72,

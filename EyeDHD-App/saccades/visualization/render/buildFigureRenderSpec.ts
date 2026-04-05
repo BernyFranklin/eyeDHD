@@ -10,30 +10,45 @@ export function buildScatterFigureSpec(
 	model: { points: Array<{ timeMs: number; amplitudeDeg: number }> },
 	options: BuildFigureRenderSpecOptions = {}
 ): FigureRenderSpec {
+	const fontFamily = options.publicationDefaults?.fontFamily ?? 'Arial';
+
 	return {
 		figureId: options.figureId ?? 'scatter-figure',
 		kind: 'scatter',
-		dimensions: {
-			widthPx: 1800,
-			heightPx: 1200,
-			dpi: 300
-		},
+		dimensions: resolveDimensions(options),
 		margins: {
 			topPx: 96,
 			rightPx: 72,
 			bottomPx: 96,
 			leftPx: 120
 		},
-		title: options.title ? { text: options.title } : undefined,
+		title: options.title
+			? {
+					text: options.title,
+					font: {
+						family: fontFamily,
+						sizePt: 16,
+						weight: 'bold'
+					}
+				}
+			: undefined,
 		xAxis: {
 			label: {
-				text: options.xAxisLabel ?? 'Time (ms)'
+				text: options.xAxisLabel ?? 'Time (ms)',
+				font: {
+					family: fontFamily,
+					sizePt: 12
+				}
 			},
 			scaleType: 'linear'
 		},
 		yAxis: {
 			label: {
-				text: options.yAxisLabel ?? 'Amplitude (deg)'
+				text: options.yAxisLabel ?? 'Amplitude (deg)',
+				font: {
+					family: fontFamily,
+					sizePt: 12
+				}
 			},
 			scaleType: 'linear'
 		},
@@ -191,4 +206,28 @@ export function renderFigureSpec(
 	void spec;
 	void backend;
 	throw new Error('Not implemented');
+}
+
+// Helpers
+function resolveDimensions(options: BuildFigureRenderSpecOptions): {
+	widthPx: number;
+	heightPx: number;
+	dpi: number;
+} {
+	const defaultDims = { widthPx: 1800, heightPx: 1200, dpi: 300 };
+
+	return {
+		widthPx:
+			options.dimensions?.widthPx ??
+			options.publicationDefaults?.dimensions?.widthPx ??
+			defaultDims.widthPx,
+		heightPx:
+			options.dimensions?.heightPx ??
+			options.publicationDefaults?.dimensions?.heightPx ??
+			defaultDims.heightPx,
+		dpi:
+			options.dimensions?.dpi ??
+			options.publicationDefaults?.dimensions?.dpi ??
+			defaultDims.dpi
+	};
 }
