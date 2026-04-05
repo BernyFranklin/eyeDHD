@@ -432,11 +432,12 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('E4 — keeps axis scale types stable and linear by default', () => {
+		it('E4) — Keeps axis scale types stable and linear by default', () => {
+			// Build scatter, rate series, and histogram figure specs to test that axis scale types default to linear
 			const scatter = buildScatterFigureSpec(makeScatterModel());
 			const rate = buildRateSeriesFigureSpec(makeRateSeriesModel());
 			const histogram = buildIsiHistogramFigureSpec(makeIsiHistogramModel());
-
+			// Assert that all figure specs have linear scale types for both axes by default
 			expect(scatter.xAxis.scaleType).toBe('linear');
 			expect(scatter.yAxis.scaleType).toBe('linear');
 			expect(rate.xAxis.scaleType).toBe('linear');
