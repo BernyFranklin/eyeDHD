@@ -562,16 +562,17 @@ describe('Visualization Rendering Layer', () => {
 			expect(resultA).toEqual(resultB);
 		});
 
-		it('G3 — supports overlays supplied directly at figure-build time', () => {
+		it('G3) — Supports overlays supplied directly at figure-build time', () => {
+			// Build a rate series model to use as input for building a figure spec with overlays
 			const model = makeRateSeriesModel();
-
+			// Build a figure spec from the model with overlays supplied directly at figure-build time
 			const result = buildRateSeriesFigureSpec(model, {
 				overlays: {
 					markers: [{ timeMs: 1000, label: 'Probe', kind: 'probe' }],
 					segmentBoundaries: [{ timeMs: 0, label: 'Start' }]
 				}
 			});
-
+			// Assert that the overlays supplied at figure-build time are present in the resulting figure spec
 			expect(result.overlays).toEqual({
 				markers: [{ timeMs: 1000, label: 'Probe', kind: 'probe' }],
 				segmentBoundaries: [{ timeMs: 0, label: 'Start' }]
