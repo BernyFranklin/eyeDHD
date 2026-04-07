@@ -448,7 +448,7 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('F — Renderer Backend Boundary', () => {
-		it('F1) — passes the exact figure spec to the renderer backend and returns the rendered artifact', () => {
+		it('F1) — Passes the exact figure spec to the renderer backend and returns the rendered artifact', () => {
 			// Build a scatter figure spec with a figure ID to pass to the renderer backend
 			const spec = buildScatterFigureSpec(makeScatterModel(), {
 				figureId: 'render-me'
@@ -480,10 +480,11 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('F2 — does not mutate the provided figure spec during backend rendering', () => {
+		it('F2) — Does not mutate the provided figure spec during backend rendering', () => {
+			// Build a rate series figure spec and make a deep copy to verify that it is not mutated by the backend
 			const spec = buildRateSeriesFigureSpec(makeRateSeriesModel());
 			const original = structuredClone(spec);
-
+			// Create a backend that simply returns a rendered artifact without modifying the incoming spec
 			const backend = makeBackend((incoming) =>
 				makeRenderedArtifact({
 					figureId: incoming.figureId,
@@ -492,9 +493,9 @@ describe('Visualization Rendering Layer', () => {
 					dpi: incoming.dimensions.dpi
 				})
 			);
-
+			// Render the figure spec using the backend
 			renderFigureSpec(spec, backend);
-
+			// Assert that the figure spec has not been mutated by the backend
 			expect(spec).toEqual(original);
 		});
 
