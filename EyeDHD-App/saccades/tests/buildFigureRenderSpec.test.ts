@@ -579,9 +579,10 @@ describe('Visualization Rendering Layer', () => {
 			});
 		});
 
-		it('G4 — keeps rendering concerns separate from file writing by returning in-memory artifacts only', () => {
+		it('G4) — Keeps rendering concerns separate from file writing by returning in-memory artifacts only', () => {
+			// Build a scatter figure spec to test that rendering returns in-memory artifacts only without writing to disk
 			const spec = buildScatterFigureSpec(makeScatterModel());
-
+			// Create a backend that returns a rendered artifact for the incoming figure spec without writing to disk
 			const backend = makeBackend((incoming) =>
 				makeRenderedArtifact({
 					figureId: incoming.figureId,
@@ -593,9 +594,9 @@ describe('Visualization Rendering Layer', () => {
 					}
 				})
 			);
-
+			// Render the figure spec using the backend that returns in-memory artifacts only
 			const result = renderFigureSpec(spec, backend);
-
+			// Assert that the rendered artifact returned by the backend contains the expected in-memory properties without writing to disk
 			expect(result.format).toBe('png');
 			expect(result.bytes).toBeInstanceOf(Uint8Array);
 			expect(result.metadata).toEqual({
