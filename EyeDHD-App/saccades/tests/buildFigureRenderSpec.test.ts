@@ -541,23 +541,24 @@ describe('Visualization Rendering Layer', () => {
 			expect(resultA).toEqual(resultB);
 		});
 
-		it('G2 — produces identical histogram figure specs for identical inputs and explicit domains', () => {
+		it('G2) — Produces identical histogram figure specs for identical inputs and explicit domains', () => {
+			// Build an ISI histogram model to use as input for building figure specs
 			const model = makeIsiHistogramModel();
-
+			// Build a histogram figure spec from the model with explicit axis domains
 			const resultA = buildIsiHistogramFigureSpec(model, {
 				axisDomains: {
 					x: { min: 0, max: 200 },
 					y: { min: 0, max: 10 }
 				}
 			});
-
+			// Build a second histogram figure spec from the same model with identical explicit axis domains
 			const resultB = buildIsiHistogramFigureSpec(model, {
 				axisDomains: {
 					x: { min: 0, max: 200 },
 					y: { min: 0, max: 10 }
 				}
 			});
-
+			// Assert that the two histogram figure specs are identical
 			expect(resultA).toEqual(resultB);
 		});
 
