@@ -520,9 +520,10 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('G — End-to-End Figure Spec Determinism', () => {
-		it('G1 — produces identical scatter figure specs for identical inputs', () => {
+		it('G1) — Produces identical scatter figure specs for identical inputs', () => {
+			// Build a scatter model to use as input for building figure specs
 			const model = makeScatterModel();
-
+			// Build two identical scatter figure specs from the same model and identical options
 			const resultA = buildScatterFigureSpec(model, {
 				title: 'Scatter',
 				overlays: {
@@ -536,7 +537,7 @@ describe('Visualization Rendering Layer', () => {
 					markers: [{ timeMs: 200, label: 'Event', kind: 'event' }]
 				}
 			});
-
+			// Assert that the two figure specs are identical
 			expect(resultA).toEqual(resultB);
 		});
 

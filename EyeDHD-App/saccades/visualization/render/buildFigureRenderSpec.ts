@@ -74,6 +74,7 @@ export function buildScatterFigureSpec(
 				position: 'none'
 			}
 		},
+		overlays: options.overlays,
 		metadata: options.metadata
 	};
 }
