@@ -448,11 +448,12 @@ describe('Visualization Rendering Layer', () => {
 	});
 
 	describe('F — Renderer Backend Boundary', () => {
-		it('F1 — passes the exact figure spec to the renderer backend and returns the rendered artifact', () => {
+		it('F1) — passes the exact figure spec to the renderer backend and returns the rendered artifact', () => {
+			// Build a scatter figure spec with a figure ID to pass to the renderer backend
 			const spec = buildScatterFigureSpec(makeScatterModel(), {
 				figureId: 'render-me'
 			});
-
+			// Track calls made to the backend to verify that the exact figure spec is passed
 			const calls: FigureRenderSpec[] = [];
 			const backend = makeBackend((incoming) => {
 				calls.push(incoming);
@@ -463,9 +464,9 @@ describe('Visualization Rendering Layer', () => {
 					dpi: incoming.dimensions.dpi
 				});
 			});
-
+			// Render the figure spec using the backend and capture the returned rendered artifact
 			const result = renderFigureSpec(spec, backend);
-
+			// Assert that the backend was called exactly once with the figure spec and that the returned artifact matches expectations
 			expect(calls).toHaveLength(1);
 			expect(calls[0]).toEqual(spec);
 			expect(result).toEqual({

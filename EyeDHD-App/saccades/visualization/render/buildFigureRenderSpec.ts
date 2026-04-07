@@ -222,9 +222,7 @@ export function renderFigureSpec(
 	spec: FigureRenderSpec,
 	backend: FigureRendererBackend
 ): RenderedFigureArtifact {
-	void spec;
-	void backend;
-	throw new Error('Not implemented');
+	return backend.render(spec);
 }
 
 // Helpers
