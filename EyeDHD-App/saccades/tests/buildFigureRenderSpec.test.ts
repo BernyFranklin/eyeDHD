@@ -499,9 +499,10 @@ describe('Visualization Rendering Layer', () => {
 			expect(spec).toEqual(original);
 		});
 
-		it('F3 — supports deterministic repeated rendering with the same backend and same input', () => {
+		it('F3) — Supports deterministic repeated rendering with the same backend and same input', () => {
+			// Build an ISI histogram figure spec to test repeated rendering determinism
 			const spec = buildIsiHistogramFigureSpec(makeIsiHistogramModel());
-
+			// Create a backend that returns a rendered artifact for the incoming figure spec
 			const backend = makeBackend((incoming) =>
 				makeRenderedArtifact({
 					figureId: incoming.figureId,
@@ -510,10 +511,10 @@ describe('Visualization Rendering Layer', () => {
 					dpi: incoming.dimensions.dpi
 				})
 			);
-
+			// Render the figure spec twice using the same backend to verify deterministic output
 			const resultA = renderFigureSpec(spec, backend);
 			const resultB = renderFigureSpec(spec, backend);
-
+			// Assert that repeated rendering with the same backend and same input produces identical rendered artifacts
 			expect(resultA).toEqual(resultB);
 		});
 	});
