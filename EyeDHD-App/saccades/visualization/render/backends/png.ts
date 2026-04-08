@@ -11,7 +11,7 @@ export function createDeterministicPngBackend(): PngFigureRenderBackend {
 				widthPx: context.widthPx,
 				heightPx: context.heightPx,
 				dpi: context.dpi,
-				data: new Uint8Array()
+				data: new Uint8Array([0])
 			};
 		}
 	};
