@@ -28,17 +28,20 @@ declare interface Electron {
 		read(casename: string): Promise<CaseData>;
 		selectCsv(): Promise<string | null>;
 		importCsv(trial: CaseData, filepath: string): Promise<CaseData>;
+		startFFMPEG(trial: CaseData, size: {
+			width: number;
+			height: number;
+		}): void;
+		stopFFMPEG(trial: CaseData): Promise<void>;
+		saveAnimation(trial: CaseData, frames: Uint8Array[], size: {
+			width: number;
+			height: number;
+		}): Promise<void>;
 	};
 
 	csv: {
 		resetCleaningProgress(trial: CaseData): Promise<void>;
 	};
-
-	// video: {
-	// 	selectFile(): Promise<string | null>;
-	// 	SidebySide(vrFile: string, animFile: string, offsetSeconds: number): Promise<string>;
-	// 	toVideoURL(filename: string | null): string | null;
-	// };
 
 	stream: {
 		start(type: StreamType, file?: CaseData): Promise<StreamKey>;
@@ -116,6 +119,15 @@ const electron: Electron = {
 		 */
 		importCsv: async (trial: CaseData, filepath: string): Promise<CaseData> => {
 			return await ipcRenderer.invoke('case:import-csv', trial, filepath);
+		},
+		startFFMPEG: (trial: CaseData, size) => {
+			return ipcRenderer.send('case:start-ffmpeg', trial, size);
+		},
+		stopFFMPEG: async (trial: CaseData): Promise<void> => {
+			return await ipcRenderer.invoke('case:stop-ffmpeg', trial);
+		},
+		saveAnimation: async (trial: CaseData, frames: Uint8Array[], size) => {
+			return await ipcRenderer.invoke('case:save-animation', trial, frames, size);
 		}
 	},
 
@@ -129,35 +141,6 @@ const electron: Electron = {
 			return await ipcRenderer.invoke('csv:reset-cleaning-progress', trial);
 		}
 	},
-
-	// video: {
-	// 	/**
-	// 	 * open a native dialog to choose a video file and return full path
-	// 	 */
-	// 	selectFile: async () => {
-	// 		return await ipcRenderer.invoke('vr:select-video-file');
-	// 	},
-	// 	/**
-	// 	 * sync vr + animation using main.js ffmpeg handler
-	// 	 */
-	// 	SidebySide: async (vrFile: string, animFile: string, offsetSeconds: number) => {
-	// 		return await ipcRenderer.invoke('vr:video-sync-vr', {
-	// 			vrFile,
-	// 			animFile,
-	// 			offsetSeconds
-	// 		});
-	// 	},
-	// 	/**
-	// 	 * convert OS path → safe video URL for <video src="">
-	// 	 * no Node 'path' module used so bundlers can't complain
-	// 	 */
-	// 	toVideoURL: (filepath: string) => {
-	// 		if (!filepath) return null;
-	// 		const normalized = filepath.replace(/\\/g, '/');
-	// 		// avoid double prefixing if it already starts with file:///
-	// 		return normalized.startsWith('file:///') ? normalized : `file:///${normalized}`;
-	// 	}
-	// },
 
 	stream: {
 		/**
