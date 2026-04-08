@@ -15,7 +15,9 @@ export function createDeterministicPngBackend(): PngFigureRenderBackend {
 				// current realm's constructor — jsdom's globals use a different
 				// Uint8Array than Node's, and `instanceof Uint8Array` (e.g. vitest's
 				// toBeInstanceOf) returns false on the unwrapped result.
-				data: new Uint8Array(new TextEncoder().encode(String(context.widthPx)))
+				data: new Uint8Array(
+					new TextEncoder().encode(`${context.widthPx}|${context.dpi}`)
+				)
 			};
 		}
 	};
