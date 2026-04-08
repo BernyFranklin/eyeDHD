@@ -128,3 +128,10 @@ export function attachFigureOverlays(
 		overlays: cloneOverlays(overlays)
 	};
 }
+
+export function renderFigureSpec(
+	spec: FigureRenderSpec,
+	backend: FigureRendererBackend
+): RenderedFigureArtifact {
+	return backend.render(spec);
+}
