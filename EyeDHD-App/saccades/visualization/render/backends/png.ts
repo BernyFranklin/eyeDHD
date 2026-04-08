@@ -17,7 +17,7 @@ export function createDeterministicPngBackend(): PngFigureRenderBackend {
 				// toBeInstanceOf) returns false on the unwrapped result.
 				data: new Uint8Array(
 					new TextEncoder().encode(
-						`${context.widthPx}|${context.dpi}|${context.background}|${JSON.stringify(spec.overlays ?? null)}`
+						`${context.widthPx}|${context.dpi}|${context.background}|${JSON.stringify(spec.overlays ?? null)}|${spec.title?.text ?? ''}`
 					)
 				)
 			};
