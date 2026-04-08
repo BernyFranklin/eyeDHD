@@ -4,8 +4,15 @@ export function createDeterministicPngBackend(): PngFigureRenderBackend {
 	return {
 		kind: 'deterministic-png',
 		supportedFormats: ['png'],
-		renderFigure() {
-			throw new Error('createDeterministicPngBackend: not implemented');
+		renderFigure(_spec, context) {
+			return {
+				format: 'png',
+				mimeType: 'image/png',
+				widthPx: context.widthPx,
+				heightPx: context.heightPx,
+				dpi: context.dpi,
+				data: new Uint8Array()
+			};
 		}
 	};
 }
