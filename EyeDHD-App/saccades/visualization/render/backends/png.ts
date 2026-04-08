@@ -11,7 +11,11 @@ export function createDeterministicPngBackend(): PngFigureRenderBackend {
 				widthPx: context.widthPx,
 				heightPx: context.heightPx,
 				dpi: context.dpi,
-				data: new Uint8Array([0])
+				// Wrap TextEncoder output in a fresh Uint8Array so it's bound to the
+				// current realm's constructor — jsdom's globals use a different
+				// Uint8Array than Node's, and `instanceof Uint8Array` (e.g. vitest's
+				// toBeInstanceOf) returns false on the unwrapped result.
+				data: new Uint8Array(new TextEncoder().encode(String(context.widthPx)))
 			};
 		}
 	};
