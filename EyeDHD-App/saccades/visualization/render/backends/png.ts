@@ -16,7 +16,9 @@ export function createDeterministicPngBackend(): PngFigureRenderBackend {
 				// Uint8Array than Node's, and `instanceof Uint8Array` (e.g. vitest's
 				// toBeInstanceOf) returns false on the unwrapped result.
 				data: new Uint8Array(
-					new TextEncoder().encode(`${context.widthPx}|${context.dpi}`)
+					new TextEncoder().encode(
+						`${context.widthPx}|${context.dpi}|${context.background}`
+					)
 				)
 			};
 		}
