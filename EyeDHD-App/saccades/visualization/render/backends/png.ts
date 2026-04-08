@@ -4,7 +4,7 @@ export function createDeterministicPngBackend(): PngFigureRenderBackend {
 	return {
 		kind: 'deterministic-png',
 		supportedFormats: ['png'],
-		renderFigure(_spec, context) {
+		renderFigure(spec, context) {
 			return {
 				format: 'png',
 				mimeType: 'image/png',
@@ -17,7 +17,7 @@ export function createDeterministicPngBackend(): PngFigureRenderBackend {
 				// toBeInstanceOf) returns false on the unwrapped result.
 				data: new Uint8Array(
 					new TextEncoder().encode(
-						`${context.widthPx}|${context.dpi}|${context.background}`
+						`${context.widthPx}|${context.dpi}|${context.background}|${JSON.stringify(spec.overlays ?? null)}`
 					)
 				)
 			};
