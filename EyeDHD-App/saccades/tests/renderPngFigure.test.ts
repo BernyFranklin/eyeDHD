@@ -2,14 +2,17 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
 	buildScatterFigureSpec,
+	FigureRenderSpec,
 	renderFigureSpec,
-	renderPngFigure,
-	type FigureRenderBackend,
-	type FigureRenderBackendContext,
-	type FigureRenderSpec,
-	type PngFigureRenderBackend,
-	type RenderedPngArtifact
+    renderPngFigure,
 } from '@saccades/visualization/render';
+
+import type {
+    FigureRenderBackend,
+    FigureRenderBackendContext,
+    PngFigureRenderBackend,
+    RenderedPngArtifact
+} from '@saccades/visualization/render/backends/types';
 
 describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', () => {
 	describe('A — Generic Backend Execution Boundary', () => {
@@ -23,8 +26,8 @@ describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', ()
 				supportedFormats: ['png'],
 				renderFigure(inputSpec, context) {
 					expect(inputSpec).toEqual(original);
-					expect(context.widthPx).toBe(spec.widthPx);
-					expect(context.heightPx).toBe(spec.heightPx);
+					expect(context.widthPx).toBe(spec.dimensions.widthPx);
+					expect(context.heightPx).toBe(spec.dimensions.heightPx);
 					expect(context.dpi).toBe(300);
 					expect(context.background).toBe('white');
 
@@ -43,17 +46,14 @@ describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', ()
 
 			expect(result.format).toBe('png');
 			expect(result.mimeType).toBe('image/png');
-			expect(result.widthPx).toBe(spec.widthPx);
-			expect(result.heightPx).toBe(spec.heightPx);
+			expect(result.widthPx).toBe(spec.dimensions.widthPx);
+			expect(result.heightPx).toBe(spec.dimensions.heightPx);
 			expect(result.dpi).toBe(300);
 			expect(spec).toEqual(original);
 		});
 
 		it('A2 — derives backend context from the figure spec when execution options are omitted', () => {
-			const spec = makeScatterSpec({
-				widthPx: 1280,
-				heightPx: 720
-			});
+			const spec = makeScatterSpec({ widthPx: 1280, heightPx: 720, });
 
 			let capturedContext: FigureRenderBackendContext | undefined;
 
@@ -85,10 +85,7 @@ describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', ()
 		});
 
 		it('A3 — allows execution options to override default dpi and background deterministically', () => {
-			const spec = makeScatterSpec({
-				widthPx: 1000,
-				heightPx: 500
-			});
+			const spec = makeScatterSpec({ widthPx: 1000, heightPx: 500, });
 
 			let capturedContext: FigureRenderBackendContext | undefined;
 
@@ -121,10 +118,7 @@ describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', ()
 
 	describe('B — PNG-Specialized Rendering Helper', () => {
 		it('B1 — renders a PNG artifact through a PNG backend', () => {
-			const spec = makeScatterSpec({
-				widthPx: 1600,
-				heightPx: 900
-			});
+			const spec = makeScatterSpec({ widthPx: 1600, heightPx: 900, });
 
 			const backend: PngFigureRenderBackend = {
 				kind: 'png-test-backend',
@@ -155,20 +149,18 @@ describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', ()
 		});
 
 		it('B2 — preserves deterministic output for identical specs, backend, and options', () => {
-			const spec = makeScatterSpec({
-				widthPx: 1200,
-				heightPx: 800
-			});
+			const spec = makeScatterSpec({ widthPx: 1200, heightPx: 800, });
 
 			const backend: PngFigureRenderBackend = {
 				kind: 'png-test-backend',
 				supportedFormats: ['png'],
 				renderFigure(inputSpec, context) {
 					const seed = [
-						inputSpec.widthPx,
-						inputSpec.heightPx,
+						inputSpec.dimensions.widthPx,
+						inputSpec.dimensions.heightPx,
 						context.dpi,
-						inputSpec.series.length
+						inputSpec.title?.text ?? '',
+                        inputSpec.geometry.type,
 					].join(':');
 
 					return makeRenderedPngArtifact({
@@ -315,8 +307,8 @@ describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', ()
 
 			expect(result.format).toBe('png');
 			expect(result.mimeType).toBe('image/png');
-			expect(result.widthPx).toBe(spec.widthPx);
-			expect(result.heightPx).toBe(spec.heightPx);
+			expect(result.widthPx).toBe(spec.dimensions.widthPx);
+			expect(result.heightPx).toBe(spec.dimensions.heightPx);
 		});
 
 		it('D2 — passes the complete figure spec to the backend unchanged', () => {
@@ -463,8 +455,8 @@ describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', ()
 			expect(backendSpy).toHaveBeenCalledTimes(1);
 			expect(backendSpy.mock.calls[0]?.[0]).toEqual(spec);
 			expect(backendSpy.mock.calls[0]?.[1]).toEqual({
-				widthPx: spec.widthPx,
-				heightPx: spec.heightPx,
+				widthPx: spec.dimensions.widthPx,
+				heightPx: spec.dimensions.heightPx,
 				dpi: 300,
 				background: 'white'
 			});
@@ -472,7 +464,12 @@ describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', ()
 	});
 });
 
-function makeScatterSpec(overrides: Partial<FigureRenderSpec> = {}): FigureRenderSpec {
+// Helpers
+function makeScatterSpec(options?: {
+	widthPx?: number;
+	heightPx?: number;
+	overlays?: FigureRenderSpec['overlays'];
+}): FigureRenderSpec {
 	const base = buildScatterFigureSpec(
 		{
 			points: [
@@ -488,7 +485,12 @@ function makeScatterSpec(overrides: Partial<FigureRenderSpec> = {}): FigureRende
 
 	return {
 		...base,
-		...overrides
+		dimensions: {
+			...base.dimensions,
+			widthPx: options?.widthPx ?? base.dimensions.widthPx,
+			heightPx: options?.heightPx ?? base.dimensions.heightPx
+		},
+		overlays: options?.overlays ?? base.overlays
 	};
 }
 
