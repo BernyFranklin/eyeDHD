@@ -1,11 +1,11 @@
 import * as Three from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-import { type TrackingData } from "@src/data/types";
 import RemoteStream from '@src/data/RemoteStream';
 
 import { setTaskProgress } from '@src/data/features/task';
 import { type Task, type TaskFn } from '.';
+import { TrackingData } from '@src/data/types';
 
 const NAME = 'animation';
 const WAITING = 'Animate eye movements';
@@ -13,8 +13,8 @@ const RUNNING = 'Animating eye movements...';
 const COMPLETED = 'Animated eye movements';
 
 const SIZE = {
-	width: 854,
-	height: 480
+	width: 1280,
+	height: 720
 };
 
 type Rotation = {
@@ -26,14 +26,10 @@ type Rotation = {
 const fn: TaskFn = async (trial, dispatch) => {
 	trial = await window.electron.case.read(trial.name);
 
-	/*
-	 * Rendering setup
-	 */
-
 	const scene = new Three.Scene();
 	scene.background = new Three.Color(0x101010);
 
-	const ambientLight = new Three.AmbientLight(0xffffff, 2);
+	const ambientLight = new Three.AmbientLight(0xffffff, 7);
 	scene.add(ambientLight);
 
 	// Load models
@@ -70,12 +66,19 @@ const fn: TaskFn = async (trial, dispatch) => {
 		}
 	});
 
+	if (left_pupil === undefined || right_pupil === undefined) {
+		throw new Error("failed to find pupils in eye model");
+	}
+
+	const viewsize = 4;
+	const aspect = SIZE.width / SIZE.height;
+
 	// Create camera and position it
 	const camera = new Three.OrthographicCamera(
-		(-4 * SIZE.width / SIZE.height) / 2,
-		(4 * SIZE.width / SIZE.height) / 2,
-		-2,
-		2,
+		(-viewsize * aspect) / 2,
+		(viewsize * aspect) / 2,
+		viewsize / -2,
+		viewsize / 2,
 		0.1,
 		100
 	);
@@ -83,53 +86,43 @@ const fn: TaskFn = async (trial, dispatch) => {
 	camera.lookAt(0, 0, 0);
 	camera.updateProjectionMatrix();
 
-	// Create render target and renderer
-	const render_target = new Three.WebGLRenderTarget(SIZE.width, SIZE.height, {
-		format: Three.RGBAFormat,
-		type: Three.UnsignedByteType,
-		depthBuffer: false,
-		stencilBuffer: false
-	});
-
 	const renderer = new Three.WebGLRenderer({
 		antialias: true,
 		powerPreference: 'high-performance'
 	});
-
-	renderer.setSize(SIZE.width, SIZE.height);
-	renderer.setRenderTarget(render_target);
+	renderer.setSize(SIZE.width, SIZE.height, false);
 	renderer.domElement.remove();
 
-	//document.body.appendChild(renderer.domElement);
+	const renderTarget = new Three.WebGLRenderTarget(SIZE.width, SIZE.height, {
+		format: Three.RGBAFormat,
+		type: Three.UnsignedByteType,
+	});
 
-	// Create animation loop state
+	renderer.setRenderTarget(renderTarget);
+
 	const stream = await RemoteStream.create('TrackingData', { trial });
-	const buffers: Array<Uint8Array> = new Array(1000);
-	const buffer: Uint8Array = new Uint8Array(SIZE.width * SIZE.height * 4);
 
-	let i = 0;
+	let progress = 0;
 	let keep = 0;
-	let frame = 0;
+	let kept = 0;
 	const left_rotation = { x: 0.0, y: 0.0, z: 0.0 };
 	const right_rotation = { x: 0.0, y: 0.0, z: 0.0 };
 
-	/*
-	 * Rendering loop
-	 */
+	let frames = [];
+	const pixels = new Uint8Array(SIZE.width * SIZE.height * 4);
+
+	window.electron.case.startFFMPEG(trial, SIZE);
 
 	for await (const row of stream) {
-		// Calculate progress
-		const percent = i / trial.cleaned_rows;
+		const percent = progress / trial.cleaned_rows;
 		dispatch(setTaskProgress(percent));
 
-		// Only animate rows in the pattern of 6th row, 7th row, 7th row, repeat
-		// to convert 200 fps to 30 fps to match VR video fps / timing
-		if (i !== keep) {
-			i = i + 1;
+		if (progress !== keep) {
+			progress = progress + 1;
 			continue;
 		}
 
-		frame = frame + 1;
+		kept = kept + 1;
 
 		const targets = calculate_rotations(row as TrackingData);
 		// TODO: This isn't working
@@ -142,29 +135,31 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 		// Render scene and grab pixels to send to backend
 		renderer.render(scene, camera);
+
 		renderer.readRenderTargetPixels(
-			render_target,
+			renderer.getRenderTarget(),
 			0,
 			0,
 			SIZE.width,
 			SIZE.height,
-			buffer,
+			pixels
 		);
+		frames.push(pixels.slice());
 
-		// Update state
-		const idx = frame % 1000;
-		buffers[idx] = buffer.slice();
-
-		if (idx === 999) {
-			// Send to backend
+		if (frames.length >= 100) {
+			await window.electron.case.saveAnimation(trial, frames, SIZE);
+			frames = [];
 		}
 
-		i = i + 1;
-		keep = keep + calculate_interval(i);
+		progress = progress + 1;
+		keep = keep + calculate_interval(progress);
 	}
 
-	render_target.dispose();
+	window.electron.case.saveAnimation(trial, frames, SIZE);
+	await window.electron.case.stopFFMPEG(trial);
+
 	renderer.dispose();
+	renderTarget.dispose();
 
 	await delay(150);
 }
@@ -186,36 +181,36 @@ const delay = (ms: number) => new Promise<void>((resolve) => {
 });
 
 const calculate_interval = (i: number) => {
-	switch (i % 20) {
-		case 0 | 1 | 2 | 3 | 4 | 5: {
-			return 6;
-		}
-		default: {
-			return 7;
-		}
+	const rem = i % 20;
+
+	if (rem < 7) {
+		return 7;
+	} else if (rem < 13) {
+		return 6;
+	} else {
+		return 7;
 	}
 }
 
-
 // Calculate target rotations from forward vector and eye status
 function calculate_rotations(row: TrackingData): { left?: Rotation, right?: Rotation } {
-	const left_forward_x = row['LeftEyeForwardX'];
-	const left_forward_y = row['LeftEyeForwardY'];
-	const left_forward_z = row['LeftEyeForwardZ'];
+	const left_forward_x = row.LeftEyeForwardX;
+	const left_forward_y = row.LeftEyeForwardY;
+	const left_forward_z = row.LeftEyeForwardZ;
 	const left_pitch = GetPitch(left_forward_x, left_forward_y, left_forward_z);
 	const left_yaw = GetYaw(left_forward_x, left_forward_y, left_forward_z);
 
-	const right_forward_x = row['RightEyeForwardX'];
-	const right_forward_y = row['RightEyeForwardY'];
-	const right_forward_z = row['RightEyeForwardZ'];
+	const right_forward_x = row.RightEyeForwardX;
+	const right_forward_y = row.RightEyeForwardY;
+	const right_forward_z = row.RightEyeForwardZ;
 	const right_pitch = GetPitch(right_forward_x, right_forward_y, right_forward_z);
 	const right_yaw = GetYaw(right_forward_x, right_forward_y, right_forward_z);
 
-	const left_target = row['LeftEyeStatus'] === 'Invalid'
+	const left_target = row.LeftEyeStatus === 'Invalid'
 		? null
 		: { x: left_pitch, y: left_yaw, z: 0 };
 
-	const right_target = row['RightEyeStatus'] === 'Invalid'
+	const right_target = row.RightEyeStatus === 'Invalid'
 		? null
 		: { x: right_pitch, y: right_yaw, z: 0 };
 
@@ -248,16 +243,14 @@ function interpolate_rotation(
 
 // Update pupil dilation based on pupil diameter in mm, normalized to 0-1 range
 function update_dilation(row: TrackingData, left_pupil: Three.Mesh, right_pupil: Three.Mesh) {
-	const left_dilation = NormalizePupilDilation(row['LeftPupilDiameterInMM']);
-	if (row['LeftEyeStatus'] !== 'Invalid') {
-		const idx = left_pupil.morphTargetDictionary['Open'];
-		left_pupil.morphTargetInfluences[idx] = left_dilation;
+	const left_dilation = NormalizePupilDilation(row.LeftPupilDiameterInMM);
+	if (row.RightEyeStatus !== 'Invalid') {
+		left_pupil.morphTargetInfluences[0] = left_dilation;
 	}
 
-	const right_dilation = NormalizePupilDilation(row['RightPupilDiameterInMM']);
-	if (row['RightEyeStatus'] !== 'Invalid') {
-		const idx = right_pupil.morphTargetDictionary['Open'];
-		right_pupil.morphTargetInfluences[idx] = right_dilation;
+	const right_dilation = NormalizePupilDilation(row.RightPupilDiameterInMM);
+	if (row.RightEyeStatus !== 'Invalid') {
+		right_pupil.morphTargetInfluences[0] = right_dilation;
 	}
 }
 

@@ -117,10 +117,7 @@ export default class DatabaseManager {
 	 * key, and returns the key to the caller for future reference.
 	 */
 	async startStream(type: StreamType, trial?: CaseData): Promise<StreamKey> {
-		const stream = new DataStream()
-			.of(type)
-			.with(trial)
-			.start(this);
+		const stream = new DataStream(type, trial).start(this);
 
 		const key = { id: ++this.streamCounter, type };
 		this.streams.set(key.id, stream);

@@ -2,12 +2,12 @@ import { app, dialog, ipcMain, Notification } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import { spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
-import { type CaseData, csvImportPath, csvOutputPath } from './db/tables/CaseData';
+import { animationOutputPath, type CaseData, csvImportPath, csvOutputPath } from './db/tables/CaseData';
 import { type UserData } from './db/tables/UserData';
 
 const appRoot = app.getAppPath();
@@ -354,6 +354,70 @@ ipcMain.handle('case:read-casedata', async (_, filename) => {
 			return resolve(trial);
 		} catch (err) {
 			return reject(`Failed to read metadata for file: ${filename}. Error: ${err}`);
+		}
+	});
+});
+
+let ffmpeg: ChildProcess | null = null;
+
+ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
+	const output_path = animationOutputPath(trial);
+	ffmpeg = spawn(FFMPEG_PATH, [
+		"-y",
+		"-f", "rawvideo",
+		"-pix_fmt", "rgba",
+		"-s", `${size.width}x${size.height}`,
+		"-r", `${30}`,
+		"-i", "pipe:0",
+		"-vf", "vflip",
+		"-c:v", "libx264",
+		"-pix_fmt", "yuv420p",
+		output_path
+	], { stdio: ["pipe", "inherit", "inherit"] });
+});
+
+ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData) => {
+	return new Promise(async (resolve, reject) => {
+		// Update CaseData so tasks.animate is 1
+		try {
+			ffmpeg.on('close', (code) => {
+				ffmpeg = null;
+				if (code === 0) {
+					return resolve({});
+				} else {
+					return reject(new Error(`FFMPEG failed with code: ${code}`));
+				}
+			});
+
+			ffmpeg.stdin.end();
+
+			const storedCase = project_manager.actions.case.read(trial.name);
+			project_manager.actions.case.update(storedCase, {
+				tasks: {
+					...storedCase.tasks,
+					animation: true
+				}
+			});
+		} catch (err) {
+			return reject(`Failed to stop FFMPEG for file: ${trial.name}. Error: ${err}`);
+		}
+	});
+});
+
+ipcMain.handle('case:save-animation', async (_, trial, frames, size) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			if (!ffmpeg) {
+				return reject('FFMPEG process not initialized');
+			}
+
+			for (const frame of frames) {
+				ffmpeg.stdin.write(frame);
+			}
+
+			resolve({});
+		} catch (err) {
+			return reject(`Failed to save animation frames for file: ${trial.name}. Error: ${err}`);
 		}
 	});
 });

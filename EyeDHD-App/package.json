@@ -14,7 +14,7 @@
     "lint": "eslint --ext .ts,.tsx .",
     "format": "prettier --write .",
     "rebuild:electron": "npx electron-rebuild -f -w better-sqlite3",
-    "rebuild:test": "npm rebuild better-sqlite3",
+    "rebuild:test": "npm rebuild -o better-sqlite3",
     "test": "npm run rebuild:test && vitest run"
   },
   "devDependencies": {

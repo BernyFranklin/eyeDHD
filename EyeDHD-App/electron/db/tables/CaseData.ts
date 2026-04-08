@@ -297,3 +297,8 @@ export function csvOutputPath(trial: CaseData): string {
 	const baseName = caseBaseName(trial);
 	return path.join(trial.path, 'outputs', `${baseName}_Cleaned.csv`);
 }
+
+export function animationOutputPath(trial: CaseData): string {
+	const baseName = caseBaseName(trial);
+	return path.join(trial.path, 'outputs', `${baseName}_Animated.mp4`);
+}

@@ -1,8 +1,15 @@
 import fs from "fs";
 import rl from "readline";
 
+import { spawn } from 'child_process';
+import FFMPEG_PATH from 'ffmpeg-static';
+
+import gl from "gl";
+import * as Three from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
 import { TRACKING_DATA_HEADERS, type TrackingData, fromCSV, toCSV } from "./tables/TrackingData";
-import caseDataActions, { type CaseData, csvImportPath, csvOutputPath } from "./tables/CaseData";
+import caseDataActions, { animationOutputPath, type CaseData, csvImportPath, csvOutputPath } from "./tables/CaseData";
 import DatabaseManager from "./DatabaseManager";
 import DataCleaner from "@electron/analysis/DataCleaner";
 
@@ -21,7 +28,7 @@ export type Progress = {
 };
 
 const STREAM_BATCH_SIZE = 1000;
-const CLEANING_BATCH_SIZE = 1000;
+const BATCH_SIZE = 1000;
 
 /**
  * DataStream class that provides an async iterator interface for streaming data
@@ -39,21 +46,14 @@ export default class DataStream {
 		totalBytes: 0
 	};
 
-	constructor() {
-		this.type = undefined;
-		this.trial = undefined;
+	constructor(
+		type: StreamType,
+		trial?: CaseData
+	) {
+		this.type = type;
+		this.trial = trial;
 		this.path = undefined;
 		this.iterator = undefined;
-	}
-
-	of(type: StreamType) {
-		this.type = type;
-		return this;
-	}
-
-	with(trial?: CaseData) {
-		this.trial = trial;
-		return this;
 	}
 
 	start(manager: DatabaseManager) {
@@ -69,7 +69,7 @@ export default class DataStream {
 		iterator: AsyncIterator<DataType[]>,
 		trial?: CaseData
 	): DataStream {
-		const stream = new DataStream().of(type).with(trial);
+		const stream = new DataStream(type, trial);
 		stream.iterator = iterator;
 		return stream;
 	}
@@ -208,7 +208,7 @@ export default class DataStream {
 			const line = toCSV(row) + '\n';
 			outputStream.write(line);
 
-			if (batch.length >= CLEANING_BATCH_SIZE) {
+			if (batch.length >= BATCH_SIZE) {
 				yield batch;
 				batch = [];
 			}

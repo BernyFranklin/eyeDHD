@@ -7,17 +7,14 @@ export default defineConfig({
 	resolve: {
 		alias
 	},
+	optimizeDeps: {
+		exclude: ['better-sqlite3', 'ffmpeg-static']
+	},
 	build: {
 		target: 'node16', // or the node/electron target you need
 		// keep better-sqlite3 external: don't bundle native node module
 		rollupOptions: {
-			external: ['electron', 'better-sqlite3']
-		},
-		// Pass options through to @rollup/plugin-commonjs
-		commonjsOptions: {
-			dynamicRequireTargets: [
-				path.resolve(__dirname, 'node_modules/better-sqlite3/build/**')
-			]
+			external: ['better-sqlite3', 'ffmpeg-static']
 		}
 	}
 });
