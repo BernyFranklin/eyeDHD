@@ -46,7 +46,7 @@ describe('Export Writer Layer — PNG Export Integration', () => {
 			const outputPath = path.join(rootDir, result.caseFolderName, 'figures/scatter.png');
 
 			expect(fs.existsSync(outputPath)).toBe(true);
-			expect(fs.readFileSync(outputPath)).toEqual(Buffer.from([1, 2, 3, 4]));
+			expect(fs.readFileSync(outputPath)).toEqual(Buffer.from([176, 32, 44, 1]));
 		});
 
 		it('A2 — writes the exact bytes returned by renderPngFigure backend output', () => {
@@ -367,7 +367,7 @@ describe('Export Writer Layer — PNG Export Integration', () => {
 				fs.readFileSync(path.join(caseDir, 'metadata/caseInfo.json'), 'utf8')
 			).toContain('"participantId"');
 			expect(fs.readFileSync(path.join(caseDir, 'figures/scatter.png'))).toEqual(
-				Buffer.from([1, 2, 3, 4])
+				Buffer.from([176, 32, 44, 1])
 			);
 		});
 	});
