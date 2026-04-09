@@ -10,6 +10,11 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 			const canvas = new Canvas(context.widthPx, context.heightPx);
 			const ctx = canvas.getContext('2d');
 
+			if (context.background === 'white') {
+				ctx.fillStyle = 'white';
+				ctx.fillRect(0, 0, context.widthPx, context.heightPx);
+			}
+
 			if (spec.title?.text) {
 				ctx.fillStyle = 'black';
 				ctx.font = '16px sans-serif';
