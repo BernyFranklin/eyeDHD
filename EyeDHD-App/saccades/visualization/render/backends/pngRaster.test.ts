@@ -11,23 +11,27 @@ import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backe
 
 describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 	describe('A — Backend Contract', () => {
-		it('A1 — creates a PNG backend with stable kind and declared png support', () => {
+		it('A1) — Creates a PNG backend with stable kind and declared png support', () => {
+			// Create the backend
 			const backend = createSkiaCanvasPngBackend();
-
+			// Verify the backend reports the expected kind and supported formats
 			expect(backend.kind).toBe('skia-canvas-png');
 			expect(backend.supportedFormats).toEqual(['png']);
 			expect(typeof backend.renderFigure).toBe('function');
 		});
 
-		it('A2 — renders a PNG artifact with expected metadata through renderPngFigure', () => {
+		it('A2) — Renders a PNG artifact with expected metadata through renderPngFigure', () => {
+			// Create the backend and a scatter spec to feed it
 			const backend = createSkiaCanvasPngBackend();
 			const spec = makeScatterSpec();
 
+			// Render the figure through the public renderPngFigure entry point
 			const result = renderPngFigure(spec, backend, {
 				dpi: 300,
 				background: 'white'
 			});
 
+			// Verify the artifact metadata mirrors the spec and a non-empty PNG payload was produced
 			expect(result.figureId).toBe(spec.figureId);
 			expect(result.format).toBe('png');
 			expect(result.mimeType).toBe('image/png');
@@ -38,15 +42,18 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 			expect(result.data.length).toBeGreaterThan(0);
 		});
 
-		it('A3 — preserves transparent background metadata when requested', () => {
+		it('A3) — Preserves transparent background metadata when requested', () => {
+			// Create the backend and a scatter spec to feed it
 			const backend = createSkiaCanvasPngBackend();
 			const spec = makeScatterSpec();
 
+			// Render the figure with a transparent background
 			const result = renderPngFigure(spec, backend, {
 				dpi: 300,
 				background: 'transparent'
 			});
 
+			// Verify the metadata still describes a valid PNG and the byte payload is non-empty
 			expect(result.format).toBe('png');
 			expect(result.mimeType).toBe('image/png');
 			expect(result.widthPx).toBe(spec.dimensions.widthPx);
@@ -57,10 +64,12 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 	});
 
 	describe('B — Deterministic Raster Output', () => {
-		it('B1 — produces identical PNG bytes for identical scatter spec and options', () => {
+		it('B1) — Produces identical PNG bytes for identical scatter spec and options', () => {
+			// Create the backend and a single spec to be reused across both renders
 			const backend = createSkiaCanvasPngBackend();
 			const spec = makeScatterSpec();
 
+			// Render the same spec and options twice
 			const resultA = renderPngFigure(spec, backend, {
 				dpi: 300,
 				background: 'white'
@@ -71,11 +80,13 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				background: 'white'
 			});
 
+			// Verify both renders produce structurally and byte-identical artifacts
 			expect(resultA).toEqual(resultB);
 			expect(Array.from(resultA.data)).toEqual(Array.from(resultB.data));
 		});
 
-		it('B2 — produces different PNG bytes when scatter geometry changes', () => {
+		it('B2) — Produces different PNG bytes when scatter geometry changes', () => {
+			// Create the backend and two specs that differ only in a single point's amplitude
 			const backend = createSkiaCanvasPngBackend();
 
 			const specA = buildScatterFigureSpec(
@@ -104,6 +115,7 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				}
 			);
 
+			// Render both specs with identical options
 			const resultA = renderPngFigure(specA, backend, {
 				dpi: 300,
 				background: 'white'
@@ -114,10 +126,12 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				background: 'white'
 			});
 
+			// Verify the differing geometry produces distinct PNG byte payloads
 			expect(Array.from(resultA.data)).not.toEqual(Array.from(resultB.data));
 		});
 
-		it('B3 — produces different PNG bytes when the title changes', () => {
+		it('B3) — Produces different PNG bytes when the title changes', () => {
+			// Create the backend and two specs that differ only in their title text
 			const backend = createSkiaCanvasPngBackend();
 
 			const specA = buildScatterFigureSpec(
@@ -144,6 +158,7 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				}
 			);
 
+			// Render both specs with identical options
 			const resultA = renderPngFigure(specA, backend, {
 				dpi: 300,
 				background: 'white'
@@ -154,13 +169,16 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				background: 'white'
 			});
 
+			// Verify the differing titles produce distinct PNG byte payloads
 			expect(Array.from(resultA.data)).not.toEqual(Array.from(resultB.data));
 		});
 
-		it('B4 — produces different PNG bytes when the background changes', () => {
+		it('B4) — Produces different PNG bytes when the background changes', () => {
+			// Create the backend and a single spec to be reused across both renders
 			const backend = createSkiaCanvasPngBackend();
 			const spec = makeScatterSpec();
 
+			// Render once on a white background and once on a transparent background
 			const resultA = renderPngFigure(spec, backend, {
 				dpi: 300,
 				background: 'white'
@@ -171,24 +189,29 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				background: 'transparent'
 			});
 
+			// Verify the differing background produces distinct PNG byte payloads
 			expect(Array.from(resultA.data)).not.toEqual(Array.from(resultB.data));
 		});
 	});
 
 	describe('C — Geometry Coverage', () => {
-		it('C1 — renders scatter geometry to non-empty PNG bytes', () => {
+		it('C1) — Renders scatter geometry to non-empty PNG bytes', () => {
+			// Create the backend and a scatter spec
 			const backend = createSkiaCanvasPngBackend();
 			const spec = makeScatterSpec();
 
+			// Render the scatter figure
 			const result = renderPngFigure(spec, backend, {
 				dpi: 300,
 				background: 'white'
 			});
 
+			// Verify the rendered byte payload is non-empty
 			expect(result.data.length).toBeGreaterThan(0);
 		});
 
-		it('C2 — renders rate-series geometry to non-empty PNG bytes', () => {
+		it('C2) — Renders rate-series geometry to non-empty PNG bytes', () => {
+			// Create the backend and build a rate-series spec via the real builder
 			const backend = createSkiaCanvasPngBackend();
 
 			const spec = buildRateSeriesFigureSpec(
@@ -204,16 +227,19 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				}
 			);
 
+			// Render the rate-series figure
 			const result = renderPngFigure(spec, backend, {
 				dpi: 300,
 				background: 'white'
 			});
 
+			// Verify the artifact carries the source figure id and a non-empty byte payload
 			expect(result.figureId).toBe(spec.figureId);
 			expect(result.data.length).toBeGreaterThan(0);
 		});
 
-		it('C3 — renders histogram geometry to non-empty PNG bytes', () => {
+		it('C3) — Renders histogram geometry to non-empty PNG bytes', () => {
+			// Create the backend and build a histogram spec via the real builder
 			const backend = createSkiaCanvasPngBackend();
 
 			const spec = buildIsiHistogramFigureSpec(
@@ -229,18 +255,21 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				}
 			);
 
+			// Render the histogram figure
 			const result = renderPngFigure(spec, backend, {
 				dpi: 300,
 				background: 'white'
 			});
 
+			// Verify the artifact carries the source figure id and a non-empty byte payload
 			expect(result.figureId).toBe(spec.figureId);
 			expect(result.data.length).toBeGreaterThan(0);
 		});
 	});
 
 	describe('D — Overlay and Style Fidelity', () => {
-		it('D1 — renders overlay markers deterministically', () => {
+		it('D1) — Renders overlay markers deterministically', () => {
+			// Create the backend and a scatter spec carrying an overlay marker
 			const backend = createSkiaCanvasPngBackend();
 
 			const spec = buildScatterFigureSpec(
@@ -259,6 +288,7 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				}
 			);
 
+			// Render the same overlay-bearing spec twice
 			const resultA = renderPngFigure(spec, backend, {
 				dpi: 300,
 				background: 'white'
@@ -269,10 +299,12 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				background: 'white'
 			});
 
+			// Verify the overlay rendering is deterministic across identical renders
 			expect(Array.from(resultA.data)).toEqual(Array.from(resultB.data));
 		});
 
-		it('D2 — changes PNG bytes when overlay markers change', () => {
+		it('D2) — Changes PNG bytes when overlay markers change', () => {
+			// Create the backend and two specs that differ only in their overlay marker label
 			const backend = createSkiaCanvasPngBackend();
 
 			const specA = buildScatterFigureSpec(
@@ -307,6 +339,7 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				}
 			);
 
+			// Render both specs with identical options
 			const resultA = renderPngFigure(specA, backend, {
 				dpi: 300,
 				background: 'white'
@@ -317,10 +350,12 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				background: 'white'
 			});
 
+			// Verify the differing overlay markers produce distinct PNG byte payloads
 			expect(Array.from(resultA.data)).not.toEqual(Array.from(resultB.data));
 		});
 
-		it('D3 — changes PNG bytes when segment boundaries are added', () => {
+		it('D3) — Changes PNG bytes when segment boundaries are added', () => {
+			// Create the backend and a baseline scatter spec without overlays
 			const backend = createSkiaCanvasPngBackend();
 
 			const specA = makeScatterSpec();
@@ -341,6 +376,7 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				}
 			);
 
+			// Render the baseline spec and the boundary-bearing spec
 			const resultA = renderPngFigure(specA, backend, {
 				dpi: 300,
 				background: 'white'
@@ -351,30 +387,36 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				background: 'white'
 			});
 
+			// Verify adding segment boundaries produces distinct PNG byte payloads
 			expect(Array.from(resultA.data)).not.toEqual(Array.from(resultB.data));
 		});
 	});
 
 	describe('E — Step 8 Boundary Preservation', () => {
-		it('E1 — returns PNG bytes and metadata without any file path fields', () => {
+		it('E1) — Returns PNG bytes and metadata without any file path fields', () => {
+			// Create the backend and a scatter spec
 			const backend = createSkiaCanvasPngBackend();
 			const spec = makeScatterSpec();
 
+			// Render the figure to obtain an artifact
 			const result = renderPngFigure(spec, backend, {
 				dpi: 300,
 				background: 'white'
 			});
 
+			// Verify the artifact does not leak any filesystem path properties
 			expect(result).not.toHaveProperty('path');
 			expect(result).not.toHaveProperty('relativePath');
 			expect(result).not.toHaveProperty('fileName');
 			expect(result).not.toHaveProperty('outputPath');
 		});
 
-		it('E2 — remains usable as an in-memory rendering step independent of export writer orchestration', () => {
+		it('E2) — Remains usable as an in-memory rendering step independent of export writer orchestration', () => {
+			// Create the backend and a scatter spec
 			const backend = createSkiaCanvasPngBackend();
 			const spec = makeScatterSpec();
 
+			// Verify rendering completes without requiring any filesystem inputs
 			expect(() =>
 				renderPngFigure(spec, backend, {
 					dpi: 300,
