@@ -15,9 +15,16 @@ export type ExportFileCategory =
 	| 'visuals'
 	| 'animation';
 
+export interface PngExportOptions {
+	backend: import('@saccades/visualization/render/backends/types').PngFigureRenderBackend;
+	dpi: number;
+	background: import('@saccades/visualization/render/backends/types').RenderBackground;
+}
+
 export interface WriteCaseBundleOptions {
 	rootDir: string;
 	caseFolderName?: string;
+	png?: PngExportOptions;
 }
 
 export interface WrittenArtifact {
