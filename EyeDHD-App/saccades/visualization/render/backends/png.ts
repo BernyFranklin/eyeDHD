@@ -10,6 +10,14 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 			const canvas = new Canvas(context.widthPx, context.heightPx);
 			const ctx = canvas.getContext('2d');
 
+			if (spec.title?.text) {
+				ctx.fillStyle = 'black';
+				ctx.font = '16px sans-serif';
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'top';
+				ctx.fillText(spec.title.text, context.widthPx / 2, 8);
+			}
+
 			if (spec.geometry.type === 'scatter') {
 				const allPoints = spec.geometry.series.flatMap((s) => s.points);
 				if (allPoints.length > 0) {
