@@ -23,7 +23,23 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				ctx.fillText(spec.title.text, context.widthPx / 2, 8);
 			}
 
-			if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
+			if (spec.geometry.type === 'histogram') {
+				const bins = spec.geometry.bins;
+				if (bins.length > 0) {
+					const xMin = Math.min(...bins.map((b) => b.binStart));
+					const xMax = Math.max(...bins.map((b) => b.binEnd));
+					const countMax = Math.max(...bins.map((b) => b.count));
+					const xRange = xMax - xMin || 1;
+					const countRange = countMax || 1;
+					ctx.fillStyle = 'black';
+					for (const bin of bins) {
+						const x0 = ((bin.binStart - xMin) / xRange) * (context.widthPx - 1);
+						const x1 = ((bin.binEnd - xMin) / xRange) * (context.widthPx - 1);
+						const h = (bin.count / countRange) * (context.heightPx - 1);
+						ctx.fillRect(x0, context.heightPx - 1 - h, Math.max(1, x1 - x0), h);
+					}
+				}
+			} else if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
 				const allPoints = spec.geometry.series.flatMap((s) => s.points);
 				if (allPoints.length > 0) {
 					const xs = allPoints.map((p) => p.x);
