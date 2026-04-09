@@ -81,6 +81,16 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				}
 			}
 
+			if (spec.overlays?.segmentBoundaries) {
+				ctx.fillStyle = 'blue';
+				ctx.font = '10px sans-serif';
+				ctx.textAlign = 'left';
+				ctx.textBaseline = 'top';
+				for (const boundary of spec.overlays.segmentBoundaries) {
+					ctx.fillText(`boundary:${boundary.label ?? ''}@${boundary.timeMs}`, 4, 40);
+				}
+			}
+
 			if (spec.overlays?.markers) {
 				ctx.fillStyle = 'red';
 				ctx.font = '10px sans-serif';
