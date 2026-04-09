@@ -399,5 +399,3 @@ function makeScatterSpec(): FigureRenderSpec {
 		}
 	);
 }
-
-// claude --resume 1e1456d3-4e8e-4fdf-acbf-c824ba0b4656

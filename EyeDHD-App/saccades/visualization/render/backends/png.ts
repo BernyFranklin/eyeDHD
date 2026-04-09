@@ -1,11 +1,30 @@
 import type { PngFigureRenderBackend } from './types';
 
+export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
+	return {
+		kind: 'skia-canvas-png',
+		supportedFormats: ['png'],
+		renderFigure(spec, context) {
+			return {
+				figureId: spec.figureId,
+				format: 'png',
+				mimeType: 'image/png',
+				widthPx: context.widthPx,
+				heightPx: context.heightPx,
+				dpi: context.dpi,
+				data: new Uint8Array()
+			};
+		}
+	};
+}
+
 export function createDeterministicPngBackend(): PngFigureRenderBackend {
 	return {
 		kind: 'deterministic-png',
 		supportedFormats: ['png'],
 		renderFigure(spec, context) {
 			return {
+				figureId: spec.figureId,
 				format: 'png',
 				mimeType: 'image/png',
 				widthPx: context.widthPx,

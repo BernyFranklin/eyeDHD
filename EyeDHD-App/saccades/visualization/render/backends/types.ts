@@ -17,6 +17,7 @@ export interface FigureRenderBackendContext {
 }
 
 export interface RenderedArtifactBase {
+	figureId: string;
 	format: RenderTargetFormat;
 	mimeType: string;
 	widthPx: number;
