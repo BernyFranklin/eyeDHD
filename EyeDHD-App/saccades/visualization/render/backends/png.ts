@@ -8,6 +8,31 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 		supportedFormats: ['png'],
 		renderFigure(spec, context) {
 			const canvas = new Canvas(context.widthPx, context.heightPx);
+			const ctx = canvas.getContext('2d');
+
+			if (spec.geometry.type === 'scatter') {
+				const allPoints = spec.geometry.series.flatMap((s) => s.points);
+				if (allPoints.length > 0) {
+					const xs = allPoints.map((p) => p.x);
+					const ys = allPoints.map((p) => p.y);
+					const xMin = Math.min(...xs);
+					const xMax = Math.max(...xs);
+					const yMin = Math.min(...ys);
+					const yMax = Math.max(...ys);
+					const xRange = xMax - xMin || 1;
+					const yRange = yMax - yMin || 1;
+					ctx.fillStyle = 'black';
+					for (const point of allPoints) {
+						const px = ((point.x - xMin) / xRange) * (context.widthPx - 1);
+						const py =
+							context.heightPx - 1 - ((point.y - yMin) / yRange) * (context.heightPx - 1);
+						ctx.beginPath();
+						ctx.arc(px, py, 3, 0, Math.PI * 2);
+						ctx.fill();
+					}
+				}
+			}
+
 			const buffer = canvas.toBufferSync('png');
 
 			return {
