@@ -254,9 +254,7 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				{
 					title: 'Scatter Figure',
 					overlays: {
-						markers: [
-							{ timeMs: 250, label: 'Distractor', kind: 'event' }
-						]
+						markers: [{ timeMs: 250, label: 'Distractor', kind: 'event' }]
 					}
 				}
 			);
@@ -288,9 +286,7 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				{
 					title: 'Scatter Figure',
 					overlays: {
-						markers: [
-							{ timeMs: 250, label: 'Event A', kind: 'event' }
-						]
+						markers: [{ timeMs: 250, label: 'Event A', kind: 'event' }]
 					}
 				}
 			);
@@ -306,9 +302,7 @@ describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 				{
 					title: 'Scatter Figure',
 					overlays: {
-						markers: [
-							{ timeMs: 250, label: 'Event B', kind: 'event' }
-						]
+						markers: [{ timeMs: 250, label: 'Event B', kind: 'event' }]
 					}
 				}
 			);
@@ -405,3 +399,5 @@ function makeScatterSpec(): FigureRenderSpec {
 		}
 	);
 }
+
+// claude --resume 1e1456d3-4e8e-4fdf-acbf-c824ba0b4656
