@@ -1,3 +1,5 @@
+import { Canvas } from 'skia-canvas';
+
 import type { PngFigureRenderBackend } from './types';
 
 export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
@@ -5,6 +7,9 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 		kind: 'skia-canvas-png',
 		supportedFormats: ['png'],
 		renderFigure(spec, context) {
+			const canvas = new Canvas(context.widthPx, context.heightPx);
+			const buffer = canvas.toBufferSync('png');
+
 			return {
 				figureId: spec.figureId,
 				format: 'png',
@@ -12,7 +17,7 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				widthPx: context.widthPx,
 				heightPx: context.heightPx,
 				dpi: context.dpi,
-				data: new Uint8Array()
+				data: new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
 			};
 		}
 	};
