@@ -23,7 +23,7 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				ctx.fillText(spec.title.text, context.widthPx / 2, 8);
 			}
 
-			if (spec.geometry.type === 'scatter') {
+			if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
 				const allPoints = spec.geometry.series.flatMap((s) => s.points);
 				if (allPoints.length > 0) {
 					const xs = allPoints.map((p) => p.x);
@@ -34,14 +34,33 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 					const yMax = Math.max(...ys);
 					const xRange = xMax - xMin || 1;
 					const yRange = yMax - yMin || 1;
-					ctx.fillStyle = 'black';
-					for (const point of allPoints) {
-						const px = ((point.x - xMin) / xRange) * (context.widthPx - 1);
-						const py =
-							context.heightPx - 1 - ((point.y - yMin) / yRange) * (context.heightPx - 1);
-						ctx.beginPath();
-						ctx.arc(px, py, 3, 0, Math.PI * 2);
-						ctx.fill();
+					const project = (p: { x: number; y: number }) => ({
+						px: ((p.x - xMin) / xRange) * (context.widthPx - 1),
+						py:
+							context.heightPx - 1 - ((p.y - yMin) / yRange) * (context.heightPx - 1)
+					});
+
+					if (spec.geometry.type === 'scatter') {
+						ctx.fillStyle = 'black';
+						for (const point of allPoints) {
+							const { px, py } = project(point);
+							ctx.beginPath();
+							ctx.arc(px, py, 3, 0, Math.PI * 2);
+							ctx.fill();
+						}
+					} else {
+						ctx.strokeStyle = 'black';
+						ctx.lineWidth = 1;
+						for (const series of spec.geometry.series) {
+							if (series.points.length === 0) continue;
+							ctx.beginPath();
+							series.points.forEach((point, index) => {
+								const { px, py } = project(point);
+								if (index === 0) ctx.moveTo(px, py);
+								else ctx.lineTo(px, py);
+							});
+							ctx.stroke();
+						}
 					}
 				}
 			}
