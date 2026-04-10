@@ -6,22 +6,16 @@ const WAITING = 'Detect saccades';
 const RUNNING = 'Detecting saccades...';
 const COMPLETED = 'Detected saccades';
 
-const delay = (ms: number) => new Promise<void>((resolve) => {
-	setTimeout(resolve, ms);
-});
-
 const fn: TaskFn = async (trial, dispatch) => {
 	trial = await window.electron.case.read(trial.name);
 
-	let percent = 0.0;
-	while (percent < 1.0) {
-		await delay(10);
+	// The detection pipeline runs as a single backend call. We don't have
+	// granular progress yet, so we mark a midpoint then complete on resolve.
+	dispatch(setTaskProgress(0.1));
 
-		percent = percent + 0.01;
-		dispatch(setTaskProgress(percent));
-	}
+	await window.electron.case.runDetection(trial);
 
-	await delay(150);
+	dispatch(setTaskProgress(1.0));
 }
 
 export const detection: Task = {

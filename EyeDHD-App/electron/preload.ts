@@ -4,13 +4,26 @@ import { type UserData } from './db/tables/UserData';
 import { type CaseData } from './db/tables/CaseData';
 import { type Progress, type DataType, type StreamKey, type StreamType } from './db/DataStream';
 
-export { Electron, Renderer };
+export { Electron, Renderer, DetectionResult };
 
 type ProjectDir = {
 	dir?: string,
 	status: {
 		empty: boolean
 	}
+}
+
+type DetectionResult = {
+	saccadeCount: number;
+	artifacts: {
+		key: string;
+		absolutePath: string;
+		relativePath: string;
+		format: 'csv' | 'json' | 'png';
+		category: string;
+		bytes: number;
+		skipped: boolean;
+	}[];
 }
 
 /**
@@ -28,6 +41,7 @@ declare interface Electron {
 		read(casename: string): Promise<CaseData>;
 		selectCsv(): Promise<string | null>;
 		importCsv(trial: CaseData, filepath: string): Promise<CaseData>;
+		runDetection(trial: CaseData): Promise<DetectionResult>;
 		startFFMPEG(trial: CaseData, size: {
 			width: number;
 			height: number;
@@ -119,6 +133,13 @@ const electron: Electron = {
 		 */
 		importCsv: async (trial: CaseData, filepath: string): Promise<CaseData> => {
 			return await ipcRenderer.invoke('case:import-csv', trial, filepath);
+		},
+		/**
+		 * Runs the saccade detection pipeline on the cleaned CSV for the given case
+		 * and writes analysis CSVs and metadata JSONs to the case outputs directory.
+		 */
+		runDetection: async (trial: CaseData): Promise<DetectionResult> => {
+			return await ipcRenderer.invoke('case:run-detection', trial);
 		},
 		startFFMPEG: (trial: CaseData, size) => {
 			return ipcRenderer.send('case:start-ffmpeg', trial, size);
