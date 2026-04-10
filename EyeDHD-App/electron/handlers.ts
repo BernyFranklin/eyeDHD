@@ -522,8 +522,24 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 			}
 			const csvText = fs.readFileSync(cleanedPath, 'utf-8');
 
-			// Run saccade detection pipeline
-			const pipelineResult = runGazeCsvPipeline(csvText);
+			// Run saccade detection pipeline. We filter to VALID gaze rows only —
+			// the cleaner keeps INVALID rows with (0,0,0) vectors, which would crash
+			// the angular velocity normalization step. The csv.* metrics flags are
+			// opt-in; without them sessionSummaryRow stays null and the output CSV
+			// is empty.
+			const pipelineResult = runGazeCsvPipeline(csvText, {
+				adapter: {
+					selection: {
+						includeGazeStatuses: ['VALID'],
+					},
+				},
+				metrics: {
+					csv: {
+						sessionSummaryRow: true,
+						segmentSummaryRows: true,
+					},
+				},
+			});
 
 			// Map pipeline results to visualization prep input
 			const vizInput = {
