@@ -10,6 +10,12 @@ import { type StreamKey } from './db/DataStream';
 import { animationOutputPath, type CaseData, csvImportPath, csvOutputPath } from './db/tables/CaseData';
 import { type UserData } from './db/tables/UserData';
 
+import { runGazeCsvPipeline } from '@saccades/pipeline/runGazeCsvPipeline';
+import { prepareVisualizationModels } from '@saccades/visualization/prep/prepareVisualizationData';
+import { buildCaseOutputBundle } from '@saccades/outputs/caseBundle';
+import { writeCaseBundle } from '@saccades/export/writeCaseBundle';
+import type { CaseOutputBundleInput } from '@saccades/outputs/caseBundle';
+
 const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
 
@@ -488,6 +494,111 @@ ipcMain.handle('csv:export-data', async (_, trial: CaseData) => {
 			});
 		} catch (err) {
 			return reject(`Failed to export file: ${trial.name}. Error: ${err}`);
+		}
+	});
+});
+
+/*
+ * Saccade detection handler
+ */
+
+/**
+ * Handles the case:run-detection request.
+ *
+ * Reads the cleaned CSV for the given case, runs the saccade detection pipeline,
+ * prepares visualization model data, builds the output bundle, and writes all
+ * analysis CSVs and metadata JSONs to the case outputs directory. Marks the
+ * detection task as complete in the database when finished.
+ */
+ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const storedCase = project_manager.actions.case.read(trial.name);
+
+			// Read cleaned CSV
+			const cleanedPath = csvOutputPath(storedCase);
+			if (!fs.existsSync(cleanedPath)) {
+				return reject(`Cleaned CSV not found for case: ${storedCase.name}. Run cleaning first.`);
+			}
+			const csvText = fs.readFileSync(cleanedPath, 'utf-8');
+
+			// Run saccade detection pipeline
+			const pipelineResult = runGazeCsvPipeline(csvText);
+
+			// Map pipeline results to visualization prep input
+			const vizInput = {
+				perSaccade: pipelineResult.analysis.metrics.perSaccadeRows.map((row) => ({
+					timeMs: row.startTime,
+					amplitudeDeg: row.amplitudeDeg,
+				})),
+				isiValuesMs: pipelineResult.analysis.metrics.isiSeries,
+			};
+			const vizResult = prepareVisualizationModels(vizInput);
+
+			// Build the CaseOutputBundleInput
+			const bundleInput: CaseOutputBundleInput = {
+				metadata: {
+					caseId: storedCase.name,
+					sourceFileName: storedCase.name,
+				},
+				runConfig: {},
+				analysis: {
+					perSaccade: pipelineResult.analysis.metrics.perSaccadeRows.map((row) => ({
+						timeMs: row.startTime,
+						amplitudeDeg: row.amplitudeDeg,
+						durationMs: row.durationMs,
+					})),
+					sessionSummary: pipelineResult.analysis.metrics.csv.sessionSummaryRow
+						? { ...pipelineResult.analysis.metrics.csv.sessionSummaryRow }
+						: undefined,
+					segmentSummaries: pipelineResult.analysis.metrics.csv.segmentSummaryRows.map((seg) => ({
+						segmentId: seg.segmentId,
+						saccadeCount: seg.keptCount,
+						ratePerSec: seg.ratePerSec,
+					})),
+					isiValuesMs: pipelineResult.analysis.metrics.isiSeries,
+					diagnostics: {
+						parse: pipelineResult.parse.diagnostics,
+						adapter: pipelineResult.adapter.diagnostics,
+						detection: {
+							saccadeCount: pipelineResult.analysis.detection.saccades.length,
+							filtered: pipelineResult.analysis.metrics.filtered,
+						},
+					},
+				},
+				visualization: {
+					scatter: vizResult.scatter,
+					rateSeries: vizResult.rateSeries,
+					isiHistogram: vizResult.isiHistogram,
+					markers: vizResult.markers.map((m) => ({
+						timeMs: m.timeMs,
+						label: m.label ?? '',
+						kind: m.kind,
+					})),
+				},
+			};
+
+			// Build the output bundle and filter out PNG descriptors (visualization step handles those)
+			const bundle = buildCaseOutputBundle(bundleInput);
+			bundle.files = bundle.files.filter((f) => f.format !== 'png');
+
+			const outputDir = path.join(storedCase.path, 'outputs');
+			const writeResult = writeCaseBundle(bundle, {
+				rootDir: outputDir,
+				caseFolderName: '',
+			});
+
+			// Mark detection as complete
+			project_manager.actions.case.update(storedCase, {
+				tasks: { detection: true },
+			});
+
+			return resolve({
+				artifacts: writeResult.artifacts,
+				saccadeCount: pipelineResult.analysis.detection.saccades.length,
+			});
+		} catch (err) {
+			return reject(`Failed to run detection for case: ${trial.name}. Error: ${err}`);
 		}
 	});
 });
