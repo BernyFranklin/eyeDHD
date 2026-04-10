@@ -9,7 +9,7 @@ function createWindow() {
 		height: 1080,
 		minWidth: 100,
 		minHeight: 20,
-		icon: path.join(__dirname, '../../images/eyedhd-logo.ico'),
+		icon: path.join(__dirname, '../images/sight-logo.ico'),
 		title: 'EyeDHD',
 		webPreferences: {
 			contextIsolation: true,
