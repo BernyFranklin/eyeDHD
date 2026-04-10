@@ -2,6 +2,33 @@ import { Canvas } from 'skia-canvas';
 
 import type { PngFigureRenderBackend } from './types';
 
+// Tick generation: computes evenly-spaced "nice" tick values for an axis.
+// Uses a 1-2-5 rounding scheme so ticks land on clean numbers.
+// NOTE: May need to revisit when using live study data (20+ min recordings
+// with dense data). The target tick count or rounding scheme may need
+// adjustment for very large or very small domains.
+function computeNiceTicks(min: number, max: number, targetCount = 6): number[] {
+	const range = max - min;
+	if (range === 0) return [min];
+
+	const rawStep = range / targetCount;
+	const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+	const residual = rawStep / magnitude;
+
+	let niceStep: number;
+	if (residual <= 1.5) niceStep = 1 * magnitude;
+	else if (residual <= 3.5) niceStep = 2 * magnitude;
+	else if (residual <= 7.5) niceStep = 5 * magnitude;
+	else niceStep = 10 * magnitude;
+
+	const tickStart = Math.ceil(min / niceStep) * niceStep;
+	const ticks: number[] = [];
+	for (let v = tickStart; v <= max + niceStep * 0.001; v += niceStep) {
+		ticks.push(Math.round(v * 1e10) / 1e10);
+	}
+	return ticks;
+}
+
 export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 	return {
 		kind: 'skia-canvas-png',
@@ -23,37 +50,105 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				ctx.fillText(spec.title.text, context.widthPx / 2, 8);
 			}
 
+			// --- Compute plot area from margins ---
+			const m = spec.margins;
+			const plotLeft = m.leftPx;
+			const plotTop = m.topPx;
+			const plotWidth = context.widthPx - m.leftPx - m.rightPx;
+			const plotHeight = context.heightPx - m.topPx - m.bottomPx;
+			const plotBottom = plotTop + plotHeight;
+			const plotRight = plotLeft + plotWidth;
+
+			// --- Compute data domain ---
+			let xMin = 0, xMax = 1, yMin = 0, yMax = 1;
+
 			if (spec.geometry.type === 'histogram') {
 				const bins = spec.geometry.bins;
 				if (bins.length > 0) {
-					const xMin = Math.min(...bins.map((b) => b.binStart));
-					const xMax = Math.max(...bins.map((b) => b.binEnd));
-					const countMax = Math.max(...bins.map((b) => b.count));
-					const xRange = xMax - xMin || 1;
-					const countRange = countMax || 1;
+					xMin = Math.min(...bins.map((b) => b.binStart));
+					xMax = Math.max(...bins.map((b) => b.binEnd));
+					yMin = 0;
+					yMax = Math.max(...bins.map((b) => b.count));
+				}
+			} else if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
+				const allPts = spec.geometry.series.flatMap((s) => s.points);
+				if (allPts.length > 0) {
+					xMin = Math.min(...allPts.map((p) => p.x));
+					xMax = Math.max(...allPts.map((p) => p.x));
+					yMin = Math.min(...allPts.map((p) => p.y));
+					yMax = Math.max(...allPts.map((p) => p.y));
+				}
+			}
+
+			const xRange = xMax - xMin || 1;
+			const yRange = yMax - yMin || 1;
+
+			// --- Draw gridlines and ticks ---
+			// NOTE: Tick spacing uses a nice-numbers algorithm targeting ~6 ticks.
+			// May need adjustment for live study data (20+ min, dense points).
+			const xTicks = computeNiceTicks(xMin, xMax);
+			const yTicks = computeNiceTicks(yMin, yMax);
+
+			ctx.strokeStyle = '#e0e0e0';
+			ctx.lineWidth = 1;
+
+			for (const tick of xTicks) {
+				const px = plotLeft + ((tick - xMin) / xRange) * plotWidth;
+				ctx.beginPath();
+				ctx.moveTo(px, plotTop);
+				ctx.lineTo(px, plotBottom);
+				ctx.stroke();
+			}
+
+			for (const tick of yTicks) {
+				const py = plotBottom - ((tick - yMin) / yRange) * plotHeight;
+				ctx.beginPath();
+				ctx.moveTo(plotLeft, py);
+				ctx.lineTo(plotRight, py);
+				ctx.stroke();
+			}
+
+			// Tick labels
+			ctx.fillStyle = '#333';
+			ctx.font = '11px sans-serif';
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'top';
+			for (const tick of xTicks) {
+				const px = plotLeft + ((tick - xMin) / xRange) * plotWidth;
+				ctx.fillText(String(tick), px, plotBottom + 6);
+			}
+
+			ctx.textAlign = 'right';
+			ctx.textBaseline = 'middle';
+			for (const tick of yTicks) {
+				const py = plotBottom - ((tick - yMin) / yRange) * plotHeight;
+				ctx.fillText(String(tick), plotLeft - 8, py);
+			}
+
+			// Plot area border
+			ctx.strokeStyle = '#999';
+			ctx.lineWidth = 1;
+			ctx.strokeRect(plotLeft, plotTop, plotWidth, plotHeight);
+
+			// --- Draw geometry ---
+			if (spec.geometry.type === 'histogram') {
+				const bins = spec.geometry.bins;
+				if (bins.length > 0) {
+					const countRange = yMax || 1;
 					ctx.fillStyle = 'black';
 					for (const bin of bins) {
-						const x0 = ((bin.binStart - xMin) / xRange) * (context.widthPx - 1);
-						const x1 = ((bin.binEnd - xMin) / xRange) * (context.widthPx - 1);
-						const h = (bin.count / countRange) * (context.heightPx - 1);
-						ctx.fillRect(x0, context.heightPx - 1 - h, Math.max(1, x1 - x0), h);
+						const x0 = plotLeft + ((bin.binStart - xMin) / xRange) * plotWidth;
+						const x1 = plotLeft + ((bin.binEnd - xMin) / xRange) * plotWidth;
+						const h = (bin.count / countRange) * plotHeight;
+						ctx.fillRect(x0, plotBottom - h, Math.max(1, x1 - x0), h);
 					}
 				}
 			} else if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
 				const allPoints = spec.geometry.series.flatMap((s) => s.points);
 				if (allPoints.length > 0) {
-					const xs = allPoints.map((p) => p.x);
-					const ys = allPoints.map((p) => p.y);
-					const xMin = Math.min(...xs);
-					const xMax = Math.max(...xs);
-					const yMin = Math.min(...ys);
-					const yMax = Math.max(...ys);
-					const xRange = xMax - xMin || 1;
-					const yRange = yMax - yMin || 1;
 					const project = (p: { x: number; y: number }) => ({
-						px: ((p.x - xMin) / xRange) * (context.widthPx - 1),
-						py:
-							context.heightPx - 1 - ((p.y - yMin) / yRange) * (context.heightPx - 1)
+						px: plotLeft + ((p.x - xMin) / xRange) * plotWidth,
+						py: plotTop + plotHeight - ((p.y - yMin) / yRange) * plotHeight
 					});
 
 					if (spec.geometry.type === 'scatter') {
@@ -61,12 +156,12 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 						for (const point of allPoints) {
 							const { px, py } = project(point);
 							ctx.beginPath();
-							ctx.arc(px, py, 3, 0, Math.PI * 2);
+							ctx.arc(px, py, 6, 0, Math.PI * 2);
 							ctx.fill();
 						}
 					} else {
 						ctx.strokeStyle = 'black';
-						ctx.lineWidth = 1;
+						ctx.lineWidth = 2;
 						for (const series of spec.geometry.series) {
 							if (series.points.length === 0) continue;
 							ctx.beginPath();
@@ -81,23 +176,67 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				}
 			}
 
-			if (spec.overlays?.segmentBoundaries) {
-				ctx.fillStyle = 'blue';
-				ctx.font = '10px sans-serif';
-				ctx.textAlign = 'left';
+			if (spec.xAxis?.label?.text) {
+				ctx.fillStyle = 'black';
+				ctx.font = '14px sans-serif';
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'bottom';
+				ctx.fillText(spec.xAxis.label.text, context.widthPx / 2, context.heightPx - 8);
+			}
+
+			if (spec.yAxis?.label?.text) {
+				ctx.save();
+				ctx.fillStyle = 'black';
+				ctx.font = '14px sans-serif';
+				ctx.textAlign = 'center';
 				ctx.textBaseline = 'top';
+				ctx.translate(16, context.heightPx / 2);
+				ctx.rotate(-Math.PI / 2);
+				ctx.fillText(spec.yAxis.label.text, 0, 0);
+				ctx.restore();
+			}
+
+			if (spec.overlays?.segmentBoundaries) {
 				for (const boundary of spec.overlays.segmentBoundaries) {
-					ctx.fillText(`boundary:${boundary.label ?? ''}@${boundary.timeMs}`, 4, 40);
+					const px = plotLeft + ((boundary.timeMs - xMin) / xRange) * plotWidth;
+
+					ctx.strokeStyle = 'blue';
+					ctx.lineWidth = 1.5;
+					ctx.setLineDash([6, 4]);
+					ctx.beginPath();
+					ctx.moveTo(px, plotTop);
+					ctx.lineTo(px, plotBottom);
+					ctx.stroke();
+					ctx.setLineDash([]);
+
+					if (boundary.label) {
+						ctx.fillStyle = 'blue';
+						ctx.font = '11px sans-serif';
+						ctx.textAlign = 'left';
+						ctx.textBaseline = 'bottom';
+						ctx.fillText(boundary.label, px + 4, plotTop - 2);
+					}
 				}
 			}
 
 			if (spec.overlays?.markers) {
-				ctx.fillStyle = 'red';
-				ctx.font = '10px sans-serif';
-				ctx.textAlign = 'left';
-				ctx.textBaseline = 'top';
 				for (const marker of spec.overlays.markers) {
-					ctx.fillText(`${marker.kind}:${marker.label}@${marker.timeMs}`, 4, 24);
+					const px = plotLeft + ((marker.timeMs - xMin) / xRange) * plotWidth;
+
+					ctx.strokeStyle = 'red';
+					ctx.lineWidth = 1.5;
+					ctx.setLineDash([3, 3]);
+					ctx.beginPath();
+					ctx.moveTo(px, plotTop);
+					ctx.lineTo(px, plotBottom);
+					ctx.stroke();
+					ctx.setLineDash([]);
+
+					ctx.fillStyle = 'red';
+					ctx.font = '11px sans-serif';
+					ctx.textAlign = 'left';
+					ctx.textBaseline = 'bottom';
+					ctx.fillText(marker.label, px + 4, plotTop - 14);
 				}
 			}
 

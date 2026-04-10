@@ -9,8 +9,10 @@ import { writeCaseBundle } from './writeCaseBundle';
 import {
 	buildScatterFigureSpec,
 	buildRateSeriesFigureSpec,
-	buildIsiHistogramFigureSpec
+	buildIsiHistogramFigureSpec,
+	attachFigureOverlays
 } from '@saccades/visualization/render';
+import type { FigureRenderSpec } from '@saccades/visualization/render';
 import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
 
 import type { CaseOutputBundle, CaseOutputFileDescriptor } from './types';
@@ -24,24 +26,36 @@ const scatterDescriptor: CaseOutputFileDescriptor<unknown> = {
 	format: 'png',
 	category: 'visuals',
 	optional: false,
-	content: buildScatterFigureSpec(
+	content: attachFigureOverlays(
+		buildScatterFigureSpec(
+			{
+				points: [
+					{ timeMs: 50, amplitudeDeg: 1.2 },
+					{ timeMs: 120, amplitudeDeg: 3.8 },
+					{ timeMs: 200, amplitudeDeg: 2.1 },
+					{ timeMs: 310, amplitudeDeg: 5.5 },
+					{ timeMs: 450, amplitudeDeg: 4.0 },
+					{ timeMs: 520, amplitudeDeg: 1.9 },
+					{ timeMs: 680, amplitudeDeg: 6.2 },
+					{ timeMs: 790, amplitudeDeg: 3.4 },
+					{ timeMs: 900, amplitudeDeg: 2.7 },
+					{ timeMs: 1050, amplitudeDeg: 4.8 }
+				]
+			},
+			{
+				title: 'Saccade Amplitude vs Time',
+				dimensions: { widthPx: 1200, heightPx: 800, dpi: 300 }
+			}
+		),
 		{
-			points: [
-				{ timeMs: 50, amplitudeDeg: 1.2 },
-				{ timeMs: 120, amplitudeDeg: 3.8 },
-				{ timeMs: 200, amplitudeDeg: 2.1 },
-				{ timeMs: 310, amplitudeDeg: 5.5 },
-				{ timeMs: 450, amplitudeDeg: 4.0 },
-				{ timeMs: 520, amplitudeDeg: 1.9 },
-				{ timeMs: 680, amplitudeDeg: 6.2 },
-				{ timeMs: 790, amplitudeDeg: 3.4 },
-				{ timeMs: 900, amplitudeDeg: 2.7 },
-				{ timeMs: 1050, amplitudeDeg: 4.8 }
+			markers: [
+				{ timeMs: 200, label: 'Blink', kind: 'blink' },
+				{ timeMs: 680, label: 'Large Saccade', kind: 'saccade' }
+			],
+			segmentBoundaries: [
+				{ timeMs: 50, label: 'Segment A' },
+				{ timeMs: 500, label: 'Segment B' }
 			]
-		},
-		{
-			title: 'Saccade Amplitude vs Time',
-			dimensions: { widthPx: 1200, heightPx: 800, dpi: 300 }
 		}
 	)
 };
@@ -52,22 +66,33 @@ const rateSeriesDescriptor: CaseOutputFileDescriptor<unknown> = {
 	format: 'png',
 	category: 'visuals',
 	optional: false,
-	content: buildRateSeriesFigureSpec(
+	content: attachFigureOverlays(
+		buildRateSeriesFigureSpec(
+			{
+				points: [
+					{ timeMs: 0, ratePerSec: 0.5 },
+					{ timeMs: 200, ratePerSec: 1.2 },
+					{ timeMs: 400, ratePerSec: 2.8 },
+					{ timeMs: 600, ratePerSec: 2.1 },
+					{ timeMs: 800, ratePerSec: 3.5 },
+					{ timeMs: 1000, ratePerSec: 1.8 },
+					{ timeMs: 1200, ratePerSec: 2.4 },
+					{ timeMs: 1400, ratePerSec: 3.0 }
+				]
+			},
+			{
+				title: 'Saccade Rate Over Time',
+				dimensions: { widthPx: 1200, heightPx: 800, dpi: 300 }
+			}
+		),
 		{
-			points: [
-				{ timeMs: 0, ratePerSec: 0.5 },
-				{ timeMs: 200, ratePerSec: 1.2 },
-				{ timeMs: 400, ratePerSec: 2.8 },
-				{ timeMs: 600, ratePerSec: 2.1 },
-				{ timeMs: 800, ratePerSec: 3.5 },
-				{ timeMs: 1000, ratePerSec: 1.8 },
-				{ timeMs: 1200, ratePerSec: 2.4 },
-				{ timeMs: 1400, ratePerSec: 3.0 }
+			markers: [
+				{ timeMs: 400, label: 'Peak Activity', kind: 'event' }
+			],
+			segmentBoundaries: [
+				{ timeMs: 0, label: 'Baseline' },
+				{ timeMs: 700, label: 'Task' }
 			]
-		},
-		{
-			title: 'Saccade Rate Over Time',
-			dimensions: { widthPx: 1200, heightPx: 800, dpi: 300 }
 		}
 	)
 };
@@ -78,22 +103,29 @@ const histogramDescriptor: CaseOutputFileDescriptor<unknown> = {
 	format: 'png',
 	category: 'visuals',
 	optional: false,
-	content: buildIsiHistogramFigureSpec(
+	content: attachFigureOverlays(
+		buildIsiHistogramFigureSpec(
+			{
+				bins: [
+					{ binStartMs: 0, binEndMs: 50, count: 3 },
+					{ binStartMs: 50, binEndMs: 100, count: 8 },
+					{ binStartMs: 100, binEndMs: 150, count: 15 },
+					{ binStartMs: 150, binEndMs: 200, count: 12 },
+					{ binStartMs: 200, binEndMs: 250, count: 7 },
+					{ binStartMs: 250, binEndMs: 300, count: 4 },
+					{ binStartMs: 300, binEndMs: 350, count: 2 },
+					{ binStartMs: 350, binEndMs: 400, count: 1 }
+				]
+			},
+			{
+				title: 'Inter-Saccadic Interval Distribution',
+				dimensions: { widthPx: 1200, heightPx: 800, dpi: 300 }
+			}
+		),
 		{
-			bins: [
-				{ binStartMs: 0, binEndMs: 50, count: 3 },
-				{ binStartMs: 50, binEndMs: 100, count: 8 },
-				{ binStartMs: 100, binEndMs: 150, count: 15 },
-				{ binStartMs: 150, binEndMs: 200, count: 12 },
-				{ binStartMs: 200, binEndMs: 250, count: 7 },
-				{ binStartMs: 250, binEndMs: 300, count: 4 },
-				{ binStartMs: 300, binEndMs: 350, count: 2 },
-				{ binStartMs: 350, binEndMs: 400, count: 1 }
+			markers: [
+				{ timeMs: 125, label: 'Mode Bin', kind: 'annotation' }
 			]
-		},
-		{
-			title: 'Inter-Saccadic Interval Distribution',
-			dimensions: { widthPx: 1200, heightPx: 800, dpi: 300 }
 		}
 	)
 };
