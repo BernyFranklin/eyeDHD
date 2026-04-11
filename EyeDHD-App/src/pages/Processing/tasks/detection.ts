@@ -2,9 +2,9 @@ import { setTaskProgress } from '@src/data/features/task';
 import { type Task, type TaskFn } from '.';
 
 const NAME = 'detection';
-const WAITING = 'Detect saccades and generate visuals';
-const RUNNING = 'Detecting saccades and generating visuals...';
-const COMPLETED = 'Detected saccades and generated visuals';
+const WAITING =   'Detect saccades and generate visuals';        
+const RUNNING =   'Detecting saccades and generating visuals...';
+const COMPLETED = 'Detected saccades and generated visuals     ';
 
 const fn: TaskFn = async (trial, dispatch) => {
 	trial = await window.electron.case.read(trial.name);
@@ -16,7 +16,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 	await window.electron.case.runDetection(trial);
 
 	dispatch(setTaskProgress(1.0));
-}
+};
 
 export const detection: Task = {
 	display: {
@@ -26,4 +26,4 @@ export const detection: Task = {
 	},
 	name: NAME,
 	fn
-}
+};
