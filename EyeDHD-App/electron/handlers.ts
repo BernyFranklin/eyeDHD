@@ -15,6 +15,12 @@ import { prepareVisualizationModels } from '@saccades/visualization/prep/prepare
 import { buildCaseOutputBundle } from '@saccades/outputs/caseBundle';
 import { writeCaseBundle } from '@saccades/export/writeCaseBundle';
 import type { CaseOutputBundleInput } from '@saccades/outputs/caseBundle';
+import {
+	buildScatterFigureSpec,
+	buildRateSeriesFigureSpec,
+	buildIsiHistogramFigureSpec,
+} from '@saccades/visualization/render';
+import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
 
 const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
@@ -594,14 +600,35 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 				},
 			};
 
-			// Build the output bundle and filter out PNG descriptors (visualization step handles those)
+			// Build the output bundle. PNG descriptors come back with content: null —
+			// we populate them with FigureRenderSpecs built from the visual models so
+			// the writer's PNG backend can render them.
 			const bundle = buildCaseOutputBundle(bundleInput);
-			bundle.files = bundle.files.filter((f) => f.format !== 'png');
+
+			const scatterSpec = buildScatterFigureSpec(bundle.visuals.scatterModel);
+			const rateSeriesSpec = buildRateSeriesFigureSpec({
+				points: bundle.visuals.rateSeriesModel.points,
+			});
+			const isiHistogramSpec = buildIsiHistogramFigureSpec({
+				bins: bundle.tables.isiHistogramRows,
+			});
+
+			for (const file of bundle.files) {
+				if (file.format !== 'png') continue;
+				if (file.key === 'scatterPng') file.content = scatterSpec;
+				else if (file.key === 'rateSeriesPng') file.content = rateSeriesSpec;
+				else if (file.key === 'isiHistogramPng') file.content = isiHistogramSpec;
+			}
 
 			const outputDir = path.join(storedCase.path, 'outputs');
 			const writeResult = writeCaseBundle(bundle, {
 				rootDir: outputDir,
 				caseFolderName: '',
+				png: {
+					backend: createSkiaCanvasPngBackend(),
+					dpi: 300,
+					background: 'white',
+				},
 			});
 
 			// Mark detection as complete

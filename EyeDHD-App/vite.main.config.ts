@@ -8,13 +8,13 @@ export default defineConfig({
 		alias
 	},
 	optimizeDeps: {
-		exclude: ['better-sqlite3', 'ffmpeg-static']
+		exclude: ['better-sqlite3', 'ffmpeg-static', 'skia-canvas']
 	},
 	build: {
 		target: 'node16', // or the node/electron target you need
-		// keep better-sqlite3 external: don't bundle native node module
+		// keep native node modules external: Vite/Rollup can't bundle .node binaries
 		rollupOptions: {
-			external: ['better-sqlite3', 'ffmpeg-static']
+			external: ['better-sqlite3', 'ffmpeg-static', 'skia-canvas']
 		}
 	}
 });

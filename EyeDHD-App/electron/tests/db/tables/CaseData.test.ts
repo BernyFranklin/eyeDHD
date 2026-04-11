@@ -71,7 +71,6 @@ describe('Database - CaseData', () => {
 				tasks: {
 					cleaning: false,
 					detection: false,
-					visualization: false,
 					animation: false,
 					combination: false
 				},
@@ -98,7 +97,6 @@ describe('Database - CaseData', () => {
 				tasks: {
 					cleaning: false,
 					detection: false,
-					visualization: false,
 					animation: false,
 					combination: false
 				},
