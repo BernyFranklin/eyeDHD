@@ -3,7 +3,6 @@ import { Dispatch } from '@src/data/hooks';
 
 import { cleaning } from './cleaning';
 import { detection } from './detection';
-import { visualization } from './visualization';
 import { animation } from './animation';
 import { combination } from './combination';
 
@@ -37,7 +36,6 @@ export type Task = {
 export const TASKS = [
 	cleaning,
 	detection,
-	visualization,
 	animation,
 	combination
 ] as const;

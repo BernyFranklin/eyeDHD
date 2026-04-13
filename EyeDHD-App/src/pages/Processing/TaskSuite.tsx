@@ -82,11 +82,13 @@ export default function TaskSuite() {
 					.task-list-container {
 						display: flex;
 						flex-direction: column;
-						align-items: center;
+						align-items: stretch;
+						width: max-content;
+						min-width: 300px;
 					}
 
 					.task-button {
-						width: 300px;
+						width: 100%;
 						display: flex;
 						justify-content: flex-start;
 					}
@@ -94,9 +96,9 @@ export default function TaskSuite() {
 					.task-list {
 						display: flex;
 						flex-direction: column;
-						width: 300px;
+						width: 100%;
 						justify-content: center;
-						align-items: center;
+						align-items: stretch;
 						gap: 0.5rem;
 						padding: 10px 0;
 						margin: 0;

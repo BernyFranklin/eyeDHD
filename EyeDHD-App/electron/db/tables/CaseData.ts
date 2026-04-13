@@ -29,7 +29,6 @@ export type CaseData = {
 	tasks: {
 		cleaning: boolean;
 		detection: boolean;
-		visualization: boolean;
 		animation: boolean;
 		combination: boolean;
 	};
@@ -49,7 +48,7 @@ export type CaseDataUpdate = Omit<Partial<CaseData>, 'tasks'> & {
 const TASK_FLAGS = {
 	cleaning: 1 << 0,
 	detection: 1 << 1,
-	visualization: 1 << 2,
+	// 1 << 2 reserved (previously visualization; folded into detection)
 	animation: 1 << 3,
 	combination: 1 << 4
 } as const;
@@ -58,7 +57,6 @@ function tasksToFlags(tasks: CaseData['tasks']): number {
 	let flags = 0;
 	if (tasks.cleaning) flags |= TASK_FLAGS.cleaning;
 	if (tasks.detection) flags |= TASK_FLAGS.detection;
-	if (tasks.visualization) flags |= TASK_FLAGS.visualization;
 	if (tasks.animation) flags |= TASK_FLAGS.animation;
 	if (tasks.combination) flags |= TASK_FLAGS.combination;
 	return flags;
@@ -68,7 +66,6 @@ function flagsToTasks(flags: number): CaseData['tasks'] {
 	return {
 		cleaning: (flags & TASK_FLAGS.cleaning) !== 0,
 		detection: (flags & TASK_FLAGS.detection) !== 0,
-		visualization: (flags & TASK_FLAGS.visualization) !== 0,
 		animation: (flags & TASK_FLAGS.animation) !== 0,
 		combination: (flags & TASK_FLAGS.combination) !== 0
 	};

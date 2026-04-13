@@ -1,10 +1,14 @@
 // saccades/outputs/exportWriter/writeCaseBundle.test.ts
 
 import { describe, expect, it } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import { writeCaseBundle } from '@saccades/export/writeCaseBundle';
 import { serializeCsvRows, serializeJsonValue } from '@saccades/export/serializers';
+import { buildScatterFigureSpec } from '@saccades/visualization/render';
+import type { PngFigureRenderBackend } from '@saccades/visualization/render/backends/types';
 
 import type {
 	CaseInfo,
@@ -20,44 +24,34 @@ import type {
 describe('Export Writer Layer', () => {
 	describe('A — Case Output Directory Resolution', () => {
 		it('A1) — Uses explicit caseFolderName when provided', () => {
-			// Create a bundle with minimal required fields.
 			const bundle = makeBundle();
-			// Create options
 			const options = makeOptions({
-				rootDir: '/exports',
 				caseFolderName: 'manual-case-folder'
 			});
-			// Run the writeCaseBundle function with the bundle and options.
 			const result = writeCaseBundle(bundle, options);
-			// Assert that the caseFolderName in the result matches the explicitly provided name.
 			expect(result.caseFolderName).toBe('manual-case-folder');
 		});
 
 		it('A2) — Derives default caseFolderName from bundle.caseInfo.caseId', () => {
-			// Create bundle with specific caseId in caseInfo.
 			const bundle = makeBundle({
 				caseInfo: {
 					caseId: 'Case-Alpha'
 				}
 			});
-			// Run the function without providing caseFolderName in options to test default derivation.
-			const result = writeCaseBundle(bundle, makeOptions({ rootDir: '/exports' }));
-			// Assert that the caseFolderName in the result is derived from caseInfo.caseId.
+			const result = writeCaseBundle(bundle, makeOptions());
 			expect(result.caseFolderName).toBe('Case-Alpha');
 		});
 
 		it('A3) — Resolves outputDir deterministically from rootDir and caseFolderName', () => {
-			// Create bundle with specific caseId to ensure consistent caseFolderName.
+			const rootDir = makeTempDir();
 			const bundle = makeBundle({
 				caseInfo: {
 					caseId: 'Case-Alpha'
 				}
 			});
-			// Run the function with a known rootDir and check that outputDir is correctly resolved.
-			const result = writeCaseBundle(bundle, makeOptions({ rootDir: '/exports' }));
-			// Assert that the outputDir is the combination of rootDir and caseFolderName.
-			expect(result.rootDir).toBe('/exports');
-			expect(result.outputDir).toBe(path.join('/exports', 'Case-Alpha'));
+			const result = writeCaseBundle(bundle, makeOptions({ rootDir }));
+			expect(result.rootDir).toBe(rootDir);
+			expect(result.outputDir).toBe(path.join(rootDir, 'Case-Alpha'));
 		});
 	});
 
@@ -220,40 +214,28 @@ describe('Export Writer Layer', () => {
 		});
 	});
 
-	describe('D — PNG Placeholder Handling', () => {
+	describe('D — PNG Artifact Handling', () => {
 		it('D1) — Includes PNG artifacts in result', () => {
-			// Create a bundle to test that PNG artifacts are included in the resulting artifacts list.
 			const bundle = makeBundle();
-			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-			// Filter the resulting artifacts to find those with PNG format
 			const pngArtifacts = result.artifacts.filter((a) => a.format === 'png');
-			// Assert that at least one PNG artifact was found and that the expected key is present among them.
 			expect(pngArtifacts.length).toBeGreaterThan(0);
 			expect(pngArtifacts.map((a) => a.key)).toContain('mainTimelinePng');
 		});
 
-		it('D2) — Marks PNG artifacts as skipped placeholders', () => {
-			// Create a bundle to test that PNG artifacts are marked as skipped placeholders.
+		it('D2) — Renders PNG artifacts with bytes via the injected backend', () => {
 			const bundle = makeBundle();
-			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-			// Find the PNG artifact with the expected key in the resulting artifacts list.
 			const pngArtifact = result.artifacts.find((a) => a.key === 'mainTimelinePng');
-			// Assert that the PNG artifact is defined and marked as skipped with zero bytes.
 			expect(pngArtifact).toBeDefined();
-			expect(pngArtifact?.skipped).toBe(true);
-			expect(pngArtifact?.bytes).toBe(0);
+			expect(pngArtifact?.skipped).toBe(false);
+			expect(pngArtifact?.bytes).toBeGreaterThan(0);
 		});
 
 		it('D3) — Preserves PNG relative paths from descriptors', () => {
-			// Create a bundle to test that PNG relative paths from descriptors are preserved in the resulting artifacts.
 			const bundle = makeBundle();
-			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-			// Find the PNG artifact with the expected key in the resulting artifacts list.
 			const pngArtifact = result.artifacts.find((a) => a.key === 'mainTimelinePng');
-			// Assert that the PNG artifact relative path matches the expected value from the descriptor.
 			expect(pngArtifact?.relativePath).toBe('visuals/main-timeline.png');
 		});
 	});
@@ -269,23 +251,20 @@ describe('Export Writer Layer', () => {
 		});
 
 		it('E2) — Records absolutePath and relativePath for each artifact', () => {
-			// Create a bundle with a specific case ID to test that absolute and relative paths are recorded correctly for each artifact.
+			const rootDir = makeTempDir();
 			const bundle = makeBundle({
 				caseInfo: {
 					caseId: 'Case-Alpha'
 				}
 			});
-			// Write the bundle using the writeCaseBundle function with specific rootDir and caseFolderName options.
 			const result = writeCaseBundle(
 				bundle,
-				makeOptions({ rootDir: '/exports', caseFolderName: 'Case-Alpha' })
+				makeOptions({ rootDir, caseFolderName: 'Case-Alpha' })
 			);
-			// Find the artifact corresponding to the case info JSON file in the resulting artifacts list.
 			const artifact = result.artifacts.find((a) => a.key === 'caseInfoJson');
-			// Assert that the artifact was found and that its relative and absolute paths match the expected values.
 			expect(artifact?.relativePath).toBe('metadata/case-info.json');
 			expect(artifact?.absolutePath).toBe(
-				path.join('/exports', 'Case-Alpha', 'metadata/case-info.json')
+				path.join(rootDir, 'Case-Alpha', 'metadata/case-info.json')
 			);
 		});
 
@@ -305,16 +284,12 @@ describe('Export Writer Layer', () => {
 			expect(perSaccadeArtifact?.skipped).toBe(false);
 		});
 
-		it('E4) — Records skipped true for PNG placeholders', () => {
-			// Create a bundle to test that PNG artifacts are marked as skipped in the resulting artifacts list.
+		it('E4) — Records skipped false for rendered PNG artifacts', () => {
 			const bundle = makeBundle();
-			// Write the bundle using the writeCaseBundle function with default options.
 			const result = writeCaseBundle(bundle, makeOptions());
-			// Find all PNG artifacts in the resulting artifacts list.
 			const pngArtifacts = result.artifacts.filter((a) => a.format === 'png');
-			// Assert that there is at least one PNG artifact and that all PNG artifacts are marked as skipped.
 			expect(pngArtifacts.length).toBeGreaterThan(0);
-			expect(pngArtifacts.every((a) => a.skipped === true)).toBe(true);
+			expect(pngArtifacts.every((a) => a.skipped === false)).toBe(true);
 		});
 	});
 
@@ -372,17 +347,14 @@ describe('Export Writer Layer', () => {
 
 	describe('G — Determinism + Safety', () => {
 		it('G1) — Identical bundle and options produce identical write results', () => {
-			// Create a bundle and options to test that calling writeCaseBundle with identical inputs produces identical outputs.
+			const rootDir = makeTempDir();
 			const bundle = makeBundle();
-			// Create options specifying a root directory and a case folder name to pass to writeCaseBundle.
 			const options = makeOptions({
-				rootDir: '/exports',
+				rootDir,
 				caseFolderName: 'Case-Alpha'
 			});
-			// Call writeCaseBundle twice with the same bundle and options and capture the results to verify that the outputs are identical.
 			const result1 = writeCaseBundle(bundle, options);
 			const result2 = writeCaseBundle(bundle, options);
-			// Assert that the two results are deeply equal, indicating that the function produces deterministic output for identical inputs.
 			expect(result1).toEqual(result2);
 		});
 
@@ -415,11 +387,38 @@ describe('Export Writer Layer', () => {
 /* Helpers                                                                    */
 /* -------------------------------------------------------------------------- */
 
+function makeTempDir(): string {
+	return fs.mkdtempSync(path.join(os.tmpdir(), 'saccades-writer-'));
+}
+
+function makeTestPngBackend(): PngFigureRenderBackend {
+	return {
+		kind: 'test-png-backend',
+		supportedFormats: ['png'],
+		renderFigure(spec, context) {
+			return {
+				figureId: spec.figureId,
+				format: 'png',
+				mimeType: 'image/png',
+				widthPx: context.widthPx,
+				heightPx: context.heightPx,
+				dpi: context.dpi,
+				data: Uint8Array.from([1, 2, 3, 4])
+			};
+		}
+	};
+}
+
 function makeOptions(
 	overrides: Partial<WriteCaseBundleOptions> = {}
 ): WriteCaseBundleOptions {
 	return {
-		rootDir: '/tmp/exports',
+		rootDir: makeTempDir(),
+		png: {
+			backend: makeTestPngBackend(),
+			dpi: 300,
+			background: 'white'
+		},
 		...overrides
 	};
 }
@@ -601,11 +600,18 @@ function baseFiles(): CaseOutputFileDescriptor<unknown>[] {
 			format: 'png',
 			category: 'visuals',
 			optional: false,
-			content: {
-				kind: 'timeline-model',
-				width: 1600,
-				height: 900
-			}
+			content: buildScatterFigureSpec(
+				{
+					points: [
+						{ timeMs: 100, amplitudeDeg: 3.5 },
+						{ timeMs: 200, amplitudeDeg: 4.25 }
+					]
+				},
+				{
+					title: 'Main Timeline',
+					dimensions: { widthPx: 1600, heightPx: 900, dpi: 300 }
+				}
+			)
 		},
 		{
 			key: 'animationJson',

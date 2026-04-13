@@ -119,7 +119,14 @@ export default function TaskItem({ task }: Props) {
 				.filter(Boolean)
 				.join(' ')
 			}>
-				<span className='task-name'>{getTaskName()}</span>
+				<span className='task-name'>
+					{/* Ghost spans reserve space for the widest possible label so the
+					    item width stays constant as the status flips. */}
+					<span aria-hidden='true' className='task-name-ghost'>{task.display.waiting}</span>
+					<span aria-hidden='true' className='task-name-ghost'>{task.display.running}</span>
+					<span aria-hidden='true' className='task-name-ghost'>{task.display.completed}</span>
+					<span className='task-name-active'>{getTaskName()}</span>
+				</span>
 				<div className='task-progress'>
 					{getStatus()}
 				</div>
@@ -133,7 +140,8 @@ export default function TaskItem({ task }: Props) {
 						align-items: center;
 						justify-content: space-between;
 						padding: 10px;
-						width: 300px;
+						width: 100%;
+						box-sizing: border-box;
 						border: 1px solid #ccc;
 						border-radius: var(--action-radius);
 						margin-bottom: 10px;
@@ -168,12 +176,24 @@ export default function TaskItem({ task }: Props) {
 					}
 
 					.task-name {
-						padding-left: 5px;
+						padding: 0rem 1rem;
+						display: inline-grid;
+						grid-template-columns: max-content;
+					}
+
+					.task-name > * {
+						grid-area: 1 / 1;
+						white-space: nowrap;
+					}
+
+					.task-name-ghost {
+						visibility: hidden;
+						pointer-events: none;
 					}
 
 					.task-progress {
 						margin-left: auto;
-						padding-right: 5px;
+						padding: 0rem 1rem;
 						display: flex;
 						align-items: center;
 						height: 100%;
