@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 import { type UserData } from './db/tables/UserData';
-import { type CaseData } from './db/tables/CaseData';
+import { type CaseData, type SegmentInput, type DetectionConfig } from './db/tables/CaseData';
 import { type Progress, type DataType, type StreamKey, type StreamType } from './db/DataStream';
 
 export { Electron, Renderer, DetectionResult };
@@ -41,6 +41,10 @@ declare interface Electron {
 		read(casename: string): Promise<CaseData>;
 		selectCsv(): Promise<string | null>;
 		importCsv(trial: CaseData, filepath: string): Promise<CaseData>;
+		saveConfig(trial: CaseData, config: {
+			segments?: SegmentInput[] | null;
+			detection_config?: DetectionConfig | null;
+		}): Promise<CaseData>;
 		runDetection(trial: CaseData): Promise<DetectionResult>;
 		startFFMPEG(trial: CaseData, size: {
 			width: number;
@@ -133,6 +137,12 @@ const electron: Electron = {
 		 */
 		importCsv: async (trial: CaseData, filepath: string): Promise<CaseData> => {
 			return await ipcRenderer.invoke('case:import-csv', trial, filepath);
+		},
+		/**
+		 * Saves user-defined segments and detection config for a case.
+		 */
+		saveConfig: async (trial: CaseData, config) => {
+			return await ipcRenderer.invoke('case:save-config', trial, config);
 		},
 		/**
 		 * Runs the saccade detection pipeline on the cleaned CSV for the given case

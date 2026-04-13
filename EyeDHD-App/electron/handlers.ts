@@ -7,7 +7,7 @@ import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
-import { animationOutputPath, type CaseData, csvImportPath, csvOutputPath } from './db/tables/CaseData';
+import { animationOutputPath, type CaseData, type SegmentInput, type DetectionConfig, csvImportPath, csvOutputPath } from './db/tables/CaseData';
 import { type UserData } from './db/tables/UserData';
 
 import { runGazeCsvPipeline } from '@saccades/pipeline/runGazeCsvPipeline';
@@ -366,6 +366,34 @@ ipcMain.handle('case:read-casedata', async (_, filename) => {
 			return resolve(trial);
 		} catch (err) {
 			return reject(`Failed to read metadata for file: ${filename}. Error: ${err}`);
+		}
+	});
+});
+
+/**
+ * Saves user-defined segments and detection config for a case. Both fields
+ * are optional — pass null to clear a field, or omit it to leave it unchanged.
+ */
+ipcMain.handle('case:save-config', async (_, trial: CaseData, config: {
+	segments?: SegmentInput[] | null;
+	detection_config?: DetectionConfig | null;
+}) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const storedCase = project_manager.actions.case.read(trial.name);
+			const updates: Partial<CaseData> = {};
+
+			if (config.segments !== undefined) {
+				updates.segments = config.segments;
+			}
+			if (config.detection_config !== undefined) {
+				updates.detection_config = config.detection_config;
+			}
+
+			const updated = project_manager.actions.case.update(storedCase, updates);
+			return resolve(updated);
+		} catch (err) {
+			return reject(`Failed to save config for case: ${trial.name}. Error: ${err}`);
 		}
 	});
 });
