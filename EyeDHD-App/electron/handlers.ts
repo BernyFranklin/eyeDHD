@@ -21,6 +21,8 @@ import {
 	buildIsiHistogramFigureSpec,
 } from '@saccades/visualization/render';
 import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
+import type { SaccadeDetectionOptions } from '@saccades/core/schema';
+import type { SaccadeMetricsOptions, SegmentDefinition } from '@saccades/metrics/types';
 
 const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
@@ -556,23 +558,51 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 			}
 			const csvText = fs.readFileSync(cleanedPath, 'utf-8');
 
+			// Build pipeline options from stored case config
+			const detectionOverrides: Partial<SaccadeDetectionOptions> = {};
+			const cfg = storedCase.detection_config;
+			if (cfg) {
+				if (cfg.velocityThresholdDegPerSec !== undefined)
+					detectionOverrides.velocityThresholdDegPerSec = cfg.velocityThresholdDegPerSec;
+				if (cfg.minDurationMs !== undefined)
+					detectionOverrides.minDurationMs = cfg.minDurationMs;
+				if (cfg.minInterSaccadeMs !== undefined)
+					detectionOverrides.minInterSaccadeMs = cfg.minInterSaccadeMs;
+			}
+
+			const plausibleBounds: SaccadeMetricsOptions['plausibleBounds'] =
+				cfg?.amplitudeBounds
+					? { amplitudeDeg: { min: cfg.amplitudeBounds.min ?? 0, max: cfg.amplitudeBounds.max ?? Infinity } }
+					: undefined;
+
+			const segments: SegmentDefinition[] = (storedCase.segments ?? []).map(seg => ({
+				id: seg.id,
+				startTime: seg.startMs,
+				endTime: seg.endMs,
+			}));
+
 			// Run saccade detection pipeline. We filter to VALID gaze rows only —
 			// the cleaner keeps INVALID rows with (0,0,0) vectors, which would crash
 			// the angular velocity normalization step. The csv.* metrics flags are
 			// opt-in; without them sessionSummaryRow stays null and the output CSV
 			// is empty.
+			const metricsOptions: SaccadeMetricsOptions = {
+				...(plausibleBounds ? { plausibleBounds } : {}),
+				...(segments.length > 0 ? { segments, isiBySegment: true } : {}),
+				csv: {
+					sessionSummaryRow: true,
+					segmentSummaryRows: true,
+				},
+			};
+
 			const pipelineResult = runGazeCsvPipeline(csvText, {
 				adapter: {
 					selection: {
 						includeGazeStatuses: ['VALID'],
 					},
 				},
-				metrics: {
-					csv: {
-						sessionSummaryRow: true,
-						segmentSummaryRows: true,
-					},
-				},
+				detection: detectionOverrides,
+				metrics: metricsOptions,
 			});
 
 			// Map pipeline results to visualization prep input
