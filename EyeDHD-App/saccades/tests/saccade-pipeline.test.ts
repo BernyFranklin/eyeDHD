@@ -697,16 +697,16 @@ describe('Saccade Pipeline (Integration)', () => {
         });
 
         it('E2) Maintains stable ordering under near-ties at dt resolution across perSaccade, rows, and series', () => {
-            // Build two strong saccades separated by the smallest possible clean gap (1 sample tick).
-            // dt = 5ms.
+            // Build two strong saccades separated by a gap that exceeds the refractory period.
+            // dt = 5ms, default minInterSaccadeMs = 50ms => need > 10 stationary samples.
 
             // We don't need exact tie startTimes; we need to ensure no ordering instability
             // when events are extremely close in time.
-        
+
             const vectors: Vec3[] = [];                                                             // Initialize empty dataset
             for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(0));                               // Hold
             for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(k * 0.6));                        // Saccade 1: 0 -> 6°
-            vectors.push(rotateYDeg(6.0));                                                          // Minimal gap: 1 sample hold (5ms)
+            for (let i = 0; i < 11; i++) vectors.push(rotateYDeg(6.0));                             // Gap: 11 stationary samples (55ms, exceeds 50ms refractory)
             for (let k = 1; k <= 10; k++) vectors.push(rotateYDeg(6.0 + k * 0.6));                  // Saccade 2: 6 -> 12°
             for (let i = 0; i < 20; i++) vectors.push(rotateYDeg(12.0));                            // Hold
             const r1 = analyzeSaccadesFromVectors(                                                  // Run twice to catch any unstable ordering

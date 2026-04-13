@@ -46,6 +46,29 @@ function findAboveThresholdIntervals(
     return intervals;
 }
 
+function mergeCloseIntervals(
+    intervals: Interval[],
+    minGapSamples: number
+): Interval[] {
+    if (intervals.length <= 1) return intervals;
+
+    const merged: Interval[] = [{ ...intervals[0] }];
+
+    for (let i = 1; i < intervals.length; i++) {
+        const prev = merged[merged.length - 1];
+        const curr = intervals[i];
+        const gap = curr.startIndex - prev.endIndex - 1;
+
+        if (gap < minGapSamples) {
+            prev.endIndex = curr.endIndex;
+        } else {
+            merged.push({ ...curr });
+        }
+    }
+
+    return merged;
+}
+
 function intervalDurationMs(interval: Interval, dt: number): number {
     // Locked convention: (end - start) * dt
     // 1000 to convert to milliseconds
@@ -142,10 +165,14 @@ export function detectSaccadesFromVectors(
         opts.samplingRate
     );
 
-    const intervals = findAboveThresholdIntervals(
+    const rawIntervals = findAboveThresholdIntervals(
         velocitiesDegPerSec,
         opts.velocityThresholdDegPerSec
     );
+
+    // Merge intervals separated by less than the refractory period
+    const minGapSamples = Math.max(1, Math.round(opts.minInterSaccadeMs / 1000 * opts.samplingRate));
+    const intervals = mergeCloseIntervals(rawIntervals, minGapSamples);
 
     // Filter by min duration
     const validIntervals = intervals.filter(

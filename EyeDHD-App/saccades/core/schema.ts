@@ -28,6 +28,7 @@ export interface SaccadeDetectionOptions {
     velocityThresholdDegPerSec: number ;    // Velocity threshold for saccade detection in degrees per second
     minDurationMs: number;                  // Minimum duration of a saccade in milliseconds
     maxDurationMs: number;                  // Maximum duration of a saccade in milliseconds
+    minInterSaccadeMs: number;              // Minimum gap between saccades; closer intervals are merged
     includeExtended: boolean;               // Whether to include extended saccade data
 }
 
@@ -38,5 +39,6 @@ export const DEFAULT_SACCADE_OPTIONS: SaccadeDetectionOptions = {
         velocityThresholdDegPerSec: 100,
         minDurationMs: 10,
         maxDurationMs: 150,
+        minInterSaccadeMs: 50,
         includeExtended: true,
     };
