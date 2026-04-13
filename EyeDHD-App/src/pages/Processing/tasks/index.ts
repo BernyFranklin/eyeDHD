@@ -2,6 +2,7 @@ import { type CaseData } from '@src/data/types';
 import { Dispatch } from '@src/data/hooks';
 
 import { cleaning } from './cleaning';
+import { configure } from './configure';
 import { detection } from './detection';
 import { animation } from './animation';
 import { combination } from './combination';
@@ -21,6 +22,9 @@ import { combination } from './combination';
 // tasks in CaseData will automatically update the TaskName type and prevent mismatches.
 export type TaskName = CaseData['tasks'] extends Record<infer K, boolean> ? K : never;
 
+// Steps that appear in the task list but don't have a DB completion flag
+type FlowStepName = 'configure';
+
 export type TaskFn = (trial: CaseData, dispatch: Dispatch) => Promise<void>;
 
 export type Task = {
@@ -29,12 +33,13 @@ export type Task = {
 		running: string,
 		completed: string
 	},
-	name: TaskName | 'complete',
+	name: TaskName | FlowStepName | 'complete',
 	fn: TaskFn
 }
 
 export const TASKS = [
 	cleaning,
+	configure,
 	detection,
 	animation,
 	combination

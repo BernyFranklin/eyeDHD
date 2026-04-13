@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 import type { RootState } from '..'
-import { TASKORDER, type TaskName } from '@src/pages/Processing/tasks';
+import { TASKORDER, type Task } from '@src/pages/Processing/tasks';
 
 type TaskError = {
 	message: string,
@@ -10,7 +10,7 @@ type TaskError = {
 }
 
 type TaskState = {
-	current?: TaskName | 'complete',
+	current?: Task['name'],
 	progress: number,
 	error?: TaskError | null
 }
@@ -38,7 +38,7 @@ export const taskSlice = createSlice({
 			if (state.current === 'complete') {
 				return;
 			}
-			const index = TASKORDER.indexOf(state.current as TaskName) + 1;
+			const index = TASKORDER.indexOf(state.current as string) + 1;
 			const next = TASKORDER[index];
 			if (next) {
 				state.current = next;
