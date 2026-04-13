@@ -23,6 +23,7 @@ import {
 import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
 import type { SaccadeDetectionOptions } from '@saccades/core/schema';
 import type { SaccadeMetricsOptions, SegmentDefinition } from '@saccades/metrics/types';
+import type { FigureOverlaySpec } from '@saccades/visualization/render/types';
 
 const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
@@ -612,8 +613,26 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 					amplitudeDeg: row.amplitudeDeg,
 				})),
 				isiValuesMs: pipelineResult.analysis.metrics.isiSeries,
+				segments: segments.map(seg => ({
+					id: seg.id,
+					startTimeMs: seg.startTime,
+					endTimeMs: seg.endTime,
+				})),
 			};
-			const vizResult = prepareVisualizationModels(vizInput);
+			const vizResult = prepareVisualizationModels(vizInput, {
+				includeMarkers: segments.length > 0,
+			});
+
+			// Build overlay spec from segments for time-based figures
+			const figureOverlays: FigureOverlaySpec | undefined =
+				segments.length > 0
+					? {
+						segmentBoundaries: segments.flatMap(seg => [
+							{ timeMs: seg.startTime, label: `${seg.id} start` },
+							{ timeMs: seg.endTime, label: `${seg.id} end` },
+						]),
+					}
+					: undefined;
 
 			// Build the CaseOutputBundleInput
 			const bundleInput: CaseOutputBundleInput = {
@@ -663,10 +682,14 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 			// the writer's PNG backend can render them.
 			const bundle = buildCaseOutputBundle(bundleInput);
 
-			const scatterSpec = buildScatterFigureSpec(bundle.visuals.scatterModel);
-			const rateSeriesSpec = buildRateSeriesFigureSpec({
-				points: bundle.visuals.rateSeriesModel.points,
-			});
+			const scatterSpec = buildScatterFigureSpec(
+				bundle.visuals.scatterModel,
+				{ overlays: figureOverlays }
+			);
+			const rateSeriesSpec = buildRateSeriesFigureSpec(
+				{ points: bundle.visuals.rateSeriesModel.points },
+				{ overlays: figureOverlays }
+			);
 			const isiHistogramSpec = buildIsiHistogramFigureSpec({
 				bins: bundle.tables.isiHistogramRows,
 			});
