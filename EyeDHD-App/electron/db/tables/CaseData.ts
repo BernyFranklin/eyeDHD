@@ -14,6 +14,26 @@ export default {
 };
 
 /**
+ * User-defined event marker with start/end timestamps in milliseconds.
+ */
+export type SegmentInput = {
+	id: string;
+	startMs: number;
+	endMs: number;
+};
+
+/**
+ * User-defined detection threshold overrides. All fields optional — omitted
+ * fields fall back to pipeline defaults at processing time.
+ */
+export type DetectionConfig = {
+	velocityThresholdDegPerSec?: number;
+	minDurationMs?: number;
+	minInterSaccadeMs?: number;
+	amplitudeBounds?: { min?: number; max?: number };
+};
+
+/**
  * CaseData type represents the metadata and processing status of a CSV file in the
  * database. It includes fields for the file's unique identifier, name, path, header
  * information, task completion status, number of cleaned rows, and timestamps for
@@ -33,13 +53,19 @@ export type CaseData = {
 		combination: boolean;
 	};
 	cleaned_rows: number;
+	segments: SegmentInput[] | null;
+	detection_config: DetectionConfig | null;
 	created_at: string;
 	updated_at: string;
 };
 
 // Bitfield <-> Object mapping
 
-export type CaseDataRaw = Omit<CaseData, 'tasks'> & { tasks: number };
+export type CaseDataRaw = Omit<CaseData, 'tasks' | 'segments' | 'detection_config'> & {
+	tasks: number;
+	segments: string | null;
+	detection_config: string | null;
+};
 
 export type CaseDataUpdate = Omit<Partial<CaseData>, 'tasks'> & {
 	tasks?: Partial<CaseData['tasks']>;
@@ -52,6 +78,25 @@ const TASK_FLAGS = {
 	animation: 1 << 3,
 	combination: 1 << 4
 } as const;
+
+function parseJsonColumn<T>(value: string | null): T | null {
+	if (value === null || value === undefined) return null;
+	return JSON.parse(value) as T;
+}
+
+function toJsonColumn<T>(value: T | null | undefined): string | null {
+	if (value === null || value === undefined) return null;
+	return JSON.stringify(value);
+}
+
+function rawToCase(raw: CaseDataRaw): CaseData {
+	return {
+		...raw,
+		tasks: flagsToTasks(raw.tasks),
+		segments: parseJsonColumn<SegmentInput[]>(raw.segments),
+		detection_config: parseJsonColumn<DetectionConfig>(raw.detection_config),
+	};
+}
 
 function tasksToFlags(tasks: CaseData['tasks']): number {
 	let flags = 0;
@@ -83,10 +128,22 @@ export function createCaseDataTable(db: Database) {
 			header TEXT DEFAULT '',
 			tasks INTEGER DEFAULT 0,
 			cleaned_rows INTEGER DEFAULT 0,
+			segments TEXT DEFAULT NULL,
+			detection_config TEXT DEFAULT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
 	`).run();
+
+	// Migrate existing databases that lack the new columns
+	const columns = db.prepare(`PRAGMA table_info(CaseData)`).all() as { name: string }[];
+	const colNames = new Set(columns.map(c => c.name));
+	if (!colNames.has('segments')) {
+		db.prepare(`ALTER TABLE CaseData ADD COLUMN segments TEXT DEFAULT NULL`).run();
+	}
+	if (!colNames.has('detection_config')) {
+		db.prepare(`ALTER TABLE CaseData ADD COLUMN detection_config TEXT DEFAULT NULL`).run();
+	}
 }
 
 /**
@@ -125,10 +182,7 @@ function create(
 		throw new Error(`Failed to create file entry for: ${filename}`);
 	}
 
-	return {
-		...trial,
-		tasks: flagsToTasks(trial.tasks)
-	};
+	return rawToCase(trial);
 }
 
 /**
@@ -146,10 +200,7 @@ function read(db: Database, filename: string): CaseData {
 		throw new Error(`File entry not found for: ${filename}`);
 	}
 
-	return {
-		...trial,
-		tasks: flagsToTasks(trial.tasks)
-	};
+	return rawToCase(trial);
 }
 
 /**
@@ -191,10 +242,7 @@ function iterate(db: Database): CaseDataIterStatement {
 	return Object.assign(stmt, {
 		iterate: function* () {
 			for (const row of iterateRaw()) {
-				yield {
-					...row,
-					tasks: flagsToTasks(row.tasks)
-				};
+				yield rawToCase(row);
 			}
 		}
 	}) as CaseDataIterStatement;
@@ -221,17 +269,18 @@ function update(
 		: trial.tasks;
 
 	const merged: CaseData = {
-		id: trial.id,
-		name: trial.name,
-		path: trial.path,
 		...trial,
 		...restUpdates,
-		tasks: mergedTasks
+		tasks: mergedTasks,
+		segments: updates.segments !== undefined ? updates.segments : trial.segments,
+		detection_config: updates.detection_config !== undefined ? updates.detection_config : trial.detection_config,
 	};
 
 	const payload: CaseDataRaw = {
 		...merged,
-		tasks: tasksToFlags(merged.tasks)
+		tasks: tasksToFlags(merged.tasks),
+		segments: toJsonColumn(merged.segments),
+		detection_config: toJsonColumn(merged.detection_config),
 	};
 
 	const result = db.prepare(`
@@ -240,6 +289,8 @@ function update(
 			header = @header,
 			tasks = @tasks,
 			cleaned_rows = @cleaned_rows,
+			segments = @segments,
+			detection_config = @detection_config,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = @id;
 		`)
