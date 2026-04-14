@@ -6,9 +6,17 @@ import { AlertControls } from '@src/components/AlertWindow';
 
 import { useSelector, useDispatch } from '@src/data/hooks';
 import { selectSelectedCase, setSelectedCase } from '@src/data/features/user';
+import {
+	selectProfiles,
+	selectProfileStatus,
+	loadProfiles,
+	createProfile,
+	updateProfile,
+	deleteProfile,
+} from '@src/data/features/profile';
 import { parseTimestampToMs, msToTimestamp } from '@src/parseTimestamp';
 
-import type { SegmentInput, DetectionConfig } from '@electron/db/tables/CaseData';
+import type { SegmentInput, DetectionConfig, ConfigProfile } from '@src/data/types';
 
 type EventRow = {
 	startText: string;
@@ -26,9 +34,13 @@ const DEFAULT_THRESHOLDS: Required<Omit<DetectionConfig, 'amplitudeBounds'>> & {
 	amplitudeMax: '',
 };
 
+const NO_PROFILE = 0;
+
 export default function CaseConfig() {
 	const dispatch = useDispatch();
 	const selectedCase = useSelector(selectSelectedCase);
+	const profiles = useSelector(selectProfiles);
+	const profileStatus = useSelector(selectProfileStatus);
 
 	// Event marker rows
 	const [events, setEvents] = useState<EventRow[]>([]);
@@ -52,6 +64,24 @@ export default function CaseConfig() {
 
 	const [saving, setSaving] = useState(false);
 
+	// Currently-loaded profile (0 = none / custom)
+	const [selectedProfileId, setSelectedProfileId] = useState<number>(NO_PROFILE);
+
+	// Inline name prompt (window.prompt is disabled in Electron renderers)
+	const [namePromptOpen, setNamePromptOpen] = useState(false);
+	const [namePromptValue, setNamePromptValue] = useState('');
+	const [pendingSavePayload, setPendingSavePayload] = useState<{
+		segments: SegmentInput[] | null;
+		detection_config: DetectionConfig;
+	} | null>(null);
+
+	// Load profile list on mount (per-project, pulled from profile:list)
+	useEffect(() => {
+		if (profileStatus === 'idle') {
+			dispatch(loadProfiles());
+		}
+	}, [profileStatus, dispatch]);
+
 	// Load existing config from the case when it mounts
 	useEffect(() => {
 		if (!selectedCase) return;
@@ -66,19 +96,45 @@ export default function CaseConfig() {
 		}
 
 		if (selectedCase.detection_config) {
-			const cfg = selectedCase.detection_config;
-			if (cfg.velocityThresholdDegPerSec !== undefined)
-				setVelocityThreshold(cfg.velocityThresholdDegPerSec);
-			if (cfg.minDurationMs !== undefined)
-				setMinDuration(cfg.minDurationMs);
-			if (cfg.minInterSaccadeMs !== undefined)
-				setMinInterSaccade(cfg.minInterSaccadeMs);
-			if (cfg.amplitudeBounds?.min !== undefined)
-				setAmplitudeMin(String(cfg.amplitudeBounds.min));
-			if (cfg.amplitudeBounds?.max !== undefined)
-				setAmplitudeMax(String(cfg.amplitudeBounds.max));
+			applyDetectionConfig(selectedCase.detection_config);
 		}
 	}, [selectedCase?.name]);
+
+	function applyDetectionConfig(cfg: DetectionConfig) {
+		if (cfg.velocityThresholdDegPerSec !== undefined)
+			setVelocityThreshold(cfg.velocityThresholdDegPerSec);
+		if (cfg.minDurationMs !== undefined) setMinDuration(cfg.minDurationMs);
+		if (cfg.minInterSaccadeMs !== undefined)
+			setMinInterSaccade(cfg.minInterSaccadeMs);
+		setAmplitudeMin(
+			cfg.amplitudeBounds?.min !== undefined
+				? String(cfg.amplitudeBounds.min)
+				: ''
+		);
+		setAmplitudeMax(
+			cfg.amplitudeBounds?.max !== undefined
+				? String(cfg.amplitudeBounds.max)
+				: ''
+		);
+	}
+
+	function applyProfileToForm(profile: ConfigProfile) {
+		setEvents(
+			profile.markers.map((seg) => ({
+				startText: msToTimestamp(seg.startMs),
+				endText: msToTimestamp(seg.endMs),
+			}))
+		);
+		if (profile.detection) {
+			applyDetectionConfig(profile.detection);
+		} else {
+			setVelocityThreshold(DEFAULT_THRESHOLDS.velocityThresholdDegPerSec);
+			setMinDuration(DEFAULT_THRESHOLDS.minDurationMs);
+			setMinInterSaccade(DEFAULT_THRESHOLDS.minInterSaccadeMs);
+			setAmplitudeMin('');
+			setAmplitudeMax('');
+		}
+	}
 
 	const addEvent = () => {
 		setEvents([...events, { startText: '', endText: '' }]);
@@ -205,9 +261,197 @@ export default function CaseConfig() {
 		}
 	};
 
+	const handleProfileSelect = (id: number) => {
+		setSelectedProfileId(id);
+		if (id === NO_PROFILE) return;
+		const profile = profiles.find((p) => p.id === id);
+		if (!profile) return;
+		applyProfileToForm(profile);
+	};
+
+	const saveAsNewProfile = () => {
+		const result = validate();
+		if (!result) return;
+		setPendingSavePayload(result);
+		setNamePromptValue('');
+		setNamePromptOpen(true);
+	};
+
+	const cancelNamePrompt = () => {
+		setNamePromptOpen(false);
+		setPendingSavePayload(null);
+		setNamePromptValue('');
+	};
+
+	const confirmNamePrompt = async () => {
+		const name = namePromptValue.trim();
+		if (!name) {
+			AlertControls.error('Profile name cannot be empty.');
+			return;
+		}
+		if (!pendingSavePayload) {
+			cancelNamePrompt();
+			return;
+		}
+
+		try {
+			const created = await dispatch(
+				createProfile({
+					name,
+					markers: pendingSavePayload.segments ?? [],
+					detection: pendingSavePayload.detection_config,
+				})
+			).unwrap();
+			setSelectedProfileId(created.id);
+			AlertControls.success(`Profile "${created.name}" saved.`);
+			cancelNamePrompt();
+		} catch (err) {
+			AlertControls.error(`Failed to save profile: ${err}`);
+		}
+	};
+
+	const overwriteProfile = async () => {
+		if (selectedProfileId === NO_PROFILE) return;
+		const profile = profiles.find((p) => p.id === selectedProfileId);
+		if (!profile) return;
+
+		const result = validate();
+		if (!result) return;
+
+		if (
+			!window.confirm(
+				`Overwrite profile "${profile.name}" with the current configuration?`
+			)
+		)
+			return;
+
+		try {
+			await dispatch(
+				updateProfile({
+					profile,
+					updates: {
+						markers: result.segments ?? [],
+						detection: result.detection_config,
+					},
+				})
+			).unwrap();
+			AlertControls.success(`Profile "${profile.name}" updated.`);
+		} catch (err) {
+			AlertControls.error(`Failed to update profile: ${err}`);
+		}
+	};
+
+	const removeProfile = async () => {
+		if (selectedProfileId === NO_PROFILE) return;
+		const profile = profiles.find((p) => p.id === selectedProfileId);
+		if (!profile) return;
+
+		if (!window.confirm(`Delete profile "${profile.name}"? This cannot be undone.`))
+			return;
+
+		try {
+			await dispatch(deleteProfile(profile)).unwrap();
+			setSelectedProfileId(NO_PROFILE);
+			AlertControls.success(`Profile "${profile.name}" deleted.`);
+		} catch (err) {
+			AlertControls.error(`Failed to delete profile: ${err}`);
+		}
+	};
+
+	const hasProfileSelected = selectedProfileId !== NO_PROFILE;
+
 	return (
 		<>
 			<div className="case-config">
+				<div className="config-section">
+					<h3 className="config-section-title">Config Profile</h3>
+					<p className="config-hint">
+						Load a saved set of markers and thresholds, or save the current
+						configuration as a reusable profile.
+					</p>
+
+					<div className="profile-row">
+						<select
+							className="config-input profile-select"
+							value={selectedProfileId}
+							onChange={(e) =>
+								handleProfileSelect(Number(e.target.value))
+							}
+						>
+							<option value={NO_PROFILE}>— None (Custom) —</option>
+							{profiles.map((p) => (
+								<option key={p.id} value={p.id}>
+									{p.name}
+								</option>
+							))}
+						</select>
+
+						<button
+							className="profile-btn"
+							onClick={saveAsNewProfile}
+							title="Save current configuration as a new profile"
+						>
+							Save as New
+						</button>
+						<button
+							className="profile-btn"
+							onClick={overwriteProfile}
+							disabled={!hasProfileSelected}
+							title="Overwrite the selected profile with the current configuration"
+						>
+							Update
+						</button>
+						<button
+							className="profile-btn profile-btn-danger"
+							onClick={removeProfile}
+							disabled={!hasProfileSelected}
+							title="Delete the selected profile"
+						>
+							Delete
+						</button>
+					</div>
+
+					{namePromptOpen && (
+						<div className="name-prompt-overlay" onClick={cancelNamePrompt}>
+							<div
+								className="name-prompt-dialog"
+								onClick={(e) => e.stopPropagation()}
+							>
+								<label className="name-prompt-label">
+									Name for this profile
+									<input
+										type="text"
+										className="config-input"
+										autoFocus
+										value={namePromptValue}
+										onChange={(e) =>
+											setNamePromptValue(e.target.value)
+										}
+										onKeyDown={(e) => {
+											if (e.key === 'Enter') confirmNamePrompt();
+											if (e.key === 'Escape') cancelNamePrompt();
+										}}
+									/>
+								</label>
+								<div className="name-prompt-actions">
+									<button
+										className="profile-btn"
+										onClick={cancelNamePrompt}
+									>
+										Cancel
+									</button>
+									<button
+										className="profile-btn"
+										onClick={confirmNamePrompt}
+									>
+										Save
+									</button>
+								</div>
+							</div>
+						</div>
+					)}
+				</div>
+
 				<div className="config-section">
 					<h3 className="config-section-title">Event Markers</h3>
 					<p className="config-hint">
@@ -355,6 +599,80 @@ export default function CaseConfig() {
 						margin: 0;
 						font-size: 0.85rem;
 						color: #666;
+					}
+
+					.profile-row {
+						display: flex;
+						align-items: center;
+						gap: 8px;
+						flex-wrap: wrap;
+					}
+
+					.profile-select {
+						flex: 1 1 200px;
+						min-width: 180px;
+					}
+
+					.profile-btn {
+						padding: 6px 12px;
+						border: 1px solid #ccc;
+						border-radius: var(--action-radius);
+						background: #fff;
+						cursor: pointer;
+						color: #333;
+						font-size: 0.85rem;
+						transition: all 0.2s ease;
+					}
+
+					.profile-btn:hover:not(:disabled) {
+						border-color: #13284c;
+						color: #13284c;
+					}
+
+					.profile-btn:disabled {
+						opacity: 0.5;
+						cursor: not-allowed;
+					}
+
+					.profile-btn-danger:hover:not(:disabled) {
+						border-color: #c00;
+						color: #c00;
+						background: #fff0f0;
+					}
+
+					.name-prompt-overlay {
+						position: fixed;
+						inset: 0;
+						background: rgba(0, 0, 0, 0.35);
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						z-index: 1000;
+					}
+
+					.name-prompt-dialog {
+						background: #fff;
+						border-radius: var(--action-radius);
+						padding: 20px;
+						min-width: 320px;
+						box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+						display: flex;
+						flex-direction: column;
+						gap: 16px;
+					}
+
+					.name-prompt-label {
+						display: flex;
+						flex-direction: column;
+						gap: 6px;
+						font-size: 0.9rem;
+						color: #333;
+					}
+
+					.name-prompt-actions {
+						display: flex;
+						justify-content: flex-end;
+						gap: 8px;
 					}
 
 					.event-row {
