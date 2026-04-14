@@ -7,7 +7,7 @@ import { AlertControls } from '@src/components/AlertWindow';
 import RemoteStream from '@src/data/RemoteStream';
 import { CaseData } from '@src/data/types';
 import { useDispatch } from '@src/data/hooks';
-import { setLoading } from '@src/data/features/global';
+import { setLoading, showAlert } from '@src/data/features/global';
 import { setCases, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 
 import '@src/App.css';
@@ -32,16 +32,30 @@ function App() {
 			return;
 		}
 
-		console.log('Dir exists and initialized');
-
 		await window.electron.user.initializeManager(user);
 		dispatch(setProjectDir(user.dir));
 		dispatch(setProjectInitialized(!!user.project_initialized));
 
 		const stream = await RemoteStream.create('CaseData', {});
-		const cases = await stream.collect<CaseData>();
+		let cases = await stream.collect<CaseData>();
 
-		console.log('Cases loaded', cases);
+		const { recoveries, deleted } = await window.electron.case.verifyFiles();
+		if (recoveries.length > 0 || deleted.length > 0) {
+			const refreshStream = await RemoteStream.create('CaseData', {});
+			cases = await refreshStream.collect<CaseData>();
+
+			const parts: string[] = [];
+			if (deleted.length > 0) {
+				parts.push(`${deleted.length} case(s) removed (folder missing): ${deleted.join(', ')}`);
+			}
+			if (recoveries.length > 0) {
+				parts.push(`${recoveries.length} case(s) had task flags reset (output files missing): ${recoveries.map(r => r.caseName).join(', ')}`);
+			}
+			dispatch(showAlert({
+				color: 'red',
+				message: `Startup integrity check: ${parts.join(' — ')}. Re-create removed cases or re-run affected tasks from the Processing page.`
+			}));
+		}
 
 		dispatch(setCases(cases));
 	};

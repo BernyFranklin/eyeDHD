@@ -56,6 +56,14 @@ declare interface Electron {
 			width: number;
 			height: number;
 		}): Promise<void>;
+		verifyFiles(): Promise<{
+			recoveries: Array<{
+				caseName: string;
+				sourceMissing: boolean;
+				resetTasks: Array<'cleaning' | 'detection' | 'animation' | 'combination'>;
+			}>;
+			deleted: string[];
+		}>;
 	};
 
 	profile: {
@@ -167,6 +175,13 @@ const electron: Electron = {
 		},
 		saveAnimation: async (trial: CaseData, frames: Uint8Array[], size) => {
 			return await ipcRenderer.invoke('case:save-animation', trial, frames, size);
+		},
+		/**
+		 * Verifies that output files exist for each task flag set in the database.
+		 * Clears stale flags and returns a list of affected cases for user notification.
+		 */
+		verifyFiles: async () => {
+			return await ipcRenderer.invoke('case:verify-files');
 		}
 	},
 

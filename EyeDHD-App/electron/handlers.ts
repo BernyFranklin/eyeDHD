@@ -7,7 +7,7 @@ import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
-import { animationOutputPath, type CaseData, type SegmentInput, type DetectionConfig, csvImportPath, csvOutputPath } from './db/tables/CaseData';
+import caseDataActions, { animationOutputPath, type CaseData, type SegmentInput, type DetectionConfig, csvImportPath, csvOutputPath } from './db/tables/CaseData';
 import { type ConfigProfile, type ConfigProfileCreate, type ConfigProfileUpdate } from './db/tables/ConfigProfile';
 import { type UserData } from './db/tables/UserData';
 
@@ -52,12 +52,8 @@ let project_manager: DatabaseManager | null = null;
  * validate a existing project on startup
  */
 function isProjectStructured(dir: string): boolean {
-	const casesDir = path.join(dir, 'cases');
-	const casesDirExists = fs.existsSync(casesDir) && fs.statSync(casesDir).isDirectory();
 	const dbPath = path.join(dir, 'project.db');
-	const dbExists = fs.existsSync(dbPath) && fs.statSync(dbPath).isFile();
-
-	return casesDirExists && dbExists;
+	return fs.existsSync(dbPath) && fs.statSync(dbPath).isFile();
 }
 
 /**
@@ -202,6 +198,14 @@ ipcMain.handle('user:initialize-manager', async (_, user: UserData) => {
 			project_manager = new DatabaseManager({
 				path: path.join(user.dir, 'project.db')
 			});
+
+			// Recreate the cases folder if it was deleted while the app was closed.
+			// Case records will be cleaned up by case:verify-files, which runs next.
+			const casesDir = path.join(user.dir, 'cases');
+			if (!fs.existsSync(casesDir)) {
+				fs.mkdirSync(casesDir);
+			}
+
 			return resolve({});
 		} catch (err) {
 			return reject(`Failed to initialize project manager: ${err}`);
@@ -977,4 +981,85 @@ ipcMain.on('stream:cancel', (_, { key }) => {
  */
 ipcMain.on('notify', (_, message) => {
 	new Notification({ title: 'EyeDHD', body: message }).show();
+});
+
+type CaseRecovery = {
+	caseName: string;
+	sourceMissing: boolean;
+	resetTasks: Array<'cleaning' | 'detection' | 'animation' | 'combination'>;
+};
+
+/**
+ * Verifies that the output files for each case match the task flags stored in the
+ * database.
+ *
+ * - If a case's folder is missing entirely, the case is removed from the database and
+ *   added to the `deleted` list. The user must re-create those cases from scratch.
+ * - If a case's source CSV is missing, all task flags are cleared.
+ * - If a specific output file is missing, the corresponding task flag (and any
+ *   flags that depend on it) are cleared.
+ *
+ * Returns `deleted` (case names removed from DB) and `recoveries` (task flags reset)
+ * so the renderer can notify the user.
+ */
+ipcMain.handle('case:verify-files', (): { recoveries: CaseRecovery[]; deleted: string[] } => {
+	if (!project_manager) return { recoveries: [], deleted: [] };
+
+	// Collect all rows first so the iterator is fully consumed before any
+	// mutations run — better-sqlite3 throws "database connection is busy" if
+	// you call remove/update while the same connection has an open iterator.
+	const allCases = [...caseDataActions.iterate(project_manager['db']).iterate()];
+
+	const recoveries: CaseRecovery[] = [];
+	const deleted: string[] = [];
+
+	for (const c of allCases) {
+		if (!fs.existsSync(c.path)) {
+			// Case folder is gone — remove from DB entirely. The user will need to
+			// re-create the case and re-import the source data.
+			project_manager.actions.case.remove(c);
+			deleted.push(c.name);
+			continue;
+		}
+
+		const recovery: CaseRecovery = {
+			caseName: c.name,
+			sourceMissing: false,
+			resetTasks: []
+		};
+		const taskUpdates: Partial<CaseData['tasks']> = {};
+		let needsUpdate = false;
+
+		const allTaskKeys = ['cleaning', 'detection', 'animation', 'combination'] as const;
+
+		const sourcePath = csvImportPath(c);
+		if (!fs.existsSync(sourcePath)) {
+			recovery.sourceMissing = true;
+			for (const key of allTaskKeys) {
+				if (c.tasks[key]) { taskUpdates[key] = false; recovery.resetTasks.push(key); }
+			}
+			needsUpdate = recovery.resetTasks.length > 0;
+		} else {
+			if (c.tasks.cleaning && !fs.existsSync(csvOutputPath(c))) {
+				// Cleaned CSV gone — all downstream tasks are invalid
+				for (const key of allTaskKeys) {
+					if (c.tasks[key]) { taskUpdates[key] = false; recovery.resetTasks.push(key); }
+				}
+				needsUpdate = true;
+			} else if (c.tasks.animation && !fs.existsSync(animationOutputPath(c))) {
+				// Animation MP4 gone — reset animation + combination only
+				for (const key of ['animation', 'combination'] as const) {
+					if (c.tasks[key]) { taskUpdates[key] = false; recovery.resetTasks.push(key); }
+				}
+				needsUpdate = true;
+			}
+		}
+
+		if (needsUpdate) {
+			project_manager.actions.case.update(c, { tasks: taskUpdates });
+			recoveries.push(recovery);
+		}
+	}
+
+	return { recoveries, deleted };
 });
