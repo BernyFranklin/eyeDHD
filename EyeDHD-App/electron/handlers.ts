@@ -682,17 +682,19 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 			// the writer's PNG backend can render them.
 			const bundle = buildCaseOutputBundle(bundleInput);
 
+			const caseId = storedCase.name;
 			const scatterSpec = buildScatterFigureSpec(
 				bundle.visuals.scatterModel,
-				{ overlays: figureOverlays }
+				{ title: `Saccade Scatter Plot - ${caseId}`, overlays: figureOverlays }
 			);
 			const rateSeriesSpec = buildRateSeriesFigureSpec(
 				{ points: bundle.visuals.rateSeriesModel.points },
-				{ overlays: figureOverlays }
+				{ title: `Saccade Rate Series - ${caseId}`, overlays: figureOverlays }
 			);
-			const isiHistogramSpec = buildIsiHistogramFigureSpec({
-				bins: bundle.tables.isiHistogramRows,
-			});
+			const isiHistogramSpec = buildIsiHistogramFigureSpec(
+				{ bins: bundle.tables.isiHistogramRows },
+				{ title: `Intersaccadic Intervals - ${caseId}` }
+			);
 
 			for (const file of bundle.files) {
 				if (file.format !== 'png') continue;
