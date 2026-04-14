@@ -7,7 +7,7 @@ import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
-import { animationOutputPath, type CaseData, csvImportPath, csvOutputPath } from './db/tables/CaseData';
+import { animationOutputPath, type CaseData, type SegmentInput, type DetectionConfig, csvImportPath, csvOutputPath } from './db/tables/CaseData';
 import { type UserData } from './db/tables/UserData';
 
 import { runGazeCsvPipeline } from '@saccades/pipeline/runGazeCsvPipeline';
@@ -21,6 +21,9 @@ import {
 	buildIsiHistogramFigureSpec,
 } from '@saccades/visualization/render';
 import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
+import type { SaccadeDetectionOptions } from '@saccades/core/schema';
+import type { SaccadeMetricsOptions, SegmentDefinition } from '@saccades/metrics/types';
+import type { FigureOverlaySpec } from '@saccades/visualization/render/types';
 
 const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
@@ -370,6 +373,34 @@ ipcMain.handle('case:read-casedata', async (_, filename) => {
 	});
 });
 
+/**
+ * Saves user-defined segments and detection config for a case. Both fields
+ * are optional — pass null to clear a field, or omit it to leave it unchanged.
+ */
+ipcMain.handle('case:save-config', async (_, trial: CaseData, config: {
+	segments?: SegmentInput[] | null;
+	detection_config?: DetectionConfig | null;
+}) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const storedCase = project_manager.actions.case.read(trial.name);
+			const updates: Partial<CaseData> = {};
+
+			if (config.segments !== undefined) {
+				updates.segments = config.segments;
+			}
+			if (config.detection_config !== undefined) {
+				updates.detection_config = config.detection_config;
+			}
+
+			const updated = project_manager.actions.case.update(storedCase, updates);
+			return resolve(updated);
+		} catch (err) {
+			return reject(`Failed to save config for case: ${trial.name}. Error: ${err}`);
+		}
+	});
+});
+
 let ffmpeg: ChildProcess | null = null;
 
 ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
@@ -528,23 +559,51 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 			}
 			const csvText = fs.readFileSync(cleanedPath, 'utf-8');
 
+			// Build pipeline options from stored case config
+			const detectionOverrides: Partial<SaccadeDetectionOptions> = {};
+			const cfg = storedCase.detection_config;
+			if (cfg) {
+				if (cfg.velocityThresholdDegPerSec !== undefined)
+					detectionOverrides.velocityThresholdDegPerSec = cfg.velocityThresholdDegPerSec;
+				if (cfg.minDurationMs !== undefined)
+					detectionOverrides.minDurationMs = cfg.minDurationMs;
+				if (cfg.minInterSaccadeMs !== undefined)
+					detectionOverrides.minInterSaccadeMs = cfg.minInterSaccadeMs;
+			}
+
+			const plausibleBounds: SaccadeMetricsOptions['plausibleBounds'] =
+				cfg?.amplitudeBounds
+					? { amplitudeDeg: { min: cfg.amplitudeBounds.min ?? 0, max: cfg.amplitudeBounds.max ?? Infinity } }
+					: undefined;
+
+			const segments: SegmentDefinition[] = (storedCase.segments ?? []).map(seg => ({
+				id: seg.id,
+				startTime: seg.startMs,
+				endTime: seg.endMs,
+			}));
+
 			// Run saccade detection pipeline. We filter to VALID gaze rows only —
 			// the cleaner keeps INVALID rows with (0,0,0) vectors, which would crash
 			// the angular velocity normalization step. The csv.* metrics flags are
 			// opt-in; without them sessionSummaryRow stays null and the output CSV
 			// is empty.
+			const metricsOptions: SaccadeMetricsOptions = {
+				...(plausibleBounds ? { plausibleBounds } : {}),
+				...(segments.length > 0 ? { segments, isiBySegment: true } : {}),
+				csv: {
+					sessionSummaryRow: true,
+					segmentSummaryRows: true,
+				},
+			};
+
 			const pipelineResult = runGazeCsvPipeline(csvText, {
 				adapter: {
 					selection: {
 						includeGazeStatuses: ['VALID'],
 					},
 				},
-				metrics: {
-					csv: {
-						sessionSummaryRow: true,
-						segmentSummaryRows: true,
-					},
-				},
+				detection: detectionOverrides,
+				metrics: metricsOptions,
 			});
 
 			// Map pipeline results to visualization prep input
@@ -554,8 +613,26 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 					amplitudeDeg: row.amplitudeDeg,
 				})),
 				isiValuesMs: pipelineResult.analysis.metrics.isiSeries,
+				segments: segments.map(seg => ({
+					id: seg.id,
+					startTimeMs: seg.startTime,
+					endTimeMs: seg.endTime,
+				})),
 			};
-			const vizResult = prepareVisualizationModels(vizInput);
+			const vizResult = prepareVisualizationModels(vizInput, {
+				includeMarkers: segments.length > 0,
+			});
+
+			// Build overlay spec from segments for time-based figures
+			const figureOverlays: FigureOverlaySpec | undefined =
+				segments.length > 0
+					? {
+						segmentBoundaries: segments.flatMap(seg => [
+							{ timeMs: seg.startTime, label: `${seg.id} start` },
+							{ timeMs: seg.endTime, label: `${seg.id} end` },
+						]),
+					}
+					: undefined;
 
 			// Build the CaseOutputBundleInput
 			const bundleInput: CaseOutputBundleInput = {
@@ -605,10 +682,14 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 			// the writer's PNG backend can render them.
 			const bundle = buildCaseOutputBundle(bundleInput);
 
-			const scatterSpec = buildScatterFigureSpec(bundle.visuals.scatterModel);
-			const rateSeriesSpec = buildRateSeriesFigureSpec({
-				points: bundle.visuals.rateSeriesModel.points,
-			});
+			const scatterSpec = buildScatterFigureSpec(
+				bundle.visuals.scatterModel,
+				{ overlays: figureOverlays }
+			);
+			const rateSeriesSpec = buildRateSeriesFigureSpec(
+				{ points: bundle.visuals.rateSeriesModel.points },
+				{ overlays: figureOverlays }
+			);
 			const isiHistogramSpec = buildIsiHistogramFigureSpec({
 				bins: bundle.tables.isiHistogramRows,
 			});

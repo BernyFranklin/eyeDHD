@@ -105,14 +105,25 @@ describe('Saccade Detection', () => {
     });
 
     it("5) Splits into two saccades when separated by a below-threshold gap", () => {
+        // Gap must exceed minInterSaccadeMs (default 30ms = 6 samples at 200 Hz)
         const vectors: Vec3[] = [
             makeUnitVecXY(0),
             makeUnitVecXY(0),
             // Burst 1
             makeUnitVecXY(1),
             makeUnitVecXY(2),
-            makeUnitVecXY(3), 
-            // Gap  
+            makeUnitVecXY(3),
+            // Gap — 11 stationary samples (55ms at 200 Hz, exceeds 50ms refractory)
+            makeUnitVecXY(3),
+            makeUnitVecXY(3),
+            makeUnitVecXY(3),
+            makeUnitVecXY(3),
+            makeUnitVecXY(3),
+            makeUnitVecXY(3),
+            makeUnitVecXY(3),
+            makeUnitVecXY(3),
+            makeUnitVecXY(3),
+            makeUnitVecXY(3),
             makeUnitVecXY(3),
             // Burst 2
             makeUnitVecXY(4),
