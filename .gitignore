@@ -7,6 +7,8 @@
 ehthumbs.db
 Thumbs.db
 .zed
+.claude
+CLAUDE.md
 
 # IDE and Editor Files
 .vscode/
