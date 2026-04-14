@@ -76,7 +76,7 @@ export function buildTitleSpec(
         font: {
             family: fontFamily,
             sizePt: DEFAULT_TITLE_FONT_SIZE_PT,
-            weight: 'bold'
+            weight: 'normal'
         }
     };
 }

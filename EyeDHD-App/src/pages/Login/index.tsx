@@ -43,6 +43,7 @@ export default function Login() {
 	useEffect(() => {
 		if (canContinue) {
 			setSelectStatus('success');
+			navigate('/home');
 		}
 	}, [canContinue]);
 
