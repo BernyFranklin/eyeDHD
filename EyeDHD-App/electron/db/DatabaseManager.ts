@@ -3,6 +3,12 @@ import fs from 'fs';
 
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
 import caseDataActions, { type CaseData, type CaseDataUpdate, csvOutputPath, createCaseDataTable } from './tables/CaseData';
+import configProfileActions, {
+	type ConfigProfile,
+	type ConfigProfileCreate,
+	type ConfigProfileUpdate,
+	createConfigProfileTable
+} from './tables/ConfigProfile';
 
 import userActions, { type UserData, createUserTable } from './tables/UserData';
 
@@ -26,6 +32,16 @@ type CaseDataActions = {
 	remove: (trial: CaseData) => CaseData;
 };
 
+type ConfigProfileActions = {
+	create: (input: ConfigProfileCreate) => ConfigProfile;
+	read: (id: number) => ConfigProfile;
+	readByName: (name: string) => ConfigProfile | null;
+	exists: (name: string) => boolean;
+	list: () => ConfigProfile[];
+	update: (profile: ConfigProfile, updates: ConfigProfileUpdate) => ConfigProfile;
+	remove: (profile: ConfigProfile) => ConfigProfile;
+};
+
 /**
  * DatabaseManager class that manages the SQLite database connection, provides methods
  * for interacting with the casedata, csv, and saccade tables, and handles data streaming
@@ -42,6 +58,7 @@ export default class DatabaseManager {
 	actions: {
 		user: UserActions;
 		case: CaseDataActions;
+		configProfile: ConfigProfileActions;
 	};
 
 	constructor(options: DBOptions = { logging: false, temporary: false }) {
@@ -53,6 +70,7 @@ export default class DatabaseManager {
 		}
 
 		createCaseDataTable(this.db);
+		createConfigProfileTable(this.db);
 
 		this.actions = {
 			case: {
@@ -77,6 +95,17 @@ export default class DatabaseManager {
 			user: {
 				read: () => userActions.read(this.db),
 				update: (user: UserData, updates: Partial<UserData>) => userActions.update(this.db, user, updates)
+			},
+
+			configProfile: {
+				create: (input: ConfigProfileCreate) => configProfileActions.create(this.db, input),
+				read: (id: number) => configProfileActions.read(this.db, id),
+				readByName: (name: string) => configProfileActions.readByName(this.db, name),
+				exists: (name: string) => configProfileActions.exists(this.db, name),
+				list: () => configProfileActions.list(this.db),
+				update: (profile: ConfigProfile, updates: ConfigProfileUpdate) =>
+					configProfileActions.update(this.db, profile, updates),
+				remove: (profile: ConfigProfile) => configProfileActions.remove(this.db, profile)
 			}
 		};
 
