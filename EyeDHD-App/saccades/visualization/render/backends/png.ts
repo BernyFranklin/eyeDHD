@@ -1,5 +1,6 @@
 import { Canvas } from 'skia-canvas';
 
+import { DEFAULT_TICK_LABEL_FONT_SIZE_PT, DEFAULT_FONT_FAMILY } from '../defaults';
 import type { FontSpec } from '../types';
 import type { PngFigureRenderBackend } from './types';
 
@@ -54,7 +55,7 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 
 			if (spec.title?.text) {
 				ctx.fillStyle = 'black';
-				ctx.font = fontString(spec.title.font, context.dpi, 'bold 28px sans-serif');
+				ctx.font = fontString(spec.title.font, context.dpi, '28px sans-serif');
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'top';
 				ctx.fillText(spec.title.text, context.widthPx / 2, 8);
@@ -120,7 +121,11 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 
 			// Tick labels
 			ctx.fillStyle = '#333';
-			ctx.font = '11px sans-serif';
+			ctx.font = fontString(
+				{ sizePt: DEFAULT_TICK_LABEL_FONT_SIZE_PT, family: DEFAULT_FONT_FAMILY },
+				context.dpi,
+				'18px sans-serif',
+			);
 			ctx.textAlign = 'center';
 			ctx.textBaseline = 'top';
 			for (const tick of xTicks) {
