@@ -8,6 +8,7 @@ import ffmpegPath from 'ffmpeg-static';
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
 import { animationOutputPath, type CaseData, type SegmentInput, type DetectionConfig, csvImportPath, csvOutputPath } from './db/tables/CaseData';
+import { type ConfigProfile, type ConfigProfileCreate, type ConfigProfileUpdate } from './db/tables/ConfigProfile';
 import { type UserData } from './db/tables/UserData';
 
 import { runGazeCsvPipeline } from '@saccades/pipeline/runGazeCsvPipeline';
@@ -397,6 +398,90 @@ ipcMain.handle('case:save-config', async (_, trial: CaseData, config: {
 			return resolve(updated);
 		} catch (err) {
 			return reject(`Failed to save config for case: ${trial.name}. Error: ${err}`);
+		}
+	});
+});
+
+/**
+ * Lists all config profiles saved in the current project.
+ */
+ipcMain.handle('profile:list', async () => {
+	return new Promise<ConfigProfile[]>((resolve, reject) => {
+		try {
+			if (!project_manager) {
+				return reject('No project is currently open');
+			}
+			return resolve(project_manager.actions.configProfile.list());
+		} catch (err) {
+			return reject(`Failed to list config profiles. Error: ${err}`);
+		}
+	});
+});
+
+/**
+ * Creates a new config profile. Rejects if the name is already in use.
+ */
+ipcMain.handle('profile:create', async (_, input: ConfigProfileCreate) => {
+	return new Promise<ConfigProfile>((resolve, reject) => {
+		try {
+			if (!project_manager) {
+				return reject('No project is currently open');
+			}
+			if (!input?.name?.trim()) {
+				return reject('Profile name is required');
+			}
+			if (project_manager.actions.configProfile.exists(input.name.trim())) {
+				return reject(`A profile named "${input.name.trim()}" already exists`);
+			}
+			return resolve(project_manager.actions.configProfile.create(input));
+		} catch (err) {
+			return reject(`Failed to create config profile. Error: ${err}`);
+		}
+	});
+});
+
+/**
+ * Updates an existing config profile by id. Rejects if renaming would collide
+ * with another existing profile.
+ */
+ipcMain.handle('profile:update', async (_, profile: ConfigProfile, updates: ConfigProfileUpdate) => {
+	return new Promise<ConfigProfile>((resolve, reject) => {
+		try {
+			if (!project_manager) {
+				return reject('No project is currently open');
+			}
+			const stored = project_manager.actions.configProfile.read(profile.id);
+
+			if (updates.name !== undefined) {
+				const newName = updates.name.trim();
+				if (!newName) {
+					return reject('Profile name cannot be empty');
+				}
+				if (newName !== stored.name && project_manager.actions.configProfile.exists(newName)) {
+					return reject(`A profile named "${newName}" already exists`);
+				}
+			}
+
+			return resolve(project_manager.actions.configProfile.update(stored, updates));
+		} catch (err) {
+			return reject(`Failed to update config profile. Error: ${err}`);
+		}
+	});
+});
+
+/**
+ * Deletes a config profile by id. Returns the deleted profile.
+ */
+ipcMain.handle('profile:delete', async (_, profile: ConfigProfile) => {
+	return new Promise<ConfigProfile>((resolve, reject) => {
+		try {
+			if (!project_manager) {
+				return reject('No project is currently open');
+			}
+			const stored = project_manager.actions.configProfile.read(profile.id);
+			return resolve(project_manager.actions.configProfile.remove(stored));
+		} catch (err) {
+			return reject(`Failed to delete config profile. Error: ${err}`);
 		}
 	});
 });
