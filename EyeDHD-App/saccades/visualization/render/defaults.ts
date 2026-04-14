@@ -5,7 +5,7 @@ export const DEFAULT_DIMENSIONS = {
 } as const;
 
 export const DEFAULT_MARGINS = {
-	topPx: 160,
+	topPx: 240,
 	rightPx: 80,
 	bottomPx: 160,
 	leftPx: 200
