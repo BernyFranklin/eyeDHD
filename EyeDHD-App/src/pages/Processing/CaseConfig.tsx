@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Minus } from 'lucide-react';
 
 import { Button } from '@src/components';
@@ -67,13 +67,21 @@ export default function CaseConfig() {
 	// Currently-loaded profile (0 = none / custom)
 	const [selectedProfileId, setSelectedProfileId] = useState<number>(NO_PROFILE);
 
-	// Inline name prompt (window.prompt is disabled in Electron renderers)
+	// Dirty indicator: form differs from last loaded/saved profile state
+	const [dirty, setDirty] = useState(false);
+
+	// Inline name prompt (window.prompt is disabled in Electron renderers).
+	// Used for both "save as new" and "rename" flows.
 	const [namePromptOpen, setNamePromptOpen] = useState(false);
+	const [namePromptMode, setNamePromptMode] = useState<'new' | 'rename'>('new');
 	const [namePromptValue, setNamePromptValue] = useState('');
 	const [pendingSavePayload, setPendingSavePayload] = useState<{
 		segments: SegmentInput[] | null;
 		detection_config: DetectionConfig;
 	} | null>(null);
+
+	// Hidden input for importing a profile from a .json file
+	const importInputRef = useRef<HTMLInputElement>(null);
 
 	// Load profile list on mount (per-project, pulled from profile:list)
 	useEffect(() => {
@@ -98,6 +106,7 @@ export default function CaseConfig() {
 		if (selectedCase.detection_config) {
 			applyDetectionConfig(selectedCase.detection_config);
 		}
+		setDirty(false);
 	}, [selectedCase?.name]);
 
 	function applyDetectionConfig(cfg: DetectionConfig) {
@@ -134,14 +143,17 @@ export default function CaseConfig() {
 			setAmplitudeMin('');
 			setAmplitudeMax('');
 		}
+		setDirty(false);
 	}
 
 	const addEvent = () => {
 		setEvents([...events, { startText: '', endText: '' }]);
+		setDirty(true);
 	};
 
 	const removeEvent = (index: number) => {
 		setEvents(events.filter((_, i) => i !== index));
+		setDirty(true);
 	};
 
 	const updateEvent = (
@@ -152,6 +164,7 @@ export default function CaseConfig() {
 		const updated = [...events];
 		updated[index] = { ...updated[index], [field]: value };
 		setEvents(updated);
+		setDirty(true);
 	};
 
 	const validate = (): {
@@ -273,7 +286,17 @@ export default function CaseConfig() {
 		const result = validate();
 		if (!result) return;
 		setPendingSavePayload(result);
+		setNamePromptMode('new');
 		setNamePromptValue('');
+		setNamePromptOpen(true);
+	};
+
+	const renameCurrentProfile = () => {
+		if (selectedProfileId === NO_PROFILE) return;
+		const profile = profiles.find((p) => p.id === selectedProfileId);
+		if (!profile) return;
+		setNamePromptMode('rename');
+		setNamePromptValue(profile.name);
 		setNamePromptOpen(true);
 	};
 
@@ -281,6 +304,7 @@ export default function CaseConfig() {
 		setNamePromptOpen(false);
 		setPendingSavePayload(null);
 		setNamePromptValue('');
+		setNamePromptMode('new');
 	};
 
 	const confirmNamePrompt = async () => {
@@ -289,6 +313,30 @@ export default function CaseConfig() {
 			AlertControls.error('Profile name cannot be empty.');
 			return;
 		}
+
+		if (namePromptMode === 'rename') {
+			const profile = profiles.find((p) => p.id === selectedProfileId);
+			if (!profile) {
+				cancelNamePrompt();
+				return;
+			}
+			if (name === profile.name) {
+				cancelNamePrompt();
+				return;
+			}
+			try {
+				await dispatch(
+					updateProfile({ profile, updates: { name } })
+				).unwrap();
+				AlertControls.success(`Profile renamed to "${name}".`);
+				cancelNamePrompt();
+			} catch (err) {
+				AlertControls.error(`Failed to rename profile: ${err}`);
+			}
+			return;
+		}
+
+		// namePromptMode === 'new'
 		if (!pendingSavePayload) {
 			cancelNamePrompt();
 			return;
@@ -303,6 +351,7 @@ export default function CaseConfig() {
 				})
 			).unwrap();
 			setSelectedProfileId(created.id);
+			setDirty(false);
 			AlertControls.success(`Profile "${created.name}" saved.`);
 			cancelNamePrompt();
 		} catch (err) {
@@ -335,6 +384,7 @@ export default function CaseConfig() {
 					},
 				})
 			).unwrap();
+			setDirty(false);
 			AlertControls.success(`Profile "${profile.name}" updated.`);
 		} catch (err) {
 			AlertControls.error(`Failed to update profile: ${err}`);
@@ -355,6 +405,100 @@ export default function CaseConfig() {
 			AlertControls.success(`Profile "${profile.name}" deleted.`);
 		} catch (err) {
 			AlertControls.error(`Failed to delete profile: ${err}`);
+		}
+	};
+
+	/**
+	 * Downloads the selected profile as a .json file so it can be moved between
+	 * projects or shared with other users. Only name, markers, and detection are
+	 * exported — internal ids and timestamps are omitted.
+	 */
+	const exportSelectedProfile = () => {
+		if (selectedProfileId === NO_PROFILE) return;
+		const profile = profiles.find((p) => p.id === selectedProfileId);
+		if (!profile) return;
+
+		const payload = {
+			name: profile.name,
+			markers: profile.markers,
+			detection: profile.detection,
+		};
+
+		const blob = new Blob([JSON.stringify(payload, null, 2)], {
+			type: 'application/json',
+		});
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `${profile.name.replace(/[^a-z0-9_-]+/gi, '_')}.profile.json`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	};
+
+	const triggerImport = () => {
+		importInputRef.current?.click();
+	};
+
+	/**
+	 * Reads a .profile.json file and creates a new profile from its contents.
+	 * If the name collides with an existing profile, the user is prompted via
+	 * the inline name dialog to choose a new name.
+	 */
+	const handleImportFile = async (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
+		const file = event.target.files?.[0];
+		event.target.value = ''; // allow re-importing the same file
+		if (!file) return;
+
+		try {
+			const text = await file.text();
+			const parsed = JSON.parse(text) as {
+				name?: unknown;
+				markers?: unknown;
+				detection?: unknown;
+			};
+
+			if (typeof parsed.name !== 'string' || !parsed.name.trim()) {
+				AlertControls.error('Invalid profile file: missing "name".');
+				return;
+			}
+			if (!Array.isArray(parsed.markers)) {
+				AlertControls.error('Invalid profile file: "markers" must be an array.');
+				return;
+			}
+
+			const importPayload = {
+				segments: parsed.markers as SegmentInput[],
+				detection_config: (parsed.detection ?? {}) as DetectionConfig,
+			};
+
+			// If the name is taken, let the user rename via the modal.
+			const nameTaken = profiles.some((p) => p.name === parsed.name);
+			if (nameTaken) {
+				AlertControls.error(
+					`A profile named "${parsed.name}" already exists — choose a new name.`
+				);
+				setPendingSavePayload(importPayload);
+				setNamePromptMode('new');
+				setNamePromptValue(`${parsed.name} (imported)`);
+				setNamePromptOpen(true);
+				return;
+			}
+
+			const created = await dispatch(
+				createProfile({
+					name: parsed.name.trim(),
+					markers: importPayload.segments,
+					detection: importPayload.detection_config,
+				})
+			).unwrap();
+			setSelectedProfileId(created.id);
+			AlertControls.success(`Imported profile "${created.name}".`);
+		} catch (err) {
+			AlertControls.error(`Failed to import profile: ${err}`);
 		}
 	};
 
@@ -379,13 +523,25 @@ export default function CaseConfig() {
 							}
 						>
 							<option value={NO_PROFILE}>— None (Custom) —</option>
-							{profiles.map((p) => (
-								<option key={p.id} value={p.id}>
-									{p.name}
-								</option>
-							))}
+							{profiles.map((p) => {
+								const markerCount = p.markers.length;
+								const label = `${p.name} (${markerCount} ${markerCount === 1 ? 'marker' : 'markers'})`;
+								return (
+									<option key={p.id} value={p.id}>
+										{label}
+									</option>
+								);
+							})}
 						</select>
 
+						{hasProfileSelected && dirty && (
+							<span className="profile-dirty-indicator" title="Form differs from the saved profile">
+								• Modified
+							</span>
+						)}
+					</div>
+
+					<div className="profile-row">
 						<button
 							className="profile-btn"
 							onClick={saveAsNewProfile}
@@ -402,6 +558,29 @@ export default function CaseConfig() {
 							Update
 						</button>
 						<button
+							className="profile-btn"
+							onClick={renameCurrentProfile}
+							disabled={!hasProfileSelected}
+							title="Rename the selected profile"
+						>
+							Rename
+						</button>
+						<button
+							className="profile-btn"
+							onClick={exportSelectedProfile}
+							disabled={!hasProfileSelected}
+							title="Export the selected profile as a JSON file"
+						>
+							Export
+						</button>
+						<button
+							className="profile-btn"
+							onClick={triggerImport}
+							title="Import a profile from a JSON file"
+						>
+							Import
+						</button>
+						<button
 							className="profile-btn profile-btn-danger"
 							onClick={removeProfile}
 							disabled={!hasProfileSelected}
@@ -409,6 +588,13 @@ export default function CaseConfig() {
 						>
 							Delete
 						</button>
+						<input
+							ref={importInputRef}
+							type="file"
+							accept="application/json,.json"
+							style={{ display: 'none' }}
+							onChange={handleImportFile}
+						/>
 					</div>
 
 					{namePromptOpen && (
@@ -418,7 +604,9 @@ export default function CaseConfig() {
 								onClick={(e) => e.stopPropagation()}
 							>
 								<label className="name-prompt-label">
-									Name for this profile
+									{namePromptMode === 'rename'
+										? 'New name for this profile'
+										: 'Name for this profile'}
 									<input
 										type="text"
 										className="config-input"
@@ -512,9 +700,10 @@ export default function CaseConfig() {
 								type="number"
 								className="config-input"
 								value={velocityThreshold}
-								onChange={(e) =>
-									setVelocityThreshold(Number(e.target.value))
-								}
+								onChange={(e) => {
+									setVelocityThreshold(Number(e.target.value));
+									setDirty(true);
+								}}
 							/>
 						</label>
 
@@ -524,9 +713,10 @@ export default function CaseConfig() {
 								type="number"
 								className="config-input"
 								value={minDuration}
-								onChange={(e) =>
-									setMinDuration(Number(e.target.value))
-								}
+								onChange={(e) => {
+									setMinDuration(Number(e.target.value));
+									setDirty(true);
+								}}
 							/>
 						</label>
 
@@ -536,9 +726,10 @@ export default function CaseConfig() {
 								type="number"
 								className="config-input"
 								value={minInterSaccade}
-								onChange={(e) =>
-									setMinInterSaccade(Number(e.target.value))
-								}
+								onChange={(e) => {
+									setMinInterSaccade(Number(e.target.value));
+									setDirty(true);
+								}}
 							/>
 						</label>
 
@@ -549,7 +740,10 @@ export default function CaseConfig() {
 								className="config-input"
 								placeholder="No limit"
 								value={amplitudeMin}
-								onChange={(e) => setAmplitudeMin(e.target.value)}
+								onChange={(e) => {
+									setAmplitudeMin(e.target.value);
+									setDirty(true);
+								}}
 							/>
 						</label>
 
@@ -560,7 +754,10 @@ export default function CaseConfig() {
 								className="config-input"
 								placeholder="No limit"
 								value={amplitudeMax}
-								onChange={(e) => setAmplitudeMax(e.target.value)}
+								onChange={(e) => {
+									setAmplitudeMax(e.target.value);
+									setDirty(true);
+								}}
 							/>
 						</label>
 					</div>
@@ -632,6 +829,13 @@ export default function CaseConfig() {
 					.profile-btn:disabled {
 						opacity: 0.5;
 						cursor: not-allowed;
+					}
+
+					.profile-dirty-indicator {
+						font-size: 0.8rem;
+						color: #b36b00;
+						font-style: italic;
+						white-space: nowrap;
 					}
 
 					.profile-btn-danger:hover:not(:disabled) {
