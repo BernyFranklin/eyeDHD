@@ -1,6 +1,16 @@
 import { Canvas } from 'skia-canvas';
 
+import type { FontSpec } from '../types';
 import type { PngFigureRenderBackend } from './types';
+
+/** Convert a pt-based FontSpec to a canvas font string, using dpi to scale. */
+function fontString(font: FontSpec | undefined, dpi: number, fallback: string): string {
+	if (!font) return fallback;
+	const px = Math.round((font.sizePt / 72) * dpi);
+	const weight = font.weight ?? 'normal';
+	const family = font.family || 'sans-serif';
+	return `${weight} ${px}px ${family}`;
+}
 
 // Tick generation: computes evenly-spaced "nice" tick values for an axis.
 // Uses a 1-2-5 rounding scheme so ticks land on clean numbers.
@@ -44,7 +54,7 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 
 			if (spec.title?.text) {
 				ctx.fillStyle = 'black';
-				ctx.font = '16px sans-serif';
+				ctx.font = fontString(spec.title.font, context.dpi, 'bold 28px sans-serif');
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'top';
 				ctx.fillText(spec.title.text, context.widthPx / 2, 8);
@@ -178,7 +188,7 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 
 			if (spec.xAxis?.label?.text) {
 				ctx.fillStyle = 'black';
-				ctx.font = '14px sans-serif';
+				ctx.font = fontString(spec.xAxis.label.font, context.dpi, '24px sans-serif');
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'bottom';
 				ctx.fillText(spec.xAxis.label.text, context.widthPx / 2, context.heightPx - 8);
@@ -187,7 +197,7 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 			if (spec.yAxis?.label?.text) {
 				ctx.save();
 				ctx.fillStyle = 'black';
-				ctx.font = '14px sans-serif';
+				ctx.font = fontString(spec.yAxis.label.font, context.dpi, '24px sans-serif');
 				ctx.textAlign = 'center';
 				ctx.textBaseline = 'top';
 				ctx.translate(16, context.heightPx / 2);

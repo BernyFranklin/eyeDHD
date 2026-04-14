@@ -1,6 +1,6 @@
 export const DEFAULT_DIMENSIONS = {
-    widthPx: 1800,
-    heightPx: 1200,
+    widthPx: 2400,
+    heightPx: 1800,
     dpi: 300
 } as const;
 
@@ -23,5 +23,5 @@ export const DEFAULT_STYLE = {
 } as const;
 
 export const DEFAULT_FONT_FAMILY = 'Arial';
-export const DEFAULT_TITLE_FONT_SIZE_PT = 16;
-export const DEFAULT_AXIS_LABEL_FONT_SIZE_PT = 12;
+export const DEFAULT_TITLE_FONT_SIZE_PT = 28;
+export const DEFAULT_AXIS_LABEL_FONT_SIZE_PT = 24;
