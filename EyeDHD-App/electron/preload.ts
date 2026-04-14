@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import { type UserData } from './db/tables/UserData';
 import { type CaseData, type SegmentInput, type DetectionConfig } from './db/tables/CaseData';
+import { type ConfigProfile, type ConfigProfileCreate, type ConfigProfileUpdate } from './db/tables/ConfigProfile';
 import { type Progress, type DataType, type StreamKey, type StreamType } from './db/DataStream';
 
 export { Electron, Renderer, DetectionResult };
@@ -55,6 +56,13 @@ declare interface Electron {
 			width: number;
 			height: number;
 		}): Promise<void>;
+	};
+
+	profile: {
+		list(): Promise<ConfigProfile[]>;
+		create(input: ConfigProfileCreate): Promise<ConfigProfile>;
+		update(profile: ConfigProfile, updates: ConfigProfileUpdate): Promise<ConfigProfile>;
+		delete(profile: ConfigProfile): Promise<ConfigProfile>;
 	};
 
 	csv: {
@@ -159,6 +167,33 @@ const electron: Electron = {
 		},
 		saveAnimation: async (trial: CaseData, frames: Uint8Array[], size) => {
 			return await ipcRenderer.invoke('case:save-animation', trial, frames, size);
+		}
+	},
+
+	profile: {
+		/**
+		 * Lists all config profiles saved in the current project.
+		 */
+		list: async (): Promise<ConfigProfile[]> => {
+			return await ipcRenderer.invoke('profile:list');
+		},
+		/**
+		 * Creates a new config profile. Rejects on duplicate name.
+		 */
+		create: async (input: ConfigProfileCreate): Promise<ConfigProfile> => {
+			return await ipcRenderer.invoke('profile:create', input);
+		},
+		/**
+		 * Updates an existing config profile by id.
+		 */
+		update: async (profile: ConfigProfile, updates: ConfigProfileUpdate): Promise<ConfigProfile> => {
+			return await ipcRenderer.invoke('profile:update', profile, updates);
+		},
+		/**
+		 * Deletes a config profile. Returns the deleted row.
+		 */
+		delete: async (profile: ConfigProfile): Promise<ConfigProfile> => {
+			return await ipcRenderer.invoke('profile:delete', profile);
 		}
 	},
 
