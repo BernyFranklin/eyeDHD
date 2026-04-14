@@ -227,9 +227,13 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 					if (boundary.label) {
 						ctx.fillStyle = 'blue';
 						ctx.font = '11px sans-serif';
+						ctx.save();
+						ctx.translate(px, plotTop - 4);
+						ctx.rotate(-Math.PI / 2);
 						ctx.textAlign = 'left';
-						ctx.textBaseline = 'bottom';
-						ctx.fillText(boundary.label, px + 4, plotTop - 2);
+						ctx.textBaseline = 'middle';
+						ctx.fillText(boundary.label, 0, 0);
+						ctx.restore();
 					}
 				}
 			}
@@ -249,9 +253,13 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 
 					ctx.fillStyle = 'red';
 					ctx.font = '11px sans-serif';
+					ctx.save();
+					ctx.translate(px, plotTop - 4);
+					ctx.rotate(-Math.PI / 2);
 					ctx.textAlign = 'left';
-					ctx.textBaseline = 'bottom';
-					ctx.fillText(marker.label, px + 4, plotTop - 14);
+					ctx.textBaseline = 'middle';
+					ctx.fillText(marker.label, 0, 0);
+					ctx.restore();
 				}
 			}
 
