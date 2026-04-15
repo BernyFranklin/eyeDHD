@@ -4,6 +4,8 @@ import { AlertControls } from '@src/components/AlertWindow';
 
 import { type CaseData } from '@src/data/types';
 
+import { Alert } from '@src/components/extra/Alert/Alert';
+
 type Props = {
 	file: CaseData,
 	onClick: (file: CaseData) => void
@@ -28,7 +30,10 @@ export default function Case(props: Props) {
 				</a>
 				<div
 					className='case-options'
-					onClick={() => AlertControls.error('Not implemented')}
+					
+					onClick={
+						() => AlertControls.error('Not implemented')
+					}
 				>
 					...
 				</div>

@@ -9,6 +9,7 @@ import { disableButtons, enableButtons, selectLoading } from '@src/data/features
 import { selectProjectDir, selectProjectInitialized, setProjectDir, setProjectInitialized } from '@src/data/features/user';
 
 import { ToolTip } from '@src/components/extra/ToolTip/ToolTip';
+import { Alert } from '@src/components/extra/Alert/Alert';
 
 type SelectStatus = 'waiting' | 'success' | 'error';
 

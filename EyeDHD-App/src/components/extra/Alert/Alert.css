@@ -1,0 +1,52 @@
+.alert {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  animation: slideUp 0.3s ease-out;
+  z-index: 9999;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.alert-success {
+  background-color: #4caf50;
+  color: white;
+  border-radius: 4px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.alert-icon {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.alert-text {
+  font-size: 14px;
+  line-height: 1.4;
+}

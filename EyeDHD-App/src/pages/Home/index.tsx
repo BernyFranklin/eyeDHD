@@ -13,6 +13,8 @@ import { selectCases, setCases, setProjectDir, setProjectInitialized } from '@sr
 import CaseList from './CaseList';
 import CreateCaseWindow from './CreateCaseWindow';
 
+import { Alert } from '@src/components/extra/Alert/Alert';
+
 /**
  * Home page of the app, shows list of cases and allows user to create new cases
  * or open existing ones. Refreshes data from the backend on refresh/page load.
@@ -26,7 +28,8 @@ export default function Home() {
 	const [showCreateCase, setShowCreateCase] = useState(false);
 
 	const handleError = (err: Error) => {
-		AlertControls.error(`Error: ${err.message}`);
+		<Alert text="Changes saved" duration={5000} /> // Custom duration
+		// AlertControls.error(`Error: ${err.message}`);
 	};
 
 	const refresh = async () => {
