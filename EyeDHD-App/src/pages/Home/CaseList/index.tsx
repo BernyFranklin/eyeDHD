@@ -31,6 +31,21 @@ export default function CaseList(props: Props) {
 		navigate('/processing');
 	}
 
+	const updateCase = async (file: CaseData) => {
+		try {
+			const filepath = await window.electron.case.selectCsv();
+			if (!filepath) {
+				return;
+			}
+
+			const updated = await window.electron.case.importCsv(file, filepath);
+			dispatch(setSelectedCase(updated));
+			navigate('/processing');
+		} catch (err) {
+			AlertControls.error(`Error updating case: ${err.message}`);
+		}
+	}
+
 	useEffect(() => {
 		if (!dir || props.loading) {
 			return;
@@ -68,7 +83,7 @@ export default function CaseList(props: Props) {
 					*/}
 					{cases.map(file => {
 						return <li key={file.id}>
-							<CaseItem file={file} onClick={openCase} />
+							<CaseItem file={file} onClick={openCase} onUpdate={updateCase} />
 						</li>
 					})}
 

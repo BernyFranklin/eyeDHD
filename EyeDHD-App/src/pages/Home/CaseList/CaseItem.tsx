@@ -6,7 +6,8 @@ import { type CaseData } from '@src/data/types';
 
 type Props = {
 	file: CaseData,
-	onClick: (file: CaseData) => void
+	onClick: (file: CaseData) => void,
+	onUpdate: (file: CaseData) => void
 };
 
 /**
@@ -31,7 +32,7 @@ export default function Case(props: Props) {
 
 	const handleUpdate = () => {
 		setMenuOpen(false);
-		AlertControls.error('Not implemented');
+		props.onUpdate(props.file);
 	};
 
 	const handleRemove = () => {
