@@ -31,5 +31,6 @@ export const combination: Task = {
 		completed: COMPLETED
 	},
 	name: NAME,
-	fn
+	fn,
+	cleanup: null
 }

@@ -34,7 +34,8 @@ export type Task = {
 		completed: string
 	},
 	name: TaskName | FlowStepName | 'complete',
-	fn: TaskFn
+	fn: TaskFn,
+	cleanup: ((trial: CaseData) => Promise<void>) | null
 }
 
 export const TASKS = [

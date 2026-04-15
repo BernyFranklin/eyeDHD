@@ -5,7 +5,7 @@ import RemoteStream from '@src/data/RemoteStream';
 
 import { setTaskProgress } from '@src/data/features/task';
 import { type Task, type TaskFn } from '.';
-import { TrackingData } from '@src/data/types';
+import { CaseData, TrackingData } from '@src/data/types';
 
 const NAME = 'animation';
 const WAITING = 'Animate eye movements';
@@ -164,6 +164,10 @@ const fn: TaskFn = async (trial, dispatch) => {
 	await delay(150);
 }
 
+async function cleanup(trial: CaseData) {
+	// Signal backend to shutdown ffmpeg
+}
+
 export const animation: Task = {
 	display: {
 		waiting: WAITING,
@@ -171,7 +175,8 @@ export const animation: Task = {
 		completed: COMPLETED
 	},
 	name: NAME,
-	fn
+	fn,
+	cleanup
 }
 
 // Helper functions

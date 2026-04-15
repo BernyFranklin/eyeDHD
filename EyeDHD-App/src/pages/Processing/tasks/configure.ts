@@ -21,4 +21,5 @@ export const configure: Task = {
 	},
 	name: NAME as any,
 	fn,
+	cleanup: null
 };

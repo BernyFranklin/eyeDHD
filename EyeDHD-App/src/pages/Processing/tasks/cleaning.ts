@@ -1,6 +1,7 @@
 import { setTaskProgress } from '@src/data/features/task';
 import { type Task, type TaskFn } from '.';
 import RemoteStream from '@src/data/RemoteStream';
+import { CaseData } from '@src/data/types';
 
 const NAME = 'cleaning';
 const WAITING = 'Clean data';
@@ -25,6 +26,10 @@ const fn: TaskFn = async (trial, dispatch) => {
 	await delay(150);
 }
 
+async function cleanup(trial: CaseData) {
+	// Signal backend to cancel cleaning process
+}
+
 export const cleaning: Task = {
 	display: {
 		waiting: WAITING,
@@ -32,5 +37,6 @@ export const cleaning: Task = {
 		completed: COMPLETED
 	},
 	name: NAME,
-	fn
+	fn,
+	cleanup
 }

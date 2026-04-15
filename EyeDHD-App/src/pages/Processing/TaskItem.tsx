@@ -106,6 +106,10 @@ export default function TaskItem({ task }: Props) {
 				dispatch(setNextTask());
 			})
 			.catch(handleError);
+
+		return () => {
+			if (task.cleanup) task.cleanup(trial)
+		}
 	}, [current, task.name, trial]);
 
 	return (

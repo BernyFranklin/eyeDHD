@@ -2,7 +2,7 @@ import { setTaskProgress } from '@src/data/features/task';
 import { type Task, type TaskFn } from '.';
 
 const NAME = 'detection';
-const WAITING =   'Detect saccades and generate visuals';        
+const WAITING =   'Detect saccades and generate visuals';
 const RUNNING =   'Detecting saccades and generating visuals...';
 const COMPLETED = 'Detected saccades and generated visuals     ';
 
@@ -25,5 +25,6 @@ export const detection: Task = {
 		completed: COMPLETED
 	},
 	name: NAME,
-	fn
+	fn,
+	cleanup: null
 };
