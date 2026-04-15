@@ -26,7 +26,7 @@ export default function Login() {
 
 	const navigate = useNavigate();
 
-	const [placeholder, setPlaceholder] = useState('Please select an empty folder');
+	const [placeholder, setPlaceholder] = useState('Please select an empty or existing project folder');
 	const [selectStatus, setSelectStatus] = useState<SelectStatus>('waiting');
 
 	const canContinue = Boolean(projectDir && projectInitialized);
@@ -66,9 +66,9 @@ export default function Login() {
 				return;
 			}
 
-			if (!project.status.empty) {
+			if (!project.status.empty && !project.status.structured) {
 				setSelectStatus('error');
-				setPlaceholder('Selected folder is not empty');
+				setPlaceholder('Selected folder is not empty and is not a project folder');
 				return;
 			}
 

@@ -158,12 +158,14 @@ ipcMain.handle('user:select-directory', async (_, user: UserData) => {
 		const dirPath = filePaths[0];
 
 		const empty = isProjectEmpty(dirPath);
+		const structured = isProjectStructured(dirPath);
 
 		try {
 			return resolve({
 				dir: dirPath,
 				status: {
-					empty
+					empty,
+					structured
 				}
 			})
 		} catch (err) {
@@ -228,9 +230,11 @@ ipcMain.handle('user:initialize-directory', async (_, dir: string, user: UserDat
 				return reject(`Directory does not exist: ${dir}`);
 			}
 
-			// Check if directory is empty before proceeding
-			if (!isProjectEmpty(dir)) {
-				return reject(`Directory is not empty: ${dir}. Please select an empty directory or clear the contents before initializing.`);
+			// Allow the directory only if it is empty or already a structured project folder.
+			// Reject anything else to avoid accidentally overwriting unrelated content.
+			const alreadyStructured = isProjectStructured(dir);
+			if (!alreadyStructured && !isProjectEmpty(dir)) {
+				return reject(`Directory is not empty: ${dir}. Please select an empty directory or an existing project folder.`);
 			}
 
 			// Initialize project manager with project directory
@@ -512,9 +516,26 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData) => {
 	return new Promise(async (resolve, reject) => {
 		// Update CaseData so tasks.animate is 1
 		try {
+			if (!ffmpeg) {
+				return reject('FFMPEG process not initialized');
+			}
+
 			ffmpeg.on('close', (code) => {
+				const proc = ffmpeg;
 				ffmpeg = null;
+
 				if (code === 0) {
+					try {
+						const storedCase = project_manager.actions.case.read(trial.name);
+						project_manager.actions.case.update(storedCase, {
+							tasks: {
+								...storedCase.tasks,
+								animation: true
+							}
+						});
+					} catch (err) {
+						return reject(`Failed to update case after FFMPEG closed: ${err}`);
+					}
 					return resolve({});
 				} else {
 					return reject(new Error(`FFMPEG failed with code: ${code}`));
@@ -522,14 +543,6 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData) => {
 			});
 
 			ffmpeg.stdin.end();
-
-			const storedCase = project_manager.actions.case.read(trial.name);
-			project_manager.actions.case.update(storedCase, {
-				tasks: {
-					...storedCase.tasks,
-					animation: true
-				}
-			});
 		} catch (err) {
 			return reject(`Failed to stop FFMPEG for file: ${trial.name}. Error: ${err}`);
 		}
@@ -947,6 +960,9 @@ ipcMain.handle('vr:video-sync-vr', async (_, { vrFile, animFile, offsetSeconds }
  * for subsequent pull and cancel requests to identify the stream.
  */
 ipcMain.handle('stream:start', async (_, { type, trial }): Promise<StreamKey> => {
+	if (!project_manager) {
+		throw new Error('Project not initialized');
+	}
 	return await project_manager.startStream(type, trial);
 })
 
@@ -959,6 +975,9 @@ ipcMain.handle('stream:start', async (_, { type, trial }): Promise<StreamKey> =>
  * efficient data retrieval without overwhelming memory.
  */
 ipcMain.handle('stream:pull', async (event, { key, count }) => {
+	if (!project_manager) {
+		throw new Error('Project not initialized');
+	}
 	await project_manager.pullStream(key, count, (rows, progress) => {
 		event.sender.send('stream:data', { key, rows, progress });
 	});
@@ -973,6 +992,7 @@ ipcMain.handle('stream:pull', async (event, { key, count }) => {
  * operation.
  */
 ipcMain.on('stream:cancel', (_, { key }) => {
+	if (!project_manager) return;
 	project_manager.cancelStream(key);
 });
 

@@ -1,5 +1,9 @@
 # UI / Backend TODO List
 
+## TODO
+- Make sure tasks are canceled if returning to homepage
+- Allow selecting a folder that is already setup
+
 ## Things / Ideas for later
 - Estimated time until all tasks complete.
 - Preview window for running task on the right of the task list

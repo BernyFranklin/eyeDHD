@@ -10,7 +10,8 @@ export { Electron, Renderer, DetectionResult };
 type ProjectDir = {
 	dir?: string,
 	status: {
-		empty: boolean
+		empty: boolean,
+		structured: boolean
 	}
 }
 
@@ -93,6 +94,7 @@ declare interface Electron {
 declare interface Renderer {
 	stream: {
 		onData(callback: (key: StreamKey, rows: DataType[], progress: Progress) => void): void;
+		offData(callback: (key: StreamKey, rows: DataType[], progress: Progress) => void): void;
 	}
 }
 
@@ -252,6 +254,9 @@ const electron: Electron = {
 	}
 };
 
+type DataCallback = (key: StreamKey, rows: DataType[], progress: Progress) => void;
+const dataWrappers = new WeakMap<DataCallback, (_: unknown, args: { key: StreamKey, rows: DataType[], progress: Progress }) => void>();
+
 /**
 	* Defines the Renderer handlers
 	*/
@@ -261,13 +266,25 @@ const renderer: Renderer = {
 		 * Attaches a callback to be called when new data is available for a stream.
 		 */
 		onData: (callback) => {
-			ipcRenderer.on('stream:data', (_, args: {
+			const wrapper = (_: unknown, args: {
 				key: StreamKey,
 				rows: DataType[],
 				progress: Progress
 			}) => {
 				callback(args.key, args.rows, args.progress);
-			});
+			};
+			dataWrappers.set(callback, wrapper);
+			ipcRenderer.on('stream:data', wrapper);
+		},
+		/**
+		 * Removes a previously attached data callback.
+		 */
+		offData: (callback) => {
+			const wrapper = dataWrappers.get(callback);
+			if (wrapper) {
+				ipcRenderer.removeListener('stream:data', wrapper);
+				dataWrappers.delete(callback);
+			}
 		}
 	}
 };

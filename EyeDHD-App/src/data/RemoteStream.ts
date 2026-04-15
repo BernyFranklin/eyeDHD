@@ -15,6 +15,7 @@ export default class RemoteStream {
 	private buf: DataType[] = [];
 	private waiter: (() => void) | null = null;
 	private key: StreamKey;
+	private onDataCallback: ((key: StreamKey, rows: DataType[], progress: Progress) => void) | null = null;
 	type: StreamType;
 	progress: Progress;
 
@@ -49,7 +50,7 @@ export default class RemoteStream {
 			totalBytes: 0
 		};
 
-		window.renderer.stream.onData((key, rows, progress) => {
+		this.onDataCallback = (key, rows, progress) => {
 			if (key.id === this.key.id) {
 				this.progress = progress;
 
@@ -63,7 +64,8 @@ export default class RemoteStream {
 
 				this.resolveWaiter();
 			}
-		});
+		};
+		window.renderer.stream.onData(this.onDataCallback);
 	}
 
 	private resolveWaiter() {
@@ -95,6 +97,11 @@ export default class RemoteStream {
 		if (!this.progress.done) {
 			window.electron.stream.cancel(this.key);
 			this.progress.done = true;
+		}
+
+		if (this.onDataCallback) {
+			window.renderer.stream.offData(this.onDataCallback);
+			this.onDataCallback = null;
 		}
 	}
 
