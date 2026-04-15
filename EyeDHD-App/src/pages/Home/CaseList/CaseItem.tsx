@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { AlertControls } from '@src/components/AlertWindow';
 
@@ -15,6 +15,30 @@ type Props = {
  * callback with the case data so the case list knows which item to select.
  */
 export default function Case(props: Props) {
+	const [menuOpen, setMenuOpen] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!menuOpen) return;
+		const onDocClick = (e: MouseEvent) => {
+			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+				setMenuOpen(false);
+			}
+		};
+		document.addEventListener('mousedown', onDocClick);
+		return () => document.removeEventListener('mousedown', onDocClick);
+	}, [menuOpen]);
+
+	const handleUpdate = () => {
+		setMenuOpen(false);
+		AlertControls.error('Not implemented');
+	};
+
+	const handleRemove = () => {
+		setMenuOpen(false);
+		AlertControls.error('Not implemented');
+	};
+
 	return (
 		<>
 			<div className='case-item'>
@@ -26,11 +50,23 @@ export default function Case(props: Props) {
 				>
 					{props.file.name}
 				</a>
-				<div
-					className='case-options'
-					onClick={() => AlertControls.error('Not implemented')}
-				>
-					...
+				<div className='case-options-wrapper' ref={menuRef}>
+					<div
+						className='case-options'
+						onClick={(event) => {
+							event.stopPropagation();
+							setMenuOpen((open) => !open);
+						}}
+					>
+						...
+					</div>
+					{menuOpen && (
+						<div className='case-options-menu' role='menu'>
+							<button type='button' onClick={handleUpdate}>Update</button>
+							<button type='button' onClick={handleRemove}>Remove</button>
+							<button type='button' onClick={() => setMenuOpen(false)}>Cancel</button>
+						</div>
+					)}
 				</div>
 			</div>
 			<style>{`
@@ -55,11 +91,45 @@ export default function Case(props: Props) {
 					padding-left: 5px;
 				}
 
+				.case-options-wrapper {
+					position: relative;
+					margin-left: auto;
+				}
+
 				.case-options {
 					color: black;
-					margin-left: auto;
 					padding-right: 5px;
 					cursor: pointer;
+					user-select: none;
+				}
+
+				.case-options-menu {
+					position: absolute;
+					right: 0;
+					bottom: calc(100% + 4px);
+					background: #fff;
+					border: 1px solid #ccc;
+					border-radius: var(--action-radius);
+					box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+					display: flex;
+					flex-direction: column;
+					min-width: 110px;
+					z-index: 10;
+					overflow: hidden;
+				}
+
+				.case-options-menu button {
+					background: none;
+					border: none;
+					text-align: left;
+					padding: 8px 12px;
+					cursor: pointer;
+					font: inherit;
+					color: #333;
+				}
+
+				.case-options-menu button:hover {
+					background: #f0f0f0;
 				}
 			`}</style>
 		</>
