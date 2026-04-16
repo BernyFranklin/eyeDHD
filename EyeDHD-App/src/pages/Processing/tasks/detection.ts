@@ -9,11 +9,20 @@ const COMPLETED = 'Detected saccades and generated visuals     ';
 const fn: TaskFn = async (trial, dispatch) => {
 	trial = await window.electron.case.read(trial.name);
 
-	// The detection pipeline runs as a single backend call. We don't have
-	// granular progress yet, so we mark a midpoint then complete on resolve.
-	dispatch(setTaskProgress(0.1));
+	// The detection pipeline runs as a single backend call with no progress
+	// events. Animate an eased fill that asymptotes below 1.0 while the call
+	// runs, then snap to 1.0 on resolve so the wheel tracks execution.
+	let progress = 0.0;
+	const handle = setInterval(() => {
+		progress += (0.95 - progress) * 0.04;
+		dispatch(setTaskProgress(progress));
+	}, 100);
 
-	await window.electron.case.runDetection(trial);
+	try {
+		await window.electron.case.runDetection(trial);
+	} finally {
+		clearInterval(handle);
+	}
 
 	dispatch(setTaskProgress(1.0));
 };
