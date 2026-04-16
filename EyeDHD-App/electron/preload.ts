@@ -53,7 +53,7 @@ declare interface Electron {
 			width: number;
 			height: number;
 		}): void;
-		stopFFMPEG(trial: CaseData): Promise<void>;
+		stopFFMPEG(trial: CaseData, completed: boolean): Promise<void>;
 		saveAnimation(trial: CaseData, frames: Uint8Array[], size: {
 			width: number;
 			height: number;
@@ -179,7 +179,7 @@ const electron: Electron = {
 		startFFMPEG: (trial: CaseData, size) => {
 			return ipcRenderer.send('case:start-ffmpeg', trial, size);
 		},
-		stopFFMPEG: async (trial: CaseData): Promise<void> => {
+		stopFFMPEG: async (trial: CaseData, completed: boolean): Promise<void> => {
 			return await ipcRenderer.invoke('case:stop-ffmpeg', trial);
 		},
 		saveAnimation: async (trial: CaseData, frames: Uint8Array[], size) => {

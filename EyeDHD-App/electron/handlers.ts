@@ -603,12 +603,16 @@ ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
 	], { stdio: ["pipe", "inherit", "inherit"] });
 });
 
-ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData) => {
+ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 	return new Promise(async (resolve, reject) => {
 		// Update CaseData so tasks.animate is 1
 		try {
 			if (!ffmpeg) {
-				return reject('FFMPEG process not initialized');
+				return resolve({});
+			}
+
+			if (!completed) {
+				ffmpeg.kill('SIGINT');
 			}
 
 			ffmpeg.on('close', (code) => {

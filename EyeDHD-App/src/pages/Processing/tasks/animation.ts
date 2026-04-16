@@ -23,6 +23,8 @@ type Rotation = {
 	z: number
 };
 
+let activeStream: RemoteStream | null = null;
+
 const fn: TaskFn = async (trial, dispatch) => {
 	trial = await window.electron.case.read(trial.name);
 
@@ -100,7 +102,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	renderer.setRenderTarget(renderTarget);
 
-	const stream = await RemoteStream.create('TrackingData', { trial });
+	activeStream = await RemoteStream.create('TrackingData', { trial });
 
 	let progress = 0;
 	let keep = 0;
@@ -113,7 +115,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	window.electron.case.startFFMPEG(trial, SIZE);
 
-	for await (const row of stream) {
+	for await (const row of activeStream) {
 		const percent = progress / trial.cleaned_rows;
 		dispatch(setTaskProgress(percent));
 
@@ -155,8 +157,10 @@ const fn: TaskFn = async (trial, dispatch) => {
 		keep = keep + calculate_interval(progress);
 	}
 
+	activeStream = null;
+
 	window.electron.case.saveAnimation(trial, frames, SIZE);
-	await window.electron.case.stopFFMPEG(trial);
+	await window.electron.case.stopFFMPEG(trial, true);
 
 	renderer.dispose();
 	renderTarget.dispose();
@@ -165,7 +169,9 @@ const fn: TaskFn = async (trial, dispatch) => {
 }
 
 async function cleanup(trial: CaseData) {
-	// Signal backend to shutdown ffmpeg
+	activeStream?.cancel();
+	activeStream = null;
+	await window.electron.case.stopFFMPEG(trial, false);
 }
 
 export const animation: Task = {
