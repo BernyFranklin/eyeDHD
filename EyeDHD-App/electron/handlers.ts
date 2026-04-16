@@ -134,8 +134,22 @@ ipcMain.handle('user:read', async () => {
 			// Should adjust to prompt user to select new directory if project gets
 			// messed up, but for now just reset
 			if (user.dir) {
-				const structured = isProjectStructured(user.dir);
-				const empty = isProjectEmpty(user.dir);
+				let structured: boolean;
+				let empty: boolean;
+
+				try {
+					structured = isProjectStructured(user.dir);
+					empty = isProjectEmpty(user.dir);
+				} catch (err) {
+					if ((err as NodeJS.ErrnoException).code === 'EPERM' || (err as NodeJS.ErrnoException).code === 'EACCES') {
+						const updated_user = main_manager.actions.user.update(user, {
+							dir: '',
+							project_initialized: 0
+						});
+						return resolve(updated_user);
+					}
+					throw err;
+				}
 
 				if (user.project_initialized) {
 					if (!structured || empty) {
@@ -605,18 +619,18 @@ ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
 
 ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 	return new Promise(async (resolve, reject) => {
-		// Update CaseData so tasks.animate is 1
 		try {
 			if (!ffmpeg) {
 				return resolve({});
 			}
 
 			if (!completed) {
-				ffmpeg.kill('SIGINT');
+				ffmpeg.on('close', () => ffmpeg = null);
+				ffmpeg.stdin.end();
+				return resolve({});
 			}
 
 			ffmpeg.on('close', (code) => {
-				const proc = ffmpeg;
 				ffmpeg = null;
 
 				if (code === 0) {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router';
 
 import { useSelector } from '@src/data/hooks';
 import { selectButtons } from '@src/data/features/global';
@@ -29,8 +30,8 @@ export default function Navbar() {
 			</span>
 			<span className="navbar-links">
 				<div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
-					<a
-						href='/home'
+					<Link
+						to='/home'
 						className="home-link"
 						title="Home"
 						{...disabledAnchorProps}
@@ -40,7 +41,7 @@ export default function Navbar() {
 							alt="Home"
 							className="navbar-icon"
 						/>
-					</a>
+					</Link>
 				</div>
 			</span>
 			<style>{`
