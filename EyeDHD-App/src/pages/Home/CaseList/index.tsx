@@ -31,6 +31,23 @@ export default function CaseList(props: Props) {
 		navigate('/processing');
 	}
 
+	const removeCase = async (file: CaseData) => {
+		const confirmed = window.confirm(
+			`Remove case "${file.name}"? This will permanently delete its folder and all imports/outputs.`
+		);
+		if (!confirmed) {
+			return;
+		}
+
+		try {
+			await window.electron.case.remove(file);
+			dispatch(setCases(cases.filter(c => c.id !== file.id)));
+			AlertControls.success(`Removed case: ${file.name}`);
+		} catch (err) {
+			AlertControls.error(`Error removing case: ${err.message}`);
+		}
+	}
+
 	const updateCase = async (file: CaseData) => {
 		try {
 			const filepath = await window.electron.case.selectCsv();
@@ -83,7 +100,7 @@ export default function CaseList(props: Props) {
 					*/}
 					{cases.map(file => {
 						return <li key={file.id}>
-							<CaseItem file={file} onClick={openCase} onUpdate={updateCase} />
+							<CaseItem file={file} onClick={openCase} onUpdate={updateCase} onRemove={removeCase} />
 						</li>
 					})}
 

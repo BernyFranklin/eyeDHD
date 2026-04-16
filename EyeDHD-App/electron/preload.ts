@@ -41,6 +41,7 @@ declare interface Electron {
 	case: {
 		createNew(casename: string): Promise<CaseData>;
 		read(casename: string): Promise<CaseData>;
+		remove(trial: CaseData): Promise<CaseData>;
 		selectCsv(): Promise<string | null>;
 		importCsv(trial: CaseData, filepath: string): Promise<CaseData>;
 		saveConfig(trial: CaseData, config: {
@@ -143,6 +144,12 @@ const electron: Electron = {
 		 */
 		read: async (name: string): Promise<CaseData> => {
 			return await ipcRenderer.invoke('case:read-casedata', name);
+		},
+		/**
+		 * Deletes the case folder from disk and removes its database entry.
+		 */
+		remove: async (trial: CaseData): Promise<CaseData> => {
+			return await ipcRenderer.invoke('case:remove', trial);
 		},
 		/**
 		 * Prompts for a CSV file and returns the selected path.

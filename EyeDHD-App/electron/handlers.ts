@@ -62,6 +62,34 @@ function isProjectStructured(dir: string): boolean {
  * directory before initializing it, since we don't want to accidentally mess with an
  * existing directory that has files in it.
  */
+/**
+ * Best-effort sweep of the project-level `.trash/` directory. Removed cases are
+ * first renamed into this folder (see `case:remove`); any entries that couldn't
+ * be rm'd in the same session — typically because Windows had lingering file
+ * handles from AV scanners, Explorer preview, or video thumbnailers — get
+ * cleaned up here once those handles are released.
+ */
+function sweepProjectTrash(dir: string): void {
+	const trashDir = path.join(dir, '.trash');
+	if (!fs.existsSync(trashDir)) {
+		return;
+	}
+
+	for (const entry of fs.readdirSync(trashDir)) {
+		const entryPath = path.join(trashDir, entry);
+		try {
+			fs.rmSync(entryPath, {
+				recursive: true,
+				force: true,
+				maxRetries: 5,
+				retryDelay: 200
+			});
+		} catch {
+			// Still locked — try again on next startup.
+		}
+	}
+}
+
 function isProjectEmpty(dir: string): boolean {
 	if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
 		return true;
@@ -208,6 +236,8 @@ ipcMain.handle('user:initialize-manager', async (_, user: UserData) => {
 				fs.mkdirSync(casesDir);
 			}
 
+			sweepProjectTrash(user.dir);
+
 			return resolve({});
 		} catch (err) {
 			return reject(`Failed to initialize project manager: ${err}`);
@@ -293,6 +323,67 @@ ipcMain.handle('case:create-new', async (_, casename) => {
 			return resolve(trial);
 		} catch (err) {
 			return reject(`Failed to create case: ${err}`);
+		}
+	});
+});
+
+/**
+ * Handles the case:remove request.
+ *
+ * Deletes the case folder from disk (imports, outputs, graphs) and removes the
+ * metadata entry from the project database. Returns the removed casedata.
+ */
+ipcMain.handle('case:remove', async (_, trial: CaseData) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			if (!trial) {
+				return reject('No case provided for removal');
+			}
+
+			const storedCase = project_manager.actions.case.read(trial.name);
+			if (!storedCase) {
+				return reject(`Case not found: ${trial.name}`);
+			}
+
+			if (storedCase.path && fs.existsSync(storedCase.path)) {
+				// Rename to a project-level .trash dir first — on Windows, rename
+				// succeeds even when child handles are held (AV scanners, Explorer
+				// preview, video thumbnailer), whereas rm on the folder itself
+				// fails with EPERM. The rm that follows is best-effort; anything
+				// left behind gets swept on next app startup (see sweepProjectTrash).
+				const user = main_manager.actions.user.read();
+				const trashDir = path.join(user.dir, '.trash');
+				if (!fs.existsSync(trashDir)) {
+					fs.mkdirSync(trashDir, { recursive: true });
+				}
+				const trashPath = path.join(
+					trashDir,
+					`${path.basename(storedCase.path)}-${Date.now()}`
+				);
+
+				try {
+					fs.renameSync(storedCase.path, trashPath);
+				} catch (renameErr) {
+					return reject(`Failed to remove case folder (is it open in another program?): ${renameErr}`);
+				}
+
+				try {
+					fs.rmSync(trashPath, {
+						recursive: true,
+						force: true,
+						maxRetries: 10,
+						retryDelay: 200
+					});
+				} catch {
+					// Swallow — folder is out of cases/ and will be cleaned up on
+					// next startup once the OS releases lingering handles.
+				}
+			}
+
+			const removed = project_manager.actions.case.remove(storedCase);
+			return resolve(removed);
+		} catch (err) {
+			return reject(`Failed to remove case: ${err}`);
 		}
 	});
 });

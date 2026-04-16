@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { AlertControls } from '@src/components/AlertWindow';
-
 import { type CaseData } from '@src/data/types';
 
 type Props = {
 	file: CaseData,
 	onClick: (file: CaseData) => void,
-	onUpdate: (file: CaseData) => void
+	onUpdate: (file: CaseData) => void,
+	onRemove: (file: CaseData) => void
 };
 
 /**
@@ -37,7 +36,7 @@ export default function Case(props: Props) {
 
 	const handleRemove = () => {
 		setMenuOpen(false);
-		AlertControls.error('Not implemented');
+		props.onRemove(props.file);
 	};
 
 	return (
