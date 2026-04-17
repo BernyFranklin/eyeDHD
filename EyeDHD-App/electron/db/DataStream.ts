@@ -2,7 +2,6 @@ import fs from "fs";
 import rl from "readline";
 
 import { spawn } from 'child_process';
-import FFMPEG_PATH from 'ffmpeg-static';
 
 import * as Three from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';

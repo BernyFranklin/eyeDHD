@@ -27,7 +27,12 @@ import type { SaccadeMetricsOptions, SegmentDefinition } from '@saccades/metrics
 import type { FigureOverlaySpec } from '@saccades/visualization/render/types';
 
 const appRoot = app.getAppPath();
-const FFMPEG_PATH: string = ffmpegPath ?? 'ERROR: ffmpeg binary not found';
+const FFMPEG_PATH: string = (() => {
+	const raw = ffmpegPath;
+	if (!raw) return 'ERROR: ffmpeg binary not found';
+	// When packaged, ffmpeg-static is unpacked from the asar — fix the path.
+	return app.isPackaged ? raw.replace('app.asar', 'app.asar.unpacked') : raw;
+})();
 
 /**
  * Main database setup

@@ -10,7 +10,20 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 
 const config: ForgeConfig = {
 	packagerConfig: {
-		asar: true
+		asar: {
+			unpack: '**/node_modules/ffmpeg-static/**'
+		},
+		// The VitePlugin sets ignore to only include `.vite/` by default.
+		// We override it here to also include native/binary modules that are
+		// marked external in vite.main.config.ts and can't be bundled.
+		ignore: (file: string) => {
+			if (!file) return false;
+			if (file.startsWith('/.vite')) return false;
+			if (file.startsWith('/node_modules/better-sqlite3')) return false;
+			if (file.startsWith('/node_modules/skia-canvas')) return false;
+			if (file.startsWith('/node_modules/ffmpeg-static')) return false;
+			return true;
+		}
 	},
 	rebuildConfig: {
 		force: true,
