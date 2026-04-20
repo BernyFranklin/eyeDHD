@@ -7,21 +7,61 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import fs from 'fs';
+import path from 'path';
+
+// Modules marked external in vite.main.config.ts — they must exist on disk at
+// runtime because Rollup can't bundle their native `.node` binaries or
+// shipped executables.
+const NATIVE_ROOTS = ['better-sqlite3', 'skia-canvas', 'ffmpeg-static'];
+
+// Walk the dependency graph to collect every package the native roots need at
+// runtime. Keeps the ignore list in sync with package.json automatically.
+function collectRuntimeDeps(roots: string[]): Set<string> {
+	const projectRoot = __dirname;
+	const visited = new Set<string>();
+	const resolvePackage = (name: string, startDir: string): string | null => {
+		let dir = startDir;
+		while (true) {
+			const candidate = path.join(dir, 'node_modules', name, 'package.json');
+			if (fs.existsSync(candidate)) return candidate;
+			const parent = path.dirname(dir);
+			if (parent === dir) return null;
+			dir = parent;
+		}
+	};
+	const walk = (name: string, fromDir: string) => {
+		if (visited.has(name)) return;
+		const pjPath = resolvePackage(name, fromDir);
+		if (!pjPath) return;
+		visited.add(name);
+		const pkg = JSON.parse(fs.readFileSync(pjPath, 'utf8'));
+		const deps = Object.keys(pkg.dependencies || {});
+		const nextDir = path.dirname(pjPath);
+		for (const d of deps) walk(d, nextDir);
+	};
+	for (const r of roots) walk(r, projectRoot);
+	return visited;
+}
+
+const RUNTIME_DEPS = collectRuntimeDeps(NATIVE_ROOTS);
 
 const config: ForgeConfig = {
 	packagerConfig: {
 		asar: {
 			unpack: '**/node_modules/ffmpeg-static/**'
 		},
-		// The VitePlugin sets ignore to only include `.vite/` by default.
-		// We override it here to also include native/binary modules that are
-		// marked external in vite.main.config.ts and can't be bundled.
+		// VitePlugin's default ignore keeps only `.vite/`. We widen it to keep
+		// the runtime-dep closure of modules marked external in
+		// vite.main.config.ts (computed above). Parent directories must be
+		// allowed or the walker won't descend into them.
 		ignore: (file: string) => {
 			if (!file) return false;
-			if (file.startsWith('/.vite')) return false;
-			if (file.startsWith('/node_modules/better-sqlite3')) return false;
-			if (file.startsWith('/node_modules/skia-canvas')) return false;
-			if (file.startsWith('/node_modules/ffmpeg-static')) return false;
+			if (file === '/package.json') return false;
+			if (file === '/.vite' || file.startsWith('/.vite/')) return false;
+			if (file === '/node_modules') return false;
+			const m = file.match(/^\/node_modules\/((?:@[^/]+\/)?[^/]+)(\/|$)/);
+			if (m && RUNTIME_DEPS.has(m[1])) return false;
 			return true;
 		}
 	},

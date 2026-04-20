@@ -34,12 +34,17 @@ const FFMPEG_PATH: string = (() => {
 	return app.isPackaged ? raw.replace('app.asar', 'app.asar.unpacked') : raw;
 })();
 
+// In dev, app.getAppPath() is the project root (writable). When packaged,
+// it's inside the read-only app.asar archive, so user-level state must live
+// in Electron's per-user writable directory (userData).
+const mainDbRoot = app.isPackaged ? app.getPath('userData') : appRoot;
+
 /**
  * Main database setup
  * The main database keeps track of user settings like project directory
  */
 const main_manager = new DatabaseManager({
-	path: path.join(appRoot, 'main.db'),
+	path: path.join(mainDbRoot, 'main.db'),
 	temporary: false,
 	logging: false
 });

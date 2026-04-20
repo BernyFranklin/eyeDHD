@@ -1,7 +1,7 @@
 import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { HashRouter, Route, Routes } from 'react-router';
 
 import { Login, Home, Processing } from '@src/pages';
 
@@ -12,7 +12,7 @@ import '@src/index.css';
 
 createRoot(document.getElementById('root')).render(
 	<StrictMode>
-		<BrowserRouter>
+		<HashRouter>
 			<Routes>
 				<Route path='/' element={
 					<Provider store={store}>
@@ -24,6 +24,6 @@ createRoot(document.getElementById('root')).render(
 					<Route path='processing' element={<Processing />} />
 				</Route>
 			</Routes>
-		</BrowserRouter>
+		</HashRouter>
 	</StrictMode>
 );
