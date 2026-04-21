@@ -39,7 +39,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 	const right = new Three.Scene();
 
 	const loader = new GLTFLoader();
-	const model = await loader.loadAsync('/eye_model.glb');
+	const model = await loader.loadAsync(new URL('eye_model.glb', document.baseURI).href);
 
 	left.add(model.scene.clone(true));
 	right.add(model.scene.clone(true));
