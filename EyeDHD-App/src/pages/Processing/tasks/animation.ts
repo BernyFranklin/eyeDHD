@@ -113,6 +113,13 @@ const fn: TaskFn = async (trial, dispatch) => {
 	let frames = [];
 	const pixels = new Uint8Array(SIZE.width * SIZE.height * 4);
 
+	// Phase timers (ms). Reveal which stage dominates on Windows vs Mac.
+	let renderMs = 0;
+	let readbackMs = 0;
+	let ipcMs = 0;
+	let lastLoggedAt = 0;
+	const wallStart = performance.now();
+
 	window.electron.case.startFFMPEG(trial, SIZE);
 
 	for await (const row of activeStream) {
@@ -136,7 +143,9 @@ const fn: TaskFn = async (trial, dispatch) => {
 		right.rotation.set(right_rotation.x, right_rotation.y, right_rotation.z);
 
 		// Render scene and grab pixels to send to backend
+		const tRenderStart = performance.now();
 		renderer.render(scene, camera);
+		const tReadStart = performance.now();
 
 		renderer.readRenderTargetPixels(
 			renderer.getRenderTarget(),
@@ -146,11 +155,28 @@ const fn: TaskFn = async (trial, dispatch) => {
 			SIZE.height,
 			pixels
 		);
+		const tReadEnd = performance.now();
 		frames.push(pixels.slice());
 
+		renderMs += tReadStart - tRenderStart;
+		readbackMs += tReadEnd - tReadStart;
+
 		if (frames.length >= 100) {
+			const tIpcStart = performance.now();
 			await window.electron.case.saveAnimation(trial, frames, SIZE);
+			ipcMs += performance.now() - tIpcStart;
 			frames = [];
+		}
+
+		if (kept - lastLoggedAt >= 500) {
+			const wall = performance.now() - wallStart;
+			console.log(
+				`[animation] frames=${kept} wall=${wall.toFixed(0)}ms ` +
+				`render=${renderMs.toFixed(0)}ms ` +
+				`readback=${readbackMs.toFixed(0)}ms ` +
+				`ipc=${ipcMs.toFixed(0)}ms`
+			);
+			lastLoggedAt = kept;
 		}
 
 		progress = progress + 1;
@@ -160,6 +186,15 @@ const fn: TaskFn = async (trial, dispatch) => {
 	activeStream = null;
 
 	window.electron.case.saveAnimation(trial, frames, SIZE);
+
+	const wallTotal = performance.now() - wallStart;
+	console.log(
+		`[animation] DONE frames=${kept} wall=${wallTotal.toFixed(0)}ms ` +
+		`render=${renderMs.toFixed(0)}ms ` +
+		`readback=${readbackMs.toFixed(0)}ms ` +
+		`ipc=${ipcMs.toFixed(0)}ms`
+	);
+
 	await window.electron.case.stopFFMPEG(trial, true);
 
 	renderer.dispose();
