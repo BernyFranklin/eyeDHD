@@ -117,70 +117,96 @@ const fn: TaskFn = async (trial, dispatch) => {
 	let renderMs = 0;
 	let readbackMs = 0;
 	let ipcMs = 0;
+	let iterWaitMs = 0;
+	let dispatchMs = 0;
+	let sliceMs = 0;
+	let rowsProcessed = 0;
 	let lastLoggedAt = 0;
 	const wallStart = performance.now();
+	let tPrevIterEnd = wallStart;
 
 	window.electron.case.startFFMPEG(trial, SIZE);
 
-	for await (const row of activeStream) {
-		const percent = progress / trial.cleaned_rows;
-		dispatch(setTaskProgress(percent));
-
-		if (progress !== keep) {
-			progress = progress + 1;
-			continue;
+	while (true) {
+		const batch = await activeStream.readBatch();
+		if (batch.length === 0) {
+			break;
 		}
 
-		kept = kept + 1;
+		for (const row of batch) {
+			const tIterStart = performance.now();
+			iterWaitMs += tIterStart - tPrevIterEnd;
+			rowsProcessed++;
 
-		const targets = calculate_rotations(row as TrackingData);
-		// TODO: This isn't working
-		update_dilation(row as TrackingData, left_pupil, right_pupil);
-		interpolate_rotation(targets, left_rotation, right_rotation);
+			const tDispatchStart = performance.now();
+			const percent = progress / trial.cleaned_rows;
+			dispatch(setTaskProgress(percent));
+			dispatchMs += performance.now() - tDispatchStart;
 
-		// Apply rotation to models
-		left.rotation.set(left_rotation.x, left_rotation.y, left_rotation.z);
-		right.rotation.set(right_rotation.x, right_rotation.y, right_rotation.z);
+			if (progress !== keep) {
+				progress = progress + 1;
+				tPrevIterEnd = performance.now();
+				continue;
+			}
 
-		// Render scene and grab pixels to send to backend
-		const tRenderStart = performance.now();
-		renderer.render(scene, camera);
-		const tReadStart = performance.now();
+			kept = kept + 1;
 
-		renderer.readRenderTargetPixels(
-			renderer.getRenderTarget(),
-			0,
-			0,
-			SIZE.width,
-			SIZE.height,
-			pixels
-		);
-		const tReadEnd = performance.now();
-		frames.push(pixels.slice());
+			const targets = calculate_rotations(row as TrackingData);
+			// TODO: This isn't working
+			update_dilation(row as TrackingData, left_pupil, right_pupil);
+			interpolate_rotation(targets, left_rotation, right_rotation);
 
-		renderMs += tReadStart - tRenderStart;
-		readbackMs += tReadEnd - tReadStart;
+			// Apply rotation to models
+			left.rotation.set(left_rotation.x, left_rotation.y, left_rotation.z);
+			right.rotation.set(right_rotation.x, right_rotation.y, right_rotation.z);
 
-		if (frames.length >= 100) {
-			const tIpcStart = performance.now();
-			await window.electron.case.saveAnimation(trial, frames, SIZE);
-			ipcMs += performance.now() - tIpcStart;
-			frames = [];
-		}
+			// Render scene and grab pixels to send to backend
+			const tRenderStart = performance.now();
+			renderer.render(scene, camera);
+			const tReadStart = performance.now();
 
-		if (kept - lastLoggedAt >= 500) {
-			const wall = performance.now() - wallStart;
-			console.log(
-				`[animation] frames=${kept} wall=${wall.toFixed(0)}ms ` +
-				`render=${renderMs.toFixed(0)}ms ` +
-				`readback=${readbackMs.toFixed(0)}ms ` +
-				`ipc=${ipcMs.toFixed(0)}ms`
+			renderer.readRenderTargetPixels(
+				renderer.getRenderTarget(),
+				0,
+				0,
+				SIZE.width,
+				SIZE.height,
+				pixels
 			);
-			lastLoggedAt = kept;
-		}
+			const tReadEnd = performance.now();
+			const tSliceStart = tReadEnd;
+			frames.push(pixels.slice());
+			const tSliceEnd = performance.now();
 
-		progress = progress + 1;
-		keep = keep + calculate_interval(progress);
+			renderMs += tReadStart - tRenderStart;
+			readbackMs += tReadEnd - tReadStart;
+			sliceMs += tSliceEnd - tSliceStart;
+
+			if (frames.length >= 100) {
+				const tIpcStart = performance.now();
+				await window.electron.case.saveAnimation(trial, frames, SIZE);
+				ipcMs += performance.now() - tIpcStart;
+				frames = [];
+			}
+
+			if (kept - lastLoggedAt >= 500) {
+				const wall = performance.now() - wallStart;
+				console.log(
+					`[animation] frames=${kept} rows=${rowsProcessed} wall=${wall.toFixed(0)}ms ` +
+					`render=${renderMs.toFixed(0)}ms ` +
+					`readback=${readbackMs.toFixed(0)}ms ` +
+					`ipc=${ipcMs.toFixed(0)}ms ` +
+					`iterWait=${iterWaitMs.toFixed(0)}ms ` +
+					`dispatch=${dispatchMs.toFixed(0)}ms ` +
+					`slice=${sliceMs.toFixed(0)}ms`
+				);
+				lastLoggedAt = kept;
+			}
+
+			progress = progress + 1;
+			keep = keep + calculate_interval(progress);
+			tPrevIterEnd = performance.now();
+		}
 	}
 
 	activeStream = null;
@@ -189,9 +215,12 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	const wallTotal = performance.now() - wallStart;
 	console.log(
-		`[animation] DONE frames=${kept} wall=${wallTotal.toFixed(0)}ms ` +
+		`[animation] DONE frames=${kept} rows=${rowsProcessed} wall=${wallTotal.toFixed(0)}ms ` +
 		`render=${renderMs.toFixed(0)}ms ` +
 		`readback=${readbackMs.toFixed(0)}ms ` +
+		`iterWait=${iterWaitMs.toFixed(0)}ms ` +
+		`dispatch=${dispatchMs.toFixed(0)}ms ` +
+		`slice=${sliceMs.toFixed(0)}ms ` +
 		`ipc=${ipcMs.toFixed(0)}ms`
 	);
 

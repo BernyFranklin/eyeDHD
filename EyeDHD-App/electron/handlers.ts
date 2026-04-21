@@ -1,4 +1,4 @@
-import { app, dialog, ipcMain, MessageChannelMain, MessagePortMain, Notification } from 'electron';
+import { app, dialog, ipcMain, Notification } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
@@ -600,16 +600,8 @@ ipcMain.handle('profile:delete', async (_, profile: ConfigProfile) => {
 });
 
 let ffmpeg: ChildProcess | null = null;
-let animationTransport: MessagePortMain | null = null;
 
-function teardownAnimationTransport() {
-	if (animationTransport) {
-		try { animationTransport.close(); } catch { /* ignore */ }
-		animationTransport = null;
-	}
-}
-
-ipcMain.on('case:start-ffmpeg', (event, trial, size) => {
+ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
 	const output_path = animationOutputPath(trial);
 	ffmpeg = spawn(FFMPEG_PATH, [
 		"-y",
@@ -623,34 +615,11 @@ ipcMain.on('case:start-ffmpeg', (event, trial, size) => {
 		"-pix_fmt", "yuv420p",
 		output_path
 	], { stdio: ["pipe", "inherit", "inherit"] });
-
-	// Set up a dedicated MessagePort for high-throughput zero-copy frame transfer.
-	// The renderer transfers each batch's ArrayBuffers directly into the main
-	// process instead of going through ipcRenderer.invoke's structured-clone copy.
-	teardownAnimationTransport();
-	const { port1, port2 } = new MessageChannelMain();
-	animationTransport = port2;
-	port2.on('message', (msg) => {
-		const data = msg.data as { buffers?: ArrayBuffer[]; ack?: number } | undefined;
-		const buffers = data?.buffers;
-		if (Array.isArray(buffers) && ffmpeg) {
-			for (const buf of buffers) {
-				ffmpeg.stdin.write(Buffer.from(buf));
-			}
-		}
-		if (typeof data?.ack === 'number') {
-			port2.postMessage({ ack: data.ack });
-		}
-	});
-	port2.start();
-	event.sender.postMessage('case:animation-port', null, [port1]);
 });
 
 ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			teardownAnimationTransport();
-
 			if (!ffmpeg) {
 				return resolve({});
 			}
@@ -685,6 +654,24 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 			ffmpeg.stdin.end();
 		} catch (err) {
 			return reject(`Failed to stop FFMPEG for file: ${trial.name}. Error: ${err}`);
+		}
+	});
+});
+
+ipcMain.handle('case:save-animation', async (_, trial, frames, size) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			if (!ffmpeg) {
+				return reject('FFMPEG process not initialized');
+			}
+
+			for (const frame of frames) {
+				ffmpeg.stdin.write(frame);
+			}
+
+			resolve({});
+		} catch (err) {
+			return reject(`Failed to save animation frames for file: ${trial.name}. Error: ${err}`);
 		}
 	});
 });

@@ -100,57 +100,6 @@ declare interface Renderer {
 }
 
 /**
- * Zero-copy transport for animation frame batches. Main allocates a
- * MessageChannelMain in case:start-ffmpeg and transfers one port to the renderer
- * via webContents.postMessage. Frame batches are posted through this port with
- * their underlying ArrayBuffers in the transfer list, which avoids the 370MB
- * structured-clone copy that ipcRenderer.invoke would otherwise perform.
- */
-let animationTransport: MessagePort | null = null;
-let animationTransportResolvers: ((port: MessagePort) => void)[] = [];
-let nextAnimationSeq = 0;
-const pendingAnimationAcks = new Map<number, () => void>();
-const inflightAnimationSends = new Set<Promise<void>>();
-
-ipcRenderer.on('case:animation-port', (event) => {
-	if (animationTransport) {
-		try { animationTransport.close(); } catch { /* ignore */ }
-	}
-	const [port] = event.ports;
-	animationTransport = port;
-	port.onmessage = (e) => {
-		const ack = (e.data as { ack?: number } | null)?.ack;
-		if (typeof ack !== 'number') return;
-		const resolver = pendingAnimationAcks.get(ack);
-		if (resolver) {
-			pendingAnimationAcks.delete(ack);
-			resolver();
-		}
-	};
-	port.start();
-	const waiters = animationTransportResolvers;
-	animationTransportResolvers = [];
-	for (const resolve of waiters) resolve(port);
-});
-
-function waitForAnimationTransport(): Promise<MessagePort> {
-	if (animationTransport) return Promise.resolve(animationTransport);
-	return new Promise((resolve) => animationTransportResolvers.push(resolve));
-}
-
-function teardownAnimationTransport() {
-	if (animationTransport) {
-		try { animationTransport.close(); } catch { /* ignore */ }
-		animationTransport = null;
-	}
-	for (const resolver of pendingAnimationAcks.values()) resolver();
-	pendingAnimationAcks.clear();
-	animationTransportResolvers = [];
-	inflightAnimationSends.clear();
-	nextAnimationSeq = 0;
-}
-
-/**
  * Defines the Electron requests
  */
 const electron: Electron = {
@@ -228,31 +177,13 @@ const electron: Electron = {
 			return await ipcRenderer.invoke('case:run-detection', trial);
 		},
 		startFFMPEG: (trial: CaseData, size) => {
-			teardownAnimationTransport();
 			return ipcRenderer.send('case:start-ffmpeg', trial, size);
 		},
 		stopFFMPEG: async (trial: CaseData, completed: boolean): Promise<void> => {
-			if (inflightAnimationSends.size > 0) {
-				await Promise.all([...inflightAnimationSends]);
-			}
-			try {
-				return await ipcRenderer.invoke('case:stop-ffmpeg', trial, completed);
-			} finally {
-				teardownAnimationTransport();
-			}
+			return await ipcRenderer.invoke('case:stop-ffmpeg', trial);
 		},
-		saveAnimation: async (_trial: CaseData, frames: Uint8Array[], _size) => {
-			if (frames.length === 0) return;
-			const port = await waitForAnimationTransport();
-			const buffers = frames.map((f) => f.buffer as ArrayBuffer);
-			const seq = nextAnimationSeq++;
-			const p = new Promise<void>((resolve) => {
-				pendingAnimationAcks.set(seq, resolve);
-			});
-			inflightAnimationSends.add(p);
-			p.finally(() => inflightAnimationSends.delete(p));
-			port.postMessage({ buffers, ack: seq }, buffers);
-			return p;
+		saveAnimation: async (trial: CaseData, frames: Uint8Array[], size) => {
+			return await ipcRenderer.invoke('case:save-animation', trial, frames, size);
 		},
 		/**
 		 * Verifies that output files exist for each task flag set in the database.
