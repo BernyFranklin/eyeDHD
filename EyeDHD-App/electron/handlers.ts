@@ -3,6 +3,8 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import { ChildProcess, spawn, spawnSync } from 'child_process';
+import net from 'net';
+import crypto from 'crypto';
 import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
@@ -600,6 +602,89 @@ ipcMain.handle('profile:delete', async (_, profile: ConfigProfile) => {
 });
 
 let ffmpeg: ChildProcess | null = null;
+let animationPipeServer: net.Server | null = null;
+let animationPipePath: string | null = null;
+
+/**
+ * Builds a per-session pipe/socket path. On Windows this is a Named Pipe under
+ * \\.\pipe\; on macOS/Linux it's a Unix domain socket in os.tmpdir(). The path
+ * is unique per call (pid + random suffix) so overlapping sessions never collide.
+ */
+function makeAnimationPipePath(): string {
+	const rand = crypto.randomBytes(4).toString('hex');
+	if (process.platform === 'win32') {
+		return `\\\\.\\pipe\\eyedhd-anim-${process.pid}-${rand}`;
+	}
+	return path.join(os.tmpdir(), `eyedhd-anim-${process.pid}-${rand}.sock`);
+}
+
+/**
+ * Stand up the per-session animation pipe server and start listening. For Step 2
+ * this is observation-only: it logs connections, first-write size, and a 1-second
+ * byte-count sample, but does NOT pipe anything into ffmpeg.stdin yet. That wiring
+ * happens in Step 4. For now the server should simply come up, log its path, and
+ * stay idle (the renderer has no way to reach it until Step 3).
+ */
+function startAnimationPipeServer(): void {
+	// Defensive: ensure no stale server from a previous session.
+	if (animationPipeServer) {
+		try { animationPipeServer.close(); } catch { /* ignore */ }
+		animationPipeServer = null;
+	}
+	// On *nix, a stale socket file from a crashed prior session would cause EADDRINUSE.
+	animationPipePath = makeAnimationPipePath();
+	if (process.platform !== 'win32' && fs.existsSync(animationPipePath)) {
+		try { fs.unlinkSync(animationPipePath); } catch { /* ignore */ }
+	}
+
+	const server = net.createServer((socket) => {
+		const tConnect = Date.now();
+		let bytes = 0;
+		let firstWriteLogged = false;
+		console.log(`[anim-pipe] connected @ ${animationPipePath}`);
+
+		const sampleTimer = setTimeout(() => {
+			console.log(`[anim-pipe] 1s sample: ${bytes} bytes received`);
+		}, 1000);
+
+		socket.on('data', (chunk) => {
+			if (!firstWriteLogged) {
+				console.log(`[anim-pipe] first write: ${chunk.length} bytes at +${Date.now() - tConnect}ms`);
+				firstWriteLogged = true;
+			}
+			bytes += chunk.length;
+		});
+		socket.on('close', () => {
+			clearTimeout(sampleTimer);
+			console.log(`[anim-pipe] closed, total bytes=${bytes}`);
+		});
+		socket.on('error', (err) => {
+			console.warn(`[anim-pipe] socket error: ${err.message}`);
+		});
+	});
+
+	server.on('error', (err) => {
+		console.warn(`[anim-pipe] server error: ${err.message}`);
+	});
+
+	server.listen(animationPipePath, () => {
+		console.log(`[anim-pipe] listening at ${animationPipePath}`);
+	});
+
+	animationPipeServer = server;
+}
+
+function stopAnimationPipeServer(): void {
+	if (!animationPipeServer) return;
+	try { animationPipeServer.close(); } catch { /* ignore */ }
+	animationPipeServer = null;
+	// Best-effort cleanup of the socket file on *nix. On Windows the Named Pipe
+	// is destroyed automatically when the server closes.
+	if (process.platform !== 'win32' && animationPipePath) {
+		try { fs.unlinkSync(animationPipePath); } catch { /* ignore */ }
+	}
+	animationPipePath = null;
+}
 
 type EncoderChoice = {
 	codec: string;
@@ -644,6 +729,7 @@ function selectEncoder(): EncoderChoice {
 }
 
 ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
+	startAnimationPipeServer();
 	const output_path = animationOutputPath(trial);
 	const enc = selectEncoder();
 	ffmpeg = spawn(FFMPEG_PATH, [
@@ -672,17 +758,22 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			if (!ffmpeg) {
+				stopAnimationPipeServer();
 				return resolve({});
 			}
 
 			if (!completed) {
-				ffmpeg.on('close', () => ffmpeg = null);
+				ffmpeg.on('close', () => {
+					ffmpeg = null;
+					stopAnimationPipeServer();
+				});
 				ffmpeg.stdin.end();
 				return resolve({});
 			}
 
 			ffmpeg.on('close', (code) => {
 				ffmpeg = null;
+				stopAnimationPipeServer();
 
 				if (code === 0) {
 					try {
