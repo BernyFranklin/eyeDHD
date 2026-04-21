@@ -2,7 +2,7 @@ import { app, dialog, ipcMain, Notification } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess, spawn, spawnSync } from 'child_process';
 import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
@@ -611,8 +611,51 @@ ipcMain.handle('profile:delete', async (_, profile: ConfigProfile) => {
 
 let ffmpeg: ChildProcess | null = null;
 
+type EncoderChoice = {
+	codec: string;
+	encoderArgs: string[];
+};
+
+let cachedEncoder: EncoderChoice | null = null;
+
+function probeEncoders(): Set<string> {
+	try {
+		const res = spawnSync(FFMPEG_PATH, ['-hide_banner', '-encoders'], {
+			encoding: 'utf8',
+			timeout: 5000,
+		});
+		if (res.status !== 0 || !res.stdout) return new Set();
+		const names = new Set<string>();
+		for (const line of res.stdout.split('\n')) {
+			const m = line.match(/^\s*[VASFXBD.]{6}\s+(\S+)/);
+			if (m) names.add(m[1]);
+		}
+		return names;
+	} catch {
+		return new Set();
+	}
+}
+
+function selectEncoder(): EncoderChoice {
+	if (cachedEncoder) return cachedEncoder;
+	const available = probeEncoders();
+	const candidates: EncoderChoice[] = [];
+	if (process.platform === 'darwin') {
+		candidates.push({ codec: 'h264_videotoolbox', encoderArgs: ['-b:v', '8M'] });
+	}
+	candidates.push({ codec: 'h264_nvenc', encoderArgs: ['-preset', 'p4', '-b:v', '8M'] });
+	candidates.push({ codec: 'h264_qsv',   encoderArgs: ['-preset', 'veryfast', '-b:v', '8M'] });
+	candidates.push({ codec: 'h264_amf',   encoderArgs: ['-quality', 'speed', '-b:v', '8M'] });
+	candidates.push({ codec: 'libx264',    encoderArgs: ['-preset', 'ultrafast', '-crf', '23'] });
+	const picked = candidates.find((c) => available.has(c.codec)) ?? candidates[candidates.length - 1];
+	console.log(`[ffmpeg] selected encoder: ${picked.codec}`);
+	cachedEncoder = picked;
+	return picked;
+}
+
 ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
 	const output_path = animationOutputPath(trial);
+	const enc = selectEncoder();
 	ffmpeg = spawn(FFMPEG_PATH, [
 		"-y",
 		"-f", "rawvideo",
@@ -621,10 +664,18 @@ ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
 		"-r", `${30}`,
 		"-i", "pipe:0",
 		"-vf", "vflip",
-		"-c:v", "libx264",
+		"-c:v", enc.codec,
+		...enc.encoderArgs,
 		"-pix_fmt", "yuv420p",
 		output_path
 	], { stdio: ["pipe", "inherit", "inherit"] });
+
+	ffmpeg.on('exit', (code) => {
+		if (code !== 0 && code !== null && enc.codec !== 'libx264') {
+			console.warn(`[ffmpeg] ${enc.codec} exited code=${code}; falling back to libx264 for remainder of session`);
+			cachedEncoder = { codec: 'libx264', encoderArgs: ['-preset', 'ultrafast', '-crf', '23'] };
+		}
+	});
 });
 
 ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
