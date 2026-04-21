@@ -129,22 +129,17 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	window.electron.case.startFFMPEG(trial, SIZE);
 
-<<<<<<< HEAD
-	for await (const row of activeStream) {
-		if (cancelled) {
-			break;
-		}
-
-		const percent = progress / trial.cleaned_rows;
-		dispatch(setTaskProgress(percent));
-=======
-	while (true) {
+	outer: while (true) {
 		const batch = await activeStream.readBatch();
 		if (batch.length === 0) {
 			break;
 		}
 
 		for (const row of batch) {
+			if (cancelled) {
+				break outer;
+			}
+
 			const tIterStart = performance.now();
 			iterWaitMs += tIterStart - tPrevIterEnd;
 			rowsProcessed++;
@@ -194,6 +189,9 @@ const fn: TaskFn = async (trial, dispatch) => {
 			sliceMs += tSliceEnd - tSliceStart;
 
 			if (frames.length >= 100) {
+				if (cancelled) {
+					break outer;
+				}
 				const tIpcStart = performance.now();
 				await window.electron.case.saveAnimation(trial, frames, SIZE);
 				ipcMs += performance.now() - tIpcStart;
@@ -213,50 +211,11 @@ const fn: TaskFn = async (trial, dispatch) => {
 				);
 				lastLoggedAt = kept;
 			}
->>>>>>> debug-windows-video
 
 			progress = progress + 1;
 			keep = keep + calculate_interval(progress);
 			tPrevIterEnd = performance.now();
 		}
-<<<<<<< HEAD
-
-		kept = kept + 1;
-
-		const targets = calculate_rotations(row as TrackingData);
-		// TODO: This isn't working
-		update_dilation(row as TrackingData, left_pupil, right_pupil);
-		interpolate_rotation(targets, left_rotation, right_rotation);
-
-		// Apply rotation to models
-		left.rotation.set(left_rotation.x, left_rotation.y, left_rotation.z);
-		right.rotation.set(right_rotation.x, right_rotation.y, right_rotation.z);
-
-		// Render scene and grab pixels to send to backend
-		renderer.render(scene, camera);
-
-		renderer.readRenderTargetPixels(
-			renderer.getRenderTarget(),
-			0,
-			0,
-			SIZE.width,
-			SIZE.height,
-			pixels
-		);
-		frames.push(pixels.slice());
-
-		if (frames.length >= 100) {
-			if (cancelled) {
-				break;
-			}
-			await window.electron.case.saveAnimation(trial, frames, SIZE);
-			frames = [];
-		}
-
-		progress = progress + 1;
-		keep = keep + calculate_interval(progress);
-=======
->>>>>>> debug-windows-video
 	}
 
 	activeStream = null;
