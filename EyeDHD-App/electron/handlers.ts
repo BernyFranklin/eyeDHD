@@ -728,7 +728,7 @@ function selectEncoder(): EncoderChoice {
 	return picked;
 }
 
-ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
+ipcMain.handle('case:start-ffmpeg', async (_, trial, size) => {
 	startAnimationPipeServer();
 	const output_path = animationOutputPath(trial);
 	const enc = selectEncoder();
@@ -752,6 +752,11 @@ ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
 			cachedEncoder = { codec: 'libx264', encoderArgs: ['-preset', 'ultrafast', '-crf', '23'] };
 		}
 	});
+
+	// Return the pipe path so the renderer's preload can connect a socket to it.
+	// For Step 3 the preload connects but still sends frames via case:save-animation;
+	// the socket just sits idle so we can confirm the transport comes up cleanly.
+	return animationPipePath;
 });
 
 ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
