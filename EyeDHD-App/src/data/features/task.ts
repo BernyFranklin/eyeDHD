@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 import type { RootState } from '..'
 import { TASKORDER, type Task } from '@src/pages/Processing/tasks';
+import { setSelectedCase } from './user';
 
 type TaskError = {
 	message: string,
@@ -52,6 +53,16 @@ export const taskSlice = createSlice({
 		setTaskProgress: (state, action: PayloadAction<number>) => {
 			state.progress = Math.max(0.0, Math.min(1.0, action.payload));
 		}
+	},
+	extraReducers: (builder) => {
+		// Any case switch (including clearing to null) must reset the pipeline so the
+		// new case doesn't inherit a stale `current` from the previous one — which
+		// would either mislabel the Start button or auto-resume a task mid-pipeline.
+		builder.addCase(setSelectedCase, (state) => {
+			state.current = null;
+			state.progress = 0.0;
+			state.error = null;
+		});
 	}
 });
 

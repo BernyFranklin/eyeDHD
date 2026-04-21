@@ -24,8 +24,10 @@ type Rotation = {
 };
 
 let activeStream: RemoteStream | null = null;
+let cancelled = false;
 
 const fn: TaskFn = async (trial, dispatch) => {
+	cancelled = false;
 	trial = await window.electron.case.read(trial.name);
 
 	const scene = new Three.Scene();
@@ -116,6 +118,10 @@ const fn: TaskFn = async (trial, dispatch) => {
 	window.electron.case.startFFMPEG(trial, SIZE);
 
 	for await (const row of activeStream) {
+		if (cancelled) {
+			break;
+		}
+
 		const percent = progress / trial.cleaned_rows;
 		dispatch(setTaskProgress(percent));
 
@@ -149,6 +155,9 @@ const fn: TaskFn = async (trial, dispatch) => {
 		frames.push(pixels.slice());
 
 		if (frames.length >= 100) {
+			if (cancelled) {
+				break;
+			}
 			await window.electron.case.saveAnimation(trial, frames, SIZE);
 			frames = [];
 		}
@@ -158,6 +167,15 @@ const fn: TaskFn = async (trial, dispatch) => {
 	}
 
 	activeStream = null;
+
+	// If the task was cancelled (user navigated away), cleanup() is responsible for
+	// tearing down ffmpeg. Sending more frames or a completion signal here would race
+	// with cleanup's stdin.end() and cause ERR_STREAM_WRITE_AFTER_END.
+	if (cancelled) {
+		renderer.dispose();
+		renderTarget.dispose();
+		return;
+	}
 
 	window.electron.case.saveAnimation(trial, frames, SIZE);
 	await window.electron.case.stopFFMPEG(trial, true);
@@ -169,6 +187,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 }
 
 async function cleanup(trial: CaseData) {
+	cancelled = true;
 	activeStream?.cancel();
 	activeStream = null;
 	await window.electron.case.stopFFMPEG(trial, false);

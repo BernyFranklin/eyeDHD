@@ -634,9 +634,16 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 				return resolve({});
 			}
 
+			const stdin = ffmpeg.stdin;
+			const endStdin = () => {
+				if (stdin && !stdin.writableEnded) {
+					stdin.end();
+				}
+			};
+
 			if (!completed) {
 				ffmpeg.on('close', () => ffmpeg = null);
-				ffmpeg.stdin.end();
+				endStdin();
 				return resolve({});
 			}
 
@@ -661,7 +668,7 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 				}
 			});
 
-			ffmpeg.stdin.end();
+			endStdin();
 		} catch (err) {
 			return reject(`Failed to stop FFMPEG for file: ${trial.name}. Error: ${err}`);
 		}
@@ -671,11 +678,17 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 ipcMain.handle('case:save-animation', async (_, trial, frames, size) => {
 	return new Promise(async (resolve, reject) => {
 		try {
-			if (!ffmpeg) {
-				return reject('FFMPEG process not initialized');
+			// If the task was cancelled (user navigated away), stdin may already have
+			// been ended by case:stop-ffmpeg. Silently drop the frames rather than
+			// throwing ERR_STREAM_WRITE_AFTER_END.
+			if (!ffmpeg || !ffmpeg.stdin || ffmpeg.stdin.writableEnded || ffmpeg.stdin.destroyed) {
+				return resolve({});
 			}
 
 			for (const frame of frames) {
+				if (ffmpeg.stdin.writableEnded || ffmpeg.stdin.destroyed) {
+					break;
+				}
 				ffmpeg.stdin.write(frame);
 			}
 
