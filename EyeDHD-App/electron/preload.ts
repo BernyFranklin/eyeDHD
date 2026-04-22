@@ -212,14 +212,35 @@ const electron: Electron = {
 			});
 		},
 		stopFFMPEG: async (trial: CaseData, completed: boolean): Promise<void> => {
+			// Flush any pending writes before invoking stop, so main doesn't close
+			// ffmpeg.stdin while bytes are still queued on the socket. end(cb) fires
+			// once all buffered data has been written out.
 			if (animationSocket) {
-				try { animationSocket.end(); } catch { /* ignore */ }
+				const sock = animationSocket;
 				animationSocket = null;
+				await new Promise<void>((resolve) => {
+					sock.end(() => resolve());
+				});
 			}
-			return await ipcRenderer.invoke('case:stop-ffmpeg', trial);
+			return await ipcRenderer.invoke('case:stop-ffmpeg', trial, completed);
 		},
 		saveAnimation: async (trial: CaseData, frames: Uint8Array[], size) => {
-			return await ipcRenderer.invoke('case:save-animation', trial, frames, size);
+			if (!animationSocket) {
+				throw new Error('animation socket not connected; startFFMPEG must be awaited before saveAnimation');
+			}
+			const sock = animationSocket;
+			for (const frame of frames) {
+				if (!sock.write(frame)) {
+					// Socket's internal buffer is full; wait for drain so we don't
+					// queue unbounded memory on the renderer side.
+					await new Promise<void>((resolve, reject) => {
+						const onDrain = () => { sock.off('error', onError); resolve(); };
+						const onError = (err: Error) => { sock.off('drain', onDrain); reject(err); };
+						sock.once('drain', onDrain);
+						sock.once('error', onError);
+					});
+				}
+			}
 		},
 		/**
 		 * Verifies that output files exist for each task flag set in the database.

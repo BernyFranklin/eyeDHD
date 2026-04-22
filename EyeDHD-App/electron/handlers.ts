@@ -604,6 +604,11 @@ ipcMain.handle('profile:delete', async (_, profile: ConfigProfile) => {
 let ffmpeg: ChildProcess | null = null;
 let animationPipeServer: net.Server | null = null;
 let animationPipePath: string | null = null;
+// Resolves when the current session's socket has fully drained into ffmpeg.stdin
+// (the socket emits 'end' after the renderer's end() FIN and all data is piped).
+// stopFFMPEG awaits this before ending stdin so the tail of the last batch isn't
+// truncated by a race between the stop-ffmpeg IPC and socket-buffered data.
+let animationSocketDrained: Promise<void> = Promise.resolve();
 
 /**
  * Builds a per-session pipe/socket path. On Windows this is a Named Pipe under
@@ -639,24 +644,39 @@ function startAnimationPipeServer(): void {
 
 	const server = net.createServer((socket) => {
 		const tConnect = Date.now();
-		let bytes = 0;
-		let firstWriteLogged = false;
 		console.log(`[anim-pipe] connected @ ${animationPipePath}`);
 
-		const sampleTimer = setTimeout(() => {
-			console.log(`[anim-pipe] 1s sample: ${bytes} bytes received`);
-		}, 1000);
+		// Pipe the incoming frames directly into ffmpeg.stdin. { end: false }
+		// leaves stdin open when the socket closes — stopFFMPEG is responsible
+		// for ending stdin explicitly so ffmpeg gets a chance to flush and
+		// finalize the MP4 header. If ffmpeg is not yet ready (shouldn't happen
+		// given the handler sequence), fail loudly.
+		if (!ffmpeg || !ffmpeg.stdin) {
+			console.warn('[anim-pipe] connection arrived but ffmpeg.stdin is not ready; destroying socket');
+			socket.destroy();
+			return;
+		}
 
-		socket.on('data', (chunk) => {
+		// Keep a lightweight first-write log so a broken transport surfaces within
+		// a second or two instead of producing a silent empty MP4.
+		let firstWriteLogged = false;
+		socket.once('data', (chunk) => {
 			if (!firstWriteLogged) {
 				console.log(`[anim-pipe] first write: ${chunk.length} bytes at +${Date.now() - tConnect}ms`);
 				firstWriteLogged = true;
 			}
-			bytes += chunk.length;
 		});
+
+		socket.pipe(ffmpeg.stdin, { end: false });
+		animationSocketDrained = new Promise<void>((resolve) => {
+			// 'end' fires when FIN is received and all queued data has been read;
+			// pipe() will have pushed everything to stdin by then.
+			socket.once('end', () => resolve());
+			socket.once('close', () => resolve());
+		});
+
 		socket.on('close', () => {
-			clearTimeout(sampleTimer);
-			console.log(`[anim-pipe] closed, total bytes=${bytes}`);
+			console.log(`[anim-pipe] socket closed`);
 		});
 		socket.on('error', (err) => {
 			console.warn(`[anim-pipe] socket error: ${err.message}`);
@@ -760,6 +780,12 @@ ipcMain.handle('case:start-ffmpeg', async (_, trial, size) => {
 });
 
 ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
+	// Wait for the socket to fully pipe its tail into ffmpeg.stdin before we
+	// end stdin. Without this, the last batch can be truncated because the
+	// IPC stop message can beat the last bytes in transit on the local socket.
+	await animationSocketDrained;
+	animationSocketDrained = Promise.resolve();
+
 	return new Promise(async (resolve, reject) => {
 		try {
 			if (!ffmpeg) {
@@ -801,24 +827,6 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 			ffmpeg.stdin.end();
 		} catch (err) {
 			return reject(`Failed to stop FFMPEG for file: ${trial.name}. Error: ${err}`);
-		}
-	});
-});
-
-ipcMain.handle('case:save-animation', async (_, trial, frames, size) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			if (!ffmpeg) {
-				return reject('FFMPEG process not initialized');
-			}
-
-			for (const frame of frames) {
-				ffmpeg.stdin.write(frame);
-			}
-
-			resolve({});
-		} catch (err) {
-			return reject(`Failed to save animation frames for file: ${trial.name}. Error: ${err}`);
 		}
 	});
 });
