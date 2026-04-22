@@ -667,10 +667,24 @@ function startAnimationPipeServer(): void {
 			}
 		});
 
-		socket.pipe(ffmpeg.stdin, { end: false });
+		// Manually forward socket chunks into ffmpeg.stdin. We deliberately do
+		// NOT use socket.pipe(ffmpeg.stdin) here because pipe() honors the
+		// destination's backpressure — and ffmpeg.stdin has a small default
+		// highWaterMark, which would pause the socket on every frame, propagate
+		// back to the renderer's drain-await, and gate saveAnimation on
+		// ffmpeg's real-time encode rate. Instead we ignore ffmpeg.stdin.write's
+		// return value so it buffers unbounded on the main side, just as the
+		// pre-socket ipcMain.handle path did. End-to-end backpressure still
+		// exists (kernel pipe buffer → renderer socket writable → drain await),
+		// it just lives on the correct side of the process boundary: the
+		// renderer stays bounded while main absorbs bursts.
+		const stdin = ffmpeg.stdin;
+		socket.on('data', (chunk) => {
+			stdin.write(chunk);
+		});
 		animationSocketDrained = new Promise<void>((resolve) => {
 			// 'end' fires when FIN is received and all queued data has been read;
-			// pipe() will have pushed everything to stdin by then.
+			// by then every chunk has been forwarded to stdin via the data handler.
 			socket.once('end', () => resolve());
 			socket.once('close', () => resolve());
 		});

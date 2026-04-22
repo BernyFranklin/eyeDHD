@@ -229,17 +229,22 @@ const electron: Electron = {
 				throw new Error('animation socket not connected; startFFMPEG must be awaited before saveAnimation');
 			}
 			const sock = animationSocket;
-			// Intentionally do NOT await 'drain'. The pre-socket path wrote frames
-			// into ffmpeg.stdin's Node writable buffer on main, which is unbounded;
-			// saveAnimation returned as soon as bytes were enqueued, and end-to-end
-			// backpressure came from ffmpeg's encode rate (via main's write loop
-			// blocking). Mirroring that here: we enqueue into the socket's writable
-			// buffer and return. socket.write's `false` return is advisory — data
-			// is not lost. This keeps ipc off the critical path so the renderer is
-			// only bounded by render+readback, while ffmpeg steady-state still
-			// paces overall throughput through the kernel pipe buffer.
+			// Await drain when the socket's writable buffer fills. This bounds
+			// renderer-process memory — the *unbounded* queue in this architecture
+			// lives on the main side in ffmpeg.stdin's Node writable buffer (see
+			// the manual data handler in handlers.ts that deliberately ignores
+			// ffmpeg.stdin.write's backpressure). Having drain here plus unbounded
+			// buffering on main reproduces the pre-socket path's semantics while
+			// eliminating the V8 structured-clone cost.
 			for (const frame of frames) {
-				sock.write(frame);
+				if (!sock.write(frame)) {
+					await new Promise<void>((resolve, reject) => {
+						const onDrain = () => { sock.off('error', onError); resolve(); };
+						const onError = (err: Error) => { sock.off('drain', onDrain); reject(err); };
+						sock.once('drain', onDrain);
+						sock.once('error', onError);
+					});
+				}
 			}
 		},
 		/**
