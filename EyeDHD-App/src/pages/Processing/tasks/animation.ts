@@ -50,33 +50,29 @@ const fn: TaskFn = async (trial, dispatch) => {
 
 	scene.add(left, right);
 
-	// Get pupils from both scenes
-	let left_pupil: Three.Object3D<Three.Object3DEventMap> & Three.Mesh = undefined;
-	let right_pupil: Three.Object3D<Three.Object3DEventMap> & Three.Mesh = undefined;
-	let left_open_idx = -1;
-	let right_open_idx = -1;
+	// Collect every mesh with an "Open" morph target in each scene. The model has
+	// multiple meshes sharing this shapekey (lid + pupil); updating only one leaves
+	// the others static.
+	const left_morph_meshes: Three.Mesh[] = [];
+	const right_morph_meshes: Three.Mesh[] = [];
 
 	left.traverse((o: Three.Object3D<Three.Object3DEventMap>) => {
 		if (o instanceof Three.Mesh && o.morphTargetDictionary && o.morphTargetInfluences) {
-			const idx = o.morphTargetDictionary['Open'];
-			if (idx !== undefined) {
-				left_pupil = o;
-				left_open_idx = idx;
+			if (o.morphTargetDictionary['Open'] !== undefined) {
+				left_morph_meshes.push(o);
 			}
 		}
 	});
 
 	right.traverse((o: Three.Object3D<Three.Object3DEventMap>) => {
 		if (o instanceof Three.Mesh && o.morphTargetDictionary && o.morphTargetInfluences) {
-			const idx = o.morphTargetDictionary['Open'];
-			if (idx !== undefined) {
-				right_pupil = o;
-				right_open_idx = idx;
+			if (o.morphTargetDictionary['Open'] !== undefined) {
+				right_morph_meshes.push(o);
 			}
 		}
 	});
 
-	if (left_pupil === undefined || right_pupil === undefined) {
+	if (left_morph_meshes.length === 0 || right_morph_meshes.length === 0) {
 		throw new Error("failed to find pupils in eye model");
 	}
 
@@ -164,7 +160,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 			kept = kept + 1;
 
 			const targets = calculate_rotations(row as TrackingData);
-			update_dilation(row as TrackingData, left_pupil, right_pupil, left_open_idx, right_open_idx);
+			update_dilation(row as TrackingData, left_morph_meshes, right_morph_meshes);
 			interpolate_rotation(targets, left_rotation, right_rotation);
 
 			// Apply rotation to models
@@ -343,17 +339,21 @@ function interpolate_rotation(
 // Update pupil dilation based on pupil diameter in mm, normalized to 0-1 range
 function update_dilation(
 	row: TrackingData,
-	left_pupil: Three.Mesh,
-	right_pupil: Three.Mesh,
-	left_open_idx: number,
-	right_open_idx: number
+	left_meshes: Three.Mesh[],
+	right_meshes: Three.Mesh[]
 ) {
 	if (row.LeftEyeStatus !== 'Invalid') {
-		left_pupil.morphTargetInfluences[left_open_idx] = NormalizePupilDilation(row.LeftPupilDiameterInMM);
+		const v = NormalizePupilDilation(row.LeftPupilDiameterInMM);
+		for (const m of left_meshes) {
+			m.morphTargetInfluences[m.morphTargetDictionary['Open']] = v;
+		}
 	}
 
 	if (row.RightEyeStatus !== 'Invalid') {
-		right_pupil.morphTargetInfluences[right_open_idx] = NormalizePupilDilation(row.RightPupilDiameterInMM);
+		const v = NormalizePupilDilation(row.RightPupilDiameterInMM);
+		for (const m of right_meshes) {
+			m.morphTargetInfluences[m.morphTargetDictionary['Open']] = v;
+		}
 	}
 }
 
