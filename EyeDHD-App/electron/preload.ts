@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
+import net from 'net';
 
 import { type UserData } from './db/tables/UserData';
 import { type CaseData, type SegmentInput, type DetectionConfig } from './db/tables/CaseData';
@@ -52,7 +53,7 @@ declare interface Electron {
 		startFFMPEG(trial: CaseData, size: {
 			width: number;
 			height: number;
-		}): void;
+		}): Promise<void>;
 		stopFFMPEG(trial: CaseData, completed: boolean): Promise<void>;
 		saveAnimation(trial: CaseData, frames: Uint8Array[], size: {
 			width: number;
@@ -98,6 +99,13 @@ declare interface Renderer {
 		offData(callback: (key: StreamKey, rows: DataType[], progress: Progress) => void): void;
 	}
 }
+
+/**
+ * Per-session socket connected to the main-process animation pipe. Held open
+ * across saveAnimation calls; closed on stopFFMPEG. In Step 3 this is connected
+ * but unused; Step 4 will route frames through it instead of case:save-animation.
+ */
+let animationSocket: net.Socket | null = null;
 
 /**
  * Defines the Electron requests
@@ -176,14 +184,68 @@ const electron: Electron = {
 		runDetection: async (trial: CaseData): Promise<DetectionResult> => {
 			return await ipcRenderer.invoke('case:run-detection', trial);
 		},
-		startFFMPEG: (trial: CaseData, size) => {
-			return ipcRenderer.send('case:start-ffmpeg', trial, size);
+		startFFMPEG: async (trial: CaseData, size) => {
+			const pipePath = await ipcRenderer.invoke('case:start-ffmpeg', trial, size);
+			if (!pipePath) {
+				console.warn('[anim-pipe] start-ffmpeg returned no pipe path');
+				return;
+			}
+			// Connect a socket to the per-session animation pipe. Frames still flow
+			// over case:save-animation in this step — the socket is held open so we
+			// can confirm the transport comes up cleanly before routing frames to it
+			// in Step 4. Any previous socket from a prior run is discarded.
+			if (animationSocket) {
+				try { animationSocket.destroy(); } catch { /* ignore */ }
+				animationSocket = null;
+			}
+			await new Promise<void>((resolve, reject) => {
+				const s = net.createConnection({ path: pipePath });
+				s.once('connect', () => {
+					animationSocket = s;
+					console.log(`[anim-pipe] renderer connected to ${pipePath}`);
+					resolve();
+				});
+				s.once('error', (err) => {
+					console.warn(`[anim-pipe] renderer connect error: ${err.message}`);
+					reject(err);
+				});
+			});
 		},
 		stopFFMPEG: async (trial: CaseData, completed: boolean): Promise<void> => {
-			return await ipcRenderer.invoke('case:stop-ffmpeg', trial);
+			// Flush any pending writes before invoking stop, so main doesn't close
+			// ffmpeg.stdin while bytes are still queued on the socket. end(cb) fires
+			// once all buffered data has been written out.
+			if (animationSocket) {
+				const sock = animationSocket;
+				animationSocket = null;
+				await new Promise<void>((resolve) => {
+					sock.end(() => resolve());
+				});
+			}
+			return await ipcRenderer.invoke('case:stop-ffmpeg', trial, completed);
 		},
 		saveAnimation: async (trial: CaseData, frames: Uint8Array[], size) => {
-			return await ipcRenderer.invoke('case:save-animation', trial, frames, size);
+			if (!animationSocket) {
+				throw new Error('animation socket not connected; startFFMPEG must be awaited before saveAnimation');
+			}
+			const sock = animationSocket;
+			// Await drain when the socket's writable buffer fills. This bounds
+			// renderer-process memory — the *unbounded* queue in this architecture
+			// lives on the main side in ffmpeg.stdin's Node writable buffer (see
+			// the manual data handler in handlers.ts that deliberately ignores
+			// ffmpeg.stdin.write's backpressure). Having drain here plus unbounded
+			// buffering on main reproduces the pre-socket path's semantics while
+			// eliminating the V8 structured-clone cost.
+			for (const frame of frames) {
+				if (!sock.write(frame)) {
+					await new Promise<void>((resolve, reject) => {
+						const onDrain = () => { sock.off('error', onError); resolve(); };
+						const onError = (err: Error) => { sock.off('drain', onDrain); reject(err); };
+						sock.once('drain', onDrain);
+						sock.once('error', onError);
+					});
+				}
+			}
 		},
 		/**
 		 * Verifies that output files exist for each task flag set in the database.
