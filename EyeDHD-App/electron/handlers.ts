@@ -1301,7 +1301,7 @@ ipcMain.on('notify', (_, message) => {
 type CaseRecovery = {
 	caseName: string;
 	sourceMissing: boolean;
-	resetTasks: Array<'cleaning' | 'detection' | 'animation' | 'combination'>;
+	resetTasks: Array<'cleaning' | 'detection' | 'animation'>;
 };
 
 /**
@@ -1345,7 +1345,7 @@ ipcMain.handle('case:verify-files', (): { recoveries: CaseRecovery[]; deleted: s
 		const taskUpdates: Partial<CaseData['tasks']> = {};
 		let needsUpdate = false;
 
-		const allTaskKeys = ['cleaning', 'detection', 'animation', 'combination'] as const;
+		const allTaskKeys = ['cleaning', 'detection', 'animation'] as const;
 
 		const sourcePath = csvImportPath(c);
 		if (!fs.existsSync(sourcePath)) {
@@ -1362,11 +1362,12 @@ ipcMain.handle('case:verify-files', (): { recoveries: CaseRecovery[]; deleted: s
 				}
 				needsUpdate = true;
 			} else if (c.tasks.animation && !fs.existsSync(animationOutputPath(c))) {
-				// Animation MP4 gone — reset animation + combination only
-				for (const key of ['animation', 'combination'] as const) {
-					if (c.tasks[key]) { taskUpdates[key] = false; recovery.resetTasks.push(key); }
+				// Animation MP4 gone — reset animation only
+				if (c.tasks.animation) {
+					taskUpdates.animation = false;
+					recovery.resetTasks.push('animation');
+					needsUpdate = true;
 				}
-				needsUpdate = true;
 			}
 		}
 

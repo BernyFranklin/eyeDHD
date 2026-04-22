@@ -63,7 +63,7 @@ declare interface Electron {
 			recoveries: Array<{
 				caseName: string;
 				sourceMissing: boolean;
-				resetTasks: Array<'cleaning' | 'detection' | 'animation' | 'combination'>;
+				resetTasks: Array<'cleaning' | 'detection' | 'animation'>;
 			}>;
 			deleted: string[];
 		}>;

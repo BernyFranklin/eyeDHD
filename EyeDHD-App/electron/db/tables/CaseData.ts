@@ -38,8 +38,8 @@ export type DetectionConfig = {
  * database. It includes fields for the file's unique identifier, name, path, header
  * information, task completion status, number of cleaned rows, and timestamps for
  * creation and last update. The tasks field is an object that tracks the completion
- * status of various processing tasks (cleaning, detection, visualization, animation,
- * combination) as boolean values.
+ * status of various processing tasks (cleaning, detection, animation) as
+ * boolean values.
  */
 export type CaseData = {
 	id: number;
@@ -50,7 +50,6 @@ export type CaseData = {
 		cleaning: boolean;
 		detection: boolean;
 		animation: boolean;
-		combination: boolean;
 	};
 	cleaned_rows: number;
 	segments: SegmentInput[] | null;
@@ -75,8 +74,8 @@ const TASK_FLAGS = {
 	cleaning: 1 << 0,
 	detection: 1 << 1,
 	// 1 << 2 reserved (previously visualization; folded into detection)
-	animation: 1 << 3,
-	combination: 1 << 4
+	// 1 << 4 reserved (previously combination; feature removed)
+	animation: 1 << 3
 } as const;
 
 function parseJsonColumn<T>(value: string | null): T | null {
@@ -103,7 +102,6 @@ function tasksToFlags(tasks: CaseData['tasks']): number {
 	if (tasks.cleaning) flags |= TASK_FLAGS.cleaning;
 	if (tasks.detection) flags |= TASK_FLAGS.detection;
 	if (tasks.animation) flags |= TASK_FLAGS.animation;
-	if (tasks.combination) flags |= TASK_FLAGS.combination;
 	return flags;
 }
 
@@ -111,8 +109,7 @@ function flagsToTasks(flags: number): CaseData['tasks'] {
 	return {
 		cleaning: (flags & TASK_FLAGS.cleaning) !== 0,
 		detection: (flags & TASK_FLAGS.detection) !== 0,
-		animation: (flags & TASK_FLAGS.animation) !== 0,
-		combination: (flags & TASK_FLAGS.combination) !== 0
+		animation: (flags & TASK_FLAGS.animation) !== 0
 	};
 }
 
