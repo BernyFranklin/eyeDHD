@@ -5,7 +5,6 @@ import { cleaning } from './cleaning';
 import { configure } from './configure';
 import { detection } from './detection';
 import { animation } from './animation';
-import { combination } from './combination';
 
 /**
  * Defines the list of tasks that need to be completed to process a case, as well as the
@@ -42,8 +41,7 @@ export const TASKS = [
 	cleaning,
 	configure,
 	detection,
-	animation,
-	combination
+	animation
 ] as const;
 
 export const TASKORDER = TASKS.map(task => task.name).concat(['complete']);

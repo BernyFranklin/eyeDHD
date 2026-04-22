@@ -3,6 +3,8 @@ import path from 'path';
 import fs from 'fs';
 import os from 'os';
 import { ChildProcess, spawn, spawnSync } from 'child_process';
+import net from 'net';
+import crypto from 'crypto';
 import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
@@ -610,6 +612,123 @@ ipcMain.handle('profile:delete', async (_, profile: ConfigProfile) => {
 });
 
 let ffmpeg: ChildProcess | null = null;
+let animationPipeServer: net.Server | null = null;
+let animationPipePath: string | null = null;
+// Resolves when the current session's socket has fully drained into ffmpeg.stdin
+// (the socket emits 'end' after the renderer's end() FIN and all data is piped).
+// stopFFMPEG awaits this before ending stdin so the tail of the last batch isn't
+// truncated by a race between the stop-ffmpeg IPC and socket-buffered data.
+let animationSocketDrained: Promise<void> = Promise.resolve();
+
+/**
+ * Builds a per-session pipe/socket path. On Windows this is a Named Pipe under
+ * \\.\pipe\; on macOS/Linux it's a Unix domain socket in os.tmpdir(). The path
+ * is unique per call (pid + random suffix) so overlapping sessions never collide.
+ */
+function makeAnimationPipePath(): string {
+	const rand = crypto.randomBytes(4).toString('hex');
+	if (process.platform === 'win32') {
+		return `\\\\.\\pipe\\eyedhd-anim-${process.pid}-${rand}`;
+	}
+	return path.join(os.tmpdir(), `eyedhd-anim-${process.pid}-${rand}.sock`);
+}
+
+/**
+ * Stand up the per-session animation pipe server and start listening. For Step 2
+ * this is observation-only: it logs connections, first-write size, and a 1-second
+ * byte-count sample, but does NOT pipe anything into ffmpeg.stdin yet. That wiring
+ * happens in Step 4. For now the server should simply come up, log its path, and
+ * stay idle (the renderer has no way to reach it until Step 3).
+ */
+function startAnimationPipeServer(): void {
+	// Defensive: ensure no stale server from a previous session.
+	if (animationPipeServer) {
+		try { animationPipeServer.close(); } catch { /* ignore */ }
+		animationPipeServer = null;
+	}
+	// On *nix, a stale socket file from a crashed prior session would cause EADDRINUSE.
+	animationPipePath = makeAnimationPipePath();
+	if (process.platform !== 'win32' && fs.existsSync(animationPipePath)) {
+		try { fs.unlinkSync(animationPipePath); } catch { /* ignore */ }
+	}
+
+	const server = net.createServer((socket) => {
+		const tConnect = Date.now();
+		console.log(`[anim-pipe] connected @ ${animationPipePath}`);
+
+		// Pipe the incoming frames directly into ffmpeg.stdin. { end: false }
+		// leaves stdin open when the socket closes — stopFFMPEG is responsible
+		// for ending stdin explicitly so ffmpeg gets a chance to flush and
+		// finalize the MP4 header. If ffmpeg is not yet ready (shouldn't happen
+		// given the handler sequence), fail loudly.
+		if (!ffmpeg || !ffmpeg.stdin) {
+			console.warn('[anim-pipe] connection arrived but ffmpeg.stdin is not ready; destroying socket');
+			socket.destroy();
+			return;
+		}
+
+		// Keep a lightweight first-write log so a broken transport surfaces within
+		// a second or two instead of producing a silent empty MP4.
+		let firstWriteLogged = false;
+		socket.once('data', (chunk) => {
+			if (!firstWriteLogged) {
+				console.log(`[anim-pipe] first write: ${chunk.length} bytes at +${Date.now() - tConnect}ms`);
+				firstWriteLogged = true;
+			}
+		});
+
+		// Manually forward socket chunks into ffmpeg.stdin. We deliberately do
+		// NOT use socket.pipe(ffmpeg.stdin) here because pipe() honors the
+		// destination's backpressure — and ffmpeg.stdin has a small default
+		// highWaterMark, which would pause the socket on every frame, propagate
+		// back to the renderer's drain-await, and gate saveAnimation on
+		// ffmpeg's real-time encode rate. Instead we ignore ffmpeg.stdin.write's
+		// return value so it buffers unbounded on the main side, just as the
+		// pre-socket ipcMain.handle path did. End-to-end backpressure still
+		// exists (kernel pipe buffer → renderer socket writable → drain await),
+		// it just lives on the correct side of the process boundary: the
+		// renderer stays bounded while main absorbs bursts.
+		const stdin = ffmpeg.stdin;
+		socket.on('data', (chunk) => {
+			stdin.write(chunk);
+		});
+		animationSocketDrained = new Promise<void>((resolve) => {
+			// 'end' fires when FIN is received and all queued data has been read;
+			// by then every chunk has been forwarded to stdin via the data handler.
+			socket.once('end', () => resolve());
+			socket.once('close', () => resolve());
+		});
+
+		socket.on('close', () => {
+			console.log(`[anim-pipe] socket closed`);
+		});
+		socket.on('error', (err) => {
+			console.warn(`[anim-pipe] socket error: ${err.message}`);
+		});
+	});
+
+	server.on('error', (err) => {
+		console.warn(`[anim-pipe] server error: ${err.message}`);
+	});
+
+	server.listen(animationPipePath, () => {
+		console.log(`[anim-pipe] listening at ${animationPipePath}`);
+	});
+
+	animationPipeServer = server;
+}
+
+function stopAnimationPipeServer(): void {
+	if (!animationPipeServer) return;
+	try { animationPipeServer.close(); } catch { /* ignore */ }
+	animationPipeServer = null;
+	// Best-effort cleanup of the socket file on *nix. On Windows the Named Pipe
+	// is destroyed automatically when the server closes.
+	if (process.platform !== 'win32' && animationPipePath) {
+		try { fs.unlinkSync(animationPipePath); } catch { /* ignore */ }
+	}
+	animationPipePath = null;
+}
 
 type EncoderChoice = {
 	codec: string;
@@ -653,7 +772,8 @@ function selectEncoder(): EncoderChoice {
 	return picked;
 }
 
-ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
+ipcMain.handle('case:start-ffmpeg', async (_, trial, size) => {
+	startAnimationPipeServer();
 	const output_path = animationOutputPath(trial);
 	const enc = selectEncoder();
 	ffmpeg = spawn(FFMPEG_PATH, [
@@ -676,12 +796,24 @@ ipcMain.on('case:start-ffmpeg', (_, trial, size) => {
 			cachedEncoder = { codec: 'libx264', encoderArgs: ['-preset', 'ultrafast', '-crf', '23'] };
 		}
 	});
+
+	// Return the pipe path so the renderer's preload can connect a socket to it.
+	// For Step 3 the preload connects but still sends frames via case:save-animation;
+	// the socket just sits idle so we can confirm the transport comes up cleanly.
+	return animationPipePath;
 });
 
 ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
+	// Wait for the socket to fully pipe its tail into ffmpeg.stdin before we
+	// end stdin. Without this, the last batch can be truncated because the
+	// IPC stop message can beat the last bytes in transit on the local socket.
+	await animationSocketDrained;
+	animationSocketDrained = Promise.resolve();
+
 	return new Promise(async (resolve, reject) => {
 		try {
 			if (!ffmpeg) {
+				stopAnimationPipeServer();
 				return resolve({});
 			}
 
@@ -693,13 +825,17 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 			};
 
 			if (!completed) {
-				ffmpeg.on('close', () => ffmpeg = null);
-				endStdin();
+				ffmpeg.on('close', () => {
+					ffmpeg = null;
+					stopAnimationPipeServer();
+				});
+				ffmpeg.stdin.end();
 				return resolve({});
 			}
 
 			ffmpeg.on('close', (code) => {
 				ffmpeg = null;
+				stopAnimationPipeServer();
 
 				if (code === 0) {
 					try {
@@ -722,30 +858,6 @@ ipcMain.handle('case:stop-ffmpeg', async (_, trial: CaseData, completed) => {
 			endStdin();
 		} catch (err) {
 			return reject(`Failed to stop FFMPEG for file: ${trial.name}. Error: ${err}`);
-		}
-	});
-});
-
-ipcMain.handle('case:save-animation', async (_, trial, frames, size) => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			// If the task was cancelled (user navigated away), stdin may already have
-			// been ended by case:stop-ffmpeg. Silently drop the frames rather than
-			// throwing ERR_STREAM_WRITE_AFTER_END.
-			if (!ffmpeg || !ffmpeg.stdin || ffmpeg.stdin.writableEnded || ffmpeg.stdin.destroyed) {
-				return resolve({});
-			}
-
-			for (const frame of frames) {
-				if (ffmpeg.stdin.writableEnded || ffmpeg.stdin.destroyed) {
-					break;
-				}
-				ffmpeg.stdin.write(frame);
-			}
-
-			resolve({});
-		} catch (err) {
-			return reject(`Failed to save animation frames for file: ${trial.name}. Error: ${err}`);
 		}
 	});
 });
@@ -1189,7 +1301,7 @@ ipcMain.on('notify', (_, message) => {
 type CaseRecovery = {
 	caseName: string;
 	sourceMissing: boolean;
-	resetTasks: Array<'cleaning' | 'detection' | 'animation' | 'combination'>;
+	resetTasks: Array<'cleaning' | 'detection' | 'animation'>;
 };
 
 /**
@@ -1233,7 +1345,7 @@ ipcMain.handle('case:verify-files', (): { recoveries: CaseRecovery[]; deleted: s
 		const taskUpdates: Partial<CaseData['tasks']> = {};
 		let needsUpdate = false;
 
-		const allTaskKeys = ['cleaning', 'detection', 'animation', 'combination'] as const;
+		const allTaskKeys = ['cleaning', 'detection', 'animation'] as const;
 
 		const sourcePath = csvImportPath(c);
 		if (!fs.existsSync(sourcePath)) {
@@ -1250,11 +1362,12 @@ ipcMain.handle('case:verify-files', (): { recoveries: CaseRecovery[]; deleted: s
 				}
 				needsUpdate = true;
 			} else if (c.tasks.animation && !fs.existsSync(animationOutputPath(c))) {
-				// Animation MP4 gone — reset animation + combination only
-				for (const key of ['animation', 'combination'] as const) {
-					if (c.tasks[key]) { taskUpdates[key] = false; recovery.resetTasks.push(key); }
+				// Animation MP4 gone — reset animation only
+				if (c.tasks.animation) {
+					taskUpdates.animation = false;
+					recovery.resetTasks.push('animation');
+					needsUpdate = true;
 				}
-				needsUpdate = true;
 			}
 		}
 

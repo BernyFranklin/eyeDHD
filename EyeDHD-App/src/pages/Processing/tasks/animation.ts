@@ -133,7 +133,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 	const wallStart = performance.now();
 	let tPrevIterEnd = wallStart;
 
-	window.electron.case.startFFMPEG(trial, SIZE);
+	await window.electron.case.startFFMPEG(trial, SIZE);
 
 	outer: while (true) {
 		const batch = await activeStream.readBatch();
