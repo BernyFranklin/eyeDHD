@@ -53,19 +53,25 @@ const fn: TaskFn = async (trial, dispatch) => {
 	// Get pupils from both scenes
 	let left_pupil: Three.Object3D<Three.Object3DEventMap> & Three.Mesh = undefined;
 	let right_pupil: Three.Object3D<Three.Object3DEventMap> & Three.Mesh = undefined;
+	let left_open_idx = -1;
+	let right_open_idx = -1;
 
 	left.traverse((o: Three.Object3D<Three.Object3DEventMap>) => {
 		if (o instanceof Three.Mesh && o.morphTargetDictionary && o.morphTargetInfluences) {
-			if (o.morphTargetDictionary['Open'] !== undefined) {
+			const idx = o.morphTargetDictionary['Open'];
+			if (idx !== undefined) {
 				left_pupil = o;
+				left_open_idx = idx;
 			}
 		}
 	});
 
 	right.traverse((o: Three.Object3D<Three.Object3DEventMap>) => {
 		if (o instanceof Three.Mesh && o.morphTargetDictionary && o.morphTargetInfluences) {
-			if (o.morphTargetDictionary['Open'] !== undefined) {
+			const idx = o.morphTargetDictionary['Open'];
+			if (idx !== undefined) {
 				right_pupil = o;
+				right_open_idx = idx;
 			}
 		}
 	});
@@ -158,8 +164,7 @@ const fn: TaskFn = async (trial, dispatch) => {
 			kept = kept + 1;
 
 			const targets = calculate_rotations(row as TrackingData);
-			// TODO: This isn't working
-			update_dilation(row as TrackingData, left_pupil, right_pupil);
+			update_dilation(row as TrackingData, left_pupil, right_pupil, left_open_idx, right_open_idx);
 			interpolate_rotation(targets, left_rotation, right_rotation);
 
 			// Apply rotation to models
@@ -336,15 +341,19 @@ function interpolate_rotation(
 }
 
 // Update pupil dilation based on pupil diameter in mm, normalized to 0-1 range
-function update_dilation(row: TrackingData, left_pupil: Three.Mesh, right_pupil: Three.Mesh) {
-	const left_dilation = NormalizePupilDilation(row.LeftPupilDiameterInMM);
-	if (row.RightEyeStatus !== 'Invalid') {
-		left_pupil.morphTargetInfluences[0] = left_dilation;
+function update_dilation(
+	row: TrackingData,
+	left_pupil: Three.Mesh,
+	right_pupil: Three.Mesh,
+	left_open_idx: number,
+	right_open_idx: number
+) {
+	if (row.LeftEyeStatus !== 'Invalid') {
+		left_pupil.morphTargetInfluences[left_open_idx] = NormalizePupilDilation(row.LeftPupilDiameterInMM);
 	}
 
-	const right_dilation = NormalizePupilDilation(row.RightPupilDiameterInMM);
 	if (row.RightEyeStatus !== 'Invalid') {
-		right_pupil.morphTargetInfluences[0] = right_dilation;
+		right_pupil.morphTargetInfluences[right_open_idx] = NormalizePupilDilation(row.RightPupilDiameterInMM);
 	}
 }
 
