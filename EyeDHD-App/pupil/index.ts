@@ -66,3 +66,12 @@ export {
 	buildNormalizedPupilSpec,
 	buildEventLockedPupilSpec,
 } from './visualization/specs';
+
+// Output bundling
+export type {
+	PupilCaseInfo,
+	PupilRunConfig,
+	PupilOutputBundle,
+	PupilOutputBundleInput,
+} from './outputs';
+export { buildPupilOutputBundle } from './outputs';
