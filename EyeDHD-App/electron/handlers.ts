@@ -472,7 +472,7 @@ ipcMain.handle('case:import-csv', async (_, trial: CaseData, filepath: string) =
 
 			fs.copyFileSync(filepath, importPath);
 
-			const updated = project_manager.actions.case.resetCleaning(storedCase);
+			const updated = project_manager.actions.case.resetTasks(storedCase);
 			return resolve(updated);
 		} catch (err) {
 			return reject(`Failed to import CSV: ${err}`);

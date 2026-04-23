@@ -324,7 +324,19 @@ const electron: Electron = {
 };
 
 type DataCallback = (key: StreamKey, rows: DataType[], progress: Progress) => void;
-const dataWrappers = new WeakMap<DataCallback, (_: unknown, args: { key: StreamKey, rows: DataType[], progress: Progress }) => void>();
+
+// Single shared ipcRenderer listener fanning out to all registered callbacks.
+// Per-stream filtering happens in each callback (by StreamKey.id). Registering
+// one listener per stream would trip Node's MaxListenersExceededWarning as soon
+// as 11+ streams are alive concurrently.
+const dataCallbacks = new Set<DataCallback>();
+ipcRenderer.on('stream:data', (_, args: { key: StreamKey, rows: DataType[], progress: Progress }) => {
+	// Snapshot so a callback that removes itself (or others) mid-dispatch
+	// doesn't disturb iteration.
+	for (const cb of Array.from(dataCallbacks)) {
+		cb(args.key, args.rows, args.progress);
+	}
+});
 
 /**
 	* Defines the Renderer handlers
@@ -335,25 +347,13 @@ const renderer: Renderer = {
 		 * Attaches a callback to be called when new data is available for a stream.
 		 */
 		onData: (callback) => {
-			const wrapper = (_: unknown, args: {
-				key: StreamKey,
-				rows: DataType[],
-				progress: Progress
-			}) => {
-				callback(args.key, args.rows, args.progress);
-			};
-			dataWrappers.set(callback, wrapper);
-			ipcRenderer.on('stream:data', wrapper);
+			dataCallbacks.add(callback);
 		},
 		/**
 		 * Removes a previously attached data callback.
 		 */
 		offData: (callback) => {
-			const wrapper = dataWrappers.get(callback);
-			if (wrapper) {
-				ipcRenderer.removeListener('stream:data', wrapper);
-				dataWrappers.delete(callback);
-			}
+			dataCallbacks.delete(callback);
 		}
 	}
 };

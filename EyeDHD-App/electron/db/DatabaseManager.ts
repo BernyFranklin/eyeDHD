@@ -2,7 +2,7 @@ import { type Database, default as Sqlite3DB } from 'better-sqlite3';
 import fs from 'fs';
 
 import DataStream, { type DataType, type StreamType, type StreamKey, type Progress } from './DataStream';
-import caseDataActions, { type CaseData, type CaseDataUpdate, csvOutputPath, createCaseDataTable } from './tables/CaseData';
+import caseDataActions, { type CaseData, type CaseDataUpdate, animationOutputPath, csvOutputPath, createCaseDataTable } from './tables/CaseData';
 import configProfileActions, {
 	type ConfigProfile,
 	type ConfigProfileCreate,
@@ -29,6 +29,7 @@ type CaseDataActions = {
 	exists: (filename: string) => boolean;
 	update: (trial: CaseData, updates: CaseDataUpdate) => CaseData;
 	resetCleaning: (trial: CaseData) => CaseData;
+	resetTasks: (trial: CaseData) => CaseData;
 	remove: (trial: CaseData) => CaseData;
 };
 
@@ -87,6 +88,22 @@ export default class DatabaseManager {
 					return caseDataActions.update(this.db, trial, {
 						cleaned_rows: 0,
 						tasks: { cleaning: false }
+					});
+				},
+				resetTasks: (trial: CaseData) => {
+					const cleanedPath = csvOutputPath(trial);
+					if (fs.existsSync(cleanedPath)) {
+						fs.unlinkSync(cleanedPath);
+					}
+
+					const animationPath = animationOutputPath(trial);
+					if (fs.existsSync(animationPath)) {
+						fs.unlinkSync(animationPath);
+					}
+
+					return caseDataActions.update(this.db, trial, {
+						cleaned_rows: 0,
+						tasks: { cleaning: false, detection: false, animation: false }
 					});
 				},
 				remove: (trial: CaseData) => caseDataActions.remove(this.db, trial)
