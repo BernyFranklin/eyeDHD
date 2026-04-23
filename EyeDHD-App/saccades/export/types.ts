@@ -1,3 +1,5 @@
+import type { PngFigureRenderBackend, RenderBackground } from '@viz/render/backends/types';
+
 export type {
 	CaseOutputFileDescriptor,
 	CaseInfo,
@@ -16,9 +18,9 @@ export type ExportFileCategory =
 	| 'animation';
 
 export interface PngExportOptions {
-	backend: import('@saccades/visualization/render/backends/types').PngFigureRenderBackend;
+	backend: PngFigureRenderBackend;
 	dpi: number;
-	background: import('@saccades/visualization/render/backends/types').RenderBackground;
+	background: RenderBackground;
 }
 
 export interface WriteCaseBundleOptions {

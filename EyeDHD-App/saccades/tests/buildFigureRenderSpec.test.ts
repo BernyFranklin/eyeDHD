@@ -16,7 +16,7 @@ import type {
 	MarkerOverlaySpec,
 	PublicationFigureDefaults,
 	RenderedFigureArtifact
-} from '@saccades/visualization/render/types';
+} from '@viz/render';
 
 describe('Visualization Rendering Layer', () => {
 	describe('A — Scatter Figure Spec Construction', () => {

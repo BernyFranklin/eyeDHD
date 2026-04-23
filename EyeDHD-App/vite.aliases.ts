@@ -4,9 +4,11 @@ import type { AliasOptions } from 'vite';
 const srcRoot = path.resolve(__dirname, 'src');
 const electronRoot = path.resolve(__dirname, 'electron');
 const saccadesRoot = path.resolve(__dirname, 'saccades');
+const vizRoot = path.resolve(__dirname, 'viz');
 
 export const alias: AliasOptions = {
 	'@src': srcRoot,
 	'@electron': electronRoot,
-	'@saccades': saccadesRoot
+	'@saccades': saccadesRoot,
+	'@viz': vizRoot
 };

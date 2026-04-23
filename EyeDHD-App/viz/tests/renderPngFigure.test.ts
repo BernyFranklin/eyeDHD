@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { buildScatterFigureSpec } from '@saccades/visualization/render';
 import {
-	buildScatterFigureSpec,
 	FigureRenderSpec,
 	renderFigureSpec,
-    renderPngFigure,
-} from '@saccades/visualization/render';
+	renderPngFigure
+} from '@viz/render';
 
 import type {
     FigureRenderBackend,
     FigureRenderBackendContext,
     PngFigureRenderBackend,
     RenderedPngArtifact
-} from '@saccades/visualization/render/backends/types';
+} from '@viz/render/backends/types';
 
 describe('Visualization Rendering Layer — Step 9B PNG Backend Integration', () => {
 	describe('A — Generic Backend Execution Boundary', () => {

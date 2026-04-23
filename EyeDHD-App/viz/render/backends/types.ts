@@ -1,4 +1,4 @@
-import { FigureRenderSpec } from '@saccades/visualization/render'
+import { FigureRenderSpec } from '../types'
 
 export type RenderTargetFormat = 'png';
 

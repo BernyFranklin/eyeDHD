@@ -23,10 +23,10 @@ import {
 	buildRateSeriesFigureSpec,
 	buildIsiHistogramFigureSpec,
 } from '@saccades/visualization/render';
-import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
+import { createSkiaCanvasPngBackend } from '@viz/render/backends/png';
 import type { SaccadeDetectionOptions } from '@saccades/core/schema';
 import type { SaccadeMetricsOptions, SegmentDefinition } from '@saccades/metrics/types';
-import type { FigureOverlaySpec } from '@saccades/visualization/render/types';
+import type { FigureOverlaySpec } from '@viz/render';
 
 const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = (() => {

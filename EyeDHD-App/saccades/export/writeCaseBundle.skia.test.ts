@@ -9,7 +9,7 @@ import path from 'node:path';
 
 import { writeCaseBundle } from '@saccades/export/writeCaseBundle';
 import { buildScatterFigureSpec } from '@saccades/visualization/render';
-import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
+import { createSkiaCanvasPngBackend } from '@viz/render/backends/png';
 
 import type {
 	CaseOutputBundle,

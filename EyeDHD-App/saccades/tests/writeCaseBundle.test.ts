@@ -8,7 +8,7 @@ import path from 'node:path';
 import { writeCaseBundle } from '@saccades/export/writeCaseBundle';
 import { serializeCsvRows, serializeJsonValue } from '@saccades/export/serializers';
 import { buildScatterFigureSpec } from '@saccades/visualization/render';
-import type { PngFigureRenderBackend } from '@saccades/visualization/render/backends/types';
+import type { PngFigureRenderBackend } from '@viz/render/backends/types';
 
 import type {
 	CaseInfo,
