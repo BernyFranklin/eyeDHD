@@ -16,10 +16,11 @@
 			"@src/*": ["src/*"],
 			"@electron/*": ["electron/*"],
 			"@saccades/*": ["saccades/*"],
-			"@viz/*": ["viz/*"]
+			"@viz/*": ["viz/*"],
+			"@pupil/*": ["pupil/*"]
 		}
 	},
-	"include": ["src/**/*", "electron/**/*", "saccades/**/*", "viz/**/*"],
+	"include": ["src/**/*", "electron/**/*", "saccades/**/*", "viz/**/*", "pupil/**/*"],
 	"files": [
 		"src/global.d.ts",
 		"forge.env.d.ts",
