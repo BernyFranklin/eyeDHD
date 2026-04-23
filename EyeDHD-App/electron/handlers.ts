@@ -337,9 +337,8 @@ ipcMain.handle('case:create-new', async (_, casename) => {
 			const caseDir = path.join(user.dir, 'cases', casename);
 			const importsDir = path.join(caseDir, 'imports');
 			const outputsDir = path.join(caseDir, 'outputs');
-			const graphsDir = path.join(outputsDir, 'graphs');
 
-			[caseDir, importsDir, outputsDir, graphsDir].forEach((dirPath) => {
+			[caseDir, importsDir, outputsDir].forEach((dirPath) => {
 				if (!fs.existsSync(dirPath)) {
 					fs.mkdirSync(dirPath);
 				}
