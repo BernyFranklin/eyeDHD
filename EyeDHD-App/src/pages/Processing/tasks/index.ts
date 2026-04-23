@@ -4,6 +4,7 @@ import { Dispatch } from '@src/data/hooks';
 import { cleaning } from './cleaning';
 import { configure } from './configure';
 import { detection } from './detection';
+import { pupil } from './pupil';
 import { animation } from './animation';
 
 /**
@@ -41,6 +42,7 @@ export const TASKS = [
 	cleaning,
 	configure,
 	detection,
+	pupil,
 	animation
 ] as const;
 

@@ -71,6 +71,7 @@ describe('Database - CaseData', () => {
 				tasks: {
 					cleaning: false,
 					detection: false,
+					pupil: false,
 					animation: false
 				},
 				cleaned_rows: 0,
@@ -96,6 +97,7 @@ describe('Database - CaseData', () => {
 				tasks: {
 					cleaning: false,
 					detection: false,
+					pupil: false,
 					animation: false
 				},
 				cleaned_rows: 0,

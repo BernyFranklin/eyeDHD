@@ -6,7 +6,7 @@ import { type CaseData, type SegmentInput, type DetectionConfig } from './db/tab
 import { type ConfigProfile, type ConfigProfileCreate, type ConfigProfileUpdate } from './db/tables/ConfigProfile';
 import { type Progress, type DataType, type StreamKey, type StreamType } from './db/DataStream';
 
-export { Electron, Renderer, DetectionResult };
+export { Electron, Renderer, DetectionResult, PupilResult };
 
 type ProjectDir = {
 	dir?: string,
@@ -18,6 +18,20 @@ type ProjectDir = {
 
 type DetectionResult = {
 	saccadeCount: number;
+	artifacts: {
+		key: string;
+		absolutePath: string;
+		relativePath: string;
+		format: 'csv' | 'json' | 'png';
+		category: string;
+		bytes: number;
+		skipped: boolean;
+	}[];
+}
+
+type PupilResult = {
+	perFrameSampleCount: number;
+	eventCount: number;
 	artifacts: {
 		key: string;
 		absolutePath: string;
@@ -50,6 +64,7 @@ declare interface Electron {
 			detection_config?: DetectionConfig | null;
 		}): Promise<CaseData>;
 		runDetection(trial: CaseData): Promise<DetectionResult>;
+		runPupil(trial: CaseData): Promise<PupilResult>;
 		startFFMPEG(trial: CaseData, size: {
 			width: number;
 			height: number;
@@ -63,7 +78,7 @@ declare interface Electron {
 			recoveries: Array<{
 				caseName: string;
 				sourceMissing: boolean;
-				resetTasks: Array<'cleaning' | 'detection' | 'animation'>;
+				resetTasks: Array<'cleaning' | 'detection' | 'pupil' | 'animation'>;
 			}>;
 			deleted: string[];
 		}>;
@@ -183,6 +198,14 @@ const electron: Electron = {
 		 */
 		runDetection: async (trial: CaseData): Promise<DetectionResult> => {
 			return await ipcRenderer.invoke('case:run-detection', trial);
+		},
+		/**
+		 * Runs the pupil dilation pipeline on the cleaned CSV for the given case
+		 * and writes the per-frame, per-event, and figure artifacts to the case
+		 * outputs directory.
+		 */
+		runPupil: async (trial: CaseData): Promise<PupilResult> => {
+			return await ipcRenderer.invoke('case:run-pupil', trial);
 		},
 		startFFMPEG: async (trial: CaseData, size) => {
 			const pipePath = await ipcRenderer.invoke('case:start-ffmpeg', trial, size);

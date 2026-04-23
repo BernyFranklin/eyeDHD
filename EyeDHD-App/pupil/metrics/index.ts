@@ -147,7 +147,7 @@ function nearestBaselineAt(
 	samples: ReadonlyArray<BaselineSample>,
 	t: number
 ): number {
-	if (baseline.length === 0) return NaN;
+	if (baseline.length === 0 || samples.length === 0) return NaN;
 	// baseline is aligned to samples; binary-search by sample timeMs.
 	let lo = 0;
 	let hi = samples.length - 1;

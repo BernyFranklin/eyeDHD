@@ -71,23 +71,40 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 			const plotRight = plotLeft + plotWidth;
 
 			// --- Compute data domain ---
+			// NOTE: avoid `Math.min(...arr)` / spread on large series — V8's call
+			// stack blows up around ~125k args, which 5+ minutes of per-frame
+			// pupil data easily exceeds.
 			let xMin = 0, xMax = 1, yMin = 0, yMax = 1;
 
 			if (spec.geometry.type === 'histogram') {
 				const bins = spec.geometry.bins;
 				if (bins.length > 0) {
-					xMin = Math.min(...bins.map((b) => b.binStart));
-					xMax = Math.max(...bins.map((b) => b.binEnd));
+					xMin = bins[0].binStart;
+					xMax = bins[0].binEnd;
 					yMin = 0;
-					yMax = Math.max(...bins.map((b) => b.count));
+					yMax = bins[0].count;
+					for (let i = 1; i < bins.length; i++) {
+						const b = bins[i];
+						if (b.binStart < xMin) xMin = b.binStart;
+						if (b.binEnd > xMax) xMax = b.binEnd;
+						if (b.count > yMax) yMax = b.count;
+					}
 				}
 			} else if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
-				const allPts = spec.geometry.series.flatMap((s) => s.points);
-				if (allPts.length > 0) {
-					xMin = Math.min(...allPts.map((p) => p.x));
-					xMax = Math.max(...allPts.map((p) => p.x));
-					yMin = Math.min(...allPts.map((p) => p.y));
-					yMax = Math.max(...allPts.map((p) => p.y));
+				let initialized = false;
+				for (const series of spec.geometry.series) {
+					for (const p of series.points) {
+						if (!initialized) {
+							xMin = xMax = p.x;
+							yMin = yMax = p.y;
+							initialized = true;
+							continue;
+						}
+						if (p.x < xMin) xMin = p.x;
+						else if (p.x > xMax) xMax = p.x;
+						if (p.y < yMin) yMin = p.y;
+						else if (p.y > yMax) yMax = p.y;
+					}
 				}
 			}
 
@@ -159,34 +176,33 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 					}
 				}
 			} else if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
-				const allPoints = spec.geometry.series.flatMap((s) => s.points);
-				if (allPoints.length > 0) {
-					const project = (p: { x: number; y: number }) => ({
-						px: plotLeft + ((p.x - xMin) / xRange) * plotWidth,
-						py: plotTop + plotHeight - ((p.y - yMin) / yRange) * plotHeight
-					});
+				const projectX = (x: number) => plotLeft + ((x - xMin) / xRange) * plotWidth;
+				const projectY = (y: number) =>
+					plotTop + plotHeight - ((y - yMin) / yRange) * plotHeight;
 
-					if (spec.geometry.type === 'scatter') {
-						ctx.fillStyle = 'black';
-						for (const point of allPoints) {
-							const { px, py } = project(point);
+				if (spec.geometry.type === 'scatter') {
+					ctx.fillStyle = 'black';
+					for (const series of spec.geometry.series) {
+						for (const point of series.points) {
 							ctx.beginPath();
-							ctx.arc(px, py, 6, 0, Math.PI * 2);
+							ctx.arc(projectX(point.x), projectY(point.y), 6, 0, Math.PI * 2);
 							ctx.fill();
 						}
-					} else {
-						ctx.strokeStyle = 'black';
-						ctx.lineWidth = 2;
-						for (const series of spec.geometry.series) {
-							if (series.points.length === 0) continue;
-							ctx.beginPath();
-							series.points.forEach((point, index) => {
-								const { px, py } = project(point);
-								if (index === 0) ctx.moveTo(px, py);
-								else ctx.lineTo(px, py);
-							});
-							ctx.stroke();
+					}
+				} else {
+					ctx.strokeStyle = 'black';
+					ctx.lineWidth = 2;
+					for (const series of spec.geometry.series) {
+						if (series.points.length === 0) continue;
+						ctx.beginPath();
+						for (let i = 0; i < series.points.length; i++) {
+							const p = series.points[i];
+							const px = projectX(p.x);
+							const py = projectY(p.y);
+							if (i === 0) ctx.moveTo(px, py);
+							else ctx.lineTo(px, py);
 						}
+						ctx.stroke();
 					}
 				}
 			}
