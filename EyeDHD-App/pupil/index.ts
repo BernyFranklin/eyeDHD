@@ -18,3 +18,34 @@ export type {
 	PupilParseErrorCode,
 } from './ingest/csv/types';
 export { parsePupilCsvSession } from './ingest/csv/parsePupilCsvSession';
+
+// Public core / metrics API
+export type {
+	BaselineSample,
+	BaselinePoint,
+	RollingBaselineOptions,
+} from './core/baseline';
+export { computeRollingBaseline } from './core/baseline';
+
+export type {
+	PupilEvent,
+	NormalizedPoint,
+	EventEpoch,
+	EventEpochPoint,
+	EventLockedAveragePoint,
+	EventLockedResult,
+	PerFramePupilRow,
+	PerEventPupilRow,
+	PupilMetricsInput,
+	PupilMetricsResult,
+} from './metrics/types';
+export {
+	computePupilMetrics,
+	computePercentChange,
+	computeEventLocked,
+	type ComputePupilMetricsOptions,
+} from './metrics';
+
+// Pipeline
+export type { PupilCsvPipelineOptions, PupilCsvPipelineResult } from './pipeline/types';
+export { runPupilCsvPipeline } from './pipeline/runPupilCsvPipeline';
