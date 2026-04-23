@@ -13,33 +13,36 @@ import type {
 
 function makeTimeSeries(): PupilTimeSeriesModel {
 	return {
+		unit: 'ms',
 		points: [
-			{ timeMs: 0, valueMm: 3.0 },
-			{ timeMs: 100, valueMm: 3.4 },
-			{ timeMs: 200, valueMm: 3.1 },
+			{ t: 0, valueMm: 3.0 },
+			{ t: 100, valueMm: 3.4 },
+			{ t: 200, valueMm: 3.1 },
 		],
 	};
 }
 
 function makeNormalized(): NormalizedPupilModel {
 	return {
+		unit: 'ms',
 		points: [
-			{ timeMs: 0, percentChange: 0 },
-			{ timeMs: 100, percentChange: 13 },
-			{ timeMs: 200, percentChange: 3 },
+			{ t: 0, percentChange: 0 },
+			{ t: 100, percentChange: 13 },
+			{ t: 200, percentChange: 3 },
 		],
 	};
 }
 
 function makeEventLocked(): EventLockedPupilModel {
 	return {
+		unit: 'ms',
 		gridStepMs: 100,
 		preMs: 100,
 		postMs: 100,
 		points: [
-			{ timeRelMs: -100, meanPercent: 0, sePercent: 0.5, n: 3 },
-			{ timeRelMs: 0, meanPercent: 5, sePercent: 1.0, n: 3 },
-			{ timeRelMs: 100, meanPercent: 4, sePercent: 0.7, n: 3 },
+			{ t: -100, meanPercent: 0, sePercent: 0.5, n: 3 },
+			{ t: 0, meanPercent: 5, sePercent: 1.0, n: 3 },
+			{ t: 100, meanPercent: 4, sePercent: 0.7, n: 3 },
 		],
 	};
 }
@@ -58,6 +61,23 @@ describe('buildPupilTimeSeriesSpec', () => {
 		]);
 		expect(spec.yAxis.label.text).toBe('Pupil Diameter (mm)');
 		expect(spec.xAxis.label.text).toBe('Time (ms)');
+	});
+
+	it('reflects the model time unit on the default x-axis label', () => {
+		const minSpec = buildPupilTimeSeriesSpec({
+			unit: 'min',
+			points: [
+				{ t: 0, valueMm: 3.0 },
+				{ t: 20, valueMm: 3.2 },
+			],
+		});
+		expect(minSpec.xAxis.label.text).toBe('Time (min)');
+
+		const secSpec = buildPupilTimeSeriesSpec({
+			unit: 's',
+			points: [{ t: 0, valueMm: 3.0 }],
+		});
+		expect(secSpec.xAxis.label.text).toBe('Time (s)');
 	});
 
 	it('respects user-provided title, axis labels, and overlays', () => {
@@ -88,6 +108,14 @@ describe('buildNormalizedPupilSpec', () => {
 		]);
 		expect(spec.yAxis.label.text).toBe('% Change from Baseline');
 	});
+
+	it('reflects the model time unit on the default x-axis label', () => {
+		const spec = buildNormalizedPupilSpec({
+			unit: 'min',
+			points: [{ t: 0, percentChange: 0 }],
+		});
+		expect(spec.xAxis.label.text).toBe('Time (min)');
+	});
 });
 
 describe('buildEventLockedPupilSpec', () => {
@@ -113,12 +141,13 @@ describe('buildEventLockedPupilSpec', () => {
 
 	it('omits SE bands when SE is non-finite (single-event case)', () => {
 		const model: EventLockedPupilModel = {
+			unit: 'ms',
 			gridStepMs: 100,
 			preMs: 100,
 			postMs: 100,
 			points: [
-				{ timeRelMs: -100, meanPercent: 0, sePercent: NaN, n: 1 },
-				{ timeRelMs: 0, meanPercent: 5, sePercent: NaN, n: 1 },
+				{ t: -100, meanPercent: 0, sePercent: NaN, n: 1 },
+				{ t: 0, meanPercent: 5, sePercent: NaN, n: 1 },
 			],
 		};
 		const spec = buildEventLockedPupilSpec(model);
@@ -145,5 +174,13 @@ describe('buildEventLockedPupilSpec', () => {
 		const boundaries = spec.overlays?.segmentBoundaries ?? [];
 		expect(boundaries).toContainEqual({ timeMs: -50, label: 'cue' });
 		expect(boundaries).toContainEqual({ timeMs: 0, label: 'event' });
+	});
+
+	it('uses the relative-time unit variant on the default x-axis label', () => {
+		const spec = buildEventLockedPupilSpec({
+			...makeEventLocked(),
+			unit: 's',
+		});
+		expect(spec.xAxis.label.text).toBe('Time relative to event (s)');
 	});
 });

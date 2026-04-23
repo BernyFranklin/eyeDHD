@@ -1,22 +1,34 @@
 import type { MarkerOverlaySpec, SegmentBoundaryOverlaySpec } from '@viz/render';
 
-/** Mean pupil diameter (mm) over time. */
+import type { TimeUnit } from './timeAxis';
+
+/** Axis metadata shared by time-series and normalized figures. */
+export interface PupilTimeAxisModel {
+	unit: TimeUnit;
+	t0Ms: number;
+	durationMs: number;
+}
+
+/** Mean pupil diameter (mm) over time. `t` is already scaled to `unit`. */
 export interface PupilTimeSeriesModel {
-	points: Array<{ timeMs: number; valueMm: number }>;
+	unit: TimeUnit;
+	points: Array<{ t: number; valueMm: number }>;
 }
 
 /** Per-frame % change relative to the rolling baseline. */
 export interface NormalizedPupilModel {
-	points: Array<{ timeMs: number; percentChange: number }>;
+	unit: TimeUnit;
+	points: Array<{ t: number; percentChange: number }>;
 }
 
 /** Across-events grand mean ± SE on a common epoch grid. */
 export interface EventLockedPupilModel {
+	unit: TimeUnit;
 	gridStepMs: number;
 	preMs: number;
 	postMs: number;
 	points: Array<{
-		timeRelMs: number;
+		t: number;
 		meanPercent: number;
 		sePercent: number;
 		n: number;
@@ -30,6 +42,7 @@ export interface PupilOverlaysModel {
 }
 
 export interface PupilVisualizationModels {
+	timeAxis: PupilTimeAxisModel;
 	timeSeries: PupilTimeSeriesModel;
 	normalized: NormalizedPupilModel;
 	eventLocked: EventLockedPupilModel;

@@ -3,9 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { preparePupilVisualizationData } from '@pupil/visualization/prep/preparePupilVisualizationData';
 import type { PupilMetricsResult } from '@pupil/metrics/types';
 
-function makeMetrics(): PupilMetricsResult {
+function makeMetrics(overrides?: {
+	samples?: PupilMetricsResult['samples'];
+	perFrame?: PupilMetricsResult['perFrame'];
+}): PupilMetricsResult {
 	return {
-		samples: [
+		samples: overrides?.samples ?? [
 			{ timeMs: 0, valueMm: 3.0 },
 			{ timeMs: 100, valueMm: 3.1 },
 			{ timeMs: 200, valueMm: 3.2 },
@@ -15,7 +18,7 @@ function makeMetrics(): PupilMetricsResult {
 			{ timeMs: 100, baselineMm: 3.0, windowSize: 2 },
 			{ timeMs: 200, baselineMm: 3.0, windowSize: 3 },
 		],
-		perFrame: [
+		perFrame: overrides?.perFrame ?? [
 			{ timeMs: 0, valueMm: 3.0, baselineMm: 3.0, percentChange: 0 },
 			{ timeMs: 100, valueMm: 3.1, baselineMm: 3.0, percentChange: 3.33 },
 			{ timeMs: 200, valueMm: 3.2, baselineMm: NaN, percentChange: NaN },
@@ -37,28 +40,76 @@ function makeMetrics(): PupilMetricsResult {
 }
 
 describe('preparePupilVisualizationData', () => {
-	it('builds the time-series model from samples', () => {
+	it('builds the time-series model from samples with the ms unit for short recordings', () => {
 		const result = preparePupilVisualizationData({ metrics: makeMetrics() });
+		expect(result.timeSeries.unit).toBe('ms');
 		expect(result.timeSeries.points).toEqual([
-			{ timeMs: 0, valueMm: 3.0 },
-			{ timeMs: 100, valueMm: 3.1 },
-			{ timeMs: 200, valueMm: 3.2 },
+			{ t: 0, valueMm: 3.0 },
+			{ t: 100, valueMm: 3.1 },
+			{ t: 200, valueMm: 3.2 },
 		]);
+	});
+
+	it('zeros the axis to recording start and picks minutes for 20-minute recordings', () => {
+		const T0 = 1_000_000_000_000; // epoch-style absolute timeMs
+		const DURATION_MS = 20 * 60_000;
+		const samples = [
+			{ timeMs: T0, valueMm: 3.0 },
+			{ timeMs: T0 + DURATION_MS / 2, valueMm: 3.1 },
+			{ timeMs: T0 + DURATION_MS, valueMm: 3.2 },
+		];
+		const perFrame = samples.map((s) => ({
+			timeMs: s.timeMs,
+			valueMm: s.valueMm,
+			baselineMm: 3.0,
+			percentChange: ((s.valueMm - 3.0) / 3.0) * 100,
+		}));
+		const result = preparePupilVisualizationData({
+			metrics: makeMetrics({ samples, perFrame }),
+		});
+		expect(result.timeAxis).toEqual({
+			unit: 'min',
+			t0Ms: T0,
+			durationMs: DURATION_MS,
+		});
+		expect(result.timeSeries.unit).toBe('min');
+		expect(result.timeSeries.points[0].t).toBe(0);
+		expect(result.timeSeries.points[2].t).toBe(20);
+	});
+
+	it('picks seconds for sub-2-minute recordings', () => {
+		const samples = [
+			{ timeMs: 1000, valueMm: 3.0 },
+			{ timeMs: 31_000, valueMm: 3.1 },
+			{ timeMs: 61_000, valueMm: 3.2 },
+		];
+		const perFrame = samples.map((s) => ({
+			timeMs: s.timeMs,
+			valueMm: s.valueMm,
+			baselineMm: 3.0,
+			percentChange: 0,
+		}));
+		const result = preparePupilVisualizationData({
+			metrics: makeMetrics({ samples, perFrame }),
+		});
+		expect(result.timeSeries.unit).toBe('s');
+		expect(result.timeSeries.points.map((p) => p.t)).toEqual([0, 30, 60]);
 	});
 
 	it('drops non-finite percent changes from the normalized model', () => {
 		const result = preparePupilVisualizationData({ metrics: makeMetrics() });
-		expect(result.normalized.points.map((p) => p.timeMs)).toEqual([0, 100]);
+		expect(result.normalized.points.map((p) => p.t)).toEqual([0, 100]);
 	});
 
 	it('passes through the event-locked grid and average points', () => {
 		const result = preparePupilVisualizationData({ metrics: makeMetrics() });
+		expect(result.eventLocked.unit).toBe('ms');
 		expect(result.eventLocked.gridStepMs).toBe(100);
 		expect(result.eventLocked.preMs).toBe(100);
 		expect(result.eventLocked.postMs).toBe(100);
 		expect(result.eventLocked.points).toHaveLength(3);
 		expect(result.eventLocked.points[1]).toEqual({
-			timeRelMs: 0,
+			t: 0,
 			meanPercent: 5,
 			sePercent: 1.0,
 			n: 2,

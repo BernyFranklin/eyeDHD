@@ -70,26 +70,30 @@ function makeMetrics(): PupilMetricsResult {
 
 function makeVisualization(): PupilVisualizationModels {
 	return {
+		timeAxis: { unit: 'ms', t0Ms: 0, durationMs: 100 },
 		timeSeries: {
+			unit: 'ms',
 			points: [
-				{ timeMs: 0, valueMm: 3.0 },
-				{ timeMs: 100, valueMm: 3.4 },
+				{ t: 0, valueMm: 3.0 },
+				{ t: 100, valueMm: 3.4 },
 			],
 		},
 		normalized: {
+			unit: 'ms',
 			points: [
-				{ timeMs: 0, percentChange: 0 },
-				{ timeMs: 100, percentChange: 13.33 },
+				{ t: 0, percentChange: 0 },
+				{ t: 100, percentChange: 13.33 },
 			],
 		},
 		eventLocked: {
+			unit: 'ms',
 			gridStepMs: 100,
 			preMs: 100,
 			postMs: 100,
 			points: [
-				{ timeRelMs: -100, meanPercent: 0, sePercent: 0.5, n: 1 },
-				{ timeRelMs: 0, meanPercent: 5, sePercent: 0.7, n: 1 },
-				{ timeRelMs: 100, meanPercent: 3, sePercent: 0.6, n: 1 },
+				{ t: -100, meanPercent: 0, sePercent: 0.5, n: 1 },
+				{ t: 0, meanPercent: 5, sePercent: 0.7, n: 1 },
+				{ t: 100, meanPercent: 3, sePercent: 0.6, n: 1 },
 			],
 		},
 		overlays: {

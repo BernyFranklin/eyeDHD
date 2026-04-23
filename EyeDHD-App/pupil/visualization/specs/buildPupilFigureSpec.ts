@@ -15,6 +15,10 @@ import type {
 	NormalizedPupilModel,
 	PupilTimeSeriesModel,
 } from '@pupil/visualization/prep/types';
+import {
+	relativeTimeAxisLabel,
+	timeAxisLabel,
+} from '@pupil/visualization/prep/timeAxis';
 
 /** Mean pupil diameter (mm) over time. */
 export function buildPupilTimeSeriesSpec(
@@ -22,15 +26,16 @@ export function buildPupilTimeSeriesSpec(
 	options: BuildFigureRenderSpecOptions = {}
 ): FigureRenderSpec {
 	const fontFamily = resolveFontFamily(options);
+	const defaultXLabel = timeAxisLabel(model.unit);
 	return buildBaseFigureSpec({
 		figureId: options.figureId ?? 'pupil-timeseries-figure',
 		kind: 'custom',
 		options,
-		defaultXAxisLabel: 'Time (ms)',
+		defaultXAxisLabel: defaultXLabel,
 		defaultYAxisLabel: 'Pupil Diameter (mm)',
 		title: buildTitleSpec(options.title, fontFamily),
 		xAxis: {
-			label: buildAxisLabelSpec(options.xAxisLabel ?? 'Time (ms)', fontFamily),
+			label: buildAxisLabelSpec(options.xAxisLabel ?? defaultXLabel, fontFamily),
 			scaleType: 'linear',
 			domain: options.axisDomains?.x,
 		},
@@ -44,7 +49,7 @@ export function buildPupilTimeSeriesSpec(
 			series: [
 				{
 					seriesId: 'pupil-mean-diameter',
-					points: model.points.map((p) => ({ x: p.timeMs, y: p.valueMm })),
+					points: model.points.map((p) => ({ x: p.t, y: p.valueMm })),
 				},
 			],
 		},
@@ -57,15 +62,16 @@ export function buildNormalizedPupilSpec(
 	options: BuildFigureRenderSpecOptions = {}
 ): FigureRenderSpec {
 	const fontFamily = resolveFontFamily(options);
+	const defaultXLabel = timeAxisLabel(model.unit);
 	return buildBaseFigureSpec({
 		figureId: options.figureId ?? 'pupil-normalized-figure',
 		kind: 'custom',
 		options,
-		defaultXAxisLabel: 'Time (ms)',
+		defaultXAxisLabel: defaultXLabel,
 		defaultYAxisLabel: '% Change from Baseline',
 		title: buildTitleSpec(options.title, fontFamily),
 		xAxis: {
-			label: buildAxisLabelSpec(options.xAxisLabel ?? 'Time (ms)', fontFamily),
+			label: buildAxisLabelSpec(options.xAxisLabel ?? defaultXLabel, fontFamily),
 			scaleType: 'linear',
 			domain: options.axisDomains?.x,
 		},
@@ -82,7 +88,7 @@ export function buildNormalizedPupilSpec(
 			series: [
 				{
 					seriesId: 'pupil-percent-change',
-					points: model.points.map((p) => ({ x: p.timeMs, y: p.percentChange })),
+					points: model.points.map((p) => ({ x: p.t, y: p.percentChange })),
 				},
 			],
 		},
@@ -101,18 +107,19 @@ export function buildEventLockedPupilSpec(
 	options: BuildFigureRenderSpecOptions = {}
 ): FigureRenderSpec {
 	const fontFamily = resolveFontFamily(options);
+	const defaultXLabel = relativeTimeAxisLabel(model.unit);
 
 	const meanPoints = model.points
 		.filter((p) => Number.isFinite(p.meanPercent))
-		.map((p) => ({ x: p.timeRelMs, y: p.meanPercent }));
+		.map((p) => ({ x: p.t, y: p.meanPercent }));
 
 	const upperPoints = model.points
 		.filter((p) => Number.isFinite(p.meanPercent) && Number.isFinite(p.sePercent))
-		.map((p) => ({ x: p.timeRelMs, y: p.meanPercent + p.sePercent }));
+		.map((p) => ({ x: p.t, y: p.meanPercent + p.sePercent }));
 
 	const lowerPoints = model.points
 		.filter((p) => Number.isFinite(p.meanPercent) && Number.isFinite(p.sePercent))
-		.map((p) => ({ x: p.timeRelMs, y: p.meanPercent - p.sePercent }));
+		.map((p) => ({ x: p.t, y: p.meanPercent - p.sePercent }));
 
 	const series: LineSeriesSpec[] = [
 		{ seriesId: 'pupil-erp-mean', points: meanPoints },
@@ -136,14 +143,11 @@ export function buildEventLockedPupilSpec(
 		figureId: options.figureId ?? 'pupil-event-locked-figure',
 		kind: 'custom',
 		options: { ...options, overlays },
-		defaultXAxisLabel: 'Time relative to event (ms)',
+		defaultXAxisLabel: defaultXLabel,
 		defaultYAxisLabel: '% Change from Baseline',
 		title: buildTitleSpec(options.title, fontFamily),
 		xAxis: {
-			label: buildAxisLabelSpec(
-				options.xAxisLabel ?? 'Time relative to event (ms)',
-				fontFamily
-			),
+			label: buildAxisLabelSpec(options.xAxisLabel ?? defaultXLabel, fontFamily),
 			scaleType: 'linear',
 			domain: options.axisDomains?.x,
 		},
