@@ -49,3 +49,20 @@ export {
 // Pipeline
 export type { PupilCsvPipelineOptions, PupilCsvPipelineResult } from './pipeline/types';
 export { runPupilCsvPipeline } from './pipeline/runPupilCsvPipeline';
+
+// Visualization (data prep + figure spec builders)
+export type {
+	PupilTimeSeriesModel,
+	NormalizedPupilModel,
+	EventLockedPupilModel,
+	PupilOverlaysModel,
+	PupilVisualizationModels,
+	SegmentDefinition,
+	PreparePupilVisualizationDataInput,
+} from './visualization/prep';
+export { preparePupilVisualizationData } from './visualization/prep';
+export {
+	buildPupilTimeSeriesSpec,
+	buildNormalizedPupilSpec,
+	buildEventLockedPupilSpec,
+} from './visualization/specs';
