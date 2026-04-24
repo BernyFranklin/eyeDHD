@@ -1183,11 +1183,10 @@ ipcMain.handle('case:run-pupil', async (_, trial: CaseData) => {
 			log('visualization prepped');
 
 			const caseId = storedCase.name;
-			const figureOverlays: FigureOverlaySpec | undefined =
-				visualization.overlays.segmentBoundaries.length > 0
-					? { segmentBoundaries: visualization.overlays.segmentBoundaries }
-					: undefined;
 
+			// buildPupilOutputBundle automatically merges visualization.overlays
+			// (markers + segment boundaries, already in scaled-unit coords) onto
+			// the time-series and normalized figures — no need to pass them here.
 			const bundle = buildPupilOutputBundle({
 				caseInfo: {
 					caseId,
@@ -1205,8 +1204,8 @@ ipcMain.handle('case:run-pupil', async (_, trial: CaseData) => {
 				metrics: pipelineResult.analysis,
 				visualization,
 				specOptions: {
-					timeSeries: { title: `Pupil Diameter — ${caseId}`, overlays: figureOverlays },
-					normalized: { title: `Pupil % Change — ${caseId}`, overlays: figureOverlays },
+					timeSeries: { title: `Pupil Diameter — ${caseId}` },
+					normalized: { title: `Pupil % Change — ${caseId}` },
 					eventLocked: { title: `Event-Locked Pupil Response — ${caseId}` },
 				},
 			});

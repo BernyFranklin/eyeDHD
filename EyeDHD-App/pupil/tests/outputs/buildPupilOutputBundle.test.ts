@@ -224,6 +224,59 @@ describe('buildPupilOutputBundle', () => {
 		}
 	});
 
+	it('threads the model overlays (event markers, segment boundaries) onto the time-series and normalized PNGs', () => {
+		const input = makeInput();
+		const vis = input.visualization;
+		vis.overlays.markers = [
+			{ timeMs: 50, label: 'cue', kind: 'event' },
+		];
+		vis.overlays.segmentBoundaries = [
+			{ timeMs: 0, label: 'baseline start' },
+			{ timeMs: 100, label: 'baseline end' },
+		];
+		const bundle = buildPupilOutputBundle(input);
+
+		for (const key of ['pupilTimeSeriesPng', 'pupilNormalizedPng']) {
+			const spec = descriptorByKey(bundle, key).content as {
+				overlays?: {
+					markers?: Array<{ timeMs: number; label: string }>;
+					segmentBoundaries?: Array<{ timeMs: number; label: string }>;
+				};
+			};
+			expect(spec.overlays?.markers).toEqual([
+				{ timeMs: 50, label: 'cue', kind: 'event' },
+			]);
+			expect(spec.overlays?.segmentBoundaries).toEqual([
+				{ timeMs: 0, label: 'baseline start' },
+				{ timeMs: 100, label: 'baseline end' },
+			]);
+		}
+	});
+
+	it('merges caller-supplied overlays with the model overlays (caller first)', () => {
+		const input = makeInput();
+		input.visualization.overlays.segmentBoundaries = [
+			{ timeMs: 100, label: 'baseline end' },
+		];
+		const bundle = buildPupilOutputBundle({
+			...input,
+			specOptions: {
+				timeSeries: {
+					overlays: {
+						segmentBoundaries: [{ timeMs: 50, label: 'caller cue' }],
+					},
+				},
+			},
+		});
+		const spec = descriptorByKey(bundle, 'pupilTimeSeriesPng').content as {
+			overlays?: { segmentBoundaries?: Array<{ timeMs: number; label: string }> };
+		};
+		expect(spec.overlays?.segmentBoundaries).toEqual([
+			{ timeMs: 50, label: 'caller cue' },
+			{ timeMs: 100, label: 'baseline end' },
+		]);
+	});
+
 	it('produces empty (header-only or no-row) CSVs for the per-event table when no events were analyzed', () => {
 		const noEventsInput: PupilOutputBundleInput = {
 			...makeInput(),

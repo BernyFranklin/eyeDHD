@@ -12,8 +12,18 @@ export function runPupilCsvPipeline(
 ): PupilCsvPipelineResult {
 	const parsed = parsePupilCsvSession(csvText, options.parse);
 
+	// Zero timeMs to the first parsed row so samples share a coordinate system
+	// with caller-supplied events/segments (which are authored in recording-
+	// relative ms). Raw captureTimeNs is preserved on the row for anyone who
+	// needs absolute tracker time.
+	const firstTimeMs = parsed.rows.length > 0 ? parsed.rows[0].timeMs : 0;
+	const rows =
+		firstTimeMs === 0
+			? parsed.rows
+			: parsed.rows.map((r) => ({ ...r, timeMs: r.timeMs - firstTimeMs }));
+
 	const analysis = computePupilMetrics(
-		{ rows: parsed.rows, events: options.events ?? [] },
+		{ rows, events: options.events ?? [] },
 		options.metrics
 	);
 

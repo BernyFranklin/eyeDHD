@@ -1,10 +1,12 @@
 import type { BundleFileDescriptor } from '@viz/export';
+import type { BuildFigureRenderSpecOptions, FigureOverlaySpec } from '@viz/render';
 
 import {
 	buildEventLockedPupilSpec,
 	buildNormalizedPupilSpec,
 	buildPupilTimeSeriesSpec,
 } from '@pupil/visualization/specs';
+import type { PupilOverlaysModel } from '@pupil/visualization/prep/types';
 
 import type {
 	PupilOutputBundle,
@@ -23,11 +25,11 @@ export function buildPupilOutputBundle(
 
 	const timeSeriesSpec = buildPupilTimeSeriesSpec(
 		visualization.timeSeries,
-		specOptions.timeSeries
+		withModelOverlays(specOptions.timeSeries, visualization.overlays)
 	);
 	const normalizedSpec = buildNormalizedPupilSpec(
 		visualization.normalized,
-		specOptions.normalized
+		withModelOverlays(specOptions.normalized, visualization.overlays)
 	);
 	const eventLockedSpec = buildEventLockedPupilSpec(
 		visualization.eventLocked,
@@ -117,4 +119,35 @@ export function buildPupilOutputBundle(
 	];
 
 	return { caseInfo, runConfig, files };
+}
+
+/**
+ * Merges the model's computed overlays (event markers, segment boundaries)
+ * into the caller's spec options. Caller-supplied overlays win on ordering
+ * and label conflicts — they're appended first so the computed ones act as
+ * a default layer.
+ */
+function withModelOverlays(
+	base: BuildFigureRenderSpecOptions | undefined,
+	model: PupilOverlaysModel
+): BuildFigureRenderSpecOptions {
+	const caller = base?.overlays ?? {};
+	const hasModelMarkers = model.markers.length > 0;
+	const hasModelBoundaries = model.segmentBoundaries.length > 0;
+	if (!hasModelMarkers && !hasModelBoundaries) {
+		return base ?? {};
+	}
+	const merged: FigureOverlaySpec = {
+		markers: mergeLists(caller.markers, model.markers),
+		segmentBoundaries: mergeLists(caller.segmentBoundaries, model.segmentBoundaries),
+	};
+	return { ...(base ?? {}), overlays: merged };
+}
+
+function mergeLists<T>(
+	caller: ReadonlyArray<T> | undefined,
+	model: ReadonlyArray<T>
+): T[] | undefined {
+	if ((!caller || caller.length === 0) && model.length === 0) return undefined;
+	return [...(caller ?? []), ...model];
 }
