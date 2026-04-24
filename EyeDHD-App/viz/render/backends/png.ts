@@ -45,7 +45,11 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 		kind: 'skia-canvas-png',
 		supportedFormats: ['png'],
 		renderFigure(spec, context) {
-			const canvas = new Canvas(context.widthPx, context.heightPx);
+			// GPU rendering is enabled by default in skia-canvas@3 but can
+			// intermittently fail PNG encoding when batching many figures in
+			// sequence (Electron main process, no GPU context). Force CPU
+			// rendering for deterministic batch output.
+			const canvas = new Canvas(context.widthPx, context.heightPx, { gpu: false });
 			const ctx = canvas.getContext('2d');
 
 			if (context.background === 'white') {
