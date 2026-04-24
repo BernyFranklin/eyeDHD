@@ -10,7 +10,9 @@ export default {
 	remove,
 	caseBaseName,
 	csvImportPath,
-	csvOutputPath
+	csvOutputPath,
+	pupilOutputDir,
+	pupilPerFramePath
 };
 
 /**
@@ -49,6 +51,7 @@ export type CaseData = {
 	tasks: {
 		cleaning: boolean;
 		detection: boolean;
+		pupil: boolean;
 		animation: boolean;
 	};
 	cleaned_rows: number;
@@ -75,7 +78,8 @@ const TASK_FLAGS = {
 	detection: 1 << 1,
 	// 1 << 2 reserved (previously visualization; folded into detection)
 	// 1 << 4 reserved (previously combination; feature removed)
-	animation: 1 << 3
+	animation: 1 << 3,
+	pupil: 1 << 5
 } as const;
 
 function parseJsonColumn<T>(value: string | null): T | null {
@@ -101,6 +105,7 @@ function tasksToFlags(tasks: CaseData['tasks']): number {
 	let flags = 0;
 	if (tasks.cleaning) flags |= TASK_FLAGS.cleaning;
 	if (tasks.detection) flags |= TASK_FLAGS.detection;
+	if (tasks.pupil) flags |= TASK_FLAGS.pupil;
 	if (tasks.animation) flags |= TASK_FLAGS.animation;
 	return flags;
 }
@@ -109,6 +114,7 @@ function flagsToTasks(flags: number): CaseData['tasks'] {
 	return {
 		cleaning: (flags & TASK_FLAGS.cleaning) !== 0,
 		detection: (flags & TASK_FLAGS.detection) !== 0,
+		pupil: (flags & TASK_FLAGS.pupil) !== 0,
 		animation: (flags & TASK_FLAGS.animation) !== 0
 	};
 }
@@ -346,4 +352,14 @@ export function csvOutputPath(trial: CaseData): string {
 export function animationOutputPath(trial: CaseData): string {
 	const baseName = caseBaseName(trial);
 	return path.join(trial.path, 'outputs', `${baseName}_Animated.mp4`);
+}
+
+/** Root directory where the pupil bundle writes its files. */
+export function pupilOutputDir(trial: CaseData): string {
+	return path.join(trial.path, 'outputs');
+}
+
+/** Canonical artifact used by recovery to detect a successful pupil run. */
+export function pupilPerFramePath(trial: CaseData): string {
+	return path.join(trial.path, 'outputs', 'analysis', 'pupil-per-frame.csv');
 }

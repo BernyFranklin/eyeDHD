@@ -9,7 +9,7 @@ import ffmpegPath from 'ffmpeg-static';
 
 import DatabaseManager from './db/DatabaseManager';
 import { type StreamKey } from './db/DataStream';
-import caseDataActions, { animationOutputPath, type CaseData, type SegmentInput, type DetectionConfig, csvImportPath, csvOutputPath } from './db/tables/CaseData';
+import caseDataActions, { animationOutputPath, type CaseData, type SegmentInput, type DetectionConfig, csvImportPath, csvOutputPath, pupilOutputDir, pupilPerFramePath } from './db/tables/CaseData';
 import { type ConfigProfile, type ConfigProfileCreate, type ConfigProfileUpdate } from './db/tables/ConfigProfile';
 import { type UserData } from './db/tables/UserData';
 
@@ -23,10 +23,17 @@ import {
 	buildRateSeriesFigureSpec,
 	buildIsiHistogramFigureSpec,
 } from '@saccades/visualization/render';
-import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
+import { createSkiaCanvasPngBackend } from '@viz/render/backends/png';
 import type { SaccadeDetectionOptions } from '@saccades/core/schema';
 import type { SaccadeMetricsOptions, SegmentDefinition } from '@saccades/metrics/types';
-import type { FigureOverlaySpec } from '@saccades/visualization/render/types';
+import type { FigureOverlaySpec } from '@viz/render';
+
+import { runPupilCsvPipeline } from '@pupil/pipeline/runPupilCsvPipeline';
+import { preparePupilVisualizationData } from '@pupil/visualization/prep/preparePupilVisualizationData';
+import { buildPupilOutputBundle } from '@pupil/outputs/buildPupilOutputBundle';
+import { DEFAULT_PUPIL_OPTIONS } from '@pupil/core/schema';
+import type { PupilEvent } from '@pupil/metrics/types';
+import { writeBundle } from '@viz/export';
 
 const appRoot = app.getAppPath();
 const FFMPEG_PATH: string = (() => {
@@ -1125,6 +1132,111 @@ ipcMain.handle('case:run-detection', async (_, trial: CaseData) => {
 	});
 });
 
+/**
+ * Handles the case:run-pupil request.
+ *
+ * Reads the cleaned CSV for the given case, runs the pupil dilation pipeline
+ * (rolling-baseline normalization + event-locked epochs around segment
+ * boundaries), builds the pupil output bundle, and writes it under the case
+ * outputs directory via the shared @viz/export.writeBundle. Marks the pupil
+ * task as complete in the database when finished.
+ */
+ipcMain.handle('case:run-pupil', async (_, trial: CaseData) => {
+	return new Promise(async (resolve, reject) => {
+		const t0 = Date.now();
+		const log = (msg: string) =>
+			console.log(`[pupil:${trial.name}] +${Date.now() - t0}ms ${msg}`);
+		try {
+			log('start');
+			const storedCase = project_manager.actions.case.read(trial.name);
+
+			const cleanedPath = csvOutputPath(storedCase);
+			if (!fs.existsSync(cleanedPath)) {
+				return reject(`Cleaned CSV not found for case: ${storedCase.name}. Run cleaning first.`);
+			}
+			const csvText = fs.readFileSync(cleanedPath, 'utf-8');
+			log(`read cleaned csv (${csvText.length} bytes)`);
+
+			const segments = (storedCase.segments ?? []).map((seg) => ({
+				id: seg.id,
+				startMs: seg.startMs,
+				endMs: seg.endMs,
+			}));
+
+			// Use segment starts and ends as event triggers for the ERP. Each event
+			// is tagged with kind so the per-event row in the bundle preserves it.
+			const events: PupilEvent[] = segments.flatMap((seg) => [
+				{ id: `${seg.id}:start`, timeMs: seg.startMs, kind: 'segment_start', label: `${seg.id} start` },
+				{ id: `${seg.id}:end`, timeMs: seg.endMs, kind: 'segment_end', label: `${seg.id} end` },
+			]);
+			log(`${segments.length} segments, ${events.length} events`);
+
+			const pipelineResult = runPupilCsvPipeline(csvText, { events });
+			log(`pipeline done (${pipelineResult.analysis.samples.length} samples, ${pipelineResult.analysis.baseline.length} baseline points)`);
+
+			const visualization = preparePupilVisualizationData({
+				metrics: pipelineResult.analysis,
+				segments,
+				events,
+			});
+			log('visualization prepped');
+
+			const caseId = storedCase.name;
+
+			// buildPupilOutputBundle automatically merges visualization.overlays
+			// (markers + segment boundaries, already in scaled-unit coords) onto
+			// the time-series and normalized figures — no need to pass them here.
+			const bundle = buildPupilOutputBundle({
+				caseInfo: {
+					caseId,
+					sourceFileName: storedCase.name,
+					generatedAtIso: new Date().toISOString(),
+				},
+				runConfig: {
+					eye: DEFAULT_PUPIL_OPTIONS.eye,
+					baselineWindowMs: DEFAULT_PUPIL_OPTIONS.baselineWindowMs,
+					baselinePercentile: DEFAULT_PUPIL_OPTIONS.baselinePercentile,
+					epochPreMs: DEFAULT_PUPIL_OPTIONS.epochPreMs,
+					epochPostMs: DEFAULT_PUPIL_OPTIONS.epochPostMs,
+					gridStepMs: 5,
+				},
+				metrics: pipelineResult.analysis,
+				visualization,
+				specOptions: {
+					timeSeries: { title: `Pupil Diameter — ${caseId}` },
+					normalized: { title: `Pupil % Change — ${caseId}` },
+					eventLocked: { title: `Event-Locked Pupil Response — ${caseId}` },
+				},
+			});
+			log(`bundle built (${bundle.files.length} files)`);
+
+			const writeResult = writeBundle(bundle.files, {
+				rootDir: pupilOutputDir(storedCase),
+				png: {
+					backend: createSkiaCanvasPngBackend(),
+					dpi: 300,
+					background: 'white',
+				},
+			});
+			log(`bundle written (${writeResult.artifacts.length} artifacts)`);
+
+			project_manager.actions.case.update(storedCase, {
+				tasks: { pupil: true },
+			});
+			log('done');
+
+			return resolve({
+				artifacts: writeResult.artifacts,
+				perFrameSampleCount: pipelineResult.analysis.samples.length,
+				eventCount: events.length,
+			});
+		} catch (err) {
+			console.error(`[pupil:${trial.name}] failed:`, err);
+			return reject(`Failed to run pupil analysis for case: ${trial.name}. Error: ${err}`);
+		}
+	});
+});
+
 /*
  * VR video and Animation side-by-side handlers
  */
@@ -1300,7 +1412,7 @@ ipcMain.on('notify', (_, message) => {
 type CaseRecovery = {
 	caseName: string;
 	sourceMissing: boolean;
-	resetTasks: Array<'cleaning' | 'detection' | 'animation'>;
+	resetTasks: Array<'cleaning' | 'detection' | 'pupil' | 'animation'>;
 };
 
 /**
@@ -1344,7 +1456,7 @@ ipcMain.handle('case:verify-files', (): { recoveries: CaseRecovery[]; deleted: s
 		const taskUpdates: Partial<CaseData['tasks']> = {};
 		let needsUpdate = false;
 
-		const allTaskKeys = ['cleaning', 'detection', 'animation'] as const;
+		const allTaskKeys = ['cleaning', 'detection', 'pupil', 'animation'] as const;
 
 		const sourcePath = csvImportPath(c);
 		if (!fs.existsSync(sourcePath)) {
@@ -1360,11 +1472,15 @@ ipcMain.handle('case:verify-files', (): { recoveries: CaseRecovery[]; deleted: s
 					if (c.tasks[key]) { taskUpdates[key] = false; recovery.resetTasks.push(key); }
 				}
 				needsUpdate = true;
-			} else if (c.tasks.animation && !fs.existsSync(animationOutputPath(c))) {
-				// Animation MP4 gone — reset animation only
-				if (c.tasks.animation) {
+			} else {
+				if (c.tasks.animation && !fs.existsSync(animationOutputPath(c))) {
 					taskUpdates.animation = false;
 					recovery.resetTasks.push('animation');
+					needsUpdate = true;
+				}
+				if (c.tasks.pupil && !fs.existsSync(pupilPerFramePath(c))) {
+					taskUpdates.pupil = false;
+					recovery.resetTasks.push('pupil');
 					needsUpdate = true;
 				}
 			}

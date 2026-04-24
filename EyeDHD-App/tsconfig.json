@@ -15,10 +15,12 @@
 		"paths": {
 			"@src/*": ["src/*"],
 			"@electron/*": ["electron/*"],
-			"@saccades/*": ["saccades/*"]
+			"@saccades/*": ["saccades/*"],
+			"@viz/*": ["viz/*"],
+			"@pupil/*": ["pupil/*"]
 		}
 	},
-	"include": ["src/**/*", "electron/**/*", "saccades/**/*"],
+	"include": ["src/**/*", "electron/**/*", "saccades/**/*", "viz/**/*", "pupil/**/*"],
 	"files": [
 		"src/global.d.ts",
 		"forge.env.d.ts",

@@ -4,7 +4,7 @@ import type {
 	FigureRenderSpec,
 	FigureRendererBackend,
 	RenderedFigureArtifact
-} from './types';
+} from '@viz/render';
 
 import {
 	buildAxisLabelSpec,
@@ -12,7 +12,7 @@ import {
 	buildTitleSpec,
 	cloneOverlays,
 	resolveFontFamily
-} from './helpers';
+} from '@viz/render';
 
 
 export function buildScatterFigureSpec(

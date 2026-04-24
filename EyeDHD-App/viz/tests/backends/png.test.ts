@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildScatterFigureSpec } from '@saccades/visualization/render';
-import { createDeterministicPngBackend } from '@saccades/visualization/render/backends/png';
+import { createDeterministicPngBackend } from '@viz/render/backends/png';
 
 describe('Visualization Rendering Layer — PNG Backend', () => {
 	describe('A — Backend Contract', () => {

@@ -40,12 +40,54 @@ function computeNiceTicks(min: number, max: number, targetCount = 6): number[] {
 	return ticks;
 }
 
+/**
+ * Colorblind-friendly palette used to distinguish series in line charts.
+ * Sourced from Okabe-Ito — safe for common types of color-vision deficiency
+ * and prints well in grayscale.
+ */
+const SERIES_PALETTE = [
+	'#000000', // black
+	'#E69F00', // orange
+	'#56B4E9', // sky blue
+	'#009E73', // bluish green
+	'#CC79A7', // reddish purple
+	'#D55E00', // vermillion
+	'#0072B2', // blue
+	'#F0E442', // yellow
+] as const;
+
+/** Well-known series ids get a stable color regardless of ordering. */
+const SERIES_COLOR_BY_ID: Record<string, string> = {
+	// Pupil: left/right/mean distinguished; SE bands share the mean color as
+	// lighter companions (deliberately muted so they don't dominate).
+	'pupil-left-diameter': '#E69F00',
+	'pupil-right-diameter': '#56B4E9',
+	'pupil-mean-diameter': '#000000',
+	'pupil-left-percent-change': '#E69F00',
+	'pupil-right-percent-change': '#56B4E9',
+	'pupil-percent-change': '#000000',
+	'pupil-erp-mean': '#000000',
+	'pupil-erp-upper-se': '#888888',
+	'pupil-erp-lower-se': '#888888',
+};
+
+function pickSeriesColor(seriesId: string, index: number): string {
+	return (
+		SERIES_COLOR_BY_ID[seriesId] ??
+		SERIES_PALETTE[index % SERIES_PALETTE.length]
+	);
+}
+
 export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 	return {
 		kind: 'skia-canvas-png',
 		supportedFormats: ['png'],
 		renderFigure(spec, context) {
-			const canvas = new Canvas(context.widthPx, context.heightPx);
+			// GPU rendering is enabled by default in skia-canvas@3 but can
+			// intermittently fail PNG encoding when batching many figures in
+			// sequence (Electron main process, no GPU context). Force CPU
+			// rendering for deterministic batch output.
+			const canvas = new Canvas(context.widthPx, context.heightPx, { gpu: false });
 			const ctx = canvas.getContext('2d');
 
 			if (context.background === 'white') {
@@ -71,23 +113,40 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 			const plotRight = plotLeft + plotWidth;
 
 			// --- Compute data domain ---
+			// NOTE: avoid `Math.min(...arr)` / spread on large series — V8's call
+			// stack blows up around ~125k args, which 5+ minutes of per-frame
+			// pupil data easily exceeds.
 			let xMin = 0, xMax = 1, yMin = 0, yMax = 1;
 
 			if (spec.geometry.type === 'histogram') {
 				const bins = spec.geometry.bins;
 				if (bins.length > 0) {
-					xMin = Math.min(...bins.map((b) => b.binStart));
-					xMax = Math.max(...bins.map((b) => b.binEnd));
+					xMin = bins[0].binStart;
+					xMax = bins[0].binEnd;
 					yMin = 0;
-					yMax = Math.max(...bins.map((b) => b.count));
+					yMax = bins[0].count;
+					for (let i = 1; i < bins.length; i++) {
+						const b = bins[i];
+						if (b.binStart < xMin) xMin = b.binStart;
+						if (b.binEnd > xMax) xMax = b.binEnd;
+						if (b.count > yMax) yMax = b.count;
+					}
 				}
 			} else if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
-				const allPts = spec.geometry.series.flatMap((s) => s.points);
-				if (allPts.length > 0) {
-					xMin = Math.min(...allPts.map((p) => p.x));
-					xMax = Math.max(...allPts.map((p) => p.x));
-					yMin = Math.min(...allPts.map((p) => p.y));
-					yMax = Math.max(...allPts.map((p) => p.y));
+				let initialized = false;
+				for (const series of spec.geometry.series) {
+					for (const p of series.points) {
+						if (!initialized) {
+							xMin = xMax = p.x;
+							yMin = yMax = p.y;
+							initialized = true;
+							continue;
+						}
+						if (p.x < xMin) xMin = p.x;
+						else if (p.x > xMax) xMax = p.x;
+						if (p.y < yMin) yMin = p.y;
+						else if (p.y > yMax) yMax = p.y;
+					}
 				}
 			}
 
@@ -159,34 +218,34 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 					}
 				}
 			} else if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
-				const allPoints = spec.geometry.series.flatMap((s) => s.points);
-				if (allPoints.length > 0) {
-					const project = (p: { x: number; y: number }) => ({
-						px: plotLeft + ((p.x - xMin) / xRange) * plotWidth,
-						py: plotTop + plotHeight - ((p.y - yMin) / yRange) * plotHeight
-					});
+				const projectX = (x: number) => plotLeft + ((x - xMin) / xRange) * plotWidth;
+				const projectY = (y: number) =>
+					plotTop + plotHeight - ((y - yMin) / yRange) * plotHeight;
 
-					if (spec.geometry.type === 'scatter') {
-						ctx.fillStyle = 'black';
-						for (const point of allPoints) {
-							const { px, py } = project(point);
+				if (spec.geometry.type === 'scatter') {
+					ctx.fillStyle = 'black';
+					for (const series of spec.geometry.series) {
+						for (const point of series.points) {
 							ctx.beginPath();
-							ctx.arc(px, py, 6, 0, Math.PI * 2);
+							ctx.arc(projectX(point.x), projectY(point.y), 6, 0, Math.PI * 2);
 							ctx.fill();
 						}
-					} else {
-						ctx.strokeStyle = 'black';
-						ctx.lineWidth = 2;
-						for (const series of spec.geometry.series) {
-							if (series.points.length === 0) continue;
-							ctx.beginPath();
-							series.points.forEach((point, index) => {
-								const { px, py } = project(point);
-								if (index === 0) ctx.moveTo(px, py);
-								else ctx.lineTo(px, py);
-							});
-							ctx.stroke();
+					}
+				} else {
+					ctx.lineWidth = 2;
+					for (let s = 0; s < spec.geometry.series.length; s++) {
+						const series = spec.geometry.series[s];
+						if (series.points.length === 0) continue;
+						ctx.strokeStyle = pickSeriesColor(series.seriesId, s);
+						ctx.beginPath();
+						for (let i = 0; i < series.points.length; i++) {
+							const p = series.points[i];
+							const px = projectX(p.x);
+							const py = projectY(p.y);
+							if (i === 0) ctx.moveTo(px, py);
+							else ctx.lineTo(px, py);
 						}
+						ctx.stroke();
 					}
 				}
 			}
@@ -263,7 +322,15 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				}
 			}
 
-			const buffer = canvas.toBufferSync('png');
+			let buffer: Buffer;
+			try {
+				buffer = canvas.toBufferSync('png');
+			} catch (err) {
+				const reason = err instanceof Error ? err.message : String(err);
+				throw new Error(
+					`PNG encode failed for figure "${spec.figureId}" (${context.widthPx}×${context.heightPx}@${context.dpi}): ${reason}`
+				);
+			}
 
 			return {
 				figureId: spec.figureId,

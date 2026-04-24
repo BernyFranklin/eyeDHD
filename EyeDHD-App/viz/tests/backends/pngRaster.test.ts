@@ -3,11 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildIsiHistogramFigureSpec,
 	buildRateSeriesFigureSpec,
-	buildScatterFigureSpec,
-	renderPngFigure,
-	type FigureRenderSpec
+	buildScatterFigureSpec
 } from '@saccades/visualization/render';
-import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
+import { renderPngFigure, type FigureRenderSpec } from '@viz/render';
+import { createSkiaCanvasPngBackend } from '@viz/render/backends/png';
 
 describe('Visualization Rendering Layer — Real PNG Raster Backend', () => {
 	describe('A — Backend Contract', () => {

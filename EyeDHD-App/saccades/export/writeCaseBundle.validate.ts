@@ -12,8 +12,8 @@ import {
 	buildIsiHistogramFigureSpec,
 	attachFigureOverlays
 } from '@saccades/visualization/render';
-import type { FigureRenderSpec } from '@saccades/visualization/render';
-import { createSkiaCanvasPngBackend } from '@saccades/visualization/render/backends/png';
+import type { FigureRenderSpec } from '@viz/render';
+import { createSkiaCanvasPngBackend } from '@viz/render/backends/png';
 
 import type { CaseOutputBundle, CaseOutputFileDescriptor } from './types';
 

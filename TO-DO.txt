@@ -1,0 +1,13 @@
+To-do
+------------------------------------------------------
+Visuals
+------------------------------------------------------
+Event locked needs to capture event start and end
+Single event lock has 3 lines
+Clean up file structure for visuals
+Need legend for left, right, and mean
+Event-lock should show +/- % changes
+------------------------------------------------------
+UI
+------------------------------------------------------
+User input for ASRS score
