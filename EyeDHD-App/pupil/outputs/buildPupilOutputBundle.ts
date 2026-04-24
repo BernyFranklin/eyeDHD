@@ -123,12 +123,19 @@ export function buildPupilOutputBundle(
 	];
 
 	// Per-event epoch figures: one PNG + one CSV per event, keyed by a slug of
-	// the event id so duplicate ids don't collide on disk.
+	// the event id so duplicate ids don't collide on disk. Rendered at reduced
+	// dimensions by default — recordings with many events otherwise produce
+	// dozens of 2400×1800@300 PNGs in a tight sync loop, overwhelming the
+	// native canvas encoder.
 	const slugs = makeUniqueSlugs(visualization.eventLockedEpochs);
+	const epochSpecDefaults: BuildFigureRenderSpecOptions = {
+		dimensions: { widthPx: 1200, heightPx: 900, dpi: 150 },
+		...(specOptions.eventLockedEpoch ?? {}),
+	};
 	for (let i = 0; i < visualization.eventLockedEpochs.length; i++) {
 		const epoch = visualization.eventLockedEpochs[i];
 		const slug = slugs[i];
-		const spec = buildEventLockedEpochSpec(epoch, specOptions.eventLockedEpoch);
+		const spec = buildEventLockedEpochSpec(epoch, epochSpecDefaults);
 
 		files.push(
 			{
