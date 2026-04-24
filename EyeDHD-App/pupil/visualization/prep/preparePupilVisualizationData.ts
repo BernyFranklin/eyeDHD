@@ -38,10 +38,17 @@ export function preparePupilVisualizationData(
 
 	const timeAxis: PupilTimeAxisModel = { unit, t0Ms, durationMs };
 
+	const scaleTs = (ms: number) => scaleTime(ms - t0Ms, unit);
+
 	const timeSeries: PupilTimeSeriesModel = {
 		unit,
-		points: samples.map((s) => ({
-			t: scaleTime(s.timeMs - t0Ms, unit),
+		points: samples.map((s) => ({ t: scaleTs(s.timeMs), valueMm: s.valueMm })),
+		leftPoints: metrics.samplesLeft?.map((s) => ({
+			t: scaleTs(s.timeMs),
+			valueMm: s.valueMm,
+		})),
+		rightPoints: metrics.samplesRight?.map((s) => ({
+			t: scaleTs(s.timeMs),
 			valueMm: s.valueMm,
 		})),
 	};
@@ -50,10 +57,13 @@ export function preparePupilVisualizationData(
 		unit,
 		points: metrics.perFrame
 			.filter((p) => Number.isFinite(p.percentChange))
-			.map((p) => ({
-				t: scaleTime(p.timeMs - t0Ms, unit),
-				percentChange: p.percentChange,
-			})),
+			.map((p) => ({ t: scaleTs(p.timeMs), percentChange: p.percentChange })),
+		leftPoints: metrics.perFrameLeft
+			?.filter((p) => Number.isFinite(p.percentChange))
+			.map((p) => ({ t: scaleTs(p.timeMs), percentChange: p.percentChange })),
+		rightPoints: metrics.perFrameRight
+			?.filter((p) => Number.isFinite(p.percentChange))
+			.map((p) => ({ t: scaleTs(p.timeMs), percentChange: p.percentChange })),
 	};
 
 	const epochSpanMs =

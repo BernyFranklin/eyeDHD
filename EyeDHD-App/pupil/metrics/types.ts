@@ -83,4 +83,13 @@ export interface PupilMetricsResult {
 	/** Tabular forms suitable for direct CSV serialization. */
 	perFrameRows: PerFramePupilRow[];
 	perEventRows: PerEventPupilRow[];
+	/**
+	 * Per-eye samples and normalized series, each with its own rolling baseline.
+	 * Only populated when eye selection is 'mean' so the visualization layer can
+	 * draw left/right alongside the combined series. Undefined otherwise.
+	 */
+	samplesLeft?: BaselineSample[];
+	samplesRight?: BaselineSample[];
+	perFrameLeft?: NormalizedPoint[];
+	perFrameRight?: NormalizedPoint[];
 }

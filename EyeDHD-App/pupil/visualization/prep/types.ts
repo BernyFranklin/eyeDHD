@@ -12,13 +12,21 @@ export interface PupilTimeAxisModel {
 /** Mean pupil diameter (mm) over time. `t` is already scaled to `unit`. */
 export interface PupilTimeSeriesModel {
 	unit: TimeUnit;
+	/** Combined/mean series (always present). */
 	points: Array<{ t: number; valueMm: number }>;
+	/** Optional per-eye series — only set when eye selection is 'mean'. */
+	leftPoints?: Array<{ t: number; valueMm: number }>;
+	rightPoints?: Array<{ t: number; valueMm: number }>;
 }
 
 /** Per-frame % change relative to the rolling baseline. */
 export interface NormalizedPupilModel {
 	unit: TimeUnit;
+	/** Combined/mean series (always present). */
 	points: Array<{ t: number; percentChange: number }>;
+	/** Optional per-eye series — only set when eye selection is 'mean'. */
+	leftPoints?: Array<{ t: number; percentChange: number }>;
+	rightPoints?: Array<{ t: number; percentChange: number }>;
 }
 
 /** Across-events grand mean ± SE on a common epoch grid. */

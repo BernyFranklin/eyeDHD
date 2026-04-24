@@ -78,6 +78,18 @@ describe('runPupilCsvPipeline', () => {
 
 		expect(left.analysis.samples[0].valueMm).toBe(3.0);
 		expect(mean.analysis.samples[0].valueMm).toBe(4.0);
+
+		// eye:'mean' also exposes per-eye samples and perFrame for visualization.
+		expect(mean.analysis.samplesLeft?.map((s) => s.valueMm)).toEqual([3, 3, 3, 3, 3]);
+		expect(mean.analysis.samplesRight?.map((s) => s.valueMm)).toEqual([5, 5, 5, 5, 5]);
+		expect(mean.analysis.perFrameLeft).toHaveLength(5);
+		expect(mean.analysis.perFrameRight).toHaveLength(5);
+
+		// Single-eye selection leaves the per-eye fields undefined.
+		expect(left.analysis.samplesLeft).toBeUndefined();
+		expect(left.analysis.samplesRight).toBeUndefined();
+		expect(left.analysis.perFrameLeft).toBeUndefined();
+		expect(left.analysis.perFrameRight).toBeUndefined();
 	});
 
 	it('handles a CSV with no events by producing empty event-locked output', () => {

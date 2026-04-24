@@ -203,4 +203,46 @@ describe('preparePupilVisualizationData', () => {
 		const result = preparePupilVisualizationData({ metrics: makeMetrics() });
 		expect(result.eventLockedEpochs).toEqual([]);
 	});
+
+	it('passes per-eye samples/perFrame through as scaled leftPoints/rightPoints when present', () => {
+		const base = makeMetrics();
+		const metrics: PupilMetricsResult = {
+			...base,
+			samplesLeft: [
+				{ timeMs: 0, valueMm: 2.9 },
+				{ timeMs: 100, valueMm: 3.0 },
+			],
+			samplesRight: [
+				{ timeMs: 0, valueMm: 3.1 },
+				{ timeMs: 100, valueMm: 3.2 },
+			],
+			perFrameLeft: [
+				{ timeMs: 0, valueMm: 2.9, baselineMm: 2.9, percentChange: 0 },
+				{ timeMs: 100, valueMm: 3.0, baselineMm: 2.9, percentChange: 3.45 },
+			],
+			perFrameRight: [
+				{ timeMs: 0, valueMm: 3.1, baselineMm: 3.1, percentChange: 0 },
+				{ timeMs: 100, valueMm: 3.2, baselineMm: 3.1, percentChange: 3.23 },
+			],
+		};
+		const result = preparePupilVisualizationData({ metrics });
+		expect(result.timeSeries.leftPoints).toEqual([
+			{ t: 0, valueMm: 2.9 },
+			{ t: 100, valueMm: 3.0 },
+		]);
+		expect(result.timeSeries.rightPoints).toEqual([
+			{ t: 0, valueMm: 3.1 },
+			{ t: 100, valueMm: 3.2 },
+		]);
+		expect(result.normalized.leftPoints?.map((p) => p.t)).toEqual([0, 100]);
+		expect(result.normalized.rightPoints?.map((p) => p.t)).toEqual([0, 100]);
+	});
+
+	it('omits per-eye points when metrics did not provide them', () => {
+		const result = preparePupilVisualizationData({ metrics: makeMetrics() });
+		expect(result.timeSeries.leftPoints).toBeUndefined();
+		expect(result.timeSeries.rightPoints).toBeUndefined();
+		expect(result.normalized.leftPoints).toBeUndefined();
+		expect(result.normalized.rightPoints).toBeUndefined();
+	});
 });

@@ -50,6 +50,29 @@ export function computePupilMetrics(
 	const perFrameRows = buildPerFrameRows(input.rows, samples, perFrame, opts.eye);
 	const perEventRows = buildPerEventRows(eventLocked.epochs, baseline, samples);
 
+	// When the user selected 'mean', also compute per-eye samples and normalized
+	// series so the visualization layer can draw left/right alongside the mean.
+	// Each eye gets its own rolling baseline to keep the % change meaningful
+	// even when the two eyes differ in absolute diameter.
+	let samplesLeft: BaselineSample[] | undefined;
+	let samplesRight: BaselineSample[] | undefined;
+	let perFrameLeft: NormalizedPoint[] | undefined;
+	let perFrameRight: NormalizedPoint[] | undefined;
+	if (opts.eye === 'mean') {
+		samplesLeft = reduceRowsToSamples(input.rows, 'left');
+		samplesRight = reduceRowsToSamples(input.rows, 'right');
+		const baselineLeft = computeRollingBaseline(samplesLeft, {
+			windowMs: opts.baselineWindowMs,
+			percentile: opts.baselinePercentile,
+		});
+		const baselineRight = computeRollingBaseline(samplesRight, {
+			windowMs: opts.baselineWindowMs,
+			percentile: opts.baselinePercentile,
+		});
+		perFrameLeft = computePercentChange(samplesLeft, baselineLeft);
+		perFrameRight = computePercentChange(samplesRight, baselineRight);
+	}
+
 	return {
 		samples,
 		baseline,
@@ -57,6 +80,10 @@ export function computePupilMetrics(
 		eventLocked,
 		perFrameRows,
 		perEventRows,
+		samplesLeft,
+		samplesRight,
+		perFrameLeft,
+		perFrameRight,
 	};
 }
 

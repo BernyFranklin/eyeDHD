@@ -28,6 +28,22 @@ export function buildPupilTimeSeriesSpec(
 ): FigureRenderSpec {
 	const fontFamily = resolveFontFamily(options);
 	const defaultXLabel = timeAxisLabel(model.unit);
+	const toXY = (p: { t: number; valueMm: number }) => ({ x: p.t, y: p.valueMm });
+	const isFinitePt = (p: { t: number; valueMm: number }) =>
+		Number.isFinite(p.t) && Number.isFinite(p.valueMm);
+
+	const series: LineSeriesSpec[] = [];
+	if (model.leftPoints && model.rightPoints) {
+		series.push(
+			{ seriesId: 'pupil-left-diameter', points: model.leftPoints.filter(isFinitePt).map(toXY) },
+			{ seriesId: 'pupil-right-diameter', points: model.rightPoints.filter(isFinitePt).map(toXY) }
+		);
+	}
+	series.push({
+		seriesId: 'pupil-mean-diameter',
+		points: model.points.filter(isFinitePt).map(toXY),
+	});
+
 	return buildBaseFigureSpec({
 		figureId: options.figureId ?? 'pupil-timeseries-figure',
 		kind: 'custom',
@@ -45,17 +61,7 @@ export function buildPupilTimeSeriesSpec(
 			scaleType: 'linear',
 			domain: options.axisDomains?.y,
 		},
-		geometry: {
-			type: 'line',
-			series: [
-				{
-					seriesId: 'pupil-mean-diameter',
-					points: model.points
-						.filter((p) => Number.isFinite(p.t) && Number.isFinite(p.valueMm))
-						.map((p) => ({ x: p.t, y: p.valueMm })),
-				},
-			],
-		},
+		geometry: { type: 'line', series },
 	});
 }
 
@@ -66,6 +72,31 @@ export function buildNormalizedPupilSpec(
 ): FigureRenderSpec {
 	const fontFamily = resolveFontFamily(options);
 	const defaultXLabel = timeAxisLabel(model.unit);
+	const toXY = (p: { t: number; percentChange: number }) => ({
+		x: p.t,
+		y: p.percentChange,
+	});
+	const isFinitePt = (p: { t: number; percentChange: number }) =>
+		Number.isFinite(p.t) && Number.isFinite(p.percentChange);
+
+	const series: LineSeriesSpec[] = [];
+	if (model.leftPoints && model.rightPoints) {
+		series.push(
+			{
+				seriesId: 'pupil-left-percent-change',
+				points: model.leftPoints.filter(isFinitePt).map(toXY),
+			},
+			{
+				seriesId: 'pupil-right-percent-change',
+				points: model.rightPoints.filter(isFinitePt).map(toXY),
+			}
+		);
+	}
+	series.push({
+		seriesId: 'pupil-percent-change',
+		points: model.points.filter(isFinitePt).map(toXY),
+	});
+
 	return buildBaseFigureSpec({
 		figureId: options.figureId ?? 'pupil-normalized-figure',
 		kind: 'custom',
@@ -86,17 +117,7 @@ export function buildNormalizedPupilSpec(
 			scaleType: 'linear',
 			domain: options.axisDomains?.y,
 		},
-		geometry: {
-			type: 'line',
-			series: [
-				{
-					seriesId: 'pupil-percent-change',
-					points: model.points
-						.filter((p) => Number.isFinite(p.t) && Number.isFinite(p.percentChange))
-						.map((p) => ({ x: p.t, y: p.percentChange })),
-				},
-			],
-		},
+		geometry: { type: 'line', series },
 	});
 }
 

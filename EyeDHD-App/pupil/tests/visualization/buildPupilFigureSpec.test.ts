@@ -96,6 +96,32 @@ describe('buildPupilTimeSeriesSpec', () => {
 		expect(spec.yAxis.label.text).toBe('mm');
 		expect(spec.overlays?.segmentBoundaries).toEqual([{ timeMs: 100, label: 'cue' }]);
 	});
+
+	it('emits left, right, and mean series when dual-eye points are provided', () => {
+		const spec = buildPupilTimeSeriesSpec({
+			unit: 'ms',
+			points: [{ t: 0, valueMm: 3.5 }],
+			leftPoints: [{ t: 0, valueMm: 3.0 }],
+			rightPoints: [{ t: 0, valueMm: 4.0 }],
+		});
+		if (spec.geometry.type !== 'line') throw new Error('unreachable');
+		expect(spec.geometry.series.map((s) => s.seriesId)).toEqual([
+			'pupil-left-diameter',
+			'pupil-right-diameter',
+			'pupil-mean-diameter',
+		]);
+	});
+
+	it('falls back to single mean series when only one per-eye side is present', () => {
+		const spec = buildPupilTimeSeriesSpec({
+			unit: 'ms',
+			points: [{ t: 0, valueMm: 3.0 }],
+			leftPoints: [{ t: 0, valueMm: 3.0 }],
+		});
+		if (spec.geometry.type !== 'line') throw new Error('unreachable');
+		expect(spec.geometry.series).toHaveLength(1);
+		expect(spec.geometry.series[0].seriesId).toBe('pupil-mean-diameter');
+	});
 });
 
 describe('buildNormalizedPupilSpec', () => {
@@ -117,6 +143,21 @@ describe('buildNormalizedPupilSpec', () => {
 			points: [{ t: 0, percentChange: 0 }],
 		});
 		expect(spec.xAxis.label.text).toBe('Time (min)');
+	});
+
+	it('emits left, right, and mean series when dual-eye points are provided', () => {
+		const spec = buildNormalizedPupilSpec({
+			unit: 'ms',
+			points: [{ t: 0, percentChange: 0 }],
+			leftPoints: [{ t: 0, percentChange: -1 }],
+			rightPoints: [{ t: 0, percentChange: 1 }],
+		});
+		if (spec.geometry.type !== 'line') throw new Error('unreachable');
+		expect(spec.geometry.series.map((s) => s.seriesId)).toEqual([
+			'pupil-left-percent-change',
+			'pupil-right-percent-change',
+			'pupil-percent-change',
+		]);
 	});
 });
 
