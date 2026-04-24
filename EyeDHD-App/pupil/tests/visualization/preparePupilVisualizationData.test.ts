@@ -151,4 +151,56 @@ describe('preparePupilVisualizationData', () => {
 		expect(result.overlays.markers).toEqual([]);
 		expect(result.overlays.segmentBoundaries).toEqual([]);
 	});
+
+	it('builds one epoch model per event, with scaled t and event label/id passthrough', () => {
+		const base = makeMetrics();
+		const metrics: PupilMetricsResult = {
+			...base,
+			eventLocked: {
+				...base.eventLocked,
+				epochs: [
+					{
+						eventId: 'e1',
+						kind: 'event',
+						label: 'Event 1',
+						eventTimeMs: 100,
+						points: [
+							{ timeRelMs: -100, percentChange: 0 },
+							{ timeRelMs: 0, percentChange: 5 },
+							{ timeRelMs: 100, percentChange: 3 },
+						],
+					},
+					{
+						eventId: 'e2',
+						kind: 'event',
+						eventTimeMs: 200,
+						points: [
+							{ timeRelMs: 0, percentChange: 4 },
+						],
+					},
+				],
+			},
+		};
+		const result = preparePupilVisualizationData({ metrics });
+		expect(result.eventLockedEpochs).toHaveLength(2);
+		expect(result.eventLockedEpochs[0]).toEqual({
+			unit: 'ms',
+			eventId: 'e1',
+			kind: 'event',
+			label: 'Event 1',
+			eventTimeMs: 100,
+			points: [
+				{ t: -100, percentChange: 0 },
+				{ t: 0, percentChange: 5 },
+				{ t: 100, percentChange: 3 },
+			],
+		});
+		// Falls back to eventId when label is absent.
+		expect(result.eventLockedEpochs[1].label).toBe('e2');
+	});
+
+	it('emits an empty eventLockedEpochs array when there are no epochs', () => {
+		const result = preparePupilVisualizationData({ metrics: makeMetrics() });
+		expect(result.eventLockedEpochs).toEqual([]);
+	});
 });

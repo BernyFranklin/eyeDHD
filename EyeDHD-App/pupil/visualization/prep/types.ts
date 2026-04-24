@@ -35,6 +35,18 @@ export interface EventLockedPupilModel {
 	}>;
 }
 
+/** A single event's epoch on the common grid (one figure per event). */
+export interface EventLockedEpochModel {
+	unit: TimeUnit;
+	eventId: string;
+	/** Free-form classification carried through from the source PupilEvent. */
+	kind?: string;
+	/** Display label — prefers PupilEvent.label, falls back to eventId. */
+	label: string;
+	eventTimeMs: number;
+	points: Array<{ t: number; percentChange: number }>;
+}
+
 /** Overlays applied to time-axis figures (segments and event markers). */
 export interface PupilOverlaysModel {
 	markers: MarkerOverlaySpec[];
@@ -46,5 +58,7 @@ export interface PupilVisualizationModels {
 	timeSeries: PupilTimeSeriesModel;
 	normalized: NormalizedPupilModel;
 	eventLocked: EventLockedPupilModel;
+	/** One entry per event; used to render one PNG per event. */
+	eventLockedEpochs: EventLockedEpochModel[];
 	overlays: PupilOverlaysModel;
 }

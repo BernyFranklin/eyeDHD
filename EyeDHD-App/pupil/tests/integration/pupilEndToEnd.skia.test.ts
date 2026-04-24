@@ -52,7 +52,7 @@ const EVENTS: PupilEvent[] = SEGMENTS.flatMap((seg) => [
 ]);
 
 describe('Pupil end-to-end (Skia render)', () => {
-	it('writes all 9 advertised artifacts with non-empty payloads from a fixture CSV', () => {
+	it('writes all advertised artifacts (base 9 + per-event figures) with non-empty payloads from a fixture CSV', () => {
 		const csv = buildFixtureCsv();
 
 		const pipelineResult = runPupilCsvPipeline(csv, {
@@ -107,7 +107,9 @@ describe('Pupil end-to-end (Skia render)', () => {
 				},
 			});
 
-			expect(result.artifacts).toHaveLength(9);
+			// Base 9 artifacts + one PNG and one CSV per event-locked epoch.
+			const expectedCount = 9 + 2 * EVENTS.length;
+			expect(result.artifacts).toHaveLength(expectedCount);
 
 			const expectedFiles = [
 				'metadata/pupil-run-config.json',
@@ -127,8 +129,19 @@ describe('Pupil end-to-end (Skia render)', () => {
 				expect(fs.statSync(full).size, `empty: ${rel}`).toBeGreaterThan(0);
 			}
 
-			// Every PNG starts with the 8-byte PNG signature.
-			for (const rel of expectedFiles.filter((f) => f.endsWith('.png'))) {
+			// Per-event figures land under visuals/event-locked/ and all exist.
+			const epochDir = path.join(rootDir, 'visuals/event-locked');
+			expect(fs.existsSync(epochDir)).toBe(true);
+			const epochFiles = fs.readdirSync(epochDir);
+			expect(epochFiles.filter((f) => f.endsWith('.png'))).toHaveLength(EVENTS.length);
+			expect(epochFiles.filter((f) => f.endsWith('.csv'))).toHaveLength(EVENTS.length);
+
+			// Every PNG (base + per-event) starts with the 8-byte PNG signature.
+			const allPngs = [
+				...expectedFiles.filter((f) => f.endsWith('.png')),
+				...epochFiles.filter((f) => f.endsWith('.png')).map((f) => `visuals/event-locked/${f}`),
+			];
+			for (const rel of allPngs) {
 				const bytes = fs.readFileSync(path.join(rootDir, rel));
 				expect(bytes.subarray(0, 8).equals(PNG_SIGNATURE), `bad PNG header: ${rel}`).toBe(true);
 			}

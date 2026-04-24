@@ -11,6 +11,7 @@ import {
 } from '@viz/render';
 
 import type {
+	EventLockedEpochModel,
 	EventLockedPupilModel,
 	NormalizedPupilModel,
 	PupilTimeSeriesModel,
@@ -146,6 +147,62 @@ export function buildEventLockedPupilSpec(
 		defaultXAxisLabel: defaultXLabel,
 		defaultYAxisLabel: '% Change from Baseline',
 		title: buildTitleSpec(options.title, fontFamily),
+		xAxis: {
+			label: buildAxisLabelSpec(options.xAxisLabel ?? defaultXLabel, fontFamily),
+			scaleType: 'linear',
+			domain: options.axisDomains?.x,
+		},
+		yAxis: {
+			label: buildAxisLabelSpec(
+				options.yAxisLabel ?? '% Change from Baseline',
+				fontFamily
+			),
+			scaleType: 'linear',
+			domain: options.axisDomains?.y,
+		},
+		geometry: {
+			type: 'line',
+			series,
+		},
+	});
+}
+
+/**
+ * Single-event epoch figure. One line of this event's % change vs time, with
+ * a t = 0 vertical reference. Title defaults to the event label.
+ */
+export function buildEventLockedEpochSpec(
+	model: EventLockedEpochModel,
+	options: BuildFigureRenderSpecOptions = {}
+): FigureRenderSpec {
+	const fontFamily = resolveFontFamily(options);
+	const defaultXLabel = relativeTimeAxisLabel(model.unit);
+
+	const points = model.points
+		.filter((p) => Number.isFinite(p.percentChange))
+		.map((p) => ({ x: p.t, y: p.percentChange }));
+
+	const series: LineSeriesSpec[] = [
+		{ seriesId: `pupil-epoch-${model.eventId}`, points },
+	];
+
+	const userOverlays = options.overlays ?? {};
+	const eventLine = { timeMs: 0, label: model.label };
+	const overlays = {
+		markers: userOverlays.markers ? [...userOverlays.markers] : undefined,
+		segmentBoundaries: [
+			...(userOverlays.segmentBoundaries ?? []),
+			eventLine,
+		],
+	};
+
+	return buildBaseFigureSpec({
+		figureId: options.figureId ?? `pupil-event-locked-epoch-${model.eventId}`,
+		kind: 'custom',
+		options: { ...options, overlays },
+		defaultXAxisLabel: defaultXLabel,
+		defaultYAxisLabel: '% Change from Baseline',
+		title: buildTitleSpec(options.title ?? model.label, fontFamily),
 		xAxis: {
 			label: buildAxisLabelSpec(options.xAxisLabel ?? defaultXLabel, fontFamily),
 			scaleType: 'linear',

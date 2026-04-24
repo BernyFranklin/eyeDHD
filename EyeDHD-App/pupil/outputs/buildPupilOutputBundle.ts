@@ -2,11 +2,15 @@ import type { BundleFileDescriptor } from '@viz/export';
 import type { BuildFigureRenderSpecOptions, FigureOverlaySpec } from '@viz/render';
 
 import {
+	buildEventLockedEpochSpec,
 	buildEventLockedPupilSpec,
 	buildNormalizedPupilSpec,
 	buildPupilTimeSeriesSpec,
 } from '@pupil/visualization/specs';
-import type { PupilOverlaysModel } from '@pupil/visualization/prep/types';
+import type {
+	EventLockedEpochModel,
+	PupilOverlaysModel,
+} from '@pupil/visualization/prep/types';
 
 import type {
 	PupilOutputBundle,
@@ -118,7 +122,57 @@ export function buildPupilOutputBundle(
 		},
 	];
 
+	// Per-event epoch figures: one PNG + one CSV per event, keyed by a slug of
+	// the event id so duplicate ids don't collide on disk.
+	const slugs = makeUniqueSlugs(visualization.eventLockedEpochs);
+	for (let i = 0; i < visualization.eventLockedEpochs.length; i++) {
+		const epoch = visualization.eventLockedEpochs[i];
+		const slug = slugs[i];
+		const spec = buildEventLockedEpochSpec(epoch, specOptions.eventLockedEpoch);
+
+		files.push(
+			{
+				key: `pupilEventLockedEpochModel_${slug}`,
+				relativePath: `visuals/event-locked/${slug}.csv`,
+				format: 'csv',
+				category: CATEGORY_VISUALS,
+				optional: true,
+				content: epoch.points,
+			},
+			{
+				key: `pupilEventLockedEpochPng_${slug}`,
+				relativePath: `visuals/event-locked/${slug}.png`,
+				format: 'png',
+				category: CATEGORY_VISUALS,
+				optional: true,
+				content: spec,
+			}
+		);
+	}
+
 	return { caseInfo, runConfig, files };
+}
+
+/**
+ * Slugifies event ids to be filesystem-safe and disambiguates duplicates by
+ * appending `-<index>` starting at the second occurrence.
+ */
+function makeUniqueSlugs(epochs: ReadonlyArray<EventLockedEpochModel>): string[] {
+	const seen = new Map<string, number>();
+	const out: string[] = [];
+	for (const epoch of epochs) {
+		const base = slugify(epoch.eventId);
+		const count = seen.get(base) ?? 0;
+		seen.set(base, count + 1);
+		out.push(count === 0 ? base : `${base}-${count + 1}`);
+	}
+	return out;
+}
+
+function slugify(id: string): string {
+	const lowered = id.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+	const trimmed = lowered.replace(/^-+|-+$/g, '');
+	return trimmed.length > 0 ? trimmed : 'event';
 }
 
 /**

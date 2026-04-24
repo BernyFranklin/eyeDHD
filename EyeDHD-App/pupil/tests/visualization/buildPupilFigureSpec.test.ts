@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+	buildEventLockedEpochSpec,
 	buildEventLockedPupilSpec,
 	buildNormalizedPupilSpec,
 	buildPupilTimeSeriesSpec,
 } from '@pupil/visualization/specs/buildPupilFigureSpec';
 import type {
+	EventLockedEpochModel,
 	EventLockedPupilModel,
 	NormalizedPupilModel,
 	PupilTimeSeriesModel,
@@ -181,6 +183,56 @@ describe('buildEventLockedPupilSpec', () => {
 			...makeEventLocked(),
 			unit: 's',
 		});
+		expect(spec.xAxis.label.text).toBe('Time relative to event (s)');
+	});
+});
+
+describe('buildEventLockedEpochSpec', () => {
+	function makeEpoch(): EventLockedEpochModel {
+		return {
+			unit: 'ms',
+			eventId: 'trial-1',
+			kind: 'event',
+			label: 'Trial 1 onset',
+			eventTimeMs: 1000,
+			points: [
+				{ t: -100, percentChange: 0 },
+				{ t: 0, percentChange: 5 },
+				{ t: 100, percentChange: NaN },
+				{ t: 200, percentChange: 3 },
+			],
+		};
+	}
+
+	it('emits a single series of finite-only points', () => {
+		const spec = buildEventLockedEpochSpec(makeEpoch());
+		if (spec.geometry.type !== 'line') throw new Error('unreachable');
+		expect(spec.geometry.series).toHaveLength(1);
+		expect(spec.geometry.series[0].points).toEqual([
+			{ x: -100, y: 0 },
+			{ x: 0, y: 5 },
+			{ x: 200, y: 3 },
+		]);
+	});
+
+	it('defaults the title to the event label', () => {
+		const spec = buildEventLockedEpochSpec(makeEpoch());
+		expect(spec.title?.text).toBe('Trial 1 onset');
+	});
+
+	it('lets caller override the title', () => {
+		const spec = buildEventLockedEpochSpec(makeEpoch(), { title: 'Custom' });
+		expect(spec.title?.text).toBe('Custom');
+	});
+
+	it('adds a t=0 segment-boundary overlay labeled with the event label', () => {
+		const spec = buildEventLockedEpochSpec(makeEpoch());
+		const boundaries = spec.overlays?.segmentBoundaries ?? [];
+		expect(boundaries).toContainEqual({ timeMs: 0, label: 'Trial 1 onset' });
+	});
+
+	it('reflects the model time unit on the default x-axis label', () => {
+		const spec = buildEventLockedEpochSpec({ ...makeEpoch(), unit: 's' });
 		expect(spec.xAxis.label.text).toBe('Time relative to event (s)');
 	});
 });

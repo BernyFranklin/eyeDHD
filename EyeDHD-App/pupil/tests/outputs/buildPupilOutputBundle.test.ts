@@ -96,11 +96,41 @@ function makeVisualization(): PupilVisualizationModels {
 				{ t: 100, meanPercent: 3, sePercent: 0.6, n: 1 },
 			],
 		},
+		eventLockedEpochs: [],
 		overlays: {
 			markers: [],
 			segmentBoundaries: [],
 		},
 	};
+}
+
+function makeEpochs(): PupilVisualizationModels['eventLockedEpochs'] {
+	return [
+		{
+			unit: 'ms',
+			eventId: 'trial-1',
+			kind: 'event',
+			label: 'Trial 1 onset',
+			eventTimeMs: 100,
+			points: [
+				{ t: -100, percentChange: 0 },
+				{ t: 0, percentChange: 5 },
+				{ t: 100, percentChange: 3 },
+			],
+		},
+		{
+			unit: 'ms',
+			eventId: 'trial-2',
+			kind: 'event',
+			label: 'Trial 2 onset',
+			eventTimeMs: 500,
+			points: [
+				{ t: -100, percentChange: 0 },
+				{ t: 0, percentChange: 8 },
+				{ t: 100, percentChange: 4 },
+			],
+		},
+	];
 }
 
 function makeInput(): PupilOutputBundleInput {
@@ -129,7 +159,7 @@ function descriptorByKey(bundle: ReturnType<typeof buildPupilOutputBundle>, key:
 }
 
 describe('buildPupilOutputBundle', () => {
-	it('emits the full set of file descriptors with the documented relative paths', () => {
+	it('emits the base 9 file descriptors with the documented relative paths when no epochs are present', () => {
 		const bundle = buildPupilOutputBundle(makeInput());
 
 		const expected = new Map<string, string>([
@@ -147,6 +177,70 @@ describe('buildPupilOutputBundle', () => {
 		expect(bundle.files).toHaveLength(expected.size);
 		for (const [key, expectedPath] of expected) {
 			expect(descriptorByKey(bundle, key).relativePath).toBe(expectedPath);
+		}
+	});
+
+	it('emits one PNG + one CSV per event under visuals/event-locked/ with the grand-average PNG preserved', () => {
+		const input = makeInput();
+		input.visualization.eventLockedEpochs = makeEpochs();
+		const bundle = buildPupilOutputBundle(input);
+
+		const epochPaths = bundle.files
+			.filter((f) => f.relativePath.startsWith('visuals/event-locked/'))
+			.map((f) => f.relativePath)
+			.sort();
+		expect(epochPaths).toEqual([
+			'visuals/event-locked/trial-1.csv',
+			'visuals/event-locked/trial-1.png',
+			'visuals/event-locked/trial-2.csv',
+			'visuals/event-locked/trial-2.png',
+		]);
+
+		// Grand-average figure still present alongside per-event figures.
+		expect(descriptorByKey(bundle, 'pupilEventLockedPng').relativePath).toBe(
+			'visuals/pupil-event-locked.png'
+		);
+
+		// Per-event PNGs default their title to the event label.
+		const trial1Png = bundle.files.find(
+			(f) => f.relativePath === 'visuals/event-locked/trial-1.png'
+		);
+		const spec = trial1Png!.content as { title?: { text: string } };
+		expect(spec.title?.text).toBe('Trial 1 onset');
+	});
+
+	it('slugifies event ids and disambiguates duplicates by index', () => {
+		const input = makeInput();
+		input.visualization.eventLockedEpochs = [
+			{ ...makeEpochs()[0], eventId: 'Trial/1' },
+			{ ...makeEpochs()[1], eventId: 'Trial/1' },
+		];
+		const bundle = buildPupilOutputBundle(input);
+		const paths = bundle.files
+			.filter((f) => f.relativePath.startsWith('visuals/event-locked/') && f.format === 'png')
+			.map((f) => f.relativePath);
+		expect(paths).toEqual([
+			'visuals/event-locked/trial-1.png',
+			'visuals/event-locked/trial-1-2.png',
+		]);
+	});
+
+	it('threads specOptions.eventLockedEpoch onto every per-event PNG', () => {
+		const input = makeInput();
+		input.visualization.eventLockedEpochs = makeEpochs();
+		const bundle = buildPupilOutputBundle({
+			...input,
+			specOptions: {
+				eventLockedEpoch: { yAxisLabel: 'Δ% dilation' },
+			},
+		});
+		const pngs = bundle.files.filter(
+			(f) => f.relativePath.startsWith('visuals/event-locked/') && f.format === 'png'
+		);
+		expect(pngs).toHaveLength(2);
+		for (const png of pngs) {
+			const spec = png.content as { yAxis: { label: { text: string } } };
+			expect(spec.yAxis.label.text).toBe('Δ% dilation');
 		}
 	});
 

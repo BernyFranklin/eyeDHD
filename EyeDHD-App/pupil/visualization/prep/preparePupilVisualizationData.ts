@@ -2,6 +2,7 @@ import type { PupilMetricsResult, PupilEvent } from '@pupil/metrics/types';
 
 import { pickTimeUnit, scaleTime } from './timeAxis';
 import type {
+	EventLockedEpochModel,
 	EventLockedPupilModel,
 	NormalizedPupilModel,
 	PupilOverlaysModel,
@@ -72,6 +73,20 @@ export function preparePupilVisualizationData(
 		})),
 	};
 
+	const eventLockedEpochs: EventLockedEpochModel[] = metrics.eventLocked.epochs.map(
+		(epoch) => ({
+			unit: eventLockedUnit,
+			eventId: epoch.eventId,
+			kind: epoch.kind,
+			label: epoch.label ?? epoch.eventId,
+			eventTimeMs: epoch.eventTimeMs,
+			points: epoch.points.map((p) => ({
+				t: scaleTime(p.timeRelMs, eventLockedUnit),
+				percentChange: p.percentChange,
+			})),
+		})
+	);
+
 	const overlays: PupilOverlaysModel = {
 		markers: events.map((e) => ({
 			timeMs: scaleTime(e.timeMs - t0Ms, unit),
@@ -84,5 +99,12 @@ export function preparePupilVisualizationData(
 		]),
 	};
 
-	return { timeAxis, timeSeries, normalized, eventLocked, overlays };
+	return {
+		timeAxis,
+		timeSeries,
+		normalized,
+		eventLocked,
+		eventLockedEpochs,
+		overlays,
+	};
 }
