@@ -279,7 +279,15 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				}
 			}
 
-			const buffer = canvas.toBufferSync('png');
+			let buffer: Buffer;
+			try {
+				buffer = canvas.toBufferSync('png');
+			} catch (err) {
+				const reason = err instanceof Error ? err.message : String(err);
+				throw new Error(
+					`PNG encode failed for figure "${spec.figureId}" (${context.widthPx}×${context.heightPx}@${context.dpi}): ${reason}`
+				);
+			}
 
 			return {
 				figureId: spec.figureId,

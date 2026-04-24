@@ -50,7 +50,9 @@ export function buildPupilTimeSeriesSpec(
 			series: [
 				{
 					seriesId: 'pupil-mean-diameter',
-					points: model.points.map((p) => ({ x: p.t, y: p.valueMm })),
+					points: model.points
+						.filter((p) => Number.isFinite(p.t) && Number.isFinite(p.valueMm))
+						.map((p) => ({ x: p.t, y: p.valueMm })),
 				},
 			],
 		},
@@ -89,7 +91,9 @@ export function buildNormalizedPupilSpec(
 			series: [
 				{
 					seriesId: 'pupil-percent-change',
-					points: model.points.map((p) => ({ x: p.t, y: p.percentChange })),
+					points: model.points
+						.filter((p) => Number.isFinite(p.t) && Number.isFinite(p.percentChange))
+						.map((p) => ({ x: p.t, y: p.percentChange })),
 				},
 			],
 		},
