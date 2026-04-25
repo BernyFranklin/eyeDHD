@@ -48,6 +48,7 @@ const RUNTIME_DEPS = collectRuntimeDeps(NATIVE_ROOTS);
 
 const config: ForgeConfig = {
 	packagerConfig: {
+		icon: './public/images/sight-logo',
 		asar: {
 			unpack: '**/node_modules/ffmpeg-static/**'
 		},

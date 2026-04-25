@@ -10,7 +10,9 @@ function createWindow() {
 		minWidth: 100,
 		minHeight: 20,
 		frame: false,
-		icon: path.join(__dirname, '../images/sight-logo.ico'),
+		icon: app.isPackaged
+			? path.join(__dirname, '../renderer/main_window/images/sight-logo.ico')
+			: path.join(__dirname, '../../public/images/sight-logo.ico'),
 		title: 'EyeDHD',
 		webPreferences: {
 			contextIsolation: true,
