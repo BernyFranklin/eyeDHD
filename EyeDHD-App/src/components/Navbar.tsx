@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { Menu, Minus, Maximize2, Minimize2, X } from 'lucide-react';
 
 import { useSelector, useDispatch } from '@src/data/hooks';
 import { selectButtons } from '@src/data/features/global';
@@ -70,18 +71,39 @@ const APP_MENUS: MenuDef[] = [
 ];
 
 function AppMenu({ onAction }: { onAction: (action: string) => void }) {
+	const [menuBarOpen, setMenuBarOpen] = useState(false);
+	const [menuBarClosing, setMenuBarClosing] = useState(false);
 	const [openMenu, setOpenMenu] = useState<string | null>(null);
-	const menuBarRef = useRef<HTMLDivElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	useEffect(() => () => {
+		if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+	}, []);
+
+	const openMenuBar = () => {
+		if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
+		setMenuBarClosing(false);
+		setMenuBarOpen(true);
+	};
+
+	const closeMenuBar = () => {
+		setOpenMenu(null);
+		setMenuBarClosing(true);
+		closeTimerRef.current = setTimeout(() => {
+			setMenuBarOpen(false);
+			setMenuBarClosing(false);
+			closeTimerRef.current = null;
+		}, 180);
+	};
 
 	useEffect(() => {
-		if (!openMenu) return;
+		if (!menuBarOpen) return;
 		const onClickOutside = (e: MouseEvent) => {
-			if (!menuBarRef.current?.contains(e.target as Node)) {
-				setOpenMenu(null);
-			}
+			if (!containerRef.current?.contains(e.target as Node)) closeMenuBar();
 		};
 		const onKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') setOpenMenu(null);
+			if (e.key === 'Escape') { openMenu ? setOpenMenu(null) : closeMenuBar(); }
 		};
 		document.addEventListener('mousedown', onClickOutside);
 		document.addEventListener('keydown', onKeyDown);
@@ -89,46 +111,58 @@ function AppMenu({ onAction }: { onAction: (action: string) => void }) {
 			document.removeEventListener('mousedown', onClickOutside);
 			document.removeEventListener('keydown', onKeyDown);
 		};
-	}, [openMenu]);
+	}, [menuBarOpen, openMenu]);
 
 	const handleAction = (action: string) => {
 		setOpenMenu(null);
+		closeMenuBar();
 		onAction(action);
 	};
 
 	return (
-		<div className="app-menu" ref={menuBarRef}>
-			{APP_MENUS.map((menu) => (
-				<div key={menu.label} className="app-menu-entry">
-					<button
-						className={`app-menu-btn${openMenu === menu.label ? ' active' : ''}`}
-						onClick={() => setOpenMenu(openMenu === menu.label ? null : menu.label)}
-						onMouseEnter={() => { if (openMenu && openMenu !== menu.label) setOpenMenu(menu.label); }}
-					>
-						{menu.label}
-					</button>
-					{openMenu === menu.label && (
-						<div className="app-menu-dropdown">
-							{menu.items.map((item, i) =>
-								'type' in item ? (
-									<div key={i} className="app-menu-separator" />
-								) : (
-									<button
-										key={item.action}
-										className="app-menu-item"
-										onClick={() => handleAction(item.action)}
-									>
-										<span>{item.label}</span>
-										{item.accelerator && (
-											<span className="app-menu-accel">{item.accelerator}</span>
-										)}
-									</button>
-								)
+		<div className="app-menu-container" ref={containerRef}>
+			<button
+				className={`app-menu-toggle${menuBarOpen ? ' active' : ''}`}
+				title="Application Menu"
+				onClick={() => menuBarOpen && !menuBarClosing ? closeMenuBar() : openMenuBar()}
+			>
+				<Menu size={25} />
+			</button>
+			{menuBarOpen && (
+				<div className={`app-menu${menuBarClosing ? ' closing' : ''}`}>
+					{APP_MENUS.map((menu) => (
+						<div key={menu.label} className="app-menu-entry">
+							<button
+								className={`app-menu-btn${openMenu === menu.label ? ' active' : ''}`}
+								onClick={() => setOpenMenu(openMenu === menu.label ? null : menu.label)}
+								onMouseEnter={() => { if (openMenu && openMenu !== menu.label) setOpenMenu(menu.label); }}
+							>
+								{menu.label}
+							</button>
+							{openMenu === menu.label && (
+								<div className="app-menu-dropdown">
+									{menu.items.map((item, i) =>
+										'type' in item ? (
+											<div key={i} className="app-menu-separator" />
+										) : (
+											<button
+												key={item.action}
+												className="app-menu-item"
+												onClick={() => handleAction(item.action)}
+											>
+												<span>{item.label}</span>
+												{item.accelerator && (
+													<span className="app-menu-accel">{item.accelerator}</span>
+												)}
+											</button>
+										)
+									)}
+								</div>
 							)}
 						</div>
-					)}
+					))}
 				</div>
-			))}
+			)}
 		</div>
 	);
 }
@@ -150,24 +184,21 @@ function WindowControls() {
 				title="Minimize"
 				onClick={() => window.electron.window.minimize()}
 			>
-				<svg width="12" height="2" viewBox="0 0 12 2"><rect width="12" height="2" fill="currentColor"/></svg>
+				<Minus size={25} />
 			</button>
 			<button
 				className="window-btn"
 				title={isMaximized ? 'Restore' : 'Maximize'}
 				onClick={() => window.electron.window.maximize()}
 			>
-				{isMaximized
-					? <svg width="11" height="11" viewBox="0 0 11 11"><path d="M3 0H11V8H9V2H3V0ZM0 3H8V11H0V3ZM1.5 4.5V9.5H6.5V4.5H1.5Z" fill="currentColor"/></svg>
-					: <svg width="11" height="11" viewBox="0 0 11 11"><rect x="0.5" y="0.5" width="10" height="10" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg>
-				}
+				{isMaximized ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
 			</button>
 			<button
 				className="window-btn close-btn"
 				title="Close"
 				onClick={() => window.electron.window.close()}
 			>
-				<svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+				<X size={25} />
 			</button>
 		</span>
 	);
@@ -193,7 +224,19 @@ export default function Navbar() {
 		<nav className="navbar">
 			<span className="navbar-left">
 				<span className="navbar-logo">
+					<img
+						className="navbar-logo-fs"
+						src="./images/fs-logo-white.png"
+						alt="Logo"
+					/>
 					<span className="navbar-links">
+						<div className={`navbar-link`}>
+							<img
+								className="navbar-logo-sight"
+								src="./images/sight-logo-transparent.png"
+								alt="SIGHT Logo"
+							/>
+						</div>
 						<div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
 							<Link
 								to='/home'
@@ -209,16 +252,6 @@ export default function Navbar() {
 							</Link>
 						</div>
 					</span>
-					<img
-						className="navbar-logo-fs"
-						src="./images/fs-logo-white.png"
-						alt="Logo"
-					/>
-					{/*<img
-						className="navbar-logo-sight"
-						src="./images/sight-logo.png"
-						alt="SIGHT Logo"
-					/>*/}
 				</span>
 				<AppMenu onAction={handleMenuAction} />
 			</span>
@@ -240,6 +273,7 @@ export default function Navbar() {
 					justify-content: space-between;
 					-webkit-app-region: drag;
 					position: relative;
+					z-index: 50;
 				}
 
 				.navbar-left {
@@ -267,16 +301,17 @@ export default function Navbar() {
 				.navbar-logo-sight {
 					height: 40px;
 					border-radius: var(--action-radius);
+					filter: invert(100%)
 				}
 
 				.navbar-logo-fs {
-					height: 60px;
+					height: 50px;
 					border-radius: var(--action-radius);
 				}
 
 				.navbar-icon {
-					width: 32px;
-					height: 32px;
+					width: 26px;
+					height: 26px;
 					color: white;
 					filter: brightness(0) invert(1);
 					margin: 0;
@@ -285,29 +320,75 @@ export default function Navbar() {
 
 				/* App menu */
 
+				@keyframes menuSlideIn {
+					from { opacity: 0; transform: translateX(-10px); }
+					to   { opacity: 1; transform: translateX(0); }
+				}
+
+				@keyframes menuSlideOut {
+					from { opacity: 1; transform: translateX(0); }
+					to   { opacity: 0; transform: translateX(-10px); }
+				}
+
+				.app-menu-container {
+					display: flex;
+					align-items: center;
+					height: 100%;
+					margin-left: 5px;
+					-webkit-app-region: no-drag;
+				}
+
+				.app-menu-toggle {
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					width: 40px;
+					height: 40px;
+					background-color: var(--action-bg);
+					border: none;
+					border-radius: var(--action-radius);
+					color: var(--action-text);
+					cursor: pointer;
+					transition: background-color 0.3s ease;
+					flex-shrink: 0;
+				}
+
+				.app-menu-toggle:hover,
+				.app-menu-toggle.active {
+					background-color: var(--action-bg-hover);
+				}
+
 				.app-menu {
 					display: flex;
-					align-items: stretch;
+					align-items: center;
 					height: 100%;
-					-webkit-app-region: no-drag;
+					margin-left: 15px;
+					gap: 2px;
+					animation: menuSlideIn 0.2s ease forwards;
+				}
+
+				.app-menu.closing {
+					animation: menuSlideOut 0.18s ease forwards;
 				}
 
 				.app-menu-entry {
 					position: relative;
 					display: flex;
-					align-items: stretch;
+					align-items: center;
+					height: 100%;
 				}
 
 				.app-menu-btn {
 					background: transparent;
 					border: none;
+					border-radius: var(--action-radius);
 					color: rgba(255, 255, 255, 0.9);
 					font-size: 0.85rem;
 					font-family: inherit;
 					padding: 0 12px;
-					height: 100%;
+					height: 40px;
 					cursor: pointer;
-					transition: background-color 0.1s ease;
+					transition: background-color 0.15s ease;
 					white-space: nowrap;
 				}
 
@@ -433,8 +514,10 @@ export default function Navbar() {
 
 				.window-controls {
 					display: flex;
-					align-items: stretch;
+					align-items: center;
 					height: var(--navbar-height);
+					gap: 6px;
+					padding: 0 12px;
 					-webkit-app-region: no-drag;
 				}
 
@@ -442,10 +525,11 @@ export default function Navbar() {
 					display: flex;
 					align-items: center;
 					justify-content: center;
-					width: 46px;
-					height: 100%;
+					width: 40px;
+					height: 40px;
 					background: transparent;
 					border: none;
+					border-radius: var(--action-radius);
 					color: rgba(255, 255, 255, 0.85);
 					cursor: pointer;
 					transition: background-color 0.15s ease;
@@ -466,65 +550,3 @@ export default function Navbar() {
 		</nav>
 	);
 }
-
-// <div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
-// 	<a
-// 		href='import'
-// 		className="home-link"
-// 		title="Import CSV Data"
-// 		{...disabledAnchorProps}
-// 	>
-// 		<img
-// 			src="./images/file-import-solid-full.svg"
-// 			alt="Import"
-// 			className="navbar-icon"
-// 		/>
-// 	</a>
-// </div>
-// <div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
-// 	<a
-// 		href='animation'
-// 		className="home-link"
-// 		title="Generate Eye Animation"
-// 		{...disabledAnchorProps}
-// 	>
-// 		<img
-// 			src="./images/eye-solid-full.svg"
-// 			alt="Generate Eye Animation"
-// 			className="navbar-icon"
-// 		/>
-// 	</a>
-// </div>
-// <div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
-// 	<a
-// 		href='side-by-side'
-// 		className="home-link"
-// 		title="Side-by-Side Viewer"
-// 		{...disabledAnchorProps}
-// 	>
-// 		<img
-// 			src="./images/file-video-solid-full.svg"
-// 			alt="Side-by-Side Viewer"
-// 			className="navbar-icon"
-// 		/>
-// 		<img
-// 			src="./images/eye-solid-full.svg"
-// 			alt="Side-by-Side Viewer"
-// 			className="navbar-icon"
-// 		/>
-// 	</a>
-// </div>
-// <div className={`navbar-link${buttons.disabled ? ' disabled' : ''}`}>
-// 	<a
-// 		href='visualization'
-// 		className="home-link"
-// 		title="Visualization"
-// 		{...disabledAnchorProps}
-// 	>
-// 		<img
-// 			src="./images/eye-solid-full.svg"
-// 			alt="Visualization"
-// 			className="navbar-icon"
-// 		/>
-// 	</a>
-// </div>
