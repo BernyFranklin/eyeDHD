@@ -2,19 +2,20 @@ import type { PupilMetricsResult, PupilEvent } from '@pupil/metrics/types';
 
 import { pickTimeUnit, scaleTime } from './timeAxis';
 import type {
-	EventLockedEpochModel,
 	EventLockedPupilModel,
 	NormalizedPupilModel,
 	PupilOverlaysModel,
 	PupilTimeAxisModel,
 	PupilTimeSeriesModel,
 	PupilVisualizationModels,
+	SegmentEpochVizModel,
 } from './types';
 
 export interface SegmentDefinition {
 	id: string;
 	startMs: number;
 	endMs: number;
+	label?: string;
 }
 
 export interface PreparePupilVisualizationDataInput {
@@ -83,15 +84,25 @@ export function preparePupilVisualizationData(
 		})),
 	};
 
-	const eventLockedEpochs: EventLockedEpochModel[] = metrics.eventLocked.epochs.map(
+	// Pick a single time unit shared across all per-segment figures, sized for
+	// the longest segment span (pre + duration + post). One unit keeps the
+	// figures visually comparable and prevents 30s-vs-min flips between cases.
+	const segmentSpansMs = metrics.segmentEpochs.epochs.map(
+		(e) => metrics.segmentEpochs.preMs + e.durationMs + metrics.segmentEpochs.postMs
+	);
+	const longestSegmentSpanMs = segmentSpansMs.length > 0 ? Math.max(...segmentSpansMs) : 0;
+	const segmentUnit = pickTimeUnit(longestSegmentSpanMs);
+
+	const segmentEpochs: SegmentEpochVizModel[] = metrics.segmentEpochs.epochs.map(
 		(epoch) => ({
-			unit: eventLockedUnit,
-			eventId: epoch.eventId,
-			kind: epoch.kind,
-			label: epoch.label ?? epoch.eventId,
-			eventTimeMs: epoch.eventTimeMs,
+			unit: segmentUnit,
+			segmentId: epoch.segmentId,
+			label: epoch.label ?? epoch.segmentId,
+			startMs: epoch.startMs,
+			endMs: epoch.endMs,
+			segmentDurationScaled: scaleTime(epoch.durationMs, segmentUnit),
 			points: epoch.points.map((p) => ({
-				t: scaleTime(p.timeRelMs, eventLockedUnit),
+				t: scaleTime(p.timeRelMs, segmentUnit),
 				percentChange: p.percentChange,
 			})),
 		})
@@ -114,7 +125,7 @@ export function preparePupilVisualizationData(
 		timeSeries,
 		normalized,
 		eventLocked,
-		eventLockedEpochs,
+		segmentEpochs,
 		overlays,
 	};
 }

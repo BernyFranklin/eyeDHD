@@ -68,9 +68,41 @@ export interface PerEventPupilRow {
 	sampleCount: number;
 }
 
+/** A user-defined segment window — drives one per-segment epoch figure. */
+export interface SegmentDefinition {
+	id: string;
+	startMs: number;
+	endMs: number;
+	label?: string;
+}
+
+export interface SegmentEpochPoint {
+	/** ms relative to segment start (0 = start, durationMs = end). */
+	timeRelMs: number;
+	percentChange: number;
+}
+
+export interface SegmentEpoch {
+	segmentId: string;
+	label?: string;
+	startMs: number;
+	endMs: number;
+	/** endMs - startMs; also the x-position of the end reference line. */
+	durationMs: number;
+	points: SegmentEpochPoint[];
+}
+
+export interface SegmentEpochResult {
+	gridStepMs: number;
+	preMs: number;
+	postMs: number;
+	epochs: SegmentEpoch[];
+}
+
 export interface PupilMetricsInput {
 	rows: ReadonlyArray<RawPupilRow>;
 	events: ReadonlyArray<PupilEvent>;
+	segments?: ReadonlyArray<SegmentDefinition>;
 }
 
 export interface PupilMetricsResult {
@@ -80,6 +112,8 @@ export interface PupilMetricsResult {
 	/** Per-frame series with raw, baseline, and % change. */
 	perFrame: NormalizedPoint[];
 	eventLocked: EventLockedResult;
+	/** One epoch per user-defined segment, sampled across pre + during + post. */
+	segmentEpochs: SegmentEpochResult;
 	/** Tabular forms suitable for direct CSV serialization. */
 	perFrameRows: PerFramePupilRow[];
 	perEventRows: PerEventPupilRow[];

@@ -11,13 +11,14 @@ import {
 } from '@viz/render';
 
 import type {
-	EventLockedEpochModel,
 	EventLockedPupilModel,
 	NormalizedPupilModel,
 	PupilTimeSeriesModel,
+	SegmentEpochVizModel,
 } from '@pupil/visualization/prep/types';
 import {
 	relativeTimeAxisLabel,
+	segmentRelativeTimeAxisLabel,
 	timeAxisLabel,
 } from '@pupil/visualization/prep/timeAxis';
 
@@ -193,36 +194,40 @@ export function buildEventLockedPupilSpec(
 }
 
 /**
- * Single-event epoch figure. One line of this event's % change vs time, with
- * a t = 0 vertical reference. Title defaults to the event label.
+ * Per-segment epoch figure. One line of % change vs time across pre / during /
+ * post, with two vertical reference lines: one at the segment start (t = 0)
+ * and one at the segment end (t = segmentDurationScaled). Title defaults to
+ * the segment label.
  */
-export function buildEventLockedEpochSpec(
-	model: EventLockedEpochModel,
+export function buildSegmentEpochSpec(
+	model: SegmentEpochVizModel,
 	options: BuildFigureRenderSpecOptions = {}
 ): FigureRenderSpec {
 	const fontFamily = resolveFontFamily(options);
-	const defaultXLabel = relativeTimeAxisLabel(model.unit);
+	const defaultXLabel = segmentRelativeTimeAxisLabel(model.unit);
 
 	const points = model.points
 		.filter((p) => Number.isFinite(p.percentChange))
 		.map((p) => ({ x: p.t, y: p.percentChange }));
 
 	const series: LineSeriesSpec[] = [
-		{ seriesId: `pupil-epoch-${model.eventId}`, points },
+		{ seriesId: `pupil-segment-${model.segmentId}`, points },
 	];
 
 	const userOverlays = options.overlays ?? {};
-	const eventLine = { timeMs: 0, label: model.label };
+	const startLine = { timeMs: 0, label: `${model.label} start` };
+	const endLine = { timeMs: model.segmentDurationScaled, label: `${model.label} end` };
 	const overlays = {
 		markers: userOverlays.markers ? [...userOverlays.markers] : undefined,
 		segmentBoundaries: [
 			...(userOverlays.segmentBoundaries ?? []),
-			eventLine,
+			startLine,
+			endLine,
 		],
 	};
 
 	return buildBaseFigureSpec({
-		figureId: options.figureId ?? `pupil-event-locked-epoch-${model.eventId}`,
+		figureId: options.figureId ?? `pupil-segment-epoch-${model.segmentId}`,
 		kind: 'custom',
 		options: { ...options, overlays },
 		defaultXAxisLabel: defaultXLabel,

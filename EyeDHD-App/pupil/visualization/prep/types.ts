@@ -43,15 +43,18 @@ export interface EventLockedPupilModel {
 	}>;
 }
 
-/** A single event's epoch on the common grid (one figure per event). */
-export interface EventLockedEpochModel {
+/**
+ * One per-segment epoch (one figure per segment) showing pre / during / post.
+ * `t` is scaled to `unit`; `segmentDurationScaled` is the x-position of the
+ * segment-end vertical reference (start is always at t = 0).
+ */
+export interface SegmentEpochVizModel {
 	unit: TimeUnit;
-	eventId: string;
-	/** Free-form classification carried through from the source PupilEvent. */
-	kind?: string;
-	/** Display label — prefers PupilEvent.label, falls back to eventId. */
+	segmentId: string;
 	label: string;
-	eventTimeMs: number;
+	startMs: number;
+	endMs: number;
+	segmentDurationScaled: number;
 	points: Array<{ t: number; percentChange: number }>;
 }
 
@@ -66,7 +69,7 @@ export interface PupilVisualizationModels {
 	timeSeries: PupilTimeSeriesModel;
 	normalized: NormalizedPupilModel;
 	eventLocked: EventLockedPupilModel;
-	/** One entry per event; used to render one PNG per event. */
-	eventLockedEpochs: EventLockedEpochModel[];
+	/** One entry per segment; used to render one PNG per segment. */
+	segmentEpochs: SegmentEpochVizModel[];
 	overlays: PupilOverlaysModel;
 }

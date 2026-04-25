@@ -46,17 +46,22 @@ const SEGMENTS = [
 	{ id: 'task', startMs: 4000, endMs: 8000 },
 ];
 
-const EVENTS: PupilEvent[] = SEGMENTS.flatMap((seg) => [
-	{ id: `${seg.id}:start`, timeMs: seg.startMs, kind: 'segment_start', label: `${seg.id} start` },
-	{ id: `${seg.id}:end`, timeMs: seg.endMs, kind: 'segment_end', label: `${seg.id} end` },
-]);
+// ERP averaging is anchored on segment starts only; segment ends are
+// represented by the per-segment epoch figures.
+const EVENTS: PupilEvent[] = SEGMENTS.map((seg) => ({
+	id: `${seg.id}:start`,
+	timeMs: seg.startMs,
+	kind: 'segment_start',
+	label: `${seg.id} start`,
+}));
 
 describe('Pupil end-to-end (Skia render)', () => {
-	it('writes all advertised artifacts (base 9 + per-event figures) with non-empty payloads from a fixture CSV', () => {
+	it('writes all advertised artifacts (base 9 + per-segment figures) with non-empty payloads from a fixture CSV', () => {
 		const csv = buildFixtureCsv();
 
 		const pipelineResult = runPupilCsvPipeline(csv, {
 			events: EVENTS,
+			segments: SEGMENTS,
 			metrics: {
 				baselineWindowMs: 3000,
 				baselinePercentile: 0.1,
@@ -107,8 +112,8 @@ describe('Pupil end-to-end (Skia render)', () => {
 				},
 			});
 
-			// Base 9 artifacts + one PNG and one CSV per event-locked epoch.
-			const expectedCount = 9 + 2 * EVENTS.length;
+			// Base 9 artifacts + one PNG and one CSV per segment epoch.
+			const expectedCount = 9 + 2 * SEGMENTS.length;
 			expect(result.artifacts).toHaveLength(expectedCount);
 
 			const expectedFiles = [
@@ -129,24 +134,27 @@ describe('Pupil end-to-end (Skia render)', () => {
 				expect(fs.statSync(full).size, `empty: ${rel}`).toBeGreaterThan(0);
 			}
 
-			// Per-event figures land under visuals/event-locked/ and all exist.
-			const epochDir = path.join(rootDir, 'visuals/event-locked');
+			// Per-segment figures land under visuals/segment-epoch/ and all exist.
+			const epochDir = path.join(rootDir, 'visuals/segment-epoch');
 			expect(fs.existsSync(epochDir)).toBe(true);
 			const epochFiles = fs.readdirSync(epochDir);
-			expect(epochFiles.filter((f) => f.endsWith('.png'))).toHaveLength(EVENTS.length);
-			expect(epochFiles.filter((f) => f.endsWith('.csv'))).toHaveLength(EVENTS.length);
+			expect(epochFiles.filter((f) => f.endsWith('.png'))).toHaveLength(SEGMENTS.length);
+			expect(epochFiles.filter((f) => f.endsWith('.csv'))).toHaveLength(SEGMENTS.length);
 
-			// Every PNG (base + per-event) starts with the 8-byte PNG signature.
+			// No leftover per-event-locked directory.
+			expect(fs.existsSync(path.join(rootDir, 'visuals/event-locked'))).toBe(false);
+
+			// Every PNG (base + per-segment) starts with the 8-byte PNG signature.
 			const allPngs = [
 				...expectedFiles.filter((f) => f.endsWith('.png')),
-				...epochFiles.filter((f) => f.endsWith('.png')).map((f) => `visuals/event-locked/${f}`),
+				...epochFiles.filter((f) => f.endsWith('.png')).map((f) => `visuals/segment-epoch/${f}`),
 			];
 			for (const rel of allPngs) {
 				const bytes = fs.readFileSync(path.join(rootDir, rel));
 				expect(bytes.subarray(0, 8).equals(PNG_SIGNATURE), `bad PNG header: ${rel}`).toBe(true);
 			}
 
-			// Per-event CSV has one row per event (4 segments × 2 boundaries) plus header.
+			// Per-event CSV has one row per :start event (one per segment) plus header.
 			const perEvent = fs.readFileSync(path.join(rootDir, 'analysis/pupil-per-event.csv'), 'utf8');
 			expect(perEvent.split('\n')).toHaveLength(EVENTS.length + 1);
 

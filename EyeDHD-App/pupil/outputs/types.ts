@@ -38,8 +38,8 @@ export interface PupilOutputBundleInput {
 		timeSeries?: BuildFigureRenderSpecOptions;
 		normalized?: BuildFigureRenderSpecOptions;
 		eventLocked?: BuildFigureRenderSpecOptions;
-		/** Applied to every per-event epoch PNG. Title defaults to the event label. */
-		eventLockedEpoch?: BuildFigureRenderSpecOptions;
+		/** Applied to every per-segment epoch PNG. Title defaults to the segment label. */
+		segmentEpoch?: BuildFigureRenderSpecOptions;
 	};
 }
 

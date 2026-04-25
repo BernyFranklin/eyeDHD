@@ -34,6 +34,7 @@ function makeMetrics(overrides?: {
 				{ timeRelMs: 100, meanPercent: 3, sePercent: 0.7, n: 2 },
 			],
 		},
+		segmentEpochs: { gridStepMs: 100, preMs: 100, postMs: 100, epochs: [] },
 		perFrameRows: [],
 		perEventRows: [],
 	};
@@ -152,56 +153,94 @@ describe('preparePupilVisualizationData', () => {
 		expect(result.overlays.segmentBoundaries).toEqual([]);
 	});
 
-	it('builds one epoch model per event, with scaled t and event label/id passthrough', () => {
+	it('builds one segment-epoch model per segment with scaled t and label fallback', () => {
 		const base = makeMetrics();
 		const metrics: PupilMetricsResult = {
 			...base,
-			eventLocked: {
-				...base.eventLocked,
+			segmentEpochs: {
+				gridStepMs: 100,
+				preMs: 100,
+				postMs: 100,
 				epochs: [
 					{
-						eventId: 'e1',
-						kind: 'event',
-						label: 'Event 1',
-						eventTimeMs: 100,
+						segmentId: 's1',
+						label: 'Segment 1',
+						startMs: 100,
+						endMs: 300,
+						durationMs: 200,
 						points: [
 							{ timeRelMs: -100, percentChange: 0 },
 							{ timeRelMs: 0, percentChange: 5 },
-							{ timeRelMs: 100, percentChange: 3 },
+							{ timeRelMs: 200, percentChange: 3 },
+							{ timeRelMs: 300, percentChange: 2 },
 						],
 					},
 					{
-						eventId: 'e2',
-						kind: 'event',
-						eventTimeMs: 200,
-						points: [
-							{ timeRelMs: 0, percentChange: 4 },
-						],
+						segmentId: 's2',
+						startMs: 500,
+						endMs: 600,
+						durationMs: 100,
+						points: [{ timeRelMs: 0, percentChange: 4 }],
 					},
 				],
 			},
 		};
 		const result = preparePupilVisualizationData({ metrics });
-		expect(result.eventLockedEpochs).toHaveLength(2);
-		expect(result.eventLockedEpochs[0]).toEqual({
+		expect(result.segmentEpochs).toHaveLength(2);
+		expect(result.segmentEpochs[0]).toEqual({
 			unit: 'ms',
-			eventId: 'e1',
-			kind: 'event',
-			label: 'Event 1',
-			eventTimeMs: 100,
+			segmentId: 's1',
+			label: 'Segment 1',
+			startMs: 100,
+			endMs: 300,
+			segmentDurationScaled: 200,
 			points: [
 				{ t: -100, percentChange: 0 },
 				{ t: 0, percentChange: 5 },
-				{ t: 100, percentChange: 3 },
+				{ t: 200, percentChange: 3 },
+				{ t: 300, percentChange: 2 },
 			],
 		});
-		// Falls back to eventId when label is absent.
-		expect(result.eventLockedEpochs[1].label).toBe('e2');
+		// Falls back to segmentId when label is absent.
+		expect(result.segmentEpochs[1].label).toBe('s2');
 	});
 
-	it('emits an empty eventLockedEpochs array when there are no epochs', () => {
+	it('shares one time unit across all per-segment figures, sized for the longest span', () => {
+		const base = makeMetrics();
+		const metrics: PupilMetricsResult = {
+			...base,
+			segmentEpochs: {
+				gridStepMs: 100,
+				preMs: 1_000,
+				postMs: 1_000,
+				epochs: [
+					// short: 2.2s span -> would pick 'ms' alone
+					{
+						segmentId: 's-short',
+						startMs: 0,
+						endMs: 200,
+						durationMs: 200,
+						points: [{ timeRelMs: 0, percentChange: 1 }],
+					},
+					// long: 22s span -> forces 's' for everyone
+					{
+						segmentId: 's-long',
+						startMs: 1_000,
+						endMs: 21_000,
+						durationMs: 20_000,
+						points: [{ timeRelMs: 0, percentChange: 1 }],
+					},
+				],
+			},
+		};
+		const result = preparePupilVisualizationData({ metrics });
+		expect(result.segmentEpochs.every((e) => e.unit === 's')).toBe(true);
+		expect(result.segmentEpochs[1].segmentDurationScaled).toBe(20);
+	});
+
+	it('emits an empty segmentEpochs array when there are no segments', () => {
 		const result = preparePupilVisualizationData({ metrics: makeMetrics() });
-		expect(result.eventLockedEpochs).toEqual([]);
+		expect(result.segmentEpochs).toEqual([]);
 	});
 
 	it('passes per-eye samples/perFrame through as scaled leftPoints/rightPoints when present', () => {

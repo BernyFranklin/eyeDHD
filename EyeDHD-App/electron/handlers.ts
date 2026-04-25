@@ -1163,15 +1163,18 @@ ipcMain.handle('case:run-pupil', async (_, trial: CaseData) => {
 				endMs: seg.endMs,
 			}));
 
-			// Use segment starts and ends as event triggers for the ERP. Each event
-			// is tagged with kind so the per-event row in the bundle preserves it.
-			const events: PupilEvent[] = segments.flatMap((seg) => [
-				{ id: `${seg.id}:start`, timeMs: seg.startMs, kind: 'segment_start', label: `${seg.id} start` },
-				{ id: `${seg.id}:end`, timeMs: seg.endMs, kind: 'segment_end', label: `${seg.id} end` },
-			]);
+			// Anchor the grand-average ERP on segment starts only; segment ends are
+			// represented by the per-segment epoch figures (one PNG per segment that
+			// shows pre / during / post in a single frame).
+			const events: PupilEvent[] = segments.map((seg) => ({
+				id: `${seg.id}:start`,
+				timeMs: seg.startMs,
+				kind: 'segment_start',
+				label: `${seg.id} start`,
+			}));
 			log(`${segments.length} segments, ${events.length} events`);
 
-			const pipelineResult = runPupilCsvPipeline(csvText, { events });
+			const pipelineResult = runPupilCsvPipeline(csvText, { events, segments });
 			log(`pipeline done (${pipelineResult.analysis.samples.length} samples, ${pipelineResult.analysis.baseline.length} baseline points)`);
 
 			const visualization = preparePupilVisualizationData({

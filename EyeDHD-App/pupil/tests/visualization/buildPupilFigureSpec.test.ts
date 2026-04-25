@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-	buildEventLockedEpochSpec,
 	buildEventLockedPupilSpec,
 	buildNormalizedPupilSpec,
 	buildPupilTimeSeriesSpec,
+	buildSegmentEpochSpec,
 } from '@pupil/visualization/specs/buildPupilFigureSpec';
 import type {
-	EventLockedEpochModel,
 	EventLockedPupilModel,
 	NormalizedPupilModel,
 	PupilTimeSeriesModel,
+	SegmentEpochVizModel,
 } from '@pupil/visualization/prep/types';
 
 function makeTimeSeries(): PupilTimeSeriesModel {
@@ -228,52 +228,56 @@ describe('buildEventLockedPupilSpec', () => {
 	});
 });
 
-describe('buildEventLockedEpochSpec', () => {
-	function makeEpoch(): EventLockedEpochModel {
+describe('buildSegmentEpochSpec', () => {
+	function makeEpoch(): SegmentEpochVizModel {
 		return {
 			unit: 'ms',
-			eventId: 'trial-1',
-			kind: 'event',
-			label: 'Trial 1 onset',
-			eventTimeMs: 1000,
+			segmentId: 'trial-1',
+			label: 'Trial 1',
+			startMs: 1_000,
+			endMs: 1_300,
+			segmentDurationScaled: 300,
 			points: [
 				{ t: -100, percentChange: 0 },
 				{ t: 0, percentChange: 5 },
-				{ t: 100, percentChange: NaN },
-				{ t: 200, percentChange: 3 },
+				{ t: 150, percentChange: NaN },
+				{ t: 300, percentChange: 4 },
+				{ t: 400, percentChange: 2 },
 			],
 		};
 	}
 
 	it('emits a single series of finite-only points', () => {
-		const spec = buildEventLockedEpochSpec(makeEpoch());
+		const spec = buildSegmentEpochSpec(makeEpoch());
 		if (spec.geometry.type !== 'line') throw new Error('unreachable');
 		expect(spec.geometry.series).toHaveLength(1);
 		expect(spec.geometry.series[0].points).toEqual([
 			{ x: -100, y: 0 },
 			{ x: 0, y: 5 },
-			{ x: 200, y: 3 },
+			{ x: 300, y: 4 },
+			{ x: 400, y: 2 },
 		]);
 	});
 
-	it('defaults the title to the event label', () => {
-		const spec = buildEventLockedEpochSpec(makeEpoch());
-		expect(spec.title?.text).toBe('Trial 1 onset');
+	it('defaults the title to the segment label', () => {
+		const spec = buildSegmentEpochSpec(makeEpoch());
+		expect(spec.title?.text).toBe('Trial 1');
 	});
 
 	it('lets caller override the title', () => {
-		const spec = buildEventLockedEpochSpec(makeEpoch(), { title: 'Custom' });
+		const spec = buildSegmentEpochSpec(makeEpoch(), { title: 'Custom' });
 		expect(spec.title?.text).toBe('Custom');
 	});
 
-	it('adds a t=0 segment-boundary overlay labeled with the event label', () => {
-		const spec = buildEventLockedEpochSpec(makeEpoch());
+	it('adds two segment-boundary overlays: start at 0 and end at durationScaled', () => {
+		const spec = buildSegmentEpochSpec(makeEpoch());
 		const boundaries = spec.overlays?.segmentBoundaries ?? [];
-		expect(boundaries).toContainEqual({ timeMs: 0, label: 'Trial 1 onset' });
+		expect(boundaries).toContainEqual({ timeMs: 0, label: 'Trial 1 start' });
+		expect(boundaries).toContainEqual({ timeMs: 300, label: 'Trial 1 end' });
 	});
 
 	it('reflects the model time unit on the default x-axis label', () => {
-		const spec = buildEventLockedEpochSpec({ ...makeEpoch(), unit: 's' });
-		expect(spec.xAxis.label.text).toBe('Time relative to event (s)');
+		const spec = buildSegmentEpochSpec({ ...makeEpoch(), unit: 's' });
+		expect(spec.xAxis.label.text).toBe('Time relative to segment start (s)');
 	});
 });

@@ -34,6 +34,9 @@ export type {
 	EventEpochPoint,
 	EventLockedAveragePoint,
 	EventLockedResult,
+	SegmentEpoch,
+	SegmentEpochPoint,
+	SegmentEpochResult,
 	PerFramePupilRow,
 	PerEventPupilRow,
 	PupilMetricsInput,
@@ -43,6 +46,7 @@ export {
 	computePupilMetrics,
 	computePercentChange,
 	computeEventLocked,
+	computeSegmentEpochs,
 	type ComputePupilMetricsOptions,
 } from './metrics';
 
@@ -55,6 +59,7 @@ export type {
 	PupilTimeSeriesModel,
 	NormalizedPupilModel,
 	EventLockedPupilModel,
+	SegmentEpochVizModel,
 	PupilOverlaysModel,
 	PupilVisualizationModels,
 	SegmentDefinition,
@@ -65,6 +70,7 @@ export {
 	buildPupilTimeSeriesSpec,
 	buildNormalizedPupilSpec,
 	buildEventLockedPupilSpec,
+	buildSegmentEpochSpec,
 } from './visualization/specs';
 
 // Output bundling

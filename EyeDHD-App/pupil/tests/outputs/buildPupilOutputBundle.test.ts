@@ -36,6 +36,7 @@ function makeMetrics(): PupilMetricsResult {
 				{ timeRelMs: 100, meanPercent: 3, sePercent: 0.6, n: 1 },
 			],
 		},
+		segmentEpochs: { gridStepMs: 100, preMs: 100, postMs: 100, epochs: [] },
 		perFrameRows: [
 			{
 				timeMs: 0,
@@ -96,7 +97,7 @@ function makeVisualization(): PupilVisualizationModels {
 				{ t: 100, meanPercent: 3, sePercent: 0.6, n: 1 },
 			],
 		},
-		eventLockedEpochs: [],
+		segmentEpochs: [],
 		overlays: {
 			markers: [],
 			segmentBoundaries: [],
@@ -104,30 +105,34 @@ function makeVisualization(): PupilVisualizationModels {
 	};
 }
 
-function makeEpochs(): PupilVisualizationModels['eventLockedEpochs'] {
+function makeEpochs(): PupilVisualizationModels['segmentEpochs'] {
 	return [
 		{
 			unit: 'ms',
-			eventId: 'trial-1',
-			kind: 'event',
-			label: 'Trial 1 onset',
-			eventTimeMs: 100,
+			segmentId: 'trial-1',
+			label: 'Trial 1',
+			startMs: 100,
+			endMs: 200,
+			segmentDurationScaled: 100,
 			points: [
 				{ t: -100, percentChange: 0 },
 				{ t: 0, percentChange: 5 },
 				{ t: 100, percentChange: 3 },
+				{ t: 200, percentChange: 2 },
 			],
 		},
 		{
 			unit: 'ms',
-			eventId: 'trial-2',
-			kind: 'event',
-			label: 'Trial 2 onset',
-			eventTimeMs: 500,
+			segmentId: 'trial-2',
+			label: 'Trial 2',
+			startMs: 500,
+			endMs: 700,
+			segmentDurationScaled: 200,
 			points: [
 				{ t: -100, percentChange: 0 },
 				{ t: 0, percentChange: 8 },
-				{ t: 100, percentChange: 4 },
+				{ t: 200, percentChange: 4 },
+				{ t: 300, percentChange: 1 },
 			],
 		},
 	];
@@ -180,68 +185,89 @@ describe('buildPupilOutputBundle', () => {
 		}
 	});
 
-	it('emits one PNG + one CSV per event under visuals/event-locked/ with the grand-average PNG preserved', () => {
+	it('emits one PNG + one CSV per segment under visuals/segment-epoch/ with the grand-average PNG preserved', () => {
 		const input = makeInput();
-		input.visualization.eventLockedEpochs = makeEpochs();
+		input.visualization.segmentEpochs = makeEpochs();
 		const bundle = buildPupilOutputBundle(input);
 
 		const epochPaths = bundle.files
-			.filter((f) => f.relativePath.startsWith('visuals/event-locked/'))
+			.filter((f) => f.relativePath.startsWith('visuals/segment-epoch/'))
 			.map((f) => f.relativePath)
 			.sort();
 		expect(epochPaths).toEqual([
-			'visuals/event-locked/trial-1.csv',
-			'visuals/event-locked/trial-1.png',
-			'visuals/event-locked/trial-2.csv',
-			'visuals/event-locked/trial-2.png',
+			'visuals/segment-epoch/trial-1.csv',
+			'visuals/segment-epoch/trial-1.png',
+			'visuals/segment-epoch/trial-2.csv',
+			'visuals/segment-epoch/trial-2.png',
 		]);
 
-		// Grand-average figure still present alongside per-event figures.
+		// No leftover per-event-locked directory artifacts.
+		expect(
+			bundle.files.some((f) => f.relativePath.startsWith('visuals/event-locked/'))
+		).toBe(false);
+
+		// Grand-average figure still present alongside per-segment figures.
 		expect(descriptorByKey(bundle, 'pupilEventLockedPng').relativePath).toBe(
 			'visuals/pupil-event-locked.png'
 		);
 
-		// Per-event PNGs default their title to the event label.
+		// Per-segment PNGs default their title to the segment label.
 		const trial1Png = bundle.files.find(
-			(f) => f.relativePath === 'visuals/event-locked/trial-1.png'
+			(f) => f.relativePath === 'visuals/segment-epoch/trial-1.png'
 		);
 		const spec = trial1Png!.content as { title?: { text: string } };
-		expect(spec.title?.text).toBe('Trial 1 onset');
+		expect(spec.title?.text).toBe('Trial 1');
 	});
 
-	it('slugifies event ids and disambiguates duplicates by index', () => {
+	it('slugifies segment ids and disambiguates duplicates by index', () => {
 		const input = makeInput();
-		input.visualization.eventLockedEpochs = [
-			{ ...makeEpochs()[0], eventId: 'Trial/1' },
-			{ ...makeEpochs()[1], eventId: 'Trial/1' },
+		input.visualization.segmentEpochs = [
+			{ ...makeEpochs()[0], segmentId: 'Trial/1' },
+			{ ...makeEpochs()[1], segmentId: 'Trial/1' },
 		];
 		const bundle = buildPupilOutputBundle(input);
 		const paths = bundle.files
-			.filter((f) => f.relativePath.startsWith('visuals/event-locked/') && f.format === 'png')
+			.filter((f) => f.relativePath.startsWith('visuals/segment-epoch/') && f.format === 'png')
 			.map((f) => f.relativePath);
 		expect(paths).toEqual([
-			'visuals/event-locked/trial-1.png',
-			'visuals/event-locked/trial-1-2.png',
+			'visuals/segment-epoch/trial-1.png',
+			'visuals/segment-epoch/trial-1-2.png',
 		]);
 	});
 
-	it('threads specOptions.eventLockedEpoch onto every per-event PNG', () => {
+	it('threads specOptions.segmentEpoch onto every per-segment PNG', () => {
 		const input = makeInput();
-		input.visualization.eventLockedEpochs = makeEpochs();
+		input.visualization.segmentEpochs = makeEpochs();
 		const bundle = buildPupilOutputBundle({
 			...input,
 			specOptions: {
-				eventLockedEpoch: { yAxisLabel: 'Δ% dilation' },
+				segmentEpoch: { yAxisLabel: 'Δ% dilation' },
 			},
 		});
 		const pngs = bundle.files.filter(
-			(f) => f.relativePath.startsWith('visuals/event-locked/') && f.format === 'png'
+			(f) => f.relativePath.startsWith('visuals/segment-epoch/') && f.format === 'png'
 		);
 		expect(pngs).toHaveLength(2);
 		for (const png of pngs) {
 			const spec = png.content as { yAxis: { label: { text: string } } };
 			expect(spec.yAxis.label.text).toBe('Δ% dilation');
 		}
+	});
+
+	it('renders two boundary overlays per segment (start at 0, end at durationScaled)', () => {
+		const input = makeInput();
+		input.visualization.segmentEpochs = makeEpochs();
+		const bundle = buildPupilOutputBundle(input);
+		const trial1 = bundle.files.find(
+			(f) => f.relativePath === 'visuals/segment-epoch/trial-1.png'
+		);
+		const spec = trial1!.content as {
+			overlays?: { segmentBoundaries?: Array<{ timeMs: number; label: string }> };
+		};
+		expect(spec.overlays?.segmentBoundaries).toEqual([
+			{ timeMs: 0, label: 'Trial 1 start' },
+			{ timeMs: 100, label: 'Trial 1 end' },
+		]);
 	});
 
 	it('attaches a FigureRenderSpec as the content of every PNG descriptor', () => {

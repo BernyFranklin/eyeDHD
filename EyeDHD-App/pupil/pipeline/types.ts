@@ -3,13 +3,18 @@ import type {
 	PupilParseDiagnostics,
 	PupilParseMeta,
 } from '@pupil/ingest/csv/types';
-import type { PupilEvent, PupilMetricsResult } from '@pupil/metrics/types';
+import type {
+	PupilEvent,
+	PupilMetricsResult,
+	SegmentDefinition,
+} from '@pupil/metrics/types';
 import type { ComputePupilMetricsOptions } from '@pupil/metrics';
 
 export interface PupilCsvPipelineOptions {
 	parse?: ParsePupilCsvOptions;
 	metrics?: ComputePupilMetricsOptions;
 	events?: ReadonlyArray<PupilEvent>;
+	segments?: ReadonlyArray<SegmentDefinition>;
 }
 
 export interface PupilCsvPipelineResult {

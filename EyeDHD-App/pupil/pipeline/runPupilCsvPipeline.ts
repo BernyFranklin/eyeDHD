@@ -23,7 +23,11 @@ export function runPupilCsvPipeline(
 			: parsed.rows.map((r) => ({ ...r, timeMs: r.timeMs - firstTimeMs }));
 
 	const analysis = computePupilMetrics(
-		{ rows, events: options.events ?? [] },
+		{
+			rows,
+			events: options.events ?? [],
+			segments: options.segments ?? [],
+		},
 		options.metrics
 	);
 

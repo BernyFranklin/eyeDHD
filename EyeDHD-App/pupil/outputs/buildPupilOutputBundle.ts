@@ -2,15 +2,12 @@ import type { BundleFileDescriptor } from '@viz/export';
 import type { BuildFigureRenderSpecOptions, FigureOverlaySpec } from '@viz/render';
 
 import {
-	buildEventLockedEpochSpec,
 	buildEventLockedPupilSpec,
 	buildNormalizedPupilSpec,
 	buildPupilTimeSeriesSpec,
+	buildSegmentEpochSpec,
 } from '@pupil/visualization/specs';
-import type {
-	EventLockedEpochModel,
-	PupilOverlaysModel,
-} from '@pupil/visualization/prep/types';
+import type { PupilOverlaysModel } from '@pupil/visualization/prep/types';
 
 import type {
 	PupilOutputBundle,
@@ -122,33 +119,38 @@ export function buildPupilOutputBundle(
 		},
 	];
 
-	// Per-event epoch figures: one PNG + one CSV per event, keyed by a slug of
-	// the event id so duplicate ids don't collide on disk. Rendered at reduced
-	// dimensions by default — recordings with many events otherwise produce
-	// dozens of 2400×1800@300 PNGs in a tight sync loop, overwhelming the
-	// native canvas encoder.
-	const slugs = makeUniqueSlugs(visualization.eventLockedEpochs);
+	// Per-segment epoch figures: one PNG + one CSV per segment, keyed by a slug
+	// of the segment id so duplicate ids don't collide on disk. Each figure
+	// shows pre + during + post in a single frame with vertical reference lines
+	// at the segment start (t = 0) and segment end (t = durationScaled).
+	// Rendered at reduced dimensions by default — recordings with many segments
+	// otherwise produce dozens of 2400×1800@300 PNGs in a tight sync loop,
+	// overwhelming the native canvas encoder.
+	const slugs = makeUniqueSlugs(
+		visualization.segmentEpochs,
+		(epoch) => epoch.segmentId
+	);
 	const epochSpecDefaults: BuildFigureRenderSpecOptions = {
 		dimensions: { widthPx: 1200, heightPx: 900, dpi: 150 },
-		...(specOptions.eventLockedEpoch ?? {}),
+		...(specOptions.segmentEpoch ?? {}),
 	};
-	for (let i = 0; i < visualization.eventLockedEpochs.length; i++) {
-		const epoch = visualization.eventLockedEpochs[i];
+	for (let i = 0; i < visualization.segmentEpochs.length; i++) {
+		const epoch = visualization.segmentEpochs[i];
 		const slug = slugs[i];
-		const spec = buildEventLockedEpochSpec(epoch, epochSpecDefaults);
+		const spec = buildSegmentEpochSpec(epoch, epochSpecDefaults);
 
 		files.push(
 			{
-				key: `pupilEventLockedEpochModel_${slug}`,
-				relativePath: `visuals/event-locked/${slug}.csv`,
+				key: `pupilSegmentEpochModel_${slug}`,
+				relativePath: `visuals/segment-epoch/${slug}.csv`,
 				format: 'csv',
 				category: CATEGORY_VISUALS,
 				optional: true,
 				content: epoch.points,
 			},
 			{
-				key: `pupilEventLockedEpochPng_${slug}`,
-				relativePath: `visuals/event-locked/${slug}.png`,
+				key: `pupilSegmentEpochPng_${slug}`,
+				relativePath: `visuals/segment-epoch/${slug}.png`,
 				format: 'png',
 				category: CATEGORY_VISUALS,
 				optional: true,
@@ -161,14 +163,17 @@ export function buildPupilOutputBundle(
 }
 
 /**
- * Slugifies event ids to be filesystem-safe and disambiguates duplicates by
+ * Slugifies ids to be filesystem-safe and disambiguates duplicates by
  * appending `-<index>` starting at the second occurrence.
  */
-function makeUniqueSlugs(epochs: ReadonlyArray<EventLockedEpochModel>): string[] {
+function makeUniqueSlugs<T>(
+	items: ReadonlyArray<T>,
+	getId: (item: T) => string
+): string[] {
 	const seen = new Map<string, number>();
 	const out: string[] = [];
-	for (const epoch of epochs) {
-		const base = slugify(epoch.eventId);
+	for (const item of items) {
+		const base = slugify(getId(item));
 		const count = seen.get(base) ?? 0;
 		seen.set(base, count + 1);
 		out.push(count === 0 ? base : `${base}-${count + 1}`);

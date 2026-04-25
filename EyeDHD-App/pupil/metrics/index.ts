@@ -4,6 +4,7 @@ import type { RawPupilRow } from '@pupil/ingest/csv/types';
 
 import { computePercentChange } from './normalization';
 import { computeEventLocked } from './eventLocked';
+import { computeSegmentEpochs } from './segmentEpoch';
 import type {
 	EventEpoch,
 	NormalizedPoint,
@@ -17,6 +18,7 @@ import type {
 export * from './types';
 export { computePercentChange } from './normalization';
 export { computeEventLocked } from './eventLocked';
+export { computeSegmentEpochs } from './segmentEpoch';
 
 export interface ComputePupilMetricsOptions extends Partial<PupilAnalysisOptions> {
 	/** Time grid step (ms) used to resample event epochs. Defaults to 5 ms (200 Hz). */
@@ -42,6 +44,12 @@ export function computePupilMetrics(
 	const perFrame = computePercentChange(samples, baseline);
 
 	const eventLocked = computeEventLocked(perFrame, input.events, {
+		preMs: opts.epochPreMs,
+		postMs: opts.epochPostMs,
+		gridStepMs,
+	});
+
+	const segmentEpochs = computeSegmentEpochs(perFrame, input.segments ?? [], {
 		preMs: opts.epochPreMs,
 		postMs: opts.epochPostMs,
 		gridStepMs,
@@ -78,6 +86,7 @@ export function computePupilMetrics(
 		baseline,
 		perFrame,
 		eventLocked,
+		segmentEpochs,
 		perFrameRows,
 		perEventRows,
 		samplesLeft,

@@ -30,3 +30,10 @@ export function relativeTimeAxisLabel(unit: TimeUnit): string {
 	if (unit === 's') return 'Time relative to event (s)';
 	return 'Time relative to event (min)';
 }
+
+/** Segment-locked axis label (time relative to segment start). */
+export function segmentRelativeTimeAxisLabel(unit: TimeUnit): string {
+	if (unit === 'ms') return 'Time relative to segment start (ms)';
+	if (unit === 's') return 'Time relative to segment start (s)';
+	return 'Time relative to segment start (min)';
+}
