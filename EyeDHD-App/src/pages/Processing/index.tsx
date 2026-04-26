@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router";
 
 import TaskSuite from "./TaskSuite";
 import Preview from "./Preview";
@@ -12,6 +13,13 @@ import { selectSelectedCase } from "@src/data/features/user";
  */
 export default function Processing() {
 	const selectedCase = useSelector(selectSelectedCase);
+	const navigate = useNavigate();
+
+	useEffect(() => {
+		if (!selectedCase) navigate('/');
+	}, [selectedCase])
+
+	if (!selectedCase) return null;
 
 	return (
 		<>
