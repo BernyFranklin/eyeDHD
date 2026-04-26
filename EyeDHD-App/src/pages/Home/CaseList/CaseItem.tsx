@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Ellipsis } from 'lucide-react';
 
 import { type CaseData } from '@src/data/types';
 
@@ -58,7 +59,7 @@ export default function Case(props: Props) {
 							setMenuOpen((open) => !open);
 						}}
 					>
-						...
+						<Ellipsis size={20} strokeWidth={1.5}  />
 					</div>
 					{menuOpen && (
 						<div className='case-options-menu' role='menu'>
@@ -71,12 +72,12 @@ export default function Case(props: Props) {
 			</div>
 			<style>{`
 				.case-item {
-					background: #F0F0F0;
+					background: #FFFFFF;
 					color: #A0A0A0;
 					display: flex;
 					align-items: center;
 					justify-content: space-between;
-					padding: 10px;
+					padding: 5px 7px;
 					width: 200px;
 					border: 1px solid #ccc;
 					border-radius: var(--action-radius);
@@ -88,6 +89,8 @@ export default function Case(props: Props) {
 					cursor: pointer;
 					text-decoration: none;
 					color: #333;
+					font-size: 16px;
+					font-weight: 500;
 					padding-left: 5px;
 				}
 
@@ -98,7 +101,9 @@ export default function Case(props: Props) {
 
 				.case-options {
 					color: black;
+					margin: 0;
 					padding-right: 5px;
+					padding-top: 7px;
 					cursor: pointer;
 					user-select: none;
 				}

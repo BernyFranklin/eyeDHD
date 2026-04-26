@@ -52,10 +52,11 @@ export default function Processing() {
 					}
 
 					.case-name-header {
-						width: 300px;
+						width: auto;
 						text-align: left;
 						font-size: 1.5rem;
 						margin: 0 0 1rem 0;
+						color: #13284c;
 					}
 
 					.processing-preview-pane {

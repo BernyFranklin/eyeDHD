@@ -145,24 +145,13 @@ export default function CreateCaseWindow(props: Props) {
 							readOnly
 						/>
 					</div>
-					<div className='import-file-row'>
-						<Textarea
-							variant='compact-static'
-							status={vrStatus}
-							value={getFilename(vrLabel)}
-							aria-label='VR video selection coming soon'
-							placeholder='VR video selection coming soon'
-							disabled={true}
-							readOnly
-						/>
-					</div>
 				</div>
 				<div className='create-case-actions'>
 					<Button
 						onClick={handleConfirm}
 						disabled={isSubmitting || !casename || !csvLabel}
 					>
-						confirm
+						Confirm
 					</Button>
 				</div>
 			</div>
@@ -201,6 +190,7 @@ export default function CreateCaseWindow(props: Props) {
 					.case-name-title {
 						font-size: 16px;
 						font-weight: 600;
+						color: #13284c;
 					}
 
 					.create-case-actions {

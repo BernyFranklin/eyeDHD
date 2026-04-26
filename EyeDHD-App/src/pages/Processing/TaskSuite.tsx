@@ -49,9 +49,9 @@ export default function TaskSuite() {
 		}
 
 		if (current === 'complete') {
-			setButtonText('All tasks complete!');
+			setButtonText('All Tasks Complete!');
 		} else if (current === null) {
-			setButtonText('Start processing');
+			setButtonText('Start Processing');
 		} else {
 			setButtonText('Processing...');
 		}

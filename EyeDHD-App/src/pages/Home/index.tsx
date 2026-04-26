@@ -70,16 +70,20 @@ export default function Home() {
 			/>
 			<div className='home-layout'>
 				<div className='cases-col'>
-					<h1>Open Cases</h1>
 					<div className={`cases-list-wrapper${cases.length === 0 ? ' cases-list-wrapper--empty' : ''}`}>
-						<CaseList loading={loading} />
-						<Button
-							onClick={() => setShowCreateCase(true)}
-							height='45px'
-							width='45px'
-						>
-							<FilePlusCorner size={30} strokeWidth={2} />
-						</Button>
+						<div className='cases-list-left'>
+							<h1>Open Cases</h1>
+							<CaseList loading={loading} />
+						</div>
+						<div className='cases-list-right'>
+							<Button
+								onClick={() => setShowCreateCase(true)}
+								height='45px'
+								width='45px'
+							>
+								<FilePlusCorner size={30} strokeWidth={2} />
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -93,7 +97,7 @@ export default function Home() {
 						height: 100%;
 						flex: 1;
 						gap: 24px;
-						padding: 15px;
+						padding: 48px;
 						box-sizing: border-box;
 						overflow: hidden;
 						min-height: 0;
@@ -107,24 +111,39 @@ export default function Home() {
 						gap: 0;
 						height: 100%;
 						flex: 0 0 auto;
-						padding-left: 100px;
-						padding-top: 100px;
-					}
-
-					.cases-col h1 {
-						margin: 10px 16px 0 0;
 					}
 
 					.cases-list-wrapper {
 						display: flex;
 						width: 20%;
 						min-width: 400px;
-						min-height: 60px;
+						height: stretch;
 						justify-content: space-between;
 						align-items: flex-start;
-						border: 2px solid #ccc;
+						border: 1px solid black;
 						border-radius: var(--action-radius);
 						padding: 24px;
+						background: rgba(200, 200, 200, 0.8);
+					}
+
+					.cases-list-wrapper h1 {
+						margin: 0px 16px 0 0;
+						text-align: left;
+						color: #13284c;
+					}
+
+					.cases-list-left {
+						display: flex;
+						flex-direction: column;
+						gap: 16px;
+						flex: 1;
+					}
+
+					.cases-list-right {
+						display: flex;
+						flex-direction: column;
+						gap: 16px;
+						flex: 0 0 auto;
 					}
 
 					.cases-list-wrapper .btn {
