@@ -126,7 +126,7 @@ function AppMenu({ onAction }: { onAction: (action: string) => void }) {
 				title="Application Menu"
 				onClick={() => menuBarOpen && !menuBarClosing ? closeMenuBar() : openMenuBar()}
 			>
-				<Menu size={25} />
+				<Menu className="app-menu-icon" />
 			</button>
 			{menuBarOpen && (
 				<div className={`app-menu${menuBarClosing ? ' closing' : ''}`}>
@@ -230,7 +230,7 @@ export default function Navbar() {
 						alt="Logo"
 					/>
 					<span className="navbar-links">
-						<div className={`navbar-link`}>
+						<div className={`navbar-logo-container`}>
 							<img
 								className="navbar-logo-sight"
 								src="./images/sight-logo-transparent.png"
@@ -304,6 +304,18 @@ export default function Navbar() {
 					filter: invert(100%)
 				}
 
+				.navbar-logo-container {
+					background-color: var(--action-bg);
+					border-radius: var(--action-radius);
+					padding: 0;
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					transition: background-color 0.3s ease;
+					width: 40px;
+					height: 40px;
+				}
+
 				.navbar-logo-fs {
 					height: 50px;
 					border-radius: var(--action-radius);
@@ -339,7 +351,7 @@ export default function Navbar() {
 				}
 
 				.app-menu-toggle {
-					display: inline-flex;
+					display: flex;
 					align-items: center;
 					justify-content: center;
 					width: 40px;
@@ -351,11 +363,28 @@ export default function Navbar() {
 					cursor: pointer;
 					transition: background-color 0.3s ease;
 					flex-shrink: 0;
+					padding: 0;
+					box-sizing: border-box;
 				}
 
 				.app-menu-toggle:hover,
 				.app-menu-toggle.active {
 					background-color: var(--action-bg-hover);
+				}
+
+				.app-menu-icon {
+					width: 30px;
+					height: 30px;
+				}
+
+				.app-menu-icon.lucide {
+					box-sizing: content-box;
+					padding: 7px;
+				}
+
+				.app-menu-icon:hover {
+					transform: translateX(-2px);
+					transition: transform 0.3s ease-in-out;
 				}
 
 				.app-menu {
