@@ -232,8 +232,8 @@ A data analysis tool for ADHD diagnosis research conducted by the Fresno State P
 						box-sizing: border-box;
 						text-align: center;
 						text-align-vertical: center;
-						font-size: 32px;
-						color: #333;
+						font-size: 28px;
+						color: #111;
 						line-height: 1.5;
 						border: 1px solid black;
 						background: rgba(200, 200, 200, 0.8);

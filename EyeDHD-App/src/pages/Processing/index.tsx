@@ -53,10 +53,10 @@ export default function Processing() {
 					}
 
 					.processing-task-list {
-						width: 300px;
+						width: auto;
 						display: flex;
 						flex-direction: column;
-						align-items: center;
+						align-items: left;
 					}
 
 					.case-name-header {
@@ -72,6 +72,8 @@ export default function Processing() {
 						align-items: center;
 						justify-content: stretch;
 						padding: 48px;
+						width: auto;
+						height: auto;
 					}
 
 					.processing-preview {
