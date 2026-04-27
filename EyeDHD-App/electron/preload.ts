@@ -102,6 +102,19 @@ declare interface Electron {
 	}
 
 	notify(message: string): void;
+
+	window: {
+		minimize(): void;
+		maximize(): void;
+		close(): void;
+		isMaximized(): Promise<boolean>;
+		onMaximizeChange(callback: (maximized: boolean) => void): void;
+		offMaximizeChange(callback: (maximized: boolean) => void): void;
+	};
+
+	menu: {
+		action(action: string): void;
+	};
 }
 
 /**
@@ -121,6 +134,11 @@ declare interface Renderer {
  * but unused; Step 4 will route frames through it instead of case:save-animation.
  */
 let animationSocket: net.Socket | null = null;
+
+const maximizeListeners = new Map<
+	(maximized: boolean) => void,
+	(event: Electron.IpcRendererEvent, maximized: boolean) => void
+>();
 
 /**
  * Defines the Electron requests
@@ -343,6 +361,29 @@ const electron: Electron = {
 	 */
 	notify: (message: string) => {
 		ipcRenderer.send('notify', message);
+	},
+
+	window: {
+		minimize: () => ipcRenderer.send('window:minimize'),
+		maximize: () => ipcRenderer.send('window:maximize'),
+		close: () => ipcRenderer.send('window:close'),
+		isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
+		onMaximizeChange: (callback: (maximized: boolean) => void) => {
+			const wrapper = (_: Electron.IpcRendererEvent, maximized: boolean) => callback(maximized);
+			maximizeListeners.set(callback, wrapper);
+			ipcRenderer.on('window:maximize-changed', wrapper);
+		},
+		offMaximizeChange: (callback: (maximized: boolean) => void) => {
+			const wrapper = maximizeListeners.get(callback);
+			if (wrapper) {
+				ipcRenderer.removeListener('window:maximize-changed', wrapper);
+				maximizeListeners.delete(callback);
+			}
+		}
+	},
+
+	menu: {
+		action: (action: string) => ipcRenderer.send('menu:action', action)
 	}
 };
 

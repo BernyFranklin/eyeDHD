@@ -146,7 +146,7 @@ export default function Login() {
 						value={`
 							Welcome to EyeDHD.
 
-							This is a short introduction area for your app. You can replace this paragraph with a richer overview, quick start steps, or helpful tips for first-time users.
+A data analysis tool for ADHD diagnosis research conducted by the Fresno State Psychology Department. This tool takes the eyetracking data output by the Varjo XR-4 headset and generates graphs based on pupil dilation and detected saccades along with a pair of animated eyes for use by the researchers.
 						`.trim()}
 						readOnly
 					/>
@@ -171,8 +171,8 @@ export default function Login() {
 
 					.login-column {
 						display: flex;
+						padding: 48px;
 						justify-content: center;
-						padding: 24px;
 						height: 100%;
 						min-height: 0;
 						box-sizing: border-box;
@@ -181,14 +181,10 @@ export default function Login() {
 					.login-column.left {
 						flex: 1;
 						justify-content: flex-start;
-						padding-left: 100px;
-						margin-top: 22px;
 					}
 
 					.dir-prompt-window {
 						width: 100%;
-						max-width: 520px;
-						padding: 24px;
 						background: transparent;
 						border-radius: 0;
 						box-shadow: none;
@@ -202,6 +198,7 @@ export default function Login() {
 						font-size: 18px;
 						font-weight: 600;
 						text-align: center;
+						color: #13284c;
 					}
 
 					.dir-prompt-actions {
@@ -218,10 +215,8 @@ export default function Login() {
 					}
 
 					.login-welcome {
-						width: 80%;
-						height: 80%;
-						max-width: 100%;
-						max-height: 100%;
+						width: 100%;
+						height: 100%;
 						display: flex;
 						align-items: center;
 						justify-content: center;
@@ -237,9 +232,11 @@ export default function Login() {
 						box-sizing: border-box;
 						text-align: center;
 						text-align-vertical: center;
-						font-size: 32px;
-						color: #333;
+						font-size: 28px;
+						color: #111;
 						line-height: 1.5;
+						border: 1px solid black;
+						background: rgba(200, 200, 200, 0.8);
 					}
 				`}
 			</style>

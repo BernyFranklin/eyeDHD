@@ -37,7 +37,7 @@ export const userSlice = createSlice({
 	name: 'user',
 	initialState,
 	reducers: {
-		setProjectDir: (state, action: PayloadAction<string>) => {
+		setProjectDir: (state, action: PayloadAction<string | null>) => {
 			state.projectDir = action.payload;
 		},
 		setProjectInitialized: (state, action: PayloadAction<boolean>) => {

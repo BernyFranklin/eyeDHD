@@ -748,6 +748,7 @@ function probeEncoders(): Set<string> {
 		const res = spawnSync(FFMPEG_PATH, ['-hide_banner', '-encoders'], {
 			encoding: 'utf8',
 			timeout: 5000,
+			windowsHide: true,
 		});
 		if (res.status !== 0 || !res.stdout) return new Set();
 		const names = new Set<string>();
@@ -794,7 +795,7 @@ ipcMain.handle('case:start-ffmpeg', async (_, trial, size) => {
 		...enc.encoderArgs,
 		"-pix_fmt", "yuv420p",
 		output_path
-	], { stdio: ["pipe", "inherit", "inherit"] });
+	], { stdio: ["pipe", "inherit", "inherit"], windowsHide: true });
 
 	ffmpeg.on('exit', (code) => {
 		if (code !== 0 && code !== null && enc.codec !== 'libx264') {
@@ -1334,7 +1335,7 @@ function SidebySide(
 
 		console.log('[ffmpeg sync] running:', FFMPEG_PATH, args.join(' '));
 
-		const ff = spawn(FFMPEG_PATH, args);
+		const ff = spawn(FFMPEG_PATH, args, { windowsHide: true });
 		ff.stderr.on('data', (d) => console.log('[ffmpeg sync]', d.toString()));
 
 		ff.on('close', (code: number) => {

@@ -11,3 +11,4 @@ Event-lock should show +/- % changes
 UI
 ------------------------------------------------------
 User input for ASRS score
+Task view styling needs to scale better for smaller windows
