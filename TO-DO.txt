@@ -2,11 +2,11 @@ To-do
 ------------------------------------------------------
 Visuals
 ------------------------------------------------------
-(Frank)Event locked needs to capture event start and end
+(Frank - Done)Event locked needs to capture event start and end
 Single event lock has 3 lines
 Clean up file structure for visuals
-Need legend for left, right, and mean
-Event-lock should show +/- % changes
+(Frank - In work) Need legend for left, right, and mean
+Event-lock should show +/- % changes (Normalized between hard coded values)
 ------------------------------------------------------
 UI
 ------------------------------------------------------

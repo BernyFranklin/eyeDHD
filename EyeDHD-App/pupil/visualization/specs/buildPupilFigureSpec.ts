@@ -45,10 +45,17 @@ export function buildPupilTimeSeriesSpec(
 		points: model.points.filter(isFinitePt).map(toXY),
 	});
 
+	const showLegend = !!(model.leftPoints && model.rightPoints);
+
 	return buildBaseFigureSpec({
 		figureId: options.figureId ?? 'pupil-timeseries-figure',
 		kind: 'custom',
-		options,
+		options: {
+			...options,
+			legend:
+				options.legend ??
+				(showLegend ? { show: true, position: 'right' } : undefined),
+		},
 		defaultXAxisLabel: defaultXLabel,
 		defaultYAxisLabel: 'Pupil Diameter (mm)',
 		title: buildTitleSpec(options.title, fontFamily),
@@ -98,10 +105,17 @@ export function buildNormalizedPupilSpec(
 		points: model.points.filter(isFinitePt).map(toXY),
 	});
 
+	const showLegend = !!(model.leftPoints && model.rightPoints);
+
 	return buildBaseFigureSpec({
 		figureId: options.figureId ?? 'pupil-normalized-figure',
 		kind: 'custom',
-		options,
+		options: {
+			...options,
+			legend:
+				options.legend ??
+				(showLegend ? { show: true, position: 'right' } : undefined),
+		},
 		defaultXAxisLabel: defaultXLabel,
 		defaultYAxisLabel: '% Change from Baseline',
 		title: buildTitleSpec(options.title, fontFamily),

@@ -126,7 +126,10 @@ export function buildBaseFigureSpec({
 			domain: yAxis?.domain
 		},
 		geometry,
-		style: DEFAULT_STYLE,
+		style: {
+			...DEFAULT_STYLE,
+			legend: { ...DEFAULT_STYLE.legend, ...(options.legend ?? {}) },
+		},
 		overlays: cloneOverlays(options.overlays),
 		metadata: options.metadata
 	};
