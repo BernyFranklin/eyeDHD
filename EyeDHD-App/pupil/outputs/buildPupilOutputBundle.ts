@@ -68,7 +68,7 @@ export function buildPupilOutputBundle(
 		// Visualization model CSVs (one per figure, alongside the rendered PNG)
 		{
 			key: 'pupilTimeSeriesModel',
-			relativePath: 'visuals/pupil-timeseries-model.csv',
+			relativePath: 'visuals/data/pupil-timeseries-model.csv',
 			format: 'csv',
 			category: CATEGORY_VISUALS,
 			optional: false,
@@ -76,7 +76,7 @@ export function buildPupilOutputBundle(
 		},
 		{
 			key: 'pupilNormalizedModel',
-			relativePath: 'visuals/pupil-normalized-model.csv',
+			relativePath: 'visuals/data/pupil-normalized-model.csv',
 			format: 'csv',
 			category: CATEGORY_VISUALS,
 			optional: false,
@@ -84,7 +84,7 @@ export function buildPupilOutputBundle(
 		},
 		{
 			key: 'pupilEventLockedModel',
-			relativePath: 'visuals/pupil-event-locked-model.csv',
+			relativePath: 'visuals/data/pupil-event-locked-model.csv',
 			format: 'csv',
 			category: CATEGORY_VISUALS,
 			optional: true,
@@ -95,7 +95,7 @@ export function buildPupilOutputBundle(
 		// renders it through the supplied PNG backend at write time.
 		{
 			key: 'pupilTimeSeriesPng',
-			relativePath: 'visuals/pupil-timeseries.png',
+			relativePath: 'visuals/images/pupil-timeseries.png',
 			format: 'png',
 			category: CATEGORY_VISUALS,
 			optional: false,
@@ -103,7 +103,7 @@ export function buildPupilOutputBundle(
 		},
 		{
 			key: 'pupilNormalizedPng',
-			relativePath: 'visuals/pupil-normalized.png',
+			relativePath: 'visuals/images/pupil-normalized.png',
 			format: 'png',
 			category: CATEGORY_VISUALS,
 			optional: false,
@@ -111,7 +111,7 @@ export function buildPupilOutputBundle(
 		},
 		{
 			key: 'pupilEventLockedPng',
-			relativePath: 'visuals/pupil-event-locked.png',
+			relativePath: 'visuals/images/pupil-event-locked.png',
 			format: 'png',
 			category: CATEGORY_VISUALS,
 			optional: true,
@@ -155,7 +155,7 @@ export function buildPupilOutputBundle(
 		files.push(
 			{
 				key: `pupilSegmentEpochModel_${slug}`,
-				relativePath: `visuals/segment-epoch/${slug}.csv`,
+				relativePath: `visuals/segment-epoch/data/${slug}.csv`,
 				format: 'csv',
 				category: CATEGORY_VISUALS,
 				optional: true,
@@ -163,7 +163,7 @@ export function buildPupilOutputBundle(
 			},
 			{
 				key: `pupilSegmentEpochPng_${slug}`,
-				relativePath: `visuals/segment-epoch/${slug}.png`,
+				relativePath: `visuals/segment-epoch/images/${slug}.png`,
 				format: 'png',
 				category: CATEGORY_VISUALS,
 				optional: true,

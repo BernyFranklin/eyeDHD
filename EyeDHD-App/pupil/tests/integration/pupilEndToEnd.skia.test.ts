@@ -124,12 +124,12 @@ describe('Pupil end-to-end (Skia render)', () => {
 				'metadata/pupil-run-config.json',
 				'analysis/pupil-per-frame.csv',
 				'analysis/pupil-per-event.csv',
-				'visuals/pupil-timeseries-model.csv',
-				'visuals/pupil-normalized-model.csv',
-				'visuals/pupil-event-locked-model.csv',
-				'visuals/pupil-timeseries.png',
-				'visuals/pupil-normalized.png',
-				'visuals/pupil-event-locked.png',
+				'visuals/data/pupil-timeseries-model.csv',
+				'visuals/data/pupil-normalized-model.csv',
+				'visuals/data/pupil-event-locked-model.csv',
+				'visuals/images/pupil-timeseries.png',
+				'visuals/images/pupil-normalized.png',
+				'visuals/images/pupil-event-locked.png',
 			];
 
 			for (const rel of expectedFiles) {
@@ -138,12 +138,15 @@ describe('Pupil end-to-end (Skia render)', () => {
 				expect(fs.statSync(full).size, `empty: ${rel}`).toBeGreaterThan(0);
 			}
 
-			// Per-segment figures land under visuals/segment-epoch/ and all exist.
-			const epochDir = path.join(rootDir, 'visuals/segment-epoch');
-			expect(fs.existsSync(epochDir)).toBe(true);
-			const epochFiles = fs.readdirSync(epochDir);
-			expect(epochFiles.filter((f) => f.endsWith('.png'))).toHaveLength(SEGMENTS.length);
-			expect(epochFiles.filter((f) => f.endsWith('.csv'))).toHaveLength(SEGMENTS.length);
+			// Per-segment figures land under visuals/segment-epoch/{data,images}/ and all exist.
+			const epochImagesDir = path.join(rootDir, 'visuals/segment-epoch/images');
+			const epochDataDir = path.join(rootDir, 'visuals/segment-epoch/data');
+			expect(fs.existsSync(epochImagesDir)).toBe(true);
+			expect(fs.existsSync(epochDataDir)).toBe(true);
+			const epochPngFiles = fs.readdirSync(epochImagesDir).filter((f) => f.endsWith('.png'));
+			const epochCsvFiles = fs.readdirSync(epochDataDir).filter((f) => f.endsWith('.csv'));
+			expect(epochPngFiles).toHaveLength(SEGMENTS.length);
+			expect(epochCsvFiles).toHaveLength(SEGMENTS.length);
 
 			// No leftover per-event-locked directory.
 			expect(fs.existsSync(path.join(rootDir, 'visuals/event-locked'))).toBe(false);
@@ -151,7 +154,7 @@ describe('Pupil end-to-end (Skia render)', () => {
 			// Every PNG (base + per-segment) starts with the 8-byte PNG signature.
 			const allPngs = [
 				...expectedFiles.filter((f) => f.endsWith('.png')),
-				...epochFiles.filter((f) => f.endsWith('.png')).map((f) => `visuals/segment-epoch/${f}`),
+				...epochPngFiles.map((f) => `visuals/segment-epoch/images/${f}`),
 			];
 			for (const rel of allPngs) {
 				const bytes = fs.readFileSync(path.join(rootDir, rel));

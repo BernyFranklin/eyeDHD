@@ -179,12 +179,12 @@ describe('buildPupilOutputBundle', () => {
 			['pupilRunConfig', 'metadata/pupil-run-config.json'],
 			['pupilPerFrame', 'analysis/pupil-per-frame.csv'],
 			['pupilPerEvent', 'analysis/pupil-per-event.csv'],
-			['pupilTimeSeriesModel', 'visuals/pupil-timeseries-model.csv'],
-			['pupilNormalizedModel', 'visuals/pupil-normalized-model.csv'],
-			['pupilEventLockedModel', 'visuals/pupil-event-locked-model.csv'],
-			['pupilTimeSeriesPng', 'visuals/pupil-timeseries.png'],
-			['pupilNormalizedPng', 'visuals/pupil-normalized.png'],
-			['pupilEventLockedPng', 'visuals/pupil-event-locked.png'],
+			['pupilTimeSeriesModel', 'visuals/data/pupil-timeseries-model.csv'],
+			['pupilNormalizedModel', 'visuals/data/pupil-normalized-model.csv'],
+			['pupilEventLockedModel', 'visuals/data/pupil-event-locked-model.csv'],
+			['pupilTimeSeriesPng', 'visuals/images/pupil-timeseries.png'],
+			['pupilNormalizedPng', 'visuals/images/pupil-normalized.png'],
+			['pupilEventLockedPng', 'visuals/images/pupil-event-locked.png'],
 		]);
 
 		expect(bundle.files).toHaveLength(expected.size);
@@ -203,10 +203,10 @@ describe('buildPupilOutputBundle', () => {
 			.map((f) => f.relativePath)
 			.sort();
 		expect(epochPaths).toEqual([
-			'visuals/segment-epoch/trial-1.csv',
-			'visuals/segment-epoch/trial-1.png',
-			'visuals/segment-epoch/trial-2.csv',
-			'visuals/segment-epoch/trial-2.png',
+			'visuals/segment-epoch/data/trial-1.csv',
+			'visuals/segment-epoch/data/trial-2.csv',
+			'visuals/segment-epoch/images/trial-1.png',
+			'visuals/segment-epoch/images/trial-2.png',
 		]);
 
 		// No leftover per-event-locked directory artifacts.
@@ -216,12 +216,12 @@ describe('buildPupilOutputBundle', () => {
 
 		// Grand-average figure still present alongside per-segment figures.
 		expect(descriptorByKey(bundle, 'pupilEventLockedPng').relativePath).toBe(
-			'visuals/pupil-event-locked.png'
+			'visuals/images/pupil-event-locked.png'
 		);
 
 		// Per-segment PNGs default their title to the segment label.
 		const trial1Png = bundle.files.find(
-			(f) => f.relativePath === 'visuals/segment-epoch/trial-1.png'
+			(f) => f.relativePath === 'visuals/segment-epoch/images/trial-1.png'
 		);
 		const spec = trial1Png!.content as { title?: { text: string } };
 		expect(spec.title?.text).toBe('Trial 1');
@@ -238,8 +238,8 @@ describe('buildPupilOutputBundle', () => {
 			.filter((f) => f.relativePath.startsWith('visuals/segment-epoch/') && f.format === 'png')
 			.map((f) => f.relativePath);
 		expect(paths).toEqual([
-			'visuals/segment-epoch/trial-1.png',
-			'visuals/segment-epoch/trial-1-2.png',
+			'visuals/segment-epoch/images/trial-1.png',
+			'visuals/segment-epoch/images/trial-1-2.png',
 		]);
 	});
 
@@ -268,10 +268,10 @@ describe('buildPupilOutputBundle', () => {
 		const bundle = buildPupilOutputBundle(input);
 
 		const trial1 = bundle.files.find(
-			(f) => f.relativePath === 'visuals/segment-epoch/trial-1.png'
+			(f) => f.relativePath === 'visuals/segment-epoch/images/trial-1.png'
 		);
 		const trial2 = bundle.files.find(
-			(f) => f.relativePath === 'visuals/segment-epoch/trial-2.png'
+			(f) => f.relativePath === 'visuals/segment-epoch/images/trial-2.png'
 		);
 		const spec1 = trial1!.content as {
 			xAxis: { domain?: [number, number] };
@@ -301,7 +301,7 @@ describe('buildPupilOutputBundle', () => {
 			},
 		});
 		const trial1 = bundle.files.find(
-			(f) => f.relativePath === 'visuals/segment-epoch/trial-1.png'
+			(f) => f.relativePath === 'visuals/segment-epoch/images/trial-1.png'
 		);
 		const spec = trial1!.content as {
 			xAxis: { domain?: [number, number] };
@@ -316,7 +316,7 @@ describe('buildPupilOutputBundle', () => {
 		input.visualization.segmentEpochs = makeEpochs();
 		const bundle = buildPupilOutputBundle(input);
 		const trial1 = bundle.files.find(
-			(f) => f.relativePath === 'visuals/segment-epoch/trial-1.png'
+			(f) => f.relativePath === 'visuals/segment-epoch/images/trial-1.png'
 		);
 		const spec = trial1!.content as {
 			overlays?: { segmentBoundaries?: Array<{ timeMs: number; label: string }> };
@@ -390,9 +390,9 @@ describe('buildPupilOutputBundle', () => {
 
 			// PNGs land on disk too (deterministic backend produces a small payload).
 			for (const png of [
-				'visuals/pupil-timeseries.png',
-				'visuals/pupil-normalized.png',
-				'visuals/pupil-event-locked.png',
+				'visuals/images/pupil-timeseries.png',
+				'visuals/images/pupil-normalized.png',
+				'visuals/images/pupil-event-locked.png',
 			]) {
 				expect(fs.statSync(path.join(rootDir, png)).size).toBeGreaterThan(0);
 			}

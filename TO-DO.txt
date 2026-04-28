@@ -6,7 +6,7 @@ Visuals
 Single event lock has 3 lines
 Clean up file structure for visuals
 (Frank - Done-ish) Need legend for left, right, and mean
-(Frank - In Work) Event-lock should show +/- % changes (Normalized between hard coded values)
+(Frank - Done) Event-lock should show +/- % changes (Normalized between hard coded values)
 ------------------------------------------------------
 UI
 ------------------------------------------------------

@@ -352,7 +352,7 @@ describe('Case Output Bundle', () => {
 				expect.arrayContaining([
 					{
 						key: 'scatterModelCsv',
-						relativePath: 'visuals/scatter-model.csv',
+						relativePath: 'visuals/data/scatter-model.csv',
 						format: 'csv',
 						category: 'visuals',
 						optional: false,
@@ -363,7 +363,7 @@ describe('Case Output Bundle', () => {
 					},
 					{
 						key: 'rateSeriesModelCsv',
-						relativePath: 'visuals/rate-series-model.csv',
+						relativePath: 'visuals/data/rate-series-model.csv',
 						format: 'csv',
 						category: 'visuals',
 						optional: false,
@@ -374,7 +374,7 @@ describe('Case Output Bundle', () => {
 					},
 					{
 						key: 'isiHistogramModelCsv',
-						relativePath: 'visuals/isi-histogram-model.csv',
+						relativePath: 'visuals/data/isi-histogram-model.csv',
 						format: 'csv',
 						category: 'visuals',
 						optional: false,
@@ -387,7 +387,7 @@ describe('Case Output Bundle', () => {
 					},
 					{
 						key: 'overlaysModelCsv',
-						relativePath: 'visuals/overlays-model.csv',
+						relativePath: 'visuals/data/overlays-model.csv',
 						format: 'csv',
 						category: 'visuals',
 						optional: true,
@@ -410,7 +410,7 @@ describe('Case Output Bundle', () => {
 				expect.arrayContaining([
 					{
 						key: 'scatterPng',
-						relativePath: 'visuals/scatter.png',
+						relativePath: 'visuals/images/scatter.png',
 						format: 'png',
 						category: 'visuals',
 						optional: false,
@@ -418,7 +418,7 @@ describe('Case Output Bundle', () => {
 					},
 					{
 						key: 'rateSeriesPng',
-						relativePath: 'visuals/rate-series.png',
+						relativePath: 'visuals/images/rate-series.png',
 						format: 'png',
 						category: 'visuals',
 						optional: false,
@@ -426,7 +426,7 @@ describe('Case Output Bundle', () => {
 					},
 					{
 						key: 'isiHistogramPng',
-						relativePath: 'visuals/isi-histogram.png',
+						relativePath: 'visuals/images/isi-histogram.png',
 						format: 'png',
 						category: 'visuals',
 						optional: false,
