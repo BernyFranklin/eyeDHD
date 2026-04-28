@@ -4,7 +4,7 @@ Visuals
 ------------------------------------------------------
 (Frank - Done)Event locked needs to capture event start and end
 Single event lock has 3 lines
-Clean up file structure for visuals
+(Frank - Done) Clean up file structure for visuals
 (Frank - Done-ish) Need legend for left, right, and mean
 (Frank - Done) Event-lock should show +/- % changes (Normalized between hard coded values)
 ------------------------------------------------------
