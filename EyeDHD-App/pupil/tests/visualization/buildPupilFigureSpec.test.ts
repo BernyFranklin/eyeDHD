@@ -237,6 +237,8 @@ describe('buildSegmentEpochSpec', () => {
 			startMs: 1_000,
 			endMs: 1_300,
 			segmentDurationScaled: 300,
+			preScaled: 100,
+			postScaled: 100,
 			points: [
 				{ t: -100, percentChange: 0 },
 				{ t: 0, percentChange: 5 },

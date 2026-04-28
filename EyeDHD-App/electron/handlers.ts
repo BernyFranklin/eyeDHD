@@ -1202,6 +1202,8 @@ ipcMain.handle('case:run-pupil', async (_, trial: CaseData) => {
 					baselinePercentile: DEFAULT_PUPIL_OPTIONS.baselinePercentile,
 					epochPreMs: DEFAULT_PUPIL_OPTIONS.epochPreMs,
 					epochPostMs: DEFAULT_PUPIL_OPTIONS.epochPostMs,
+					segmentEpochPreMs: DEFAULT_PUPIL_OPTIONS.segmentEpochPreMs,
+					segmentEpochPostMs: DEFAULT_PUPIL_OPTIONS.segmentEpochPostMs,
 					gridStepMs: 5,
 				},
 				metrics: pipelineResult.analysis,

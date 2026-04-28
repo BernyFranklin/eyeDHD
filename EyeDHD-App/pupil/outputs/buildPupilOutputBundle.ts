@@ -137,7 +137,20 @@ export function buildPupilOutputBundle(
 	for (let i = 0; i < visualization.segmentEpochs.length; i++) {
 		const epoch = visualization.segmentEpochs[i];
 		const slug = slugs[i];
-		const spec = buildSegmentEpochSpec(epoch, epochSpecDefaults);
+		const callerDomains = epochSpecDefaults.axisDomains ?? {};
+		const xDomain: [number, number] = [
+			-epoch.preScaled,
+			epoch.segmentDurationScaled + epoch.postScaled,
+		];
+		const epochOptions: BuildFigureRenderSpecOptions = {
+			...epochSpecDefaults,
+			axisDomains: {
+				...callerDomains,
+				x: callerDomains.x ?? xDomain,
+				y: callerDomains.y ?? epoch.yDomain,
+			},
+		};
+		const spec = buildSegmentEpochSpec(epoch, epochOptions);
 
 		files.push(
 			{

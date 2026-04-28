@@ -50,8 +50,8 @@ export function computePupilMetrics(
 	});
 
 	const segmentEpochs = computeSegmentEpochs(perFrame, input.segments ?? [], {
-		preMs: opts.epochPreMs,
-		postMs: opts.epochPostMs,
+		preMs: opts.segmentEpochPreMs,
+		postMs: opts.segmentEpochPostMs,
 		gridStepMs,
 	});
 

@@ -93,6 +93,25 @@ export function preparePupilVisualizationData(
 	const longestSegmentSpanMs = segmentSpansMs.length > 0 ? Math.max(...segmentSpansMs) : 0;
 	const segmentUnit = pickTimeUnit(longestSegmentSpanMs);
 
+	const preScaled = scaleTime(metrics.segmentEpochs.preMs, segmentUnit);
+	const postScaled = scaleTime(metrics.segmentEpochs.postMs, segmentUnit);
+
+	let yMin = Number.POSITIVE_INFINITY;
+	let yMax = Number.NEGATIVE_INFINITY;
+	for (const epoch of metrics.segmentEpochs.epochs) {
+		for (const p of epoch.points) {
+			if (!Number.isFinite(p.percentChange)) continue;
+			if (p.percentChange < yMin) yMin = p.percentChange;
+			if (p.percentChange > yMax) yMax = p.percentChange;
+		}
+	}
+	let yDomain: readonly [number, number] | undefined;
+	if (Number.isFinite(yMin) && Number.isFinite(yMax)) {
+		const range = yMax - yMin;
+		const pad = Math.max(range * 0.05, 1);
+		yDomain = [yMin - pad, yMax + pad];
+	}
+
 	const segmentEpochs: SegmentEpochVizModel[] = metrics.segmentEpochs.epochs.map(
 		(epoch) => ({
 			unit: segmentUnit,
@@ -101,6 +120,9 @@ export function preparePupilVisualizationData(
 			startMs: epoch.startMs,
 			endMs: epoch.endMs,
 			segmentDurationScaled: scaleTime(epoch.durationMs, segmentUnit),
+			preScaled,
+			postScaled,
+			yDomain,
 			points: epoch.points.map((p) => ({
 				t: scaleTime(p.timeRelMs, segmentUnit),
 				percentChange: p.percentChange,

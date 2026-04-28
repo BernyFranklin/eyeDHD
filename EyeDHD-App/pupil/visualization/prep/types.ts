@@ -47,6 +47,14 @@ export interface EventLockedPupilModel {
  * One per-segment epoch (one figure per segment) showing pre / during / post.
  * `t` is scaled to `unit`; `segmentDurationScaled` is the x-position of the
  * segment-end vertical reference (start is always at t = 0).
+ *
+ * `preScaled` / `postScaled` are the configured pre/post window in `unit`
+ * (e.g. 5 s -> 5 in seconds). The figure x-domain is then
+ * `[-preScaled, segmentDurationScaled + postScaled]`.
+ *
+ * `yDomain` is the case-wide y-extent (with padding) shared identically across
+ * every entry, so per-segment figures are visually comparable. Undefined when
+ * no finite samples exist in any segment.
  */
 export interface SegmentEpochVizModel {
 	unit: TimeUnit;
@@ -55,6 +63,9 @@ export interface SegmentEpochVizModel {
 	startMs: number;
 	endMs: number;
 	segmentDurationScaled: number;
+	preScaled: number;
+	postScaled: number;
+	yDomain?: readonly [number, number];
 	points: Array<{ t: number; percentChange: number }>;
 }
 

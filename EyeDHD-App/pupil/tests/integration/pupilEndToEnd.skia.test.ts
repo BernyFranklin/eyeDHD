@@ -67,6 +67,8 @@ describe('Pupil end-to-end (Skia render)', () => {
 				baselinePercentile: 0.1,
 				epochPreMs: 500,
 				epochPostMs: 1500,
+				segmentEpochPreMs: 500,
+				segmentEpochPostMs: 1500,
 				gridStepMs: 50,
 			},
 		});
@@ -90,6 +92,8 @@ describe('Pupil end-to-end (Skia render)', () => {
 				baselinePercentile: 0.1,
 				epochPreMs: 500,
 				epochPostMs: 1500,
+				segmentEpochPreMs: 500,
+				segmentEpochPostMs: 1500,
 				gridStepMs: 50,
 			},
 			metrics: pipelineResult.analysis,

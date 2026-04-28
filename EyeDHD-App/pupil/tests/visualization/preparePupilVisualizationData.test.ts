@@ -194,6 +194,9 @@ describe('preparePupilVisualizationData', () => {
 			startMs: 100,
 			endMs: 300,
 			segmentDurationScaled: 200,
+			preScaled: 100,
+			postScaled: 100,
+			yDomain: [-1, 6],
 			points: [
 				{ t: -100, percentChange: 0 },
 				{ t: 0, percentChange: 5 },
@@ -203,6 +206,66 @@ describe('preparePupilVisualizationData', () => {
 		});
 		// Falls back to segmentId when label is absent.
 		expect(result.segmentEpochs[1].label).toBe('s2');
+		// yDomain is shared across all segment epochs.
+		expect(result.segmentEpochs[1].yDomain).toEqual([-1, 6]);
+	});
+
+	it('pads the case-wide y-domain by 5% of range across all segment epochs', () => {
+		const base = makeMetrics();
+		const metrics: PupilMetricsResult = {
+			...base,
+			segmentEpochs: {
+				gridStepMs: 100,
+				preMs: 100,
+				postMs: 100,
+				epochs: [
+					{
+						segmentId: 's1',
+						startMs: 0,
+						endMs: 100,
+						durationMs: 100,
+						points: [
+							{ timeRelMs: 0, percentChange: -10 },
+							{ timeRelMs: 100, percentChange: NaN },
+						],
+					},
+					{
+						segmentId: 's2',
+						startMs: 200,
+						endMs: 300,
+						durationMs: 100,
+						points: [{ timeRelMs: 0, percentChange: 50 }],
+					},
+				],
+			},
+		};
+		const result = preparePupilVisualizationData({ metrics });
+		// range = 60, pad = 60 * 0.05 = 3 -> domain = [-13, 53]
+		expect(result.segmentEpochs[0].yDomain).toEqual([-13, 53]);
+		expect(result.segmentEpochs[1].yDomain).toEqual([-13, 53]);
+	});
+
+	it('omits yDomain when no segment epoch has any finite percent-change samples', () => {
+		const base = makeMetrics();
+		const metrics: PupilMetricsResult = {
+			...base,
+			segmentEpochs: {
+				gridStepMs: 100,
+				preMs: 100,
+				postMs: 100,
+				epochs: [
+					{
+						segmentId: 's1',
+						startMs: 0,
+						endMs: 100,
+						durationMs: 100,
+						points: [{ timeRelMs: 0, percentChange: NaN }],
+					},
+				],
+			},
+		};
+		const result = preparePupilVisualizationData({ metrics });
+		expect(result.segmentEpochs[0].yDomain).toBeUndefined();
 	});
 
 	it('shares one time unit across all per-segment figures, sized for the longest span', () => {

@@ -17,6 +17,10 @@ export interface PupilAnalysisOptions {
 	epochPreMs: number;
 	/** ERP epoch window: ms after each event to include. */
 	epochPostMs: number;
+	/** Per-segment epoch window: ms before each segment start to include in the figure. */
+	segmentEpochPreMs: number;
+	/** Per-segment epoch window: ms after each segment end to include in the figure. */
+	segmentEpochPostMs: number;
 }
 
 export const DEFAULT_PUPIL_OPTIONS: PupilAnalysisOptions = {
@@ -25,4 +29,6 @@ export const DEFAULT_PUPIL_OPTIONS: PupilAnalysisOptions = {
 	baselinePercentile: 0.10,
 	epochPreMs: 500,
 	epochPostMs: 3_000,
+	segmentEpochPreMs: 5_000,
+	segmentEpochPostMs: 5_000,
 };

@@ -114,6 +114,9 @@ function makeEpochs(): PupilVisualizationModels['segmentEpochs'] {
 			startMs: 100,
 			endMs: 200,
 			segmentDurationScaled: 100,
+			preScaled: 100,
+			postScaled: 100,
+			yDomain: [-2, 10],
 			points: [
 				{ t: -100, percentChange: 0 },
 				{ t: 0, percentChange: 5 },
@@ -128,6 +131,9 @@ function makeEpochs(): PupilVisualizationModels['segmentEpochs'] {
 			startMs: 500,
 			endMs: 700,
 			segmentDurationScaled: 200,
+			preScaled: 100,
+			postScaled: 100,
+			yDomain: [-2, 10],
 			points: [
 				{ t: -100, percentChange: 0 },
 				{ t: 0, percentChange: 8 },
@@ -150,6 +156,8 @@ function makeInput(): PupilOutputBundleInput {
 			baselinePercentile: 0.1,
 			epochPreMs: 500,
 			epochPostMs: 3_000,
+			segmentEpochPreMs: 5_000,
+			segmentEpochPostMs: 5_000,
 			gridStepMs: 5,
 		},
 		metrics: makeMetrics(),
@@ -252,6 +260,55 @@ describe('buildPupilOutputBundle', () => {
 			const spec = png.content as { yAxis: { label: { text: string } } };
 			expect(spec.yAxis.label.text).toBe('Δ% dilation');
 		}
+	});
+
+	it('uses the case-wide yDomain and a [-preScaled, durationScaled + postScaled] xDomain on every per-segment PNG', () => {
+		const input = makeInput();
+		input.visualization.segmentEpochs = makeEpochs();
+		const bundle = buildPupilOutputBundle(input);
+
+		const trial1 = bundle.files.find(
+			(f) => f.relativePath === 'visuals/segment-epoch/trial-1.png'
+		);
+		const trial2 = bundle.files.find(
+			(f) => f.relativePath === 'visuals/segment-epoch/trial-2.png'
+		);
+		const spec1 = trial1!.content as {
+			xAxis: { domain?: [number, number] };
+			yAxis: { domain?: [number, number] };
+		};
+		const spec2 = trial2!.content as {
+			xAxis: { domain?: [number, number] };
+			yAxis: { domain?: [number, number] };
+		};
+		// xDomain spans from -preScaled to segmentDurationScaled + postScaled.
+		expect(spec1.xAxis.domain).toEqual([-100, 200]);
+		expect(spec2.xAxis.domain).toEqual([-100, 300]);
+		// yDomain matches the shared case-wide domain on every per-segment PNG.
+		expect(spec1.yAxis.domain).toEqual([-2, 10]);
+		expect(spec2.yAxis.domain).toEqual([-2, 10]);
+	});
+
+	it('lets caller-supplied axisDomains in specOptions.segmentEpoch override the computed domains', () => {
+		const input = makeInput();
+		input.visualization.segmentEpochs = makeEpochs();
+		const bundle = buildPupilOutputBundle({
+			...input,
+			specOptions: {
+				segmentEpoch: {
+					axisDomains: { x: [-50, 150], y: [-100, 100] },
+				},
+			},
+		});
+		const trial1 = bundle.files.find(
+			(f) => f.relativePath === 'visuals/segment-epoch/trial-1.png'
+		);
+		const spec = trial1!.content as {
+			xAxis: { domain?: [number, number] };
+			yAxis: { domain?: [number, number] };
+		};
+		expect(spec.xAxis.domain).toEqual([-50, 150]);
+		expect(spec.yAxis.domain).toEqual([-100, 100]);
 	});
 
 	it('renders two boundary overlays per segment (start at 0, end at durationScaled)', () => {

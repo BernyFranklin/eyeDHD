@@ -25,6 +25,8 @@ export interface PupilRunConfig {
 	baselinePercentile: number;
 	epochPreMs: number;
 	epochPostMs: number;
+	segmentEpochPreMs: number;
+	segmentEpochPostMs: number;
 	gridStepMs: number;
 }
 
