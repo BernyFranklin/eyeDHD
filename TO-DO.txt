@@ -10,5 +10,5 @@ Event-lock should show +/- % changes (Normalized between hard coded values)
 ------------------------------------------------------
 UI
 ------------------------------------------------------
-User input for ASRS score
-Task view styling needs to scale better for smaller windows
+(Devon - In work) User input for ASRS score
+(Devon - Done) Task view styling needs to scale better for smaller windows
