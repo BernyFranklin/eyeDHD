@@ -260,70 +260,6 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				}
 			}
 
-			if (
-				spec.style.legend.show &&
-				(spec.geometry.type === 'line' || spec.geometry.type === 'scatter')
-			) {
-				const entries: { label: string; color: string }[] = [];
-				for (let s = 0; s < spec.geometry.series.length; s++) {
-					const series = spec.geometry.series[s];
-					const label = SERIES_LABEL_BY_ID[series.seriesId];
-					if (!label) continue;
-					entries.push({ label, color: pickSeriesColor(series.seriesId, s) });
-				}
-
-				if (entries.length > 0) {
-					ctx.font = fontString(
-						{ sizePt: DEFAULT_TICK_LABEL_FONT_SIZE_PT, family: DEFAULT_FONT_FAMILY },
-						context.dpi,
-						'18px sans-serif'
-					);
-					ctx.textAlign = 'left';
-					ctx.textBaseline = 'middle';
-
-					const padding = 10;
-					const swatchWidth = 22;
-					const swatchTextGap = 8;
-					const rowHeight = 22;
-
-					let maxTextWidth = 0;
-					for (const entry of entries) {
-						const w = ctx.measureText(entry.label).width;
-						if (w > maxTextWidth) maxTextWidth = w;
-					}
-
-					const boxWidth = padding * 2 + swatchWidth + swatchTextGap + maxTextWidth;
-					const boxHeight = padding * 2 + rowHeight * entries.length - (rowHeight - 14);
-					const boxX = plotRight - boxWidth - 8;
-					const boxY = plotTop + 8;
-
-					ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-					ctx.strokeStyle = '#999';
-					ctx.lineWidth = 1;
-					ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
-					ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
-
-					for (let i = 0; i < entries.length; i++) {
-						const entry = entries[i];
-						const rowY = boxY + padding + i * rowHeight + 7;
-
-						ctx.strokeStyle = entry.color;
-						ctx.lineWidth = 2;
-						ctx.beginPath();
-						ctx.moveTo(boxX + padding, rowY);
-						ctx.lineTo(boxX + padding + swatchWidth, rowY);
-						ctx.stroke();
-
-						ctx.fillStyle = '#222';
-						ctx.fillText(
-							entry.label,
-							boxX + padding + swatchWidth + swatchTextGap,
-							rowY
-						);
-					}
-				}
-			}
-
 			if (spec.xAxis?.label?.text) {
 				ctx.fillStyle = 'black';
 				ctx.font = fontString(spec.xAxis.label.font, context.dpi, '24px sans-serif');
@@ -393,6 +329,71 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 					ctx.textBaseline = 'middle';
 					ctx.fillText(marker.label, 0, 0);
 					ctx.restore();
+				}
+			}
+
+			if (
+				spec.style.legend.show &&
+				(spec.geometry.type === 'line' || spec.geometry.type === 'scatter')
+			) {
+				const entries: { label: string; color: string }[] = [];
+				for (let s = 0; s < spec.geometry.series.length; s++) {
+					const series = spec.geometry.series[s];
+					const label = SERIES_LABEL_BY_ID[series.seriesId];
+					if (!label) continue;
+					entries.push({ label, color: pickSeriesColor(series.seriesId, s) });
+				}
+
+				if (entries.length > 0) {
+					ctx.font = fontString(
+						{ sizePt: DEFAULT_TICK_LABEL_FONT_SIZE_PT, family: DEFAULT_FONT_FAMILY },
+						context.dpi,
+						'18px sans-serif'
+					);
+					ctx.textAlign = 'left';
+					ctx.textBaseline = 'middle';
+
+					const dpiScale = context.dpi / 72;
+					const padding = Math.round(8 * dpiScale);
+					const swatchWidth = Math.round(28 * dpiScale);
+					const swatchTextGap = Math.round(8 * dpiScale);
+					const rowHeight = Math.round(22 * dpiScale);
+
+					let maxTextWidth = 0;
+					for (const entry of entries) {
+						const w = ctx.measureText(entry.label).width;
+						if (w > maxTextWidth) maxTextWidth = w;
+					}
+
+					const boxWidth = padding * 2 + swatchWidth + swatchTextGap + maxTextWidth;
+					const boxHeight = padding * 2 + rowHeight * entries.length;
+					const boxX = plotRight - boxWidth - 8;
+					const boxY = plotTop + 8;
+
+					ctx.fillStyle = 'white';
+					ctx.strokeStyle = '#999';
+					ctx.lineWidth = 1;
+					ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+					ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+					for (let i = 0; i < entries.length; i++) {
+						const entry = entries[i];
+						const rowY = boxY + padding + i * rowHeight + rowHeight / 2;
+
+						ctx.strokeStyle = entry.color;
+						ctx.lineWidth = 2;
+						ctx.beginPath();
+						ctx.moveTo(boxX + padding, rowY);
+						ctx.lineTo(boxX + padding + swatchWidth, rowY);
+						ctx.stroke();
+
+						ctx.fillStyle = '#222';
+						ctx.fillText(
+							entry.label,
+							boxX + padding + swatchWidth + swatchTextGap,
+							rowY
+						);
+					}
 				}
 			}
 
