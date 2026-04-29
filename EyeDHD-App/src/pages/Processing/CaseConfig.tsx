@@ -647,6 +647,7 @@ export default function CaseConfig() {
 						hh:mm:ss:xx format.
 					</p>
 
+					<div className="event-marker-list">
 					{events.map((row, i) => (
 						<div className="event-row" key={i}>
 							<span className="event-label">Event {i + 1}</span>
@@ -683,6 +684,7 @@ export default function CaseConfig() {
 							</button>
 						</div>
 					))}
+					</div>
 
 					<button className="event-add-btn" onClick={addEvent}>
 						<Plus size={16} />
@@ -877,6 +879,15 @@ export default function CaseConfig() {
 						display: flex;
 						justify-content: flex-end;
 						gap: 8px;
+					}
+
+					.event-marker-list {
+						min-height: 100px;
+						max-height: 200px;
+						overflow-y: auto;
+						border: 2px solid #bbb;
+						border-radius: var(--action-radius);
+						padding: 2px;
 					}
 
 					.event-row {
