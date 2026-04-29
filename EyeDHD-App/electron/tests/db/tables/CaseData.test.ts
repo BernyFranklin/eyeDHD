@@ -75,6 +75,9 @@ describe('Database - CaseData', () => {
 					animation: false
 				},
 				cleaned_rows: 0,
+				segments: null,
+				detection_config: null,
+				asrs_score: null,
 				created_at: '',
 				updated_at: '',
 			};
@@ -101,6 +104,9 @@ describe('Database - CaseData', () => {
 					animation: false
 				},
 				cleaned_rows: 0,
+				segments: null,
+				detection_config: null,
+				asrs_score: null,
 				created_at: '',
 				updated_at: '',
 			};

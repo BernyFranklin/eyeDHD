@@ -25,6 +25,7 @@ export default function CreateCaseWindow(props: Props) {
 	const cases = useSelector(selectCases);
 
 	const [casename, setCasename] = useState('');
+	const [asrsScore, setAsrsScore] = useState<string>('');
 
 	const [csvLabel, setCsvLabel] = useState('');
 	const [csvStatus, setCsvStatus] = useState<ImportStatus>('waiting');
@@ -72,7 +73,8 @@ export default function CreateCaseWindow(props: Props) {
 			setCsvStatus('waiting');
 			setVrStatus('waiting');
 
-			const createdCase = await window.electron.case.createNew(trimmedName);
+			const parsedAsrs = asrsScore.trim() !== '' ? parseInt(asrsScore, 10) : null;
+			const createdCase = await window.electron.case.createNew(trimmedName, parsedAsrs);
 			dispatch(setSelectedCase(createdCase));
 
 			const updatedCase = await window.electron.case.importCsv(
@@ -146,6 +148,23 @@ export default function CreateCaseWindow(props: Props) {
 						/>
 					</div>
 				</div>
+				<div className='asrs-score-col'>
+					<div className='case-name-title'>
+						ASRS Score <span className='asrs-optional'>(Optional)</span>
+					</div>
+					<Textarea
+						variant='compact-static'
+						value={asrsScore}
+						onChange={(e) => {
+							const val = e.target.value.replace(/[^0-9]/g, '');
+							setAsrsScore(val);
+						}}
+						placeholder='0–72'
+						disabled={isSubmitting}
+						aria-label='ASRS score'
+						style={{ pointerEvents: isSubmitting ? 'none' : 'auto', cursor: 'text' }}
+					/>
+				</div>
 				<div className='create-case-actions'>
 					<Button
 						onClick={handleConfirm}
@@ -194,11 +213,9 @@ export default function CreateCaseWindow(props: Props) {
 					}
 
 					.create-case-actions {
-						grid-column: 1 / -1;
 						display: flex;
 						justify-content: flex-end;
-						width: 100%;
-						margin-top: 4px;
+						align-self: end;
 					}
 
 					.import-file-col {
@@ -211,6 +228,18 @@ export default function CreateCaseWindow(props: Props) {
 						display: flex;
 						flex-direction: column;
 						gap: 6px;
+					}
+
+					.asrs-score-col {
+						display: flex;
+						flex-direction: column;
+						gap: 12px;
+					}
+
+					.asrs-optional {
+						font-weight: 400;
+						color: #6b7280;
+						font-size: 13px;
 					}
 				`}
 			</style>

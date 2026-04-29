@@ -54,7 +54,7 @@ declare interface Electron {
 		initializeDirectory(dir: string, user: UserData): Promise<UserData>;
 	},
 	case: {
-		createNew(casename: string): Promise<CaseData>;
+		createNew(casename: string, asrs_score?: number | null): Promise<CaseData>;
 		read(casename: string): Promise<CaseData>;
 		remove(trial: CaseData): Promise<CaseData>;
 		selectCsv(): Promise<string | null>;
@@ -177,8 +177,8 @@ const electron: Electron = {
 		/**
 		 * Creates a new case folder and metadata entry in the project database.
 		 */
-		createNew: async (casename: string): Promise<CaseData> => {
-			return await ipcRenderer.invoke('case:create-new', casename);
+		createNew: async (casename: string, asrs_score?: number | null): Promise<CaseData> => {
+			return await ipcRenderer.invoke('case:create-new', casename, asrs_score);
 		},
 		/**
 		 * Reads the casedata for a given case. Used mostly for updating after changes.

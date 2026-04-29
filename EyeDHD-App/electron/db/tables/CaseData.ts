@@ -57,6 +57,7 @@ export type CaseData = {
 	cleaned_rows: number;
 	segments: SegmentInput[] | null;
 	detection_config: DetectionConfig | null;
+	asrs_score: number | null;
 	created_at: string;
 	updated_at: string;
 };
@@ -133,6 +134,7 @@ export function createCaseDataTable(db: Database) {
 			cleaned_rows INTEGER DEFAULT 0,
 			segments TEXT DEFAULT NULL,
 			detection_config TEXT DEFAULT NULL,
+			asrs_score INTEGER DEFAULT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
@@ -146,6 +148,9 @@ export function createCaseDataTable(db: Database) {
 	}
 	if (!colNames.has('detection_config')) {
 		db.prepare(`ALTER TABLE CaseData ADD COLUMN detection_config TEXT DEFAULT NULL`).run();
+	}
+	if (!colNames.has('asrs_score')) {
+		db.prepare(`ALTER TABLE CaseData ADD COLUMN asrs_score TEXT DEFAULT NULL`).run();
 	}
 }
 
@@ -294,6 +299,7 @@ function update(
 			cleaned_rows = @cleaned_rows,
 			segments = @segments,
 			detection_config = @detection_config,
+			asrs_score = @asrs_score,
 			updated_at = CURRENT_TIMESTAMP
 		WHERE id = @id;
 		`)

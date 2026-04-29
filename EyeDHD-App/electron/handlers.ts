@@ -333,7 +333,7 @@ ipcMain.handle('user:initialize-directory', async (_, dir: string, user: UserDat
  * the necessary subfolders for imports, outputs, and graphs. Also creates a new
  * metadata entry for the case in the project database. Returns the created casedata.
  */
-ipcMain.handle('case:create-new', async (_, casename) => {
+ipcMain.handle('case:create-new', async (_, casename: string, asrs_score?: number | null) => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const user = main_manager.actions.user.read();
@@ -351,7 +351,10 @@ ipcMain.handle('case:create-new', async (_, casename) => {
 				}
 			});
 
-			const trial = project_manager.createCase(casename, caseDir);
+			let trial = project_manager.createCase(casename, caseDir);
+			if (asrs_score != null) {
+				trial = project_manager.actions.case.update(trial, { asrs_score });
+			}
 			return resolve(trial);
 		} catch (err) {
 			return reject(`Failed to create case: ${err}`);
