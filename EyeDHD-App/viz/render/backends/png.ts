@@ -58,8 +58,6 @@ const SERIES_PALETTE = [
 
 /** Well-known series ids get a stable color regardless of ordering. */
 const SERIES_COLOR_BY_ID: Record<string, string> = {
-	// Pupil: left/right/mean distinguished; SE bands share the mean color as
-	// lighter companions (deliberately muted so they don't dominate).
 	'pupil-left-diameter': '#E69F00',
 	'pupil-right-diameter': '#56B4E9',
 	'pupil-mean-diameter': '#000000',
@@ -67,8 +65,6 @@ const SERIES_COLOR_BY_ID: Record<string, string> = {
 	'pupil-right-percent-change': '#56B4E9',
 	'pupil-percent-change': '#000000',
 	'pupil-erp-mean': '#000000',
-	'pupil-erp-upper-se': '#888888',
-	'pupil-erp-lower-se': '#888888',
 };
 
 /** Display labels for legends, keyed by seriesId. */
@@ -79,6 +75,7 @@ const SERIES_LABEL_BY_ID: Record<string, string> = {
 	'pupil-left-percent-change': 'Left',
 	'pupil-right-percent-change': 'Right',
 	'pupil-percent-change': 'Mean',
+	'pupil-erp-mean': 'Mean ± SE',
 };
 
 function pickSeriesColor(seriesId: string, index: number): string {
@@ -144,18 +141,23 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 				}
 			} else if (spec.geometry.type === 'scatter' || spec.geometry.type === 'line') {
 				let initialized = false;
+				const observe = (p: { x: number; y: number }) => {
+					if (!initialized) {
+						xMin = xMax = p.x;
+						yMin = yMax = p.y;
+						initialized = true;
+						return;
+					}
+					if (p.x < xMin) xMin = p.x;
+					else if (p.x > xMax) xMax = p.x;
+					if (p.y < yMin) yMin = p.y;
+					else if (p.y > yMax) yMax = p.y;
+				};
 				for (const series of spec.geometry.series) {
-					for (const p of series.points) {
-						if (!initialized) {
-							xMin = xMax = p.x;
-							yMin = yMax = p.y;
-							initialized = true;
-							continue;
-						}
-						if (p.x < xMin) xMin = p.x;
-						else if (p.x > xMax) xMax = p.x;
-						if (p.y < yMin) yMin = p.y;
-						else if (p.y > yMax) yMax = p.y;
+					for (const p of series.points) observe(p);
+					if (spec.geometry.type === 'line' && 'band' in series && series.band) {
+						for (const p of series.band.upperPoints) observe(p);
+						for (const p of series.band.lowerPoints) observe(p);
 					}
 				}
 			}
@@ -242,11 +244,34 @@ export function createSkiaCanvasPngBackend(): PngFigureRenderBackend {
 						}
 					}
 				} else {
-					ctx.lineWidth = 2;
 					for (let s = 0; s < spec.geometry.series.length; s++) {
 						const series = spec.geometry.series[s];
+						const color = pickSeriesColor(series.seriesId, s);
+
+						if (series.band) {
+							const { upperPoints, lowerPoints } = series.band;
+							const len = Math.min(upperPoints.length, lowerPoints.length);
+							if (len > 1) {
+								ctx.save();
+								ctx.fillStyle = color;
+								ctx.globalAlpha = 0.2;
+								ctx.beginPath();
+								ctx.moveTo(projectX(upperPoints[0].x), projectY(upperPoints[0].y));
+								for (let i = 1; i < len; i++) {
+									ctx.lineTo(projectX(upperPoints[i].x), projectY(upperPoints[i].y));
+								}
+								for (let i = len - 1; i >= 0; i--) {
+									ctx.lineTo(projectX(lowerPoints[i].x), projectY(lowerPoints[i].y));
+								}
+								ctx.closePath();
+								ctx.fill();
+								ctx.restore();
+							}
+						}
+
 						if (series.points.length === 0) continue;
-						ctx.strokeStyle = pickSeriesColor(series.seriesId, s);
+						ctx.lineWidth = 2;
+						ctx.strokeStyle = color;
 						ctx.beginPath();
 						for (let i = 0; i < series.points.length; i++) {
 							const p = series.points[i];

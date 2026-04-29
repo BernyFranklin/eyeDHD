@@ -137,11 +137,9 @@ export function buildNormalizedPupilSpec(
 }
 
 /**
- * Across-events grand mean ± SE on a common epoch grid.
- *
- * Renders three lines (mean, mean+SE, mean−SE) plus a vertical reference at
- * t = 0 added as a segmentBoundary overlay. Skipping a true filled SE band
- * for now — would require a new `FigureGeometrySpec` variant in `@viz/render`.
+ * Across-events grand mean ± SE on a common epoch grid. The mean is rendered
+ * as a single line series with a translucent SE band attached; a vertical
+ * reference at t = 0 is added as a segmentBoundary overlay.
  */
 export function buildEventLockedPupilSpec(
 	model: EventLockedPupilModel,
@@ -154,21 +152,19 @@ export function buildEventLockedPupilSpec(
 		.filter((p) => Number.isFinite(p.meanPercent))
 		.map((p) => ({ x: p.t, y: p.meanPercent }));
 
-	const upperPoints = model.points
-		.filter((p) => Number.isFinite(p.meanPercent) && Number.isFinite(p.sePercent))
-		.map((p) => ({ x: p.t, y: p.meanPercent + p.sePercent }));
-
-	const lowerPoints = model.points
-		.filter((p) => Number.isFinite(p.meanPercent) && Number.isFinite(p.sePercent))
-		.map((p) => ({ x: p.t, y: p.meanPercent - p.sePercent }));
+	const bandPts = model.points.filter(
+		(p) => Number.isFinite(p.meanPercent) && Number.isFinite(p.sePercent)
+	);
+	const upperPoints = bandPts.map((p) => ({ x: p.t, y: p.meanPercent + p.sePercent }));
+	const lowerPoints = bandPts.map((p) => ({ x: p.t, y: p.meanPercent - p.sePercent }));
 
 	const series: LineSeriesSpec[] = [
-		{ seriesId: 'pupil-erp-mean', points: meanPoints },
+		{
+			seriesId: 'pupil-erp-mean',
+			points: meanPoints,
+			band: bandPts.length > 0 ? { upperPoints, lowerPoints } : undefined,
+		},
 	];
-	if (upperPoints.length > 0) {
-		series.push({ seriesId: 'pupil-erp-upper-se', points: upperPoints });
-		series.push({ seriesId: 'pupil-erp-lower-se', points: lowerPoints });
-	}
 
 	const userOverlays = options.overlays ?? {};
 	const eventLine = { timeMs: 0, label: 'event' };
