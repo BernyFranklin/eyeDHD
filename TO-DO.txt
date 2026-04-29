@@ -15,7 +15,7 @@ UI
     - [x] Remove case config from case creation (i thought it was case specific)
     - [x] Add ASRS scores form which get stored in db
 (Devon - Done) Task view styling needs to scale better for smaller windows
-Open cases block is center oriented when there are no cases, would look better if it was top oriented.
+(Frank - Done) Open cases block is center oriented when there are no cases, would look better if it was top oriented.
 ------------------------------------------------------
 UI ideas
 ------------------------------------------------------
