@@ -131,23 +131,6 @@ export default function CreateCaseWindow(props: Props) {
 						readOnly
 					/>
 				</div>
-				<div className='asrs-score-col'>
-					<div className='case-name-title'>
-						ASRS Score (Optional)
-					</div>
-					<Textarea
-						variant='compact-static'
-						value={asrsScore}
-						onChange={(e) => {
-							const val = e.target.value.replace(/[^0-9]/g, '');
-							setAsrsScore(val);
-						}}
-						placeholder='0–72'
-						disabled={isSubmitting}
-						aria-label='ASRS score'
-						style={{ pointerEvents: isSubmitting ? 'none' : 'auto', cursor: 'text' }}
-					/>
-				</div>
 				<div className='import-file-col'>
 					<div className='case-name-title'>
 						Import case files (Required)
@@ -164,6 +147,23 @@ export default function CreateCaseWindow(props: Props) {
 							readOnly
 						/>
 					</div>
+				</div>
+				<div className='asrs-score-col'>
+					<div className='case-name-title'>
+						ASRS Score <span className='asrs-optional'>(Optional)</span>
+					</div>
+					<Textarea
+						variant='compact-static'
+						value={asrsScore}
+						onChange={(e) => {
+							const val = e.target.value.replace(/[^0-9]/g, '');
+							setAsrsScore(val);
+						}}
+						placeholder='0–72'
+						disabled={isSubmitting}
+						aria-label='ASRS score'
+						style={{ pointerEvents: isSubmitting ? 'none' : 'auto', cursor: 'text' }}
+					/>
 				</div>
 				<div className='create-case-actions'>
 					<Button
@@ -188,14 +188,14 @@ export default function CreateCaseWindow(props: Props) {
 					}
 
 					.create-case-window {
-						width: 860px;
+						width: 720px;
 						max-width: 92vw;
 						padding: 24px;
 						background: #fff;
 						border-radius: var(--action-radius);
 						box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 						display: grid;
-						grid-template-columns: minmax(0, 1fr) minmax(0, 140px) minmax(0, 1fr);
+						grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 						align-items: start;
 						gap: 16px 24px;
 					}
@@ -213,11 +213,9 @@ export default function CreateCaseWindow(props: Props) {
 					}
 
 					.create-case-actions {
-						grid-column: 1 / -1;
 						display: flex;
 						justify-content: flex-end;
-						width: 100%;
-						margin-top: 4px;
+						align-self: end;
 					}
 
 					.import-file-col {
@@ -236,6 +234,12 @@ export default function CreateCaseWindow(props: Props) {
 						display: flex;
 						flex-direction: column;
 						gap: 12px;
+					}
+
+					.asrs-optional {
+						font-weight: 400;
+						color: #6b7280;
+						font-size: 13px;
 					}
 				`}
 			</style>
