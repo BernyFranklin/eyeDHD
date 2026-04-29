@@ -25,6 +25,7 @@ export default function CreateCaseWindow(props: Props) {
 	const cases = useSelector(selectCases);
 
 	const [casename, setCasename] = useState('');
+	const [asrsScore, setAsrsScore] = useState<string>('');
 
 	const [csvLabel, setCsvLabel] = useState('');
 	const [csvStatus, setCsvStatus] = useState<ImportStatus>('waiting');
@@ -72,7 +73,8 @@ export default function CreateCaseWindow(props: Props) {
 			setCsvStatus('waiting');
 			setVrStatus('waiting');
 
-			const createdCase = await window.electron.case.createNew(trimmedName);
+			const parsedAsrs = asrsScore.trim() !== '' ? parseInt(asrsScore, 10) : null;
+			const createdCase = await window.electron.case.createNew(trimmedName, parsedAsrs);
 			dispatch(setSelectedCase(createdCase));
 
 			const updatedCase = await window.electron.case.importCsv(
@@ -129,6 +131,23 @@ export default function CreateCaseWindow(props: Props) {
 						readOnly
 					/>
 				</div>
+				<div className='asrs-score-col'>
+					<div className='case-name-title'>
+						ASRS Score (Optional)
+					</div>
+					<Textarea
+						variant='compact-static'
+						value={asrsScore}
+						onChange={(e) => {
+							const val = e.target.value.replace(/[^0-9]/g, '');
+							setAsrsScore(val);
+						}}
+						placeholder='0–72'
+						disabled={isSubmitting}
+						aria-label='ASRS score'
+						style={{ pointerEvents: isSubmitting ? 'none' : 'auto', cursor: 'text' }}
+					/>
+				</div>
 				<div className='import-file-col'>
 					<div className='case-name-title'>
 						Import case files (Required)
@@ -169,14 +188,14 @@ export default function CreateCaseWindow(props: Props) {
 					}
 
 					.create-case-window {
-						width: 720px;
+						width: 860px;
 						max-width: 92vw;
 						padding: 24px;
 						background: #fff;
 						border-radius: var(--action-radius);
 						box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 						display: grid;
-						grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+						grid-template-columns: minmax(0, 1fr) minmax(0, 140px) minmax(0, 1fr);
 						align-items: start;
 						gap: 16px 24px;
 					}
@@ -211,6 +230,12 @@ export default function CreateCaseWindow(props: Props) {
 						display: flex;
 						flex-direction: column;
 						gap: 6px;
+					}
+
+					.asrs-score-col {
+						display: flex;
+						flex-direction: column;
+						gap: 12px;
 					}
 				`}
 			</style>

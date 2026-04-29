@@ -10,23 +10,13 @@ Event-lock should show +/- % changes (Normalized between hard coded values)
 ------------------------------------------------------
 UI
 ------------------------------------------------------
-(Devon - In work) User input for ASRS score
+(Devon - Done) User input for ASRS score
 	- [x] Make list of distractors fixed height with scroll on overflow
     - [x] Remove case config from case creation (i thought it was case specific)
-        - [ ] Add gear wheel button to navbar to show/hide config settings
-	- [ ] Make case creation dialog it's own page
-    - [ ] Add ASRS scores form which get stored in inputs folder
-Button on a task to reset it's progress or be rerunable so you can generate graphs with different configs
-	- [ ] Either a reset button or a rerun task button
-	- [ ] Task cancel button
-	- [ ] If you can reset a task then tasks should specify their dependencies so that things like animation can only run if data cleaning is complete
+    - [x] Add ASRS scores form which get stored in db
 (Devon - Done) Task view styling needs to scale better for smaller windows
-Make alert window messages more simple (meant for users) and print the detailed errors to console or create log file
-
 ------------------------------------------------------
-
 UI ideas
-
 ------------------------------------------------------
 Make animation generation optional
 Add config for animation resolution
@@ -34,3 +24,9 @@ Estimated time until task suite complete
 Breadcrumbs to navigate backwards and forwards in history
 Export button to save a zip of a specific steps outputs so they could change configs and compare the effects
 Export all button to export all of a case outputs as a zip
+Move Config to a settings page since it applies to all cases with a gear wheel button in navbar
+Button on a task to reset it's progress or be rerunable so you can generate graphs with different configs
+	- [ ] Either a reset button or a rerun task button
+	- [ ] Task cancel button
+	- [ ] If you can reset a task then tasks should specify their dependencies so that things like animation can only run if data cleaning is complete
+Make alert window messages more simple (meant for users) and print the detailed errors to console or create log file
