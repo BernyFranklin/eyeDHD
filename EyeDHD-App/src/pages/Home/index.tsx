@@ -70,7 +70,7 @@ export default function Home() {
 			/>
 			<div className='home-layout'>
 				<div className='cases-col'>
-					<div className={`cases-list-wrapper${cases.length === 0 ? ' cases-list-wrapper--empty' : ''}`}>
+					<div className='cases-list-wrapper'>
 						<div className='cases-list-left'>
 							<h1>Open Cases</h1>
 							<CaseList loading={loading} />
@@ -150,13 +150,6 @@ export default function Home() {
 						margin-top: 0;
 					}
 
-					.cases-list-wrapper--empty {
-						align-items: center;
-					}
-
-					.cases-list-wrapper--empty .btn {
-						margin-top: 0;
-					}
 				`}
 			</style>
 		</>
