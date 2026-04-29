@@ -88,9 +88,15 @@ export interface ScatterSeriesSpec {
 	points: ScatterSeriesPoint[];
 }
 
+export interface LineSeriesBandSpec {
+	upperPoints: LineSeriesPoint[];
+	lowerPoints: LineSeriesPoint[];
+}
+
 export interface LineSeriesSpec {
 	seriesId: string;
 	points: LineSeriesPoint[];
+	band?: LineSeriesBandSpec;
 }
 
 export interface HistogramBinSpec {

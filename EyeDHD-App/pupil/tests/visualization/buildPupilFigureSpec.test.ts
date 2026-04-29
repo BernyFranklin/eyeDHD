@@ -162,27 +162,26 @@ describe('buildNormalizedPupilSpec', () => {
 });
 
 describe('buildEventLockedPupilSpec', () => {
-	it('emits three series (mean, mean+SE, mean−SE) when SE is finite', () => {
+	it('emits a single mean series with an SE band attached when SE is finite', () => {
 		const spec = buildEventLockedPupilSpec(makeEventLocked());
 		expect(spec.geometry.type).toBe('line');
 		if (spec.geometry.type !== 'line') throw new Error('unreachable');
-		expect(spec.geometry.series).toHaveLength(3);
+		expect(spec.geometry.series).toHaveLength(1);
 
-		const meanPts = spec.geometry.series[0].points;
-		expect(meanPts).toEqual([
+		const meanSeries = spec.geometry.series[0];
+		expect(meanSeries.seriesId).toBe('pupil-erp-mean');
+		expect(meanSeries.points).toEqual([
 			{ x: -100, y: 0 },
 			{ x: 0, y: 5 },
 			{ x: 100, y: 4 },
 		]);
 
-		const upperPts = spec.geometry.series[1].points;
-		expect(upperPts.map((p) => p.y)).toEqual([0.5, 6.0, 4.7]);
-
-		const lowerPts = spec.geometry.series[2].points;
-		expect(lowerPts.map((p) => p.y)).toEqual([-0.5, 4.0, 3.3]);
+		expect(meanSeries.band).toBeDefined();
+		expect(meanSeries.band?.upperPoints.map((p) => p.y)).toEqual([0.5, 6.0, 4.7]);
+		expect(meanSeries.band?.lowerPoints.map((p) => p.y)).toEqual([-0.5, 4.0, 3.3]);
 	});
 
-	it('omits SE bands when SE is non-finite (single-event case)', () => {
+	it('omits the SE band when SE is non-finite (single-event case)', () => {
 		const model: EventLockedPupilModel = {
 			unit: 'ms',
 			gridStepMs: 100,
@@ -196,6 +195,7 @@ describe('buildEventLockedPupilSpec', () => {
 		const spec = buildEventLockedPupilSpec(model);
 		if (spec.geometry.type !== 'line') throw new Error('unreachable');
 		expect(spec.geometry.series).toHaveLength(1);
+		expect(spec.geometry.series[0].band).toBeUndefined();
 	});
 
 	it('always adds a vertical reference at t=0 via the segmentBoundary overlay', () => {
