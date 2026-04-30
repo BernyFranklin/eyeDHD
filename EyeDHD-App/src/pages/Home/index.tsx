@@ -4,6 +4,7 @@ import { FilePlusCorner } from 'lucide-react';
 
 import { Button, LoadingOverlay } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
+import { toUserMessage } from '@src/utils/userError';
 
 import RemoteStream from '@src/data/RemoteStream';
 import { type CaseData } from '@src/data/types';
@@ -26,7 +27,7 @@ export default function Home() {
 	const [showCreateCase, setShowCreateCase] = useState(false);
 
 	const handleError = (err: Error) => {
-		AlertControls.error(`Error: ${err.message}`);
+		AlertControls.error(toUserMessage(err, 'Could not load your cases.'));
 	};
 
 	const refresh = async () => {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 
 import { Button, Textarea } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
+import { toUserMessage } from '@src/utils/userError';
 
 import { useDispatch, useSelector } from '@src/data/hooks';
 import { selectCases, setSelectedCase } from '@src/data/features/user';
@@ -61,7 +62,7 @@ export default function CreateCaseWindow(props: Props) {
 			setCasename(getCasename(filepath));
 			setCsvStatus('success');
 		} catch (err) {
-			AlertControls.error(`Error selecting CSV: ${err.message}`);
+			AlertControls.error(toUserMessage(err, 'Could not select the CSV file.'));
 		}
 	};
 
@@ -94,7 +95,7 @@ export default function CreateCaseWindow(props: Props) {
 
 			navigate('/processing');
 		} catch (err) {
-			AlertControls.error(`Error creating case: ${err.message}`);
+			AlertControls.error(toUserMessage(err, 'Could not create the case.'));
 
 			setIsSubmitting(false);
 		}

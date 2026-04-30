@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 
 import { LoadingOverlay } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
+import { toUserMessage } from '@src/utils/userError';
 
 import RemoteStream from '@src/data/RemoteStream';
 import { type CaseData } from '@src/data/types';
@@ -44,7 +45,7 @@ export default function CaseList(props: Props) {
 			dispatch(setCases(cases.filter(c => c.id !== file.id)));
 			AlertControls.success(`Removed case: ${file.name}`);
 		} catch (err) {
-			AlertControls.error(`Error removing case: ${err.message}`);
+			AlertControls.error(toUserMessage(err, 'Could not remove the case.'));
 		}
 	}
 
@@ -59,7 +60,7 @@ export default function CaseList(props: Props) {
 			dispatch(setSelectedCase(updated));
 			navigate('/processing');
 		} catch (err) {
-			AlertControls.error(`Error updating case: ${err.message}`);
+			AlertControls.error(toUserMessage(err, 'Could not update the case.'));
 		}
 	}
 
@@ -74,7 +75,7 @@ export default function CaseList(props: Props) {
 				const cases = await stream.collect<CaseData>();
 				dispatch(setCases(cases));
 			} catch (err) {
-				AlertControls.error(`Error loading cases: ${err.message}`);
+				AlertControls.error(toUserMessage(err, 'Could not load your cases.'));
 			}
 		};
 
