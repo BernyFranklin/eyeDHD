@@ -4,10 +4,10 @@ import { ProgressCircle, Status } from '@src/components';
 
 import { CaseData } from '@src/data/types';
 import { useDispatch, useSelector } from '@src/data/hooks';
-import { selectCurrentTask, selectTaskError, selectTaskProgress, setNextTask, setTaskError } from '@src/data/features/task';
+import { selectCurrentTask, selectTaskError, selectTaskProgress, selectTaskSelected, setNextTask, setTaskError } from '@src/data/features/task';
 import { selectSelectedCase } from '@src/data/features/user';
 
-import { Task, TaskName } from './tasks/index';
+import { Task, TaskName, isOptionalTask } from './tasks/index';
 
 type Props = {
 	task: Task;
@@ -31,6 +31,7 @@ export default function TaskItem({ task }: Props) {
 	const current = useSelector(selectCurrentTask);
 	const progress = useSelector(selectTaskProgress);
 	const error = useSelector(selectTaskError);
+	const selected = useSelector(selectTaskSelected);
 
 	const [active, setActive] = useState(false);
 	const [failed, setFailed] = useState(false);
@@ -94,6 +95,13 @@ export default function TaskItem({ task }: Props) {
 		if (getSavedStatus(task, trial)) {
 			setComplete(true);
 			setActive(false);
+			dispatch(setNextTask());
+			return;
+		}
+
+		// Optional tasks the user deselected stay in their default grayed-out
+		// pending state — don't flip active/complete, just advance past them.
+		if (isOptionalTask(task.name) && !selected[task.name]) {
 			dispatch(setNextTask());
 			return;
 		}

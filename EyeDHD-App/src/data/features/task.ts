@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 import type { RootState } from '..'
-import { TASKORDER, type Task } from '@src/pages/Processing/tasks';
+import { TASKORDER, OPTIONAL_TASKS, type OptionalTaskName, type Task } from '@src/pages/Processing/tasks';
 import { setSelectedCase } from './user';
 
 type TaskError = {
@@ -10,16 +10,26 @@ type TaskError = {
 	stack?: string
 }
 
+type SelectedMap = Record<OptionalTaskName, boolean>;
+
+const allSelected = (): SelectedMap =>
+	OPTIONAL_TASKS.reduce((acc, name) => {
+		acc[name] = true;
+		return acc;
+	}, {} as SelectedMap);
+
 type TaskState = {
 	current?: Task['name'],
 	progress: number,
-	error?: TaskError | null
+	error?: TaskError | null,
+	selected: SelectedMap
 }
 
 const initialState: TaskState = {
 	current: null,
 	progress: 0.0,
-	error: null
+	error: null,
+	selected: allSelected()
 };
 
 /**
@@ -52,6 +62,14 @@ export const taskSlice = createSlice({
 		},
 		setTaskProgress: (state, action: PayloadAction<number>) => {
 			state.progress = Math.max(0.0, Math.min(1.0, action.payload));
+		},
+		setTaskSelected: (state, action: PayloadAction<{ name: OptionalTaskName, value: boolean }>) => {
+			state.selected[action.payload.name] = action.payload.value;
+		},
+		setAllTasksSelected: (state, action: PayloadAction<boolean>) => {
+			for (const name of OPTIONAL_TASKS) {
+				state.selected[name] = action.payload;
+			}
 		}
 	},
 	extraReducers: (builder) => {
@@ -62,14 +80,16 @@ export const taskSlice = createSlice({
 			state.current = null;
 			state.progress = 0.0;
 			state.error = null;
+			state.selected = allSelected();
 		});
 	}
 });
 
-export const { initializeTask, setNextTask, setTaskError, setTaskProgress } = taskSlice.actions;
+export const { initializeTask, setNextTask, setTaskError, setTaskProgress, setTaskSelected, setAllTasksSelected } = taskSlice.actions;
 
 export const selectCurrentTask = (state: RootState) => state.task.current;
 export const selectTaskProgress = (state: RootState) => state.task.progress;
 export const selectTaskError = (state: RootState) => state.task.error;
+export const selectTaskSelected = (state: RootState) => state.task.selected;
 
 export default taskSlice.reducer;

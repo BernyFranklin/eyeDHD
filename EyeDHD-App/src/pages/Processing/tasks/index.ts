@@ -47,3 +47,12 @@ export const TASKS = [
 ] as const;
 
 export const TASKORDER = TASKS.map(task => task.name).concat(['complete']);
+
+// Optional tasks the user can opt out of via the checkbox panel. Cleaning is
+// foundational (every other task reads its output) and configure is a flow-only
+// step that applies user config to the DB — neither is user-skippable.
+export const OPTIONAL_TASKS = ['detection', 'pupil', 'animation'] as const;
+export type OptionalTaskName = typeof OPTIONAL_TASKS[number];
+
+export const isOptionalTask = (name: unknown): name is OptionalTaskName =>
+	typeof name === 'string' && (OPTIONAL_TASKS as readonly string[]).includes(name);
