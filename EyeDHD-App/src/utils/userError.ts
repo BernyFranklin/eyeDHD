@@ -5,7 +5,7 @@ type ErrorPattern = {
 
 const PATTERNS: ErrorPattern[] = [
 	{ match: /ENOENT|no such file/i, message: 'The file or folder could not be found.' },
-	{ match: /EACCES|EPERM/i, message: 'Permission denied. Please check file access.' },
+	{ match: /EACCES|EPERM/i, message: 'Permission denied. Please make sure the case isn\'t open in another application.' },
 	{ match: /EBUSY/i, message: 'The file is in use by another program.' },
 	{
 		match: /SQLITE_CONSTRAINT|UNIQUE constraint/i,
