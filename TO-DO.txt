@@ -30,4 +30,4 @@ Button on a task to reset it's progress or be rerunable so you can generate grap
 	- [ ] Either a reset button or a rerun task button
 	- [ ] Task cancel button
 	- [ ] If you can reset a task then tasks should specify their dependencies so that things like animation can only run if data cleaning is complete
-Make alert window messages more simple (meant for users) and print the detailed errors to console or create log file
+(Frank - In Work) Make alert window messages more simple (meant for users) and print the detailed errors to console or create log file
