@@ -19,7 +19,7 @@ UI
 ------------------------------------------------------
 UI ideas
 ------------------------------------------------------
-Make animation generation optional
+(Frank - Done) Make animation generation optional
 Add config for animation resolution
 Estimated time until task suite complete
 Breadcrumbs to navigate backwards and forwards in history
