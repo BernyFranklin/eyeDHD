@@ -67,15 +67,22 @@ export default function AlertWindow() {
 						border-radius: var(--action-radius);
 						position: fixed;
 						top: 102px;
-						right: 14px;
+						left: 50%;
+						transform: translateX(-50%);
+						width: 420px;
+						max-width: calc(100% - 28px);
 						z-index: 10000;
 						pointer-events: auto;
-
+						display: flex;
+						flex-direction: column;
+						align-items: center;
+						gap: 0.75rem;
 					}
 
 					.alert-window p {
 						white-space: pre-line;
-						text-align: left;
+						text-align: center;
+						margin: 0;
 					}
 
 					.alert-window.green {
