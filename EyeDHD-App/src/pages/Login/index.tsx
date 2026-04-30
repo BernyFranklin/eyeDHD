@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 
 import { Button, Textarea } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
+import { toUserMessage } from '@src/utils/userError';
 
 import { useSelector, useDispatch } from '@src/data/hooks';
 import { disableButtons, enableButtons, selectLoading } from '@src/data/features/global';
@@ -75,7 +76,7 @@ export default function Login() {
 			dispatch(setProjectDir(project.dir));
 			setSelectStatus('success');
 		} catch (err) {
-			AlertControls.error(`Error selecting directory: ${err.message}`);
+			AlertControls.error(toUserMessage(err, 'Could not open the project folder.'));
 		}
 	}
 
@@ -103,7 +104,7 @@ export default function Login() {
 				navigate('/home');
 			}
 		} catch (err) {
-			AlertControls.error(`Error initializing directory: ${err.message}`);
+			AlertControls.error(toUserMessage(err, 'Could not initialize the project folder.'));
 		}
 	};
 

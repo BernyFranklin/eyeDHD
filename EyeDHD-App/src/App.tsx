@@ -3,6 +3,7 @@ import { Outlet } from 'react-router';
 
 import { AlertWindow, Navbar } from '@src/components';
 import { AlertControls } from '@src/components/AlertWindow';
+import { toUserMessage } from '@src/utils/userError';
 
 import RemoteStream from '@src/data/RemoteStream';
 import { CaseData } from '@src/data/types';
@@ -21,7 +22,7 @@ function App() {
 	const dispatch = useDispatch();
 
 	const handleError = (err: Error) => {
-		AlertControls.error(`Error: ${err.message}`);
+		AlertControls.error(toUserMessage(err, 'Something went wrong while starting the app.'));
 	};
 
 	const loadUserData = async () => {
