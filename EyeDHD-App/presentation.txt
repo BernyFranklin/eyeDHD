@@ -1,0 +1,24 @@
+EyeDHD — Presentation Notes
+============================
+
+Summary
+-------
+EyeDHD is an Electron + React desktop application built for the Fresno State Psychology Department to analyze eye-tracking gaze recordings from the Varjo XR-4 headset for ADHD research. The user selects a project directory, creates a case from a CSV gaze recording and its accompanying video, and then runs a multi-stage pipeline that cleans the raw data, detects saccades (rapid eye movements), computes inter-saccadic timing and pupil-dilation metrics, and renders visualizations. The result is a structured, research-ready case bundle containing cleaned CSV tables, PNG figures, and a 3D animation of the participant's eye movements that researchers can review, share, and use as evidence in their ADHD studies.
+
+What Each Generated Image Shows
+-------------------------------
+- The Saccade Scatter Plot shows every detected saccade as a single point — time (ms) on the X-axis, amplitude (degrees) on the Y-axis — so the viewer can see at a glance how large the participant's eye movements were and how they were distributed across the session.
+
+- The Saccade Rate Line Chart shows the number of saccades per second across the recording, binned into one-second intervals, making it easy to spot periods of high or low eye-movement activity.
+
+- The Inter-Saccadic Interval (ISI) Histogram shows the distribution of time gaps between consecutive saccades in 25-millisecond bins, revealing the rhythm of the participant's gaze and timing patterns that can differ between ADHD and typical viewers.
+
+- The Eye Movement Animation is a 1280x720, 60 fps MP4 of a 3D eye model that rotates in real time with the recorded gaze direction and morphs its pupil size to match measured dilation, letting researchers visually inspect the participant's eye behavior over the full session.
+
+- The Pupil Diameter Time Series shows the participant's mean pupil diameter (in millimeters) across the recording, with optional left- and right-eye traces, so researchers can see raw dilation behavior over time.
+
+- The Normalized Pupil Trace shows per-frame percent change in pupil diameter relative to a rolling baseline, removing absolute-size differences between participants and exposing relative dilation responses.
+
+- The Event-Locked Pupil Response shows the grand mean (with a standard-error band) of percent change from baseline aligned to a common event at t = 0, summarizing how the pupil reacts to a stimulus across all events in the session.
+
+- The Per-Segment Epoch Figure shows percent change from baseline across the pre / during / post window of a single experimental segment, with vertical reference lines at the segment start and end, so researchers can compare dilation responses between conditions.
