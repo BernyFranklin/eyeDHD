@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 
 import { Button } from "@src/components";
 import { AlertControls } from "@src/components/AlertWindow";
+import { toUserMessage } from "@src/utils/userError";
 
 import { useDispatch, useSelector } from "@src/data/hooks";
 import {
@@ -58,11 +59,12 @@ export default function TaskSuite() {
 	useEffect(() => {
 		if (error) {
 			setButtonText('Failed! Try again');
-			AlertControls.error(`
-				An unexpected error occurred during ${current.toUpperCase()}:
-
-				${error.message}
-			`.trim());
+			AlertControls.error(
+				toUserMessage(
+					error,
+					`The ${current?.toUpperCase() ?? 'processing'} step could not finish. Please try again.`
+				)
+			);
 			return;
 		}
 
