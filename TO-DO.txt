@@ -21,6 +21,7 @@ UI ideas
 ------------------------------------------------------
 (Frank - Done) Make animation generation optional
 Add config for animation resolution
+Add config for max saccade duration (ms)
 Estimated time until task suite complete
 Breadcrumbs to navigate backwards and forwards in history
 Export button to save a zip of a specific steps outputs so they could change configs and compare the effects
