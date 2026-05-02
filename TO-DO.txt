@@ -7,6 +7,8 @@ Visuals
 (Frank - Done) Clean up file structure for visuals
 (Frank - Done-ish) Need legend for left, right, and mean
 (Frank - Done) Event-lock should show +/- % changes (Normalized between hard coded values)
+Set Y-Axis to (-100,100) on pupil-normalized.png
+Set Y-Axis to (0, max) on pupil-time-series.png
 ------------------------------------------------------
 UI
 ------------------------------------------------------
